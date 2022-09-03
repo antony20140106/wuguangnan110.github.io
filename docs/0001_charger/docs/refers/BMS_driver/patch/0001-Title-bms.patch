@@ -1,0 +1,1375 @@
+From fb131d0cdc4c481f64e25916a020cc4a62848095 Mon Sep 17 00:00:00 2001
+From: shanliangliang <shanliangliang@paxsz.com>
+Date: Fri, 27 Aug 2021 16:15:47 +0800
+Subject: [PATCH] =?UTF-8?q?[Title]:=20=E5=A2=9E=E5=8A=A0bms=E9=A9=B1?=
+ =?UTF-8?q?=E5=8A=A8?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+[Summary]: 增加bms驱动
+
+[Test Plan]: BMS测试
+
+[Module]: BMS
+
+[Model]: M8
+
+[author]: shanliangliang@paxsz.com
+
+[date]: 2021-09-01
+---
+ .../arch/arm64/boot/dts/mediatek/M50.dts      |  15 +
+ .../arch/arm64/boot/dts/mediatek/M8.dts       |  15 +
+ .../arch/arm64/boot/dts/mediatek/mt6765.dts   |   5 +
+ .../configs/k62v1_64_pax_debug_defconfig      |   1 +
+ .../arch/arm64/configs/k62v1_64_pax_defconfig |   3 +-
+ .../configs/k62v1_64_pax_eea_debug_defconfig  |   1 +
+ .../arm64/configs/k62v1_64_pax_eea_defconfig  |   3 +-
+ .../mediatek/pmic/mt6370/mt6370_pmu_charger.c |  14 +-
+ kernel-4.19/drivers/misc/pax/Kconfig          |   3 +-
+ kernel-4.19/drivers/misc/pax/Makefile         |   4 +-
+ kernel-4.19/drivers/misc/pax/power/Kconfig    |   4 +
+ kernel-4.19/drivers/misc/pax/power/Makefile   |   2 +
+ .../drivers/misc/pax/power/bms/Makefile       |   2 +
+ kernel-4.19/drivers/misc/pax/power/bms/bms.c  | 716 ++++++++++++++++++
+ kernel-4.19/drivers/misc/pax/power/bms/bms.h  | 103 +++
+ .../drivers/misc/pax/power/bms/bms_notify.c   |  44 ++
+ .../drivers/misc/pax/power/bms/bms_notify.h   |  24 +
+ kernel-4.19/drivers/power/supply/Makefile     |   3 +
+ .../drivers/power/supply/mtk_basic_charger.c  |  13 +-
+ .../drivers/power/supply/mtk_charger.c        |  46 ++
+ .../drivers/power/supply/mtk_charger.h        |  12 +-
+ 21 files changed, 1024 insertions(+), 9 deletions(-)
+ create mode 100644 kernel-4.19/drivers/misc/pax/power/Kconfig
+ create mode 100644 kernel-4.19/drivers/misc/pax/power/Makefile
+ create mode 100644 kernel-4.19/drivers/misc/pax/power/bms/Makefile
+ create mode 100644 kernel-4.19/drivers/misc/pax/power/bms/bms.c
+ create mode 100644 kernel-4.19/drivers/misc/pax/power/bms/bms.h
+ create mode 100644 kernel-4.19/drivers/misc/pax/power/bms/bms_notify.c
+ create mode 100644 kernel-4.19/drivers/misc/pax/power/bms/bms_notify.h
+
+diff --git a/kernel-4.19/arch/arm64/boot/dts/mediatek/M50.dts b/kernel-4.19/arch/arm64/boot/dts/mediatek/M50.dts
+index 4eacd343342..e94cb6db0de 100755
+--- a/kernel-4.19/arch/arm64/boot/dts/mediatek/M50.dts
++++ b/kernel-4.19/arch/arm64/boot/dts/mediatek/M50.dts
+@@ -772,6 +772,21 @@
+ 	gpio7_out = <&pio 171 0x0>;
+ };
+ 
++&pax_bms {
++	compatible = "pax,bms";
++	usb_psy_name = "mtk_charger_type";
++	bat_psy_name = "battery";
++	max_chg_vol = <6500>;			//mV
++	max_bat_vol = <4481000>;		//uV
++	min_bat_vol = <3450000>;		//uV
++	max_bat_temp = <450>;			//degree * 10
++	min_bat_temp = <0>;				//degree * 10
++	max_bat_cur = <50000000>;		//uA
++	max_chg_time = <43200>;			//s
++	suspend_current_ua = <15000>;	//uA
++	status = "ok";
++};
++
+ #include "mediatek/mt6370_m50.dtsi"
+ #include "mediatek/mt6370_pd_m50.dtsi"
+ #include "k62v1_64_pax/M50/cust.dtsi"
+diff --git a/kernel-4.19/arch/arm64/boot/dts/mediatek/M8.dts b/kernel-4.19/arch/arm64/boot/dts/mediatek/M8.dts
+index 38b81ea25d8..ca212edbd57 100755
+--- a/kernel-4.19/arch/arm64/boot/dts/mediatek/M8.dts
++++ b/kernel-4.19/arch/arm64/boot/dts/mediatek/M8.dts
+@@ -733,6 +733,21 @@
+ 	status = "okay";
+ };
+ 
++&pax_bms {
++	compatible = "pax,bms";
++	usb_psy_name = "mtk_charger_type";
++	bat_psy_name = "battery";
++	max_chg_vol = <12000>;			//mV
++	max_bat_vol = <4532000>;		//uV
++	min_bat_vol = <3450000>;		//uV
++	max_bat_temp = <450>;			//degree * 10
++	min_bat_temp = <0>;				//degree * 10
++	max_bat_cur = <50000000>;		//uA
++	max_chg_time = <43200>;			//s
++	suspend_current_ua = <15000>;	//uA
++	status = "ok";
++};
++
+ #include "mediatek/mt6370_m8.dtsi"
+ #include "mediatek/mt6370_pd_m8.dtsi"
+ #include "k62v1_64_pax/M8/cust.dtsi"
+diff --git a/kernel-4.19/arch/arm64/boot/dts/mediatek/mt6765.dts b/kernel-4.19/arch/arm64/boot/dts/mediatek/mt6765.dts
+index 4e369856955..bd863e5dc13 100755
+--- a/kernel-4.19/arch/arm64/boot/dts/mediatek/mt6765.dts
++++ b/kernel-4.19/arch/arm64/boot/dts/mediatek/mt6765.dts
+@@ -3860,6 +3860,11 @@ firmware_class.path=/vendor/firmware";
+ 	pax_typec_audio_switch:pax_typec_audio_switch {
+ 		compatible = "pax,typec_audio_switch";
+ 	};
++
++	pax_bms:pax_bms {
++		compatible = "pax,bms";
++		status = "disabled";
++	};
+ };
+ 
+ /*betterlife finger add */
+diff --git a/kernel-4.19/arch/arm64/configs/k62v1_64_pax_debug_defconfig b/kernel-4.19/arch/arm64/configs/k62v1_64_pax_debug_defconfig
+index c9d34a44916..1b507b09c0d 100755
+--- a/kernel-4.19/arch/arm64/configs/k62v1_64_pax_debug_defconfig
++++ b/kernel-4.19/arch/arm64/configs/k62v1_64_pax_debug_defconfig
+@@ -533,3 +533,4 @@ CONFIG_SND_SOC_AW87XXX=y
+ CONFIG_PAX_USB_SWITCH=y
+ CONFIG_SND_SOC_MT6357_ACCDET=y
+ CONFIG_PAX_TYPEC_AUDIO_SWITCH=y
++CONFIG_PAX_BMS=y
+diff --git a/kernel-4.19/arch/arm64/configs/k62v1_64_pax_defconfig b/kernel-4.19/arch/arm64/configs/k62v1_64_pax_defconfig
+index b650d599001..7b90388441a 100755
+--- a/kernel-4.19/arch/arm64/configs/k62v1_64_pax_defconfig
++++ b/kernel-4.19/arch/arm64/configs/k62v1_64_pax_defconfig
+@@ -510,4 +510,5 @@ CONFIG_PAX_CAM_REGULATOR_SUPPORT=y
+ CONFIG_SND_SOC_AW87XXX=y
+ CONFIG_PAX_USB_SWITCH=y
+ CONFIG_SND_SOC_MT6357_ACCDET=y
+-CONFIG_PAX_TYPEC_AUDIO_SWITCH=y
+\ No newline at end of file
++CONFIG_PAX_TYPEC_AUDIO_SWITCH=y
++CONFIG_PAX_BMS=y
+diff --git a/kernel-4.19/arch/arm64/configs/k62v1_64_pax_eea_debug_defconfig b/kernel-4.19/arch/arm64/configs/k62v1_64_pax_eea_debug_defconfig
+index ea1edfcb5e7..a1a4e52a958 100755
+--- a/kernel-4.19/arch/arm64/configs/k62v1_64_pax_eea_debug_defconfig
++++ b/kernel-4.19/arch/arm64/configs/k62v1_64_pax_eea_debug_defconfig
+@@ -533,3 +533,4 @@ CONFIG_SND_SOC_AW87XXX=y
+ CONFIG_PAX_USB_SWITCH=y
+ CONFIG_SND_SOC_MT6357_ACCDET=y
+ CONFIG_PAX_TYPEC_AUDIO_SWITCH=y
++CONFIG_PAX_BMS=y
+diff --git a/kernel-4.19/arch/arm64/configs/k62v1_64_pax_eea_defconfig b/kernel-4.19/arch/arm64/configs/k62v1_64_pax_eea_defconfig
+index 7eeda895a46..454195ef2b8 100755
+--- a/kernel-4.19/arch/arm64/configs/k62v1_64_pax_eea_defconfig
++++ b/kernel-4.19/arch/arm64/configs/k62v1_64_pax_eea_defconfig
+@@ -510,4 +510,5 @@ CONFIG_PAX_CAM_REGULATOR_SUPPORT=y
+ CONFIG_SND_SOC_AW87XXX=y
+ CONFIG_PAX_USB_SWITCH=y
+ CONFIG_SND_SOC_MT6357_ACCDET=y
+-CONFIG_PAX_TYPEC_AUDIO_SWITCH=y
+\ No newline at end of file
++CONFIG_PAX_TYPEC_AUDIO_SWITCH=y
++CONFIG_PAX_BMS=y
+diff --git a/kernel-4.19/drivers/misc/mediatek/pmic/mt6370/mt6370_pmu_charger.c b/kernel-4.19/drivers/misc/mediatek/pmic/mt6370/mt6370_pmu_charger.c
+index 2c4503b525d..b0ec46930eb 100755
+--- a/kernel-4.19/drivers/misc/mediatek/pmic/mt6370/mt6370_pmu_charger.c
++++ b/kernel-4.19/drivers/misc/mediatek/pmic/mt6370/mt6370_pmu_charger.c
+@@ -1820,6 +1820,9 @@ static int mt6370_enable_charging(struct charger_device *chg_dev, bool en)
+ 	if (ret < 0)
+ 		dev_notice(chg_data->dev, "%s: fail, en = %d\n", __func__, en);
+ 	mutex_unlock(&chg_data->ichg_access_lock);
++
++	power_supply_changed(chg_data->psy);
++
+ 	return ret;
+ }
+ 
+@@ -1942,6 +1945,9 @@ static int mt6370_enable_power_path(struct charger_device *chg_dev, bool en)
+ 	chg_data->pp_en = en;
+ out:
+ 	mutex_unlock(&chg_data->pp_lock);
++
++	power_supply_changed(chg_data->psy);
++
+ 	return ret;
+ }
+ 
+@@ -4133,6 +4139,7 @@ static int mt6370_charger_get_property(struct power_supply *psy,
+ 						  power_supply_get_drvdata(psy);
+ 	enum mt6370_charging_status chg_stat = MT6370_CHG_STATUS_READY;
+ 	bool pwr_rdy = false, chg_en = false;
++	bool pp_en = true;
+ 	int ret = 0;
+ 
+ 	dev_dbg(chg_data->dev, "%s: prop = %d\n", __func__, psp);
+@@ -4145,7 +4152,12 @@ static int mt6370_charger_get_property(struct power_supply *psy,
+ 		ret = mt6370_charger_get_online(chg_data, &pwr_rdy);
+ 		ret = mt6370_is_charging_enable(chg_data, &chg_en);
+ 		ret = mt6370_get_charging_status(chg_data, &chg_stat);
+-		if (!pwr_rdy) {
++		ret = mt6370_is_power_path_enable(chg_data->chg_dev, &pp_en);
++
++		dev_info(chg_data->dev, "%s: pwr_rdy:%d, chg_en:%d, chg_stat: %d, pp_en:%d\n",
++				__func__, pwr_rdy, chg_en, chg_stat, pp_en);
++
++		if (!pwr_rdy || !pp_en) {
+ 			val->intval = POWER_SUPPLY_STATUS_NOT_CHARGING;
+ 			return ret;
+ 		}
+diff --git a/kernel-4.19/drivers/misc/pax/Kconfig b/kernel-4.19/drivers/misc/pax/Kconfig
+index c7766c4f322..5aed66b27ae 100755
+--- a/kernel-4.19/drivers/misc/pax/Kconfig
++++ b/kernel-4.19/drivers/misc/pax/Kconfig
+@@ -7,4 +7,5 @@ config PAX_DRV_SUPPORT
+ source "drivers/misc/pax/gpio/Kconfig"
+ source "drivers/misc/pax/cam_regu/Kconfig"
+ source "drivers/misc/pax/usb_switch/Kconfig"
+-source "drivers/misc/pax/audio_switch/Kconfig"
+\ No newline at end of file
++source "drivers/misc/pax/audio_switch/Kconfig"
++source "drivers/misc/pax/power/Kconfig"
+diff --git a/kernel-4.19/drivers/misc/pax/Makefile b/kernel-4.19/drivers/misc/pax/Makefile
+index 26b5ceb6426..0aa0e054232 100755
+--- a/kernel-4.19/drivers/misc/pax/Makefile
++++ b/kernel-4.19/drivers/misc/pax/Makefile
+@@ -13,4 +13,6 @@ obj-$(CONFIG_PAX_CAM_REGULATOR_SUPPORT)  += cam_regu/
+ obj-$(CONFIG_PAX_USB_SWITCH) += usb_switch/
+ 
+ # pax typec/audio switch
+-obj-$(CONFIG_PAX_TYPEC_AUDIO_SWITCH) += audio_switch/
+\ No newline at end of file
++obj-$(CONFIG_PAX_TYPEC_AUDIO_SWITCH) += audio_switch/
++
++obj-y += power/
+diff --git a/kernel-4.19/drivers/misc/pax/power/Kconfig b/kernel-4.19/drivers/misc/pax/power/Kconfig
+new file mode 100644
+index 00000000000..c4109cce3ce
+--- /dev/null
++++ b/kernel-4.19/drivers/misc/pax/power/Kconfig
+@@ -0,0 +1,4 @@
++config PAX_BMS
++	bool "PAX BMS driver"	
++	help
++		say yes if support PAX BMS	
+diff --git a/kernel-4.19/drivers/misc/pax/power/Makefile b/kernel-4.19/drivers/misc/pax/power/Makefile
+new file mode 100644
+index 00000000000..2908f9f7430
+--- /dev/null
++++ b/kernel-4.19/drivers/misc/pax/power/Makefile
+@@ -0,0 +1,2 @@
++
++obj-$(CONFIG_PAX_BMS) += bms/
+diff --git a/kernel-4.19/drivers/misc/pax/power/bms/Makefile b/kernel-4.19/drivers/misc/pax/power/bms/Makefile
+new file mode 100644
+index 00000000000..95088849714
+--- /dev/null
++++ b/kernel-4.19/drivers/misc/pax/power/bms/Makefile
+@@ -0,0 +1,2 @@
++
++obj-$(CONFIG_PAX_BMS) += bms.o bms_notify.o
+diff --git a/kernel-4.19/drivers/misc/pax/power/bms/bms.c b/kernel-4.19/drivers/misc/pax/power/bms/bms.c
+new file mode 100644
+index 00000000000..5b10ea362d0
+--- /dev/null
++++ b/kernel-4.19/drivers/misc/pax/power/bms/bms.c
+@@ -0,0 +1,716 @@
++#define pr_fmt(fmt) "PAX_CHG: BMS "fmt
++
++#include <linux/init.h>
++#include <linux/module.h>
++#include <linux/kernel.h>
++#include <linux/device.h>
++#include <linux/platform_device.h>
++#include <linux/types.h>
++#include <linux/sys.h>
++#include <linux/sysfs.h>
++#include <linux/sched.h>
++#include <linux/delay.h>
++#include <linux/workqueue.h>
++#include <linux/uaccess.h>
++#include <linux/of.h>
++#include <linux/of_gpio.h>
++#include <linux/gpio.h>
++#include <linux/spinlock.h>
++#include <linux/pm_wakeup.h>
++#include <linux/irq.h>
++#include <linux/interrupt.h>
++#include <linux/miscdevice.h>
++
++#include "bms.h"
++#include "bms_notify.h"
++
++extern struct class *g_class_pax;
++
++struct bms_data g_bms_data;
++
++static void bms_status_notify()
++{
++	char *env[2] = { "BMS_STAT=1", NULL };
++
++	kobject_uevent_env(&g_bms_data.dev->kobj, KOBJ_CHANGE, env);
++}
++
++static int bms_chg_vote(int type, bool disable)
++{
++	int chg_en = BMS_CHG_ENABLE;
++
++	if (type >= NC_MAX)
++		return 0;
++
++	if (disable) {
++		g_bms_data.chg_vote |= (1 << type);
++	}
++	else {
++		g_bms_data.chg_vote &= ~(1 << type);
++	}
++
++	if (g_bms_data.chg_vote)
++		chg_en = BMS_CHG_DISABLE;
++
++	bms_notify_call_chain(SET_CHG_EN, &chg_en);
++
++	pr_info("type: %s, disable: %d, vote: 0x%x\n", notify_type_name[type], disable, g_bms_data.chg_vote);
++
++	return 0;
++}
++
++static bool bms_notify_code_is_set(int type)
++{
++	if (g_bms_data.notify_code & (1 << type))
++		return true;
++
++	return false;
++}
++
++static int bms_set_notify_code(int type, bool set, bool update_vote)
++{
++	if (type >= NC_MAX)
++		return 0;
++
++	pr_info("notify_code: 0x%x\n", g_bms_data.notify_code);
++
++	if (set) {
++		g_bms_data.notify_code |= (1 << type);
++	}
++	else {
++		g_bms_data.notify_code &= ~(1 << type);
++	}
++
++	pr_info("type: %s, set: %d, notify_code: 0x%x\n", notify_type_name[type], set, g_bms_data.notify_code);
++
++	if (update_vote) {
++		bms_chg_vote(type, set);
++	}
++
++	bms_status_notify();
++
++	return 0;
++}
++
++static void bms_chg_vol_check()
++{
++	int ret;
++	union power_supply_propval val = {0};
++	static int abnormal_cnt = 0;
++	static int normal_cnt = 0;
++
++	if (!g_bms_data.usb_psy)
++		return;
++
++	ret = power_supply_get_property(g_bms_data.usb_psy, POWER_SUPPLY_PROP_VOLTAGE_NOW, &val);
++	if (ret < 0)
++		return;
++
++	if (val.intval > g_bms_data.max_chg_vol) {
++		normal_cnt = 0;
++		if (!bms_notify_code_is_set(NC_CHG_OV)) {
++			abnormal_cnt ++;
++			if (abnormal_cnt > BMS_DEBOUNCE) {
++				pr_err("vol: %d, max_chg_vol: %d, out of range.\n", val.intval, g_bms_data.max_chg_vol);
++				bms_set_notify_code(NC_CHG_OV, true, true);
++			}
++		}
++	}
++	else {
++		abnormal_cnt = 0;
++		if (bms_notify_code_is_set(NC_CHG_OV)) {
++			normal_cnt ++;
++			if (normal_cnt > BMS_DEBOUNCE) {
++				bms_set_notify_code(NC_CHG_OV, false, true);
++			}
++		}
++	}
++}
++
++static void bms_bat_vol_check()
++{
++	int ret;
++	union power_supply_propval val = {0};
++	static int abnormal_cnt = 0;
++	static int normal_cnt = 0;
++
++	if (!g_bms_data.bat_psy)
++		return;
++
++	ret = power_supply_get_property(g_bms_data.bat_psy, POWER_SUPPLY_PROP_VOLTAGE_NOW, &val);
++	if (ret < 0)
++		return;
++
++	if (val.intval > g_bms_data.max_bat_vol) {
++		normal_cnt = 0;
++		if (!bms_notify_code_is_set(NC_BAT_OV)) {
++			abnormal_cnt ++;
++			if (abnormal_cnt > BMS_DEBOUNCE) {
++				pr_err("vol: %d, max_bat_vol: %d, out of range.\n", val.intval, g_bms_data.max_bat_vol);
++				bms_set_notify_code(NC_BAT_OV, true, true);
++			}
++		}
++	}
++	else {
++		abnormal_cnt = 0;
++		if (bms_notify_code_is_set(NC_BAT_OV)) {
++			normal_cnt ++;
++			if (normal_cnt > BMS_DEBOUNCE) {
++				bms_set_notify_code(NC_BAT_OV, false, false);
++			}
++		}
++	}
++}
++
++static void bms_bat_cur_check()
++{
++	int ret;
++	union power_supply_propval val = {0};
++	static int abnormal_cnt = 0;
++	static int normal_cnt = 0;
++
++	if (!g_bms_data.bat_psy)
++		return;
++
++	ret = power_supply_get_property(g_bms_data.bat_psy, POWER_SUPPLY_PROP_CURRENT_NOW, &val);
++	if (ret < 0)
++		return;
++
++	if (val.intval > g_bms_data.max_bat_cur) {
++		normal_cnt = 0;
++		if (!bms_notify_code_is_set(NC_BAT_OC)) {
++			abnormal_cnt ++;
++			if (abnormal_cnt > BMS_DEBOUNCE) {
++				pr_err("cur: %d, max_bat_cur: %d, out of range.\n", val.intval, g_bms_data.max_bat_cur);
++				bms_set_notify_code(NC_BAT_OC, true, true);
++			}
++		}
++	}
++	else {
++		abnormal_cnt = 0;
++		if (bms_notify_code_is_set(NC_BAT_OC)) {
++			normal_cnt ++;
++			if (normal_cnt > BMS_DEBOUNCE) {
++				bms_set_notify_code(NC_BAT_OC, false, true);
++			}
++		}
++	}
++}
++
++static void bms_bat_temp_check()
++{
++	int ret;
++	union power_supply_propval val = {0};
++	static int abnormal_cnt = 0;
++	static int normal_cnt = 0;
++
++	if (!g_bms_data.bat_psy)
++		return;
++
++	ret = power_supply_get_property(g_bms_data.bat_psy, POWER_SUPPLY_PROP_TEMP, &val);
++	if (ret < 0)
++		return;
++
++	if (val.intval > g_bms_data.max_bat_temp) {
++		normal_cnt = 0;
++		if (!bms_notify_code_is_set(NC_BAT_OT)) {
++			abnormal_cnt ++;
++			if (abnormal_cnt > BMS_DEBOUNCE) {
++				pr_err("temp: %d, max_bat_temp: %d, out of range.\n", val.intval, g_bms_data.max_bat_temp);
++				bms_set_notify_code(NC_BAT_OT, true, true);
++			}
++		}
++	}
++	else if (val.intval < g_bms_data.min_bat_temp) {
++		normal_cnt = 0;
++		if (!bms_notify_code_is_set(NC_BAT_UT)) {
++			abnormal_cnt ++;
++			if (abnormal_cnt > BMS_DEBOUNCE) {
++				pr_err("temp: %d, min_bat_temp: %d, out of range.\n", val.intval, g_bms_data.min_bat_temp);
++				bms_set_notify_code(NC_BAT_UT, true, true);
++			}
++		}
++	}
++	else {
++		abnormal_cnt = 0;
++		if (bms_notify_code_is_set(NC_BAT_OT)) {
++			normal_cnt ++;
++			if (normal_cnt > BMS_DEBOUNCE) {
++				bms_set_notify_code(NC_BAT_OT, false, true);
++			}
++		}
++		else if (bms_notify_code_is_set(NC_BAT_UT)) {
++			normal_cnt ++;
++			if (normal_cnt > BMS_DEBOUNCE) {
++				bms_set_notify_code(NC_BAT_UT, false, true);
++			}
++		}
++	}
++}
++
++static void bms_chg_time_check()
++{
++	int ret;
++	union power_supply_propval val = {0};
++	struct timespec time_now;
++
++	if (!g_bms_data.bat_psy)
++		return;
++
++	ret = power_supply_get_property(g_bms_data.bat_psy, POWER_SUPPLY_PROP_STATUS, &val);
++	if (ret < 0)
++		return;
++
++	get_monotonic_boottime(&time_now);
++
++	if (val.intval == POWER_SUPPLY_STATUS_CHARGING) {
++		if (!g_bms_data.charge_start_time) {
++			g_bms_data.charge_start_time = time_now.tv_sec; 
++			pr_info("charge start: %u\n", g_bms_data.charge_start_time);
++		}
++
++		g_bms_data.charge_total_time = time_now.tv_sec - g_bms_data.charge_start_time;
++
++		if (g_bms_data.charge_total_time > g_bms_data.max_chg_time) {
++			if (!bms_notify_code_is_set(NC_CHG_TMO)) {
++				pr_err("time: %u, max_chg_time: %u, out of range.\n", g_bms_data.charge_total_time, g_bms_data.max_chg_time);
++				bms_set_notify_code(NC_CHG_TMO, true, true);
++			}
++		}
++	}
++	else
++	{
++		if (g_bms_data.charge_total_time > 0) {
++			pr_info("charge end: charge_start_time: %u, charge_total_time: %u\n",
++					g_bms_data.charge_start_time, g_bms_data.charge_total_time);
++			g_bms_data.charge_start_time = 0;
++			g_bms_data.charge_total_time = 0;
++		}
++	}
++}
++
++static int psy_notifier_call(struct notifier_block *self, unsigned long event, void *data)
++{
++	struct power_supply *psy = data;
++	union power_supply_propval val = {0};
++	int ret = 0;
++
++	if (!strcmp(psy->desc->name, g_bms_data.bat_psy_name)) {
++		bms_chg_time_check();
++
++		ret = power_supply_get_property(g_bms_data.bat_psy, POWER_SUPPLY_PROP_STATUS, &val);
++		if (ret == 0) {
++			if (val.intval == POWER_SUPPLY_STATUS_CHARGING) {
++				if (!g_bms_data.bms_ws.active) {
++					__pm_stay_awake(&g_bms_data.bms_ws);
++				}
++			}
++			else {
++				if (g_bms_data.bms_ws.active) {
++					__pm_relax(&g_bms_data.bms_ws);
++				}
++			}
++		}
++	}
++
++	return 0;
++}
++
++static void bms_dwork(struct work_struct *work)
++{
++	bms_chg_vol_check();
++	bms_bat_vol_check();
++	bms_bat_cur_check();
++	bms_bat_temp_check();
++	bms_chg_time_check();
++	schedule_delayed_work(&g_bms_data.dwork, msecs_to_jiffies(BMS_POLL_INTERVAL));
++}
++
++static enum alarmtimer_restart pax_battery_alarm_func(struct alarm *alarm, ktime_t ktime)
++{
++	pr_info("%s: enter\n", __func__);
++	__pm_wakeup_event(&g_bms_data.bms_ws, 1000);
++
++	return ALARMTIMER_NORESTART;
++}
++
++static int bms_start_alarm(unsigned long long secs)
++{
++	struct timespec time, time_now, end_time;
++	ktime_t ktime;
++
++	get_monotonic_boottime(&time_now);
++	time.tv_sec = secs;
++	time.tv_nsec = 0;
++	end_time = timespec_add(time_now, time);
++	ktime = ktime_set(end_time.tv_sec, end_time.tv_nsec);
++
++	alarm_start(&g_bms_data.bms_alarm, ktime);
++
++	return 0;
++}
++
++static int bms_open(struct inode *inode, struct file *file)
++{
++	return 0;
++}
++
++static int bms_release(struct inode *inode, struct file *file)
++{
++	return 0;
++}
++
++static long bms_ioctl(struct file *file, unsigned int cmd,
++				unsigned long arg)
++{
++	void __user *user_data = (void __user *)arg;
++	int ret = 0;
++	int en = 1;
++
++	switch (cmd) {
++		case SET_CHG_EN:
++			ret = copy_from_user(&en, user_data, sizeof(int));
++			if (ret < 0) {
++				pr_info("get chg en data failed.\n");
++				ret = -1;
++				break;
++			}
++
++			pr_info("SET_CHG_EN: %d\n", en);
++
++			bms_chg_vote(NC_DISABLE_CHG_BY_USER, !en);
++
++			break;
++		case SET_POWER_PATH:
++			ret = copy_from_user(&en, user_data, sizeof(int));
++			if (ret < 0) {
++				pr_info("get chg en data failed.\n");
++				ret = -1;
++				break;
++			}
++
++			pr_info("SET_POWER_PATH: %d\n", en);
++
++			//bms_chg_vote(NC_DISABLE_CHG_BY_USER, !en);
++
++			bms_notify_call_chain(SET_POWER_PATH, &en);
++
++			break;
++		default:
++			pr_info("cmd: %u is not support.\n", cmd);
++			ret = -1;
++			break;
++	}
++
++	return ret;
++}
++
++#ifdef CONFIG_COMPAT
++static long bms_compat_ioctl(struct file *file,
++			unsigned int cmd, unsigned long arg)
++{
++	return bms_ioctl(file, cmd, arg);
++}
++#endif
++
++static const struct file_operations bms_fops = {
++	.owner = THIS_MODULE,
++	.open = bms_open,
++	.release = bms_release,
++	.unlocked_ioctl = bms_ioctl,
++#ifdef CONFIG_COMPAT
++	.compat_ioctl = bms_compat_ioctl,
++#endif
++};
++
++static struct miscdevice bms_miscdev = {
++	.minor      = MISC_DYNAMIC_MINOR,
++	.name		= BMS_NAME,
++	.fops		= &bms_fops,
++};
++
++#ifdef BMS_DEBUG
++static ssize_t max_chg_vol_store(struct device *dev, struct device_attribute *attr, const char *buf, size_t size)
++{
++	sscanf(buf, "%d", &g_bms_data.max_chg_vol);
++	pr_info("%d\n", g_bms_data.max_chg_vol);
++
++	return size;
++}
++static ssize_t max_chg_vol_show(struct device *dev, struct device_attribute *attr, char *buf)
++{
++	return sprintf(buf, "%u\n", g_bms_data.max_chg_vol);
++}
++static DEVICE_ATTR_RW(max_chg_vol);
++
++static ssize_t max_chg_time_store(struct device *dev, struct device_attribute *attr, const char *buf, size_t size)
++{
++	sscanf(buf, "%d", &g_bms_data.max_chg_time);
++	pr_info("%d\n", g_bms_data.max_chg_time);
++
++	return size;
++}
++static ssize_t max_chg_time_show(struct device *dev, struct device_attribute *attr, char *buf)
++{
++	return sprintf(buf, "%u\n", g_bms_data.max_chg_time);
++}
++static DEVICE_ATTR_RW(max_chg_time);
++
++static ssize_t max_bat_vol_store(struct device *dev, struct device_attribute *attr, const char *buf, size_t size)
++{
++	sscanf(buf, "%d", &g_bms_data.max_bat_vol);
++	pr_info("%d\n", g_bms_data.max_bat_vol);
++
++	return size;
++}
++static ssize_t max_bat_vol_show(struct device *dev, struct device_attribute *attr, char *buf)
++{
++	return sprintf(buf, "%u\n", g_bms_data.max_bat_vol);
++}
++static DEVICE_ATTR_RW(max_bat_vol);
++
++static ssize_t min_bat_vol_store(struct device *dev, struct device_attribute *attr, const char *buf, size_t size)
++{
++	sscanf(buf, "%d", &g_bms_data.min_bat_vol);
++	pr_info("%d\n", g_bms_data.min_bat_vol);
++
++	return size;
++}
++static ssize_t min_bat_vol_show(struct device *dev, struct device_attribute *attr, char *buf)
++{
++	return sprintf(buf, "%u\n", g_bms_data.min_bat_vol);
++}
++static DEVICE_ATTR_RW(min_bat_vol);
++
++static ssize_t max_bat_temp_store(struct device *dev, struct device_attribute *attr, const char *buf, size_t size)
++{
++	sscanf(buf, "%d", &g_bms_data.max_bat_temp);
++	pr_info("%d\n", g_bms_data.max_bat_temp);
++
++	return size;
++}
++static ssize_t max_bat_temp_show(struct device *dev, struct device_attribute *attr, char *buf)
++{
++	return sprintf(buf, "%u\n", g_bms_data.max_bat_temp);
++}
++static DEVICE_ATTR_RW(max_bat_temp);
++
++static ssize_t min_bat_temp_store(struct device *dev, struct device_attribute *attr, const char *buf, size_t size)
++{
++	sscanf(buf, "%d", &g_bms_data.min_bat_temp);
++	pr_info("%d\n", g_bms_data.min_bat_temp);
++
++	return size;
++}
++static ssize_t min_bat_temp_show(struct device *dev, struct device_attribute *attr, char *buf)
++{
++	return sprintf(buf, "%u\n", g_bms_data.min_bat_temp);
++}
++static DEVICE_ATTR_RW(min_bat_temp);
++
++static ssize_t max_bat_cur_store(struct device *dev, struct device_attribute *attr, const char *buf, size_t size)
++{
++	sscanf(buf, "%d", &g_bms_data.max_bat_cur);
++	pr_info("%d\n", g_bms_data.max_bat_cur);
++
++	return size;
++}
++static ssize_t max_bat_cur_show(struct device *dev, struct device_attribute *attr, char *buf)
++{
++	return sprintf(buf, "%u\n", g_bms_data.max_bat_cur);
++}
++static DEVICE_ATTR_RW(max_bat_cur);
++#endif
++
++static ssize_t bms_notify_show(struct device *dev, struct device_attribute *attr, char *buf)
++{
++	return sprintf(buf, "%u\n", g_bms_data.notify_code);
++}
++static DEVICE_ATTR_RO(bms_notify);
++
++static struct attribute *bms_attrs[] = {
++	&dev_attr_bms_notify.attr,
++#ifdef BMS_DEBUG
++	&dev_attr_max_chg_vol.attr,
++	&dev_attr_max_chg_time.attr,
++	&dev_attr_max_bat_vol.attr,
++	&dev_attr_min_bat_vol.attr,
++	&dev_attr_max_bat_temp.attr,
++	&dev_attr_min_bat_temp.attr,
++	&dev_attr_max_bat_cur.attr,
++#endif
++	NULL
++};
++
++static const struct attribute_group bms_group = {
++	.attrs = bms_attrs,
++};
++
++static const struct attribute_group *bms_groups[] = {
++	&bms_group,
++	NULL
++};
++
++static int bms_parse_dt(struct device_node *np)
++{
++	int ret = 0;
++
++	ret = of_property_read_string(np, "usb_psy_name", &g_bms_data.usb_psy_name);
++	if (ret < 0)
++		g_bms_data.usb_psy_name = "usb";
++
++	ret = of_property_read_string(np, "bat_psy_name", &g_bms_data.bat_psy_name);
++	if (ret < 0)
++		g_bms_data.bat_psy_name = "battery";
++
++	ret = of_property_read_u32(np, "max_chg_vol", &g_bms_data.max_chg_vol);
++	if (ret < 0)
++		g_bms_data.max_chg_vol = MAX_CHG_VOL;
++
++	ret = of_property_read_u32(np, "max_bat_vol", &g_bms_data.max_bat_vol);
++	if (ret < 0)
++		g_bms_data.max_bat_vol = MAX_BAT_VOL;
++
++	ret = of_property_read_u32(np, "min_bat_vol", &g_bms_data.min_bat_vol);
++	if (ret < 0)
++		g_bms_data.min_bat_vol = MIN_BAT_VOL;
++
++	ret = of_property_read_u32(np, "max_bat_temp", &g_bms_data.max_bat_temp);
++	if (ret < 0)
++		g_bms_data.max_bat_temp = MAX_BAT_TEMP;
++
++	ret = of_property_read_u32(np, "min_bat_temp", &g_bms_data.min_bat_temp);
++	if (ret < 0)
++		g_bms_data.min_bat_temp = MIN_BAT_TEMP;
++
++	ret = of_property_read_u32(np, "max_bat_cur", &g_bms_data.max_bat_cur);
++	if (ret < 0)
++		g_bms_data.max_bat_cur = MAX_BAT_CUR;
++
++	ret = of_property_read_u32(np, "max_chg_time", &g_bms_data.max_chg_time);
++	if (ret < 0)
++		g_bms_data.max_chg_time = MAX_CHG_TIME;
++
++	ret = of_property_read_u32(np, "suspend_current_ua", &g_bms_data.suspend_current_ua);
++	if (ret) {
++		g_bms_data.suspend_current_ua = 7500;
++	}
++	g_bms_data.suspend_current_ua = g_bms_data.suspend_current_ua * 2;
++
++	return ret;
++}
++
++static int bms_dev_init()
++{
++	misc_register(&bms_miscdev);
++
++	return 0;
++}
++
++static int bms_probe(struct platform_device *pdev)
++{
++	struct device_node *np = pdev->dev.of_node;
++
++	pr_info("start.\n");
++
++	bms_parse_dt(np);
++
++	g_bms_data.usb_psy = power_supply_get_by_name(g_bms_data.usb_psy_name);
++	g_bms_data.bat_psy = power_supply_get_by_name(g_bms_data.bat_psy_name);
++
++	if (!g_bms_data.bat_psy) {
++		pr_info("get battery power supply failed.\n");
++		return -ENODEV;
++	}
++
++	wakeup_source_init(&g_bms_data.bms_ws, "bms");
++
++	g_bms_data.psy_nb.notifier_call = psy_notifier_call;
++	power_supply_reg_notifier(&g_bms_data.psy_nb);
++
++	INIT_DELAYED_WORK(&g_bms_data.dwork, bms_dwork);
++	schedule_delayed_work(&g_bms_data.dwork, 0);
++
++	if (g_class_pax)
++		g_bms_data.bms_class = g_class_pax;
++	else
++		g_bms_data.bms_class = class_create(THIS_MODULE, "pax");
++
++	g_bms_data.dev = device_create_with_groups(g_bms_data.bms_class, &pdev->dev, 0, NULL, bms_groups, "bms");
++
++	bms_dev_init();
++
++	alarm_init(&g_bms_data.bms_alarm, ALARM_BOOTTIME, pax_battery_alarm_func);
++
++	pr_info("success.\n");
++
++	return 0;
++}
++
++static void bms_shutdown(struct platform_device *pdev)
++{
++}
++
++static int bms_suspend(struct platform_device *pdev, pm_message_t state)
++{
++	unsigned long long secs = 0;
++	union power_supply_propval val = {0};
++	int rm_cap, full_cap;
++	int low_rm_cap;
++	int ret;
++
++	if (!g_bms_data.bat_psy)
++		return 0;
++
++	ret = power_supply_get_property(g_bms_data.bat_psy, POWER_SUPPLY_PROP_CHARGE_FULL, &val);
++	if (ret < 0)
++		return 0;
++	full_cap = val.intval;
++
++	ret = power_supply_get_property(g_bms_data.bat_psy, POWER_SUPPLY_PROP_CHARGE_COUNTER, &val);
++	if (ret < 0)
++		return 0;
++	rm_cap = val.intval;
++
++	low_rm_cap = full_cap * 5 / 100;
++
++	if (rm_cap <= low_rm_cap) {
++		secs = 5 * 60;
++	}
++	else {
++		secs = ((rm_cap - low_rm_cap) / g_bms_data.suspend_current_ua * 60 + 5) * 60;
++	}
++
++	bms_start_alarm(secs);
++
++	return 0;
++}
++
++static int bms_resume(struct platform_device *pdev)
++{
++	return 0;
++}
++
++static const struct of_device_id bms_match_table[] = {
++	{.compatible = "pax,bms",},
++	{}
++};
++
++static struct platform_driver bms_driver = {
++	.probe = bms_probe,
++	.shutdown = bms_shutdown,
++	.suspend = bms_suspend,
++	.resume = bms_resume,
++	.driver = {
++		.owner = THIS_MODULE,
++		.name = BMS_NAME,
++		.of_match_table = bms_match_table,
++	},
++};
++
++static int __init bms_init(void)
++{
++	return platform_driver_register(&bms_driver);
++}
++
++late_initcall_sync(bms_init);
+diff --git a/kernel-4.19/drivers/misc/pax/power/bms/bms.h b/kernel-4.19/drivers/misc/pax/power/bms/bms.h
+new file mode 100644
+index 00000000000..02e59cf1b06
+--- /dev/null
++++ b/kernel-4.19/drivers/misc/pax/power/bms/bms.h
+@@ -0,0 +1,103 @@
++#ifndef __BMS_H__
++#define __BMS_H__
++
++#include <linux/notifier.h>
++#include <linux/workqueue.h>
++#include <linux/power_supply.h>
++#include <linux/alarmtimer.h>
++
++#define BMS_DEBUG
++
++struct bms_data {
++	struct class *bms_class;
++	struct device *dev;
++	struct power_supply *usb_psy;
++	struct power_supply *bat_psy;
++	const char *usb_psy_name;
++	const char *bat_psy_name;
++	struct delayed_work dwork;
++	struct notifier_block psy_nb;
++
++	struct wakeup_source bms_ws;
++	struct alarm bms_alarm;
++
++	unsigned long long notify_code;
++	unsigned long long chg_vote;
++
++	unsigned long long charge_start_time;
++	unsigned long long charge_total_time;
++
++	int max_chg_vol;
++	int max_chg_time;
++	int max_bat_vol;
++	int min_bat_vol;
++	int max_bat_temp;
++	int min_bat_temp;
++	int max_bat_cur;
++
++	int suspend_current_ua;
++};
++
++
++#define BMS_NAME "pax_bms"
++
++#define MAX_CHG_VOL			5500
++#define MAX_CHG_TIME		(12 * 60 * 60)
++
++#define MAX_BAT_VOL			4500
++#define MIN_BAT_VOL			3450
++#define MAX_BAT_TEMP		600
++#define MIN_BAT_TEMP		-100
++#define MAX_BAT_CUR			5000
++
++#define BMS_POLL_INTERVAL 5000 //5s
++#define BMS_DEBOUNCE	12
++
++
++#if 0
++//A800
++#define NC_CHG_VBUS_OV_STATUS  (0)
++#define NC_CHG_BAT_OT_STATUS   (1)
++#define NC_CHG_OC_STATUS       (2)
++#define NC_CHG_BAT_OV_STATUS   (3)
++#define NC_CHG_ST_TMO_STATUS   (4)
++#define NC_CHG_BAT_LT_STATUS   (5)
++#define NC_CHG_TYPEC_WD_STATUS (6)
++#define NC_CHG_IBUS_OCP        (7)
++#define NC_CHG_I2C_ERR         (8)
++#define NC_CHG_VSYS_SHORT      (9)
++#define NC_CHG_VSYS_OVP        (10)
++#define NC_CHG_OTG_OVP         (11)
++#define NC_CHG_OTG_UVP         (12)
++#define NC_CHG_SAFETY_TIMEOUT  (13)
++#endif
++
++/*start: notify code, should compatible with A800 */
++#define NC_CHG_OV				(0)
++#define NC_BAT_OT				(1)
++#define NC_BAT_OC				(2)
++#define NC_BAT_OV				(3)
++#define NC_BAT_UT				(5)
++#define NC_CHG_IBUS_OCP         (7)
++#define NC_CHG_I2C_ERR          (8)
++
++#define NC_CHG_TMO				(13)
++#define NC_BAT_I2C_ERR          (14)
++
++#define NC_DISABLE_CHG_BY_USER  (63)
++#define NC_MAX					(64)
++#define DISABLE_ALL             0xFFFFFFFFFFFFFFFF
++/*end: notify code */
++
++const char *const notify_type_name[NC_MAX] = {
++	[NC_CHG_OV] = "NC_CHG_OV",
++	[NC_CHG_TMO] = "NC_CHG_TMO",
++	[NC_BAT_OV] = "NC_BAT_OV",
++	[NC_BAT_OT] = "NC_BAT_OT",
++	[NC_BAT_UT] = "NC_BAT_UT",
++	[NC_BAT_OC] = "NC_BAT_OC",
++
++	[NC_DISABLE_CHG_BY_USER] = "NC_DISABLE_CHG_BY_USER",
++};
++
++#endif
+diff --git a/kernel-4.19/drivers/misc/pax/power/bms/bms_notify.c b/kernel-4.19/drivers/misc/pax/power/bms/bms_notify.c
+new file mode 100644
+index 00000000000..598e63a272d
+--- /dev/null
++++ b/kernel-4.19/drivers/misc/pax/power/bms/bms_notify.c
+@@ -0,0 +1,44 @@
++/*
++ *
++ *  Copyright (C) 2006 Antonino Daplas <adaplas@pol.net>
++ *
++ *	2001 - Documented with DocBook
++ *	- Brad Douglas <brad@neruo.com>
++ *
++ * This file is subject to the terms and conditions of the GNU General Public
++ * License.  See the file COPYING in the main directory of this archive
++ * for more details.
++ */
++#include "bms_notify.h"
++
++static BLOCKING_NOTIFIER_HEAD(bms_notify_list);
++
++/**
++ *	bms_notify_register_client - register a client notifier
++ *	@nb: notifier block to callback on events
++ */
++int bms_notify_register_client(struct notifier_block *nb)
++{
++	return blocking_notifier_chain_register(&bms_notify_list, nb);
++}
++EXPORT_SYMBOL(bms_notify_register_client);
++
++/**
++ *	bms_notify_unregister_client - unregister a client notifier
++ *	@nb: notifier block to callback on events
++ */
++int bms_notify_unregister_client(struct notifier_block *nb)
++{
++	return blocking_notifier_chain_unregister(&bms_notify_list, nb);
++}
++EXPORT_SYMBOL(bms_notify_unregister_client);
++
++/**
++ * bms_notify_call_chain - notify clients of bms_notify_events
++ *
++ */
++int bms_notify_call_chain(unsigned long val, void *v)
++{
++	return blocking_notifier_call_chain(&bms_notify_list, val, v);
++}
++EXPORT_SYMBOL_GPL(bms_notify_call_chain);
+diff --git a/kernel-4.19/drivers/misc/pax/power/bms/bms_notify.h b/kernel-4.19/drivers/misc/pax/power/bms/bms_notify.h
+new file mode 100644
+index 00000000000..167724fda42
+--- /dev/null
++++ b/kernel-4.19/drivers/misc/pax/power/bms/bms_notify.h
+@@ -0,0 +1,24 @@
++#ifndef __BMS_NOTIFY_H__
++#define __BMS_NOTIFY_H__
++
++#include <linux/notifier.h>
++#include <linux/export.h>
++
++#define SET_CHG_EN				_IOW('b', 0, int)
++#define SET_POWER_PATH			_IOW('b', 1, int)
++
++enum bms_chg_en {
++	BMS_CHG_DISABLE = 0,
++	BMS_CHG_ENABLE
++};
++
++enum bms_power_path {
++	BMS_POWER_BY_CHARGER = 0,
++	BMS_POWER_BY_BATTERY
++};
++
++extern int bms_notify_register_client(struct notifier_block *nb);
++extern int bms_notify_unregister_client(struct notifier_block *nb);
++extern int bms_notify_call_chain(unsigned long val, void *v);
++
++#endif
+diff --git a/kernel-4.19/drivers/power/supply/Makefile b/kernel-4.19/drivers/power/supply/Makefile
+index 629befb28e1..d3571df96b6 100644
+--- a/kernel-4.19/drivers/power/supply/Makefile
++++ b/kernel-4.19/drivers/power/supply/Makefile
+@@ -3,6 +3,9 @@ subdir-ccflags-$(CONFIG_POWER_SUPPLY_DEBUG) := -DDEBUG
+ subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/usb20
+ subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/typec/tcpc/inc
+ subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/power_throttling
++ifeq ($(CONFIG_PAX_BMS),y)
++subdir-ccflags-y += -I$(srctree)/drivers/misc/pax/power/bms
++endif
+ 
+ power_supply-y				:= power_supply_core.o
+ power_supply-$(CONFIG_SYSFS)		+= power_supply_sysfs.o
+diff --git a/kernel-4.19/drivers/power/supply/mtk_basic_charger.c b/kernel-4.19/drivers/power/supply/mtk_basic_charger.c
+index 0aeac74e887..da556f84148 100755
+--- a/kernel-4.19/drivers/power/supply/mtk_basic_charger.c
++++ b/kernel-4.19/drivers/power/supply/mtk_basic_charger.c
+@@ -463,9 +463,16 @@ static int do_algorithm(struct mtk_charger *info)
+ 		charger_dev_set_constant_voltage(info->chg1_dev,
+ 			info->setting.cv);
+ 
++#ifdef CONFIG_PAX_BMS
+ 		if (pdata->input_current_limit == 0 ||
+-		    pdata->charging_current_limit == 0)
++		    pdata->charging_current_limit == 0
++			|| !info->bms_charge_enable)
+ 			charger_dev_enable(info->chg1_dev, false);
++#else
++		if (pdata->input_current_limit == 0 ||
++				pdata->charging_current_limit == 0)
++			charger_dev_enable(info->chg1_dev, false);
++#endif
+ 		else
+ 			charger_dev_enable(info->chg1_dev, true);
+ 	}
+@@ -488,6 +495,10 @@ static int enable_charging(struct mtk_charger *info,
+ 
+ 	chr_err("%s %d\n", __func__, en);
+ 
++#ifdef CONFIG_PAX_BMS
++	en = en && info->bms_charge_enable;
++#endif
++
+ 	if (en == false) {
+ 		for (i = 0; i < MAX_ALG_NO; i++) {
+ 			alg = info->alg[i];
+diff --git a/kernel-4.19/drivers/power/supply/mtk_charger.c b/kernel-4.19/drivers/power/supply/mtk_charger.c
+index 330d2f2fa0f..02065ea427b 100755
+--- a/kernel-4.19/drivers/power/supply/mtk_charger.c
++++ b/kernel-4.19/drivers/power/supply/mtk_charger.c
+@@ -59,6 +59,10 @@
+ 
+ #include "mtk_charger.h"
+ 
++#ifdef CONFIG_PAX_BMS
++#include "bms_notify.h"
++#endif
++
+ struct tag_bootmode {
+ 	u32 size;
+ 	u32 tag;
+@@ -549,6 +553,7 @@ static void check_dynamic_mivr(struct mtk_charger *info)
+ 	}
+ }
+ 
++#ifndef CONFIG_PAX_BMS
+ /* sw jeita */
+ void do_sw_jeita_state_machine(struct mtk_charger *info)
+ {
+@@ -668,6 +673,7 @@ void do_sw_jeita_state_machine(struct mtk_charger *info)
+ 		sw_jeita->pre_sm, sw_jeita->sm, info->battery_temp,
+ 		sw_jeita->cv);
+ }
++#endif
+ 
+ static int mtk_chgstat_notify(struct mtk_charger *info)
+ {
+@@ -1140,6 +1146,7 @@ int mtk_chg_enable_vbus_ovp(bool enable)
+ 	return ret;
+ }
+ 
++#ifndef CONFIG_PAX_BMS
+ /* return false if vbus is over max_charger_voltage */
+ static bool mtk_chg_check_vbus(struct mtk_charger *info)
+ {
+@@ -1377,6 +1384,7 @@ static void charger_check_status(struct mtk_charger *info)
+ 
+ 	info->can_charging = charging;
+ }
++#endif
+ 
+ static bool charger_init_algo(struct mtk_charger *info)
+ {
+@@ -1638,7 +1646,9 @@ static int charger_routine_thread(void *arg)
+ 
+ 		check_battery_exist(info);
+ 		check_dynamic_mivr(info);
++#ifndef CONFIG_PAX_BMS
+ 		charger_check_status(info);
++#endif
+ 		kpoc_power_off_check(info);
+ 
+ 		if (is_disable_charger(info) == false &&
+@@ -2080,6 +2090,33 @@ int chg_alg_event(struct notifier_block *notifier,
+ 	return NOTIFY_DONE;
+ }
+ 
++#ifdef CONFIG_PAX_BMS
++int bms_notify_event(struct notifier_block *notifier,
++			unsigned long evt, void *val)
++{
++	struct mtk_charger *info = NULL;
++	int enable = 1;
++
++	info = container_of(notifier,
++		struct mtk_charger, bms_nb);
++
++	switch (evt) {
++		case SET_CHG_EN:
++			enable = *(int *)val;
++			info->bms_charge_enable = enable;
++			_mtk_enable_charging(info, enable);
++			break;
++		case SET_POWER_PATH:
++			enable = *(int *)val;
++			charger_dev_enable_powerpath(info->chg1_dev, enable);
++			break;
++		default:
++			break;
++	};
++
++	return NOTIFY_DONE;
++}
++#endif
+ 
+ static int mtk_charger_probe(struct platform_device *pdev)
+ {
+@@ -2097,6 +2134,10 @@ static int mtk_charger_probe(struct platform_device *pdev)
+ 
+ 	mtk_charger_parse_dt(info, &pdev->dev);
+ 
++#ifdef CONFIG_PAX_BMS
++	info->bms_charge_enable = BMS_CHG_ENABLE;
++#endif
++
+ 	mutex_init(&info->cable_out_lock);
+ 	mutex_init(&info->charger_lock);
+ 	mutex_init(&info->pd_lock);
+@@ -2172,6 +2213,11 @@ static int mtk_charger_probe(struct platform_device *pdev)
+ 
+ 	kthread_run(charger_routine_thread, info, "charger_thread");
+ 
++#ifdef CONFIG_PAX_BMS
++	info->bms_nb.notifier_call = bms_notify_event;
++	bms_notify_register_client(&info->bms_nb);
++#endif
++
+ 	return 0;
+ }
+ 
+diff --git a/kernel-4.19/drivers/power/supply/mtk_charger.h b/kernel-4.19/drivers/power/supply/mtk_charger.h
+index 26203bae8dc..8e98afddce3 100644
+--- a/kernel-4.19/drivers/power/supply/mtk_charger.h
++++ b/kernel-4.19/drivers/power/supply/mtk_charger.h
+@@ -23,21 +23,21 @@ extern int chr_get_debug_level(void);
+ #define chr_err(fmt, args...)					\
+ do {								\
+ 	if (chr_get_debug_level() >= CHRLOG_ERROR_LEVEL) {	\
+-		pr_notice(fmt, ##args);				\
++		pr_notice("PAX_CHG: "fmt, ##args);				\
+ 	}							\
+ } while (0)
+ 
+ #define chr_info(fmt, args...)					\
+ do {								\
+ 	if (chr_get_debug_level() >= CHRLOG_INFO_LEVEL) {	\
+-		pr_notice_ratelimited(fmt, ##args);		\
++		pr_notice_ratelimited("PAX_CHG: "fmt, ##args);		\
+ 	}							\
+ } while (0)
+ 
+ #define chr_debug(fmt, args...)					\
+ do {								\
+ 	if (chr_get_debug_level() >= CHRLOG_DEBUG_LEVEL) {	\
+-		pr_notice(fmt, ##args);				\
++		pr_notice("PAX_CHG: "fmt, ##args);				\
+ 	}							\
+ } while (0)
+ 
+@@ -317,6 +317,12 @@ struct mtk_charger {
+ 	bool water_detected;
+ 
+ 	bool enable_dynamic_mivr;
++	
++#ifdef CONFIG_PAX_BMS
++	//bms
++	struct notifier_block bms_nb;
++	int bms_charge_enable;
++#endif
+ };
+ 
+ /* functions which framework needs*/
+-- 
+2.17.1
+

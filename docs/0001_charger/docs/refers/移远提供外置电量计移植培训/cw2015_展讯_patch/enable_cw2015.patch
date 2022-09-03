@@ -1,0 +1,191 @@
+diff --git a/kernel4.4/arch/arm64/boot/dts/sprd/sl8541e-1h10-native.dts b/kernel4.4/arch/arm64/boot/dts/sprd/sl8541e-1h10-native.dts
+index 0f5b212..99624b5 100755
+--- a/kernel4.4/arch/arm64/boot/dts/sprd/sl8541e-1h10-native.dts
++++ b/kernel4.4/arch/arm64/boot/dts/sprd/sl8541e-1h10-native.dts
+@@ -228,7 +228,7 @@
+ };
+ 
+  &pmic_charger { 
+-   status = "okay"; 
++   status = "okay";
+  }; 
+ 
+ 
+diff --git a/kernel4.4/arch/arm64/boot/dts/sprd/sl8541e-1h10-overlay.dts b/kernel4.4/arch/arm64/boot/dts/sprd/sl8541e-1h10-overlay.dts
+index 89d10aa..1803f84 100755
+--- a/kernel4.4/arch/arm64/boot/dts/sprd/sl8541e-1h10-overlay.dts
++++ b/kernel4.4/arch/arm64/boot/dts/sprd/sl8541e-1h10-overlay.dts
+@@ -232,7 +232,7 @@
+ 		flash-sync-gpios = <&ap_gpio 141 0>;
+ 	};
+ 	
+-     /*
++     	/*
+ 	fan54015_chg: charger@6a {
+ 		compatible = "fairchild,fan54015_chg";
+ 		reg = <0x6a>;
+@@ -240,6 +240,12 @@
+ 		vbus-det-gpios = <&pmic_eic 0 0>;
+ 	};
+ 	*/
++
++	cw2015_battery: cw2015_battery@62 {
++		compatible = "qcom,cw2015_gauge";
++		reg = <0x62>;
++	};
++
+ };
+ 
+ &i2c0 {
+diff --git a/kernel4.4/drivers/power/Makefile b/kernel4.4/drivers/power/Makefile
+index be1ac49..02c16c8 100644
+--- a/kernel4.4/drivers/power/Makefile
++++ b/kernel4.4/drivers/power/Makefile
+@@ -1,5 +1,6 @@
+ subdir-ccflags-$(CONFIG_POWER_SUPPLY_DEBUG) := -DDEBUG
+ 
++obj-y += cw2015_battery.o
+ power_supply-y				:= power_supply_core.o
+ power_supply-$(CONFIG_SYSFS)		+= power_supply_sysfs.o
+ power_supply-$(CONFIG_LEDS_TRIGGERS)	+= power_supply_leds.o
+diff --git a/kernel4.4/drivers/power/sprd_27xx_fgu.c b/kernel4.4/drivers/power/sprd_27xx_fgu.c
+old mode 100644
+new mode 100755
+index ae8d671..089a148
+--- a/kernel4.4/drivers/power/sprd_27xx_fgu.c
++++ b/kernel4.4/drivers/power/sprd_27xx_fgu.c
+@@ -418,15 +418,20 @@ static void sprdfgu_soc_adjust(int capacity)
+ 	SPRD_FGU_DEBUG("%s  init_cap= %d,%d\n",
+ 		  __func__, sprdfgu_data.init_cap, sprdfgu_data.init_clbcnt);
+ }
+-
++extern int sprd_get_cw2015_vol(void);
+ uint32_t sprdfgu_read_vbat_vol(void)
+ {
++/*
+ 	u32 cur_vol_raw;
+ 	uint32_t temp;
+ 
+ 	cur_vol_raw = sprdfgu_reg_get(REG_FGU_VOLT_VAL);
+ 	temp = sprdfgu_adc2vol_mv(cur_vol_raw);
+ 	return temp;
++*/
++	int temp;
++	temp = sprd_get_cw2015_vol();
++	return temp;
+ }
+ 
+ static inline u32 sprdfgu_ocv_vol_get(void)
+diff --git a/kernel4.4/drivers/power/sprd_battery.c b/kernel4.4/drivers/power/sprd_battery.c
+old mode 100644
+new mode 100755
+index bc61132..f711994
+--- a/kernel4.4/drivers/power/sprd_battery.c
++++ b/kernel4.4/drivers/power/sprd_battery.c
+@@ -67,6 +67,7 @@ static void sprdbat_change_module_state(uint32_t event);
+ static int sprdbat_stop_charge(void);
+ static void sprdbat_charge_prepare(void);
+ static int sprdbat_fchg_detect(void);
++extern int sprd_get_cw2015_capacity(void);
+ 
+ static int sprdbat_get_avgval_from_buff(int value, int *buf, int count,
+ 					int type)
+@@ -1206,8 +1207,10 @@ static void sprdbat_info_init(struct sprdbat_drivier_data *data)
+ 	sprdbat_data->sprdbat_update_capacity_time = cur_time.tv_sec;
+ 	sprdbat_data->sprdbat_last_query_time = cur_time.tv_sec;
+ 	trickle_s_time = cur_time.tv_sec;
+-	data->bat_info.capacity = sprdfgu_poweron_capacity();
+-	sprdbat_data->poweron_capacity = sprdfgu_poweron_capacity();
++	//data->bat_info.capacity = sprdfgu_poweron_capacity();
++	//sprdbat_data->poweron_capacity = sprdfgu_poweron_capacity();
++	data->bat_info.capacity = sprd_get_cw2015_capacity();
++	sprdbat_data->poweron_capacity = sprd_get_cw2015_capacity();
+ 	data->bat_info.soc = sprdfgu_read_soc();
+ 	data->bat_info.vbat_vol = sprdbat_read_vbat_vol();
+ 	data->bat_info.vbat_ocv = sprdfgu_read_vbat_ocv();
+@@ -2109,7 +2112,8 @@ static void sprdbat_update_capacty(void)
+ 
+ 		fgu_capacity = sprdfgu_only_vol_read_capacity(chging_flag);
+ 	} else {
+-		fgu_capacity = sprdfgu_read_capacity();
++		//fgu_capacity = sprdfgu_read_capacity();
++		fgu_capacity = sprd_get_cw2015_capacity();
+ 	}
+ 
+ 	cur_time = ktime_to_timespec64(ktime_get_boottime());
+@@ -3043,7 +3047,6 @@ static int sprdbat_probe(struct platform_device *pdev)
+ 		ret = PTR_ERR(data->pdata->channel_vchg);
+ 		goto err_iio_get_vchg;
+ 	}
+-
+ 	print_pdata(sprdbat_data->pdata);
+ 	battery_desc = devm_kzalloc(&pdev->dev,
+ 		sizeof(struct power_supply_desc), GFP_KERNEL);
+diff --git a/kernel4.4/drivers/power/sprd_battery.h b/kernel4.4/drivers/power/sprd_battery.h
+old mode 100644
+new mode 100755
+diff --git a/kernel4.4/include/linux/power_supply.h b/kernel4.4/include/linux/power_supply.h
+old mode 100644
+new mode 100755
+diff --git a/u-boot15/board/spreadtrum/sl8541e_1h10/sl8541e_1h10.c b/u-boot15/board/spreadtrum/sl8541e_1h10/sl8541e_1h10.c
+index a8c7544..4c13b94 100755
+--- a/u-boot15/board/spreadtrum/sl8541e_1h10/sl8541e_1h10.c
++++ b/u-boot15/board/spreadtrum/sl8541e_1h10/sl8541e_1h10.c
+@@ -422,6 +422,7 @@ static void battery_init(void)
+ {
+ 	sprdchg_common_cfg();
+ 	//sprdchg_fan54015_init();
++	cw2015_init();
+ 	sprdchg_2721_init();
+ 	sprdbat_init();
+ }
+diff --git a/u-boot15/common/cmd_cboot.c b/u-boot15/common/cmd_cboot.c
+old mode 100644
+new mode 100755
+diff --git a/u-boot15/common/loader/vbat_check.c b/u-boot15/common/loader/vbat_check.c
+old mode 100644
+new mode 100755
+diff --git a/u-boot15/drivers/power/battery/Makefile b/u-boot15/drivers/power/battery/Makefile
+old mode 100644
+new mode 100755
+index f9e664f..b24c16f
+--- a/u-boot15/drivers/power/battery/Makefile
++++ b/u-boot15/drivers/power/battery/Makefile
+@@ -25,6 +25,7 @@ endif
+ endif
+ endif
+ obj-$(CONFIG_FAN54015_CHARGE_IC)+= fan54015.o
++obj-y += cw2015.o
+ obj-$(CONFIG_SPRD2701_CHARGE_IC)+= sprd_2701.o
+ obj-$(CONFIG_BQ25896_CHARGE_IC)+= bq25896.o
+ obj-$(CONFIG_SPRD2700_CHARGE_IC)+= sprd_2700.o
+diff --git a/u-boot15/drivers/power/battery/sprd_battery.c b/u-boot15/drivers/power/battery/sprd_battery.c
+old mode 100644
+new mode 100755
+diff --git a/u-boot15/drivers/power/battery/sprd_chg_2721.c b/u-boot15/drivers/power/battery/sprd_chg_2721.c
+old mode 100644
+new mode 100755
+diff --git a/u-boot15/drivers/power/battery/sprd_fgu.c b/u-boot15/drivers/power/battery/sprd_fgu.c
+old mode 100644
+new mode 100755
+index f08478a..45c027f
+--- a/u-boot15/drivers/power/battery/sprd_fgu.c
++++ b/u-boot15/drivers/power/battery/sprd_fgu.c
+@@ -85,12 +85,17 @@ static  int sprdfgu_reg_get(unsigned long reg)
+ 
+ uint32_t sprdfgu_read_vbat_vol(void)
+ {
++#if 0
+ 	u32 cur_vol_raw;
+ 	uint32_t temp;
+ 
+ 	cur_vol_raw = sprdfgu_reg_get(REG_FGU_VOLT_VAL);
+ 	temp = sprdfgu_adc2vol_mv(cur_vol_raw);
+ 	return temp;
++#else
++	return cw_get_voltage(); /*use cw2015 get voltage*/
++#endif
++
+ }
+ 
+ static void sprdfgu_rtc_reg_write(uint32_t val)
