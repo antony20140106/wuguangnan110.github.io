@@ -161,20 +161,8 @@ Panel需要在DSI PHY寄存器中为bitclk设置PHY值。80-NH713-1_DSI.zip压�
 
 ```C++
 static PlatformDSIDetectParams uefiPanelList[] = { 
-    {
-      0x06,                                                  // uCmdType
-      0x05,                                                  // total number of retry on failures
-      {
-        {{0xDA, 0x00},                                       // address to read ID1
-        {0x98, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}     // expected readback
-        },
-      },
-      0,                                                     // Lane remap order {0, 1, 2, 3}
-      NULL,                     // psPanelCfg (panel configuration)
-      0,             // uPanelCfgSize
+
       MDPPLATFORM_PANEL_ILI7807S_1080P_VIDEO,                 // eSelectedPanel
-      0                                                      // uFlags
-    },
 };
 ```
 目前暂不支持读display id的方式兼容多个屏，只能存一个屏。
