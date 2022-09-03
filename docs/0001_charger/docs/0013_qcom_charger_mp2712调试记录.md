@@ -732,15 +732,6 @@ bengal:/ # logcat -s healthd
 system         627     1 12964440  3248 ep_poll             0 S android.hardware.health@2.1-service
 bengal:/sys/class/power_supply # strace -p 627
 
-epoll_pwait(5, [{EPOLLIN, {u32=3124415392, u64=12970367423872682912}}], 3, 60000, NULL, 8) = 1
-recvmsg(8, {msg_name={sa_family=AF_NETLINK, nl_pid=0, nl_groups=0x000001}, msg_namelen=12, msg_iov=[{iov_base={{len=1851877475, type=0x6567 /* NLMSG_??? */, flags=0x2f40 /* NLM_F_??? */, seq=1769366884, pid
-=796091747}, "\x70\x6c\x61\x74\x66\x6f\x72\x6d\x2f\x73\x6f\x63\x2f\x34\x61\x38\x30\x30\x30\x30\x2e\x69\x32\x63\x2f\x69\x32\x63\x2d\x30\x2f\x30"...}, iov_len=2048}], msg_iovlen=1, msg_control=[{cmsg_len=28,
-cmsg_level=SOL_SOCKET, cmsg_type=SCM_CREDENTIALS, cmsg_data={pid=0, uid=0, gid=0}}], msg_controllen=32, msg_flags=0}, 0) = 372
-openat(AT_FDCWD, "/sys/class/power_supply/battery/present", O_RDONLY|O_NOFOLLOW|O_CLOEXEC) = 9
-fstat(9, {st_mode=S_IFREG|0444, st_size=4096, ...}) = 0
-read(9, "1\n", 1024)                    = 2
-read(9, "", 1024)                       = 0
-close(9)                                = 0
 openat(AT_FDCWD, "/sys/class/power_supply/battery/capacity", O_RDONLY|O_NOFOLLOW|O_CLOEXEC) = 9
 fstat(9, {st_mode=S_IFREG|0644, st_size=4096, ...}) = 0
 read(9, "50\n", 1024)                   = 3
