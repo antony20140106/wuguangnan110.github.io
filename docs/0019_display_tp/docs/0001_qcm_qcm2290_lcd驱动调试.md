@@ -161,55 +161,6 @@ Panel需要在DSI PHY寄存器中为bitclk设置PHY值。80-NH713-1_DSI.zip压�
 
 ```C++
 static PlatformDSIDetectParams uefiPanelList[] = { 
-    /* Panel #0 - Truly nt35525 single dsi video hd plus*/
-   /*{  
-      0x06,                                                  // uCmdType
-      0x05,                                                  // total number of retry on failures
-      {
-        {{0xDA, 0x00},                                       // address to read ID1
-        {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}     // expected readback
-        }, 
-        {{0xDB, 0x00},                                       // address to read ID2
-        {0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}     // expected readback
-        },
-        {{0xDC, 0x00},                                       // address to read ID3
-        {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}     // expected readback
-        }
-      },
-      0,                                                     // Lane remap order {0, 1, 2, 3}
-      NULL,                                                  // psPanelCfg (panel configuration)
-      0,                                                     // uPanelCfgSize
-      MDPPLATFORM_PANEL_NT36525_TRULY_HDPLUS_VIDEO,          // eSelectedPanel 
-      0                                                      // uFlags
-    },
-     {  
-      0x06,                                                  // uCmdType
-      0x05,                                                  // total number of retry on failures
-      {
-        {{0xDA, 0x00},                                       // address to read ID1
-        {0x83, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}     // expected readback
-        }, 
-      },
-      0,                                                     // Lane remap order {0, 1, 2, 3}
-      NULL,                     // psPanelCfg (panel configuration)
-      0,             // uPanelCfgSize
-      MDPPLATFORM_PANEL_HX8394F_720P_VIDEO,                 // eSelectedPanel 
-      0                                                      // uFlags
-    },
-    {  
-      0x06,                                                  // uCmdType
-      0x05,                                                  // total number of retry on failures
-      {
-        {{0xDA, 0x00},                                       // address to read ID1
-        {0x98, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}     // expected readback
-        }, 
-      },
-      0,                                                     // Lane remap order {0, 1, 2, 3}
-      NULL,                     // psPanelCfg (panel configuration)
-      0,             // uPanelCfgSize
-      MDPPLATFORM_PANEL_ILI9881D_720P_VIDEO,                 // eSelectedPanel 
-      0                                                      // uFlags
-    },*/
     {
       0x06,                                                  // uCmdType
       0x05,                                                  // total number of retry on failures
