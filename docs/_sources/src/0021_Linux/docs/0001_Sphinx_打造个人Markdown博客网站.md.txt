@@ -208,6 +208,7 @@ index 9e4f81f..a218b5c 100644
 
 * `make.bat`是windows下的makefile文件：
 * 修改SOURCEDIR文件指向当前目录，然后将source目录下`_static`及conf.py移动到当前根目录：
+
 ![0001_0000.png](images/0001_0000.png)
 
 * 增加`docs`和`server`编译指令：
