@@ -1,6 +1,6 @@
 # README
 
-分析一下Android平台HIDL相关细节。
+记录一下Android平台HIDL、HAL层相关细节。
 
 # docs
 

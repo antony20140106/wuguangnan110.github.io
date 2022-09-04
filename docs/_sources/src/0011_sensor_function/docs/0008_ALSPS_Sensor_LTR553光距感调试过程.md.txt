@@ -12,7 +12,7 @@
 | eint_num中断号        | EINT6    |
 | 供电 | VIO18_PUM |
 
-![0005_光距感原理图.png](images/0005_光距感原理图.png)
+![0005_1.png](images/0005_als.png)
 
 ## 1.sensorlist无法获取
 

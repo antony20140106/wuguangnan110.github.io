@@ -14,31 +14,32 @@ M8项目USB_SWITCH功能介绍。
 
 V03版本：
 
-![0001_pogopin实物图.png](images/0001_pogopin实物图.png)
+![0001_pogopin.png](images/0001_pogopin.png)
 
 V04版本：
 
-![0001_V04实物图.png](images/0001_V04实物图.png)
+![0001_V04.png](images/0001_V04.png)
 
 主要修改为，增加CHECK脚检测R15状态，插入则打开VOUT电。BBL供电去掉，单独一路VOUT供电，由R15内部转BBL。
 
 
 ### 1.USB逻辑图
 
-![0001_usbswitch硬件架构](images/0001_usbswitch硬件架构.jpg)
+![0001_usbswitch](images/0001_usbswitch.jpg)
 
-![0001_usb逻辑.png](images/0001_usb逻辑.png)
+![0001_usb.png](images/0001_usb.png)
 
 ### 2.Vbus(VIN)逻辑图
 
 USB_HOST_EN为高，VIN是输出方向，输出5v，USB_HOST_EN低电平VIN为输入方向，相当于充电，该功能是监听typec vbus状态改变的，比如当接入R15时，会接收到typec通知`TCP_NOTIFY_SOURCE_VBUS`打开vbus。
 
-![0001_Vbus输入输出逻辑.png](images/0001_Vbus输入输出逻辑.png)
+![0001_Vbus.png](images/0001_Vbus.png)
 
 ### 3.Check脚逻辑图
 
+
 目前软件不控制VCC_OUT_EN，也就是说只要Check脚检测在位，POWER_EN会输出电压，VOUT就会供电，完全由硬件控制。
-![0001_Check脚逻辑.png](images/0001_Check脚逻辑.png)
+![0001_Check.png](images/0001_Check.png)
 
 ### 4.涉及的GPIO作用
 

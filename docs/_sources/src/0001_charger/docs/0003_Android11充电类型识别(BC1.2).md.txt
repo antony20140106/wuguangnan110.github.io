@@ -222,4 +222,4 @@ static int get_charger_type(struct mtk_charger_type *info, int en)
 * 需求是底部充电时，还是为host不动。
 * 目前由于host模式下，usb dm dp连接到了hub上面，需要
 
-![0003_0001_usbswitch硬件架构.jpg](images/0003_0001_usbswitch硬件架构.jpg)
+![0003_0001_usbswitch硬件架构.jpg](images/0003_0001_usbswitch.jpg)

@@ -297,8 +297,6 @@ E BrightnessMappingStrategy: SimpleMappingStrategy
 
 pip3 install scipy
 
-![0435-Android_Monotone_Cubic_Spline.png](images/0435-Android_Monotone_Cubic_Spline.png)
-
 ```python
 import sys
 import numpy as np

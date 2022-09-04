@@ -1,6 +1,6 @@
 # README
 
-分析一下mtk平台musb驱动。
+记录一下Android mtk平台musb驱动分析。
 
 # docs
 

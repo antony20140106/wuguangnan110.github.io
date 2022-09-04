@@ -1,6 +1,6 @@
 # README
 
-modem底层分析
+modem底层分析，modem分析工具、驻网、Attach、小区选择等流程详解。
 
 ## docs
 

@@ -203,7 +203,6 @@ SCP(Sensor-hub Control Processor)，CHRE(Context Hub Runtime Environment), Syste
 
 ## Overlay驱动分析
 
-![0331-SCP_Overlay.png](images/0331-SCP_Overlay.png)
 
 ## Overlay调用分析
 

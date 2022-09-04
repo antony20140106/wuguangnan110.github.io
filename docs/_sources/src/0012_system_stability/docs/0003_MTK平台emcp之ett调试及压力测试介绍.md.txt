@@ -70,18 +70,18 @@
 
 * [下载链接](https://online.mediatek.com/qvl/_layouts/15/mol/qvl/ext/QVLHomeExternal.aspx?FilterPlatform=y)
 
-![0001_bin文件下载方式.png](images/0001_bin文件下载方式.png)
+![0001_bin文件下载方式.png](images/0001_bin.png)
 
 > 目前M8项目ETT bin请参考`DDR压力测试\ETT测试bin文件`路径下的文件。
 
 
 #### Step3.接入debug串口到电脑
 
-![0003_0000串口.png](images/0003_0000串口.png)
+![0003_0000串口.png](images/0003_0000uart.png)
 
 串口工具波特率设置为`921600`:
 
-![0003_0000串口波特率.png](images/0003_0000串口波特率.png)
+![0003_0000串口波特率.png](images/0003_0000uartb.png)
 
 #### Step4.格式化单板
 
@@ -93,7 +93,7 @@
 
 Format whole flash:
 
-![0003_0001格式化.png](images/0003_0001格式化.png)
+![0003_0001格式化.png](images/0003_0001flash.png)
 
 #### Step5.连接USB完成ETT bin下载
 
@@ -269,7 +269,7 @@ HV和LV测量电压方法一样，测量时需要覆盖三种频率，下载不�
  * 机器在不同温度下NenaMark2硬件图形处理能力压力测试。
  * 机器在不同温度下DVFS功能memtest测试，memtest用来考察内存稳定性，尤其适合对对内存不同频率、时序进行切换之后的检验。
 
-#### Step1： 搭建环境
+#### Step1搭建环境
 
 
 * Download and install JAVA：
@@ -285,7 +285,7 @@ HV和LV测量电压方法一样，测量时需要覆盖三种频率，下载不�
 
 * 根据上面的环境变量设置，请参考以下：
 
-![0003_0007环境变量设置.png](images/0003_0007环境变量设置.png)
+![0003_0007环境变量设置.png](images/0003_0007inv.png)
 
 ### Step2.根据测试场景选择对应的load (HTLV/LTHV/NTNV)
 
@@ -337,7 +337,7 @@ PAYTABLETM8:/ # sh /data/vcorefs_cervino.sh &
 
 DVFS_Nenamark_memtest_script_LPDDR4文件夹中双击start_DVFS_N2_Mem_test.bat脚本，会弹出n个框图,同时手机屏幕上3D动画在自动跑动,如果3D动画无法自动run请查看文档display the x and y point.pdf进行设置，这个脚本是测试DDR DVFS功能压力测试。
 
-![0001_弹框.png](images/0001_弹框.png)
+![0001_弹框.png](images/0001_dog.png)
 
 ### Step9. 注意事项
 
@@ -446,7 +446,7 @@ memtester的窗口停掉了会出现Error detected，如下图所示：
 /data/aee_exp 
 ```
 
-![0001_例子.png](images/0001_例子.png)
+![0001_例子.png](images/0001_example.png)
 
 上述3个条件任一不满足即可判定为 fail, 这时请将log发送给开发分析。
 

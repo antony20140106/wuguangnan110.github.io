@@ -27,6 +27,7 @@ Android 11 包含 android.hardware.health HAL 2.1，这是一个从 health@2.0 H
 ![0014_0000.png](images/0014_0000.png)
 
 可以看到文件比较多，主要是通过BatteryMonitor.cpp中的bool BatteryMonitor::update(void)函数上报信息，其中，内核首先会更新数据到/sys/class/power_supply/battery节点下各个属性，这个在上一个小节有做解释，先来看一下整体的架构，后面再来深入到代码中去分析；具体图片（该图片来自互联网，因为被转载较多，已经不知道出处），具体的流程整理的很清楚，如下所示；
+
 ![0014_0001.png](images/0014_0001.png)
 
 这幅图片再一次把整体的数据走向具体化，可以看到主要负责工作的是BatteryMonitor，主要分析一下该文件中的init和update就可以搞清楚大部分的问题。

@@ -1,6 +1,6 @@
 # README
 
-camera tunning记录
+MTK camera拍照效果tunning记录。
 
 ## docs
 

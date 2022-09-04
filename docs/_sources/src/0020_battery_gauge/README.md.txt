@@ -1,6 +1,6 @@
 # README
 
-分析一下android平台电量计驱动。
+记录一下android平台电量计驱动软件架构和调试过程。
 
 # docs
 

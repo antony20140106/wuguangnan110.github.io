@@ -34,7 +34,7 @@
 
 * 2.bin文件下载方式：
 
-![0001_bin文件下载方式.png](images/0001_bin文件下载方式.png)
+![0001_bin文件下载方式.png](images/0001_bin.png)
 
 #### 1.烧录bin无打印问题分析
 
@@ -56,7 +56,7 @@ GPIO_EXT8 B:GPIO171 串口电平转换：
 
 (Vcore NV, Vdram NV, Vddq NV)请用万用表测试对应环境温度的电压， 确认Vcore,Vmem, Vddq电压在20mV范围以内即可。
 
-![0001_电平.png](images/0001_电平.png)
+![0001_电平.png](images/0001_dianp.png)
 
 1.经测量Vcore 和Vddq 是正常的，但是无法调高调低。
 
@@ -597,7 +597,7 @@ PAYTABLETM8:/ # sh /data/vcorefs_cervino.sh &
 
 DVFS_Nenamark_memtest_script_LPDDR4文件夹中双击start_DVFS_N2_Mem_test.bat脚本，会弹出n个框图,同时手机屏幕上3D动画在自动跑动,如果3D动画无法自动run请查看文档display the x and y point.pdf进行设置，这个脚本是测试DDR DVFS功能压力测试。
 
-![0001_弹框.png](images/0001_弹框.png)
+![0001_弹框.png](images/0001_dog.png)
 
 * 可以看到后台在进行memtest测试:
 
@@ -836,7 +836,7 @@ memtester的窗口停掉了会出现Error detected，如下图所示：
 /data/aee_exp 
 ```
 
-![0001_例子.png](images/0001_例子.png)
+![0001_例子.png](images/0001_example.png)
 
 上述3个条件任一不满足即可判定为 fail, 这时请将log发送给MTK分析。
 

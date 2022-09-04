@@ -66,7 +66,7 @@ SensorHub工厂模式下校准流程分析。
 
 4.校准流程：
 
-![0004_流程.png](images/0004_流程.png)
+![0004_流程.png](images/0004_dig.png)
 
 * 开机读取校准数据logcat 打印如下：
 

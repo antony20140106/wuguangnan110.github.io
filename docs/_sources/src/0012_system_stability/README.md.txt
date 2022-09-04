@@ -1,6 +1,6 @@
 # README
 
-Android系统稳定性分析
+记录Android系统Emcp稳定性测试方法及简介。
 
 ## docs
 

@@ -1,6 +1,6 @@
 # README
 
-Pax Misc Bug分析
+Pax Misc Bug分析。
 
 ## docs
 

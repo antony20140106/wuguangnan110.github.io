@@ -1,6 +1,6 @@
 # README
 
-M8 项目usb switch驱动分析。
+M8项目usb switch驱动分析。
 
 ## docs
 
