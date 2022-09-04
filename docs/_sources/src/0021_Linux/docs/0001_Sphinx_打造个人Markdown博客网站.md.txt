@@ -16,6 +16,14 @@
 * [make: sphinx-build: Command not found](https://blog.csdn.net/Will_Ye/article/details/106319473)
 * [Sphinx_Demo](refers/Sphinx_Demo)
 
+# 命令介绍
+
+```
+make html
+make docs
+make server
+```
+
 # github.io创建
 
 GitHub.io 就是GitPage，GitPage 是一个用于展示你的项目和项目网站的托管工具。
