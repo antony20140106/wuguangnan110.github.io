@@ -1,6 +1,6 @@
 # README
 
-kernel驱动分析
+记录高通Android平台相关差异性功能，比如XBL/ABL软件流程等。
 
 ## docs
 

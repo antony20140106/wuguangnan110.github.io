@@ -8,6 +8,7 @@ mtk平台gauge驱动简介。
 # 软件架构
 
 这里采用和pax_charger相同的软件架构，都是每一个驱动ic在加载时只需要在该类文件下通过接口`device_register`向内核注册名为gauge_ic的设备文件即可，设备文件包含操作gauge的所有ops，同时对外暴露以下接口供pax_battey或者bms调用：
+
 ![0002_0000.png](images/0002_0000.png)
 
 * ops：

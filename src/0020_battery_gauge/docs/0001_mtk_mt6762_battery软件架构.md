@@ -15,9 +15,11 @@ mtk平台gauge驱动简介。
 # 硬件信息
 
 mtk平台guage功能集成 在mt6357这颗pmic中：
+
 ![0001_0001.png](images/0001_0001.png)
 
 电池直接接到mt6357上面获取电池adc电压值：
+
 ![0001_0004.png](images/0001_0004.png)
 ![0001_0002.png](images/0001_0002.png)
 ![0001_0003.png](images/0001_0003.png)

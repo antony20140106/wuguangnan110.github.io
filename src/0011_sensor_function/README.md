@@ -1,6 +1,6 @@
 # README
 
-Android各种sensor软件分析
+Android各种sensor软件从底层到上层分析记录。
 
 ## docs
 

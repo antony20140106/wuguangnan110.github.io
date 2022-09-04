@@ -11,13 +11,13 @@ Sensor架构介绍
 
 ## 软件架构图
 
-![0007_软件架构1.png](images/0007_软件架构1.png)
+![0007_1.png](images/0007_dig1.png)
 
-![0007_架构2.png](images/0007_架构2.png)
+![0007_2.png](images/0007_dig22.png)
 
 新架构中的每个sensor都对应于一个CPP file：
 
-![0007_每个.png](images/0007_每个.png)
+![0007_3.png](images/0007_eve.png)
 
 ## HIDL层架构
 
@@ -461,11 +461,11 @@ int sensors_poll_context_t::activate(int handle, int enabled) {
 
 * kernel文件节点关系：
 
-![0007_文件节点.png](images/0007_文件节点.png)
+![0007_5.png](images/0007_sys.png)
 
 * 驱动架构图
 
-![0007_驱动架构图.png](images/0007_驱动架构图.png)
+![0007_6.png](images/0007_dig2.png)
 
 ### 驱动获取物理sensor数据流程分析
 
@@ -556,4 +556,4 @@ main() {
 }
 ```
 
-![0007_poll机制原理.png](images/0007_poll机制原理.png)
+![0007_poll.png](images/0007_poll.png)

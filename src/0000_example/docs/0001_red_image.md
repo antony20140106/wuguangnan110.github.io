@@ -4,8 +4,8 @@
 
 # refers
 
-* [0001_red_image.tar.bz2](H:/wugn/md/pax_kearning_doc/docs/0000_example/docs/refers/0001_red_image.tar.bz2)
+* [0001_red_image.tar.bz2](refers/0001_red_image.tar.bz2)
 
 # images
 
-![0001_red_image.png](H:/wugn/md/pax_kearning_doc/docs/0000_example/docs/images/0001_red_image.png)
+![0001_red_image.png](images/0001_red_image.png)

@@ -226,7 +226,8 @@ EXPORT_SYMBOL(pax_charger_dev_get_charger_type);
 
 # 底座充电功能开发
 
-* 硬件信息
+* 硬件信息：
+
 ![0017_0004.png](images/0017_0004.png)
 ![0017_0005.png](images/0017_0005.png)
 

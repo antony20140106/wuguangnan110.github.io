@@ -1,6 +1,6 @@
 # README
 
-framework层的一些功能实现
+记录framework层的一些功能实现及相关模块分析。
 
 ## docs
 

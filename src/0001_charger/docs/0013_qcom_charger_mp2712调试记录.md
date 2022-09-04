@@ -123,26 +123,32 @@ I2C接口提供完整的操作控制、充电参数编程和状态/中断监控�
 ## 缩写解释
 
 * IIN_LIM： 充电电流设置，前端电流，充电器到charger ic的电流。(AICR)
+
 ![0013_0015.png](images/0013_0015.png)
 
 * VPRE： 预充充电电压大小。
 * ICC： 充电电流设置，后端电流， charger ic 到电池的电流。(ichg)
+
 ![0013_0014.png](images/0013_0014.png)
 
 * IPRE：预充电电流大小。
 * ITERM： 充电截止电流。(ieoc)
+
 ![0013_0013.png](images/0013_0013.png)
 
 * VIN_LIM: 触发DPM(DYNAMIC POWER MANAGEMENT类似MTK AICL机制)机制的门限最小电压 (mivr)
 * VRECHG：回充电压。
+
 ![0013_0012.png](images/0013_0012.png)
 
 * VBATT: 电池充电电压。(CV)
+
 ![0013_0016.png](images/0013_0016.png)
 
 * VIN_OVP： 适配器输入电压保护。
 * SYS_MIN： vsys最小电压。
 * TREG： charger thermal充电温度保护。
+
 ![0013_0017.png](images/0013_0017.png)
 
 ## FEATURES
@@ -259,6 +265,7 @@ JEITA_ISET = 00.
 * JEITA开关控制，The NTC1 and NTC2 actions can be enabled/disabled by setting the NTC1_ACTION and NTC2_ACTION bit, respectively：
 
 可以看到NTC1的JEITA功能是打开的。
+
 ![0013_0020.png](images/0013_0020.png)
 
 * 各温度下电流电压配置如下：
@@ -289,9 +296,11 @@ When the converter operates in input current loop or input voltage limit loop, t
 ### 寄存器介绍
 
 * 打开或关闭中断：
+
 ![0013_0031.png](images/0013_0031.png)
 
 * 查看状态：
+
 ![0013_0032.png](images/0013_0032.png)
 
 
@@ -1615,6 +1624,7 @@ Reg[0x16] = 0x60
 ```
 
 寄存器如下图，而且还有好几个寄存器的值乱了，比如0x05/0x16：
+
 ![0013_0030.png](images/0013_0030.png)
 
 目前电脑限流是500ma，难道是它识别成2A的DCP，我不能限流？然后我把限流关闭，0x05/0x16寄存器值不乱写了，但还是会断开。
@@ -1654,20 +1664,24 @@ Reg[0x16] = 0x00
 ![0013_0033.png](images/0013_0033.png)
 
 * sys_min由06寄存器设置，目前是`101: 3.675V`，在dts中设置的`vsys-min = <3675>;`：
+
 ![0013_0034.png](images/0013_0034.png)
 
 出现不充电时，量取以下为3.83v
 
 * VIN_LIMT由04寄存器设置，目前是4360mv，在插入函数中也设置了一遍4440mv，在dts中设置的`input-voltage-limit = <4360>`：
+
 ![0013_0035.png](images/0013_0035.png)
 
 那什么情况会发生VINDPM呢？vbus<VIN_LIMT？
 
 量取了charger端的vbus只有4.43v，太小了吧，难怪一打开powerpath就提示VINDPM。
+
 ![0013_0036.png](images/0013_0036.png)
 
 现在是两个问题：
 * 1.为什么电脑识别成DCP，然后限流的话寄存器会乱，原理图charger的D+D-都是短接在一起的。
+
 ![0013_0037.png](images/0013_0037.png)
 
 * 2.vbus太小，压降太大，如何解决？是因为电池线的阻值太大？拉低了电压？
@@ -1685,6 +1699,7 @@ Reg[0x16] = 0x00
 ![0013_0039.png](images/0013_0039.png)
 
 另外fae还提到关闭BUCK可以让休眠电流更小：
+
 ![0013_0040.png](images/0013_0040.png)
 
 * 目前分析结论：
@@ -1694,12 +1709,15 @@ Reg[0x16] = 0x00
 
 fae建议示波器查看IC Vbus和SW脚工作情况：
 * Vbus情况如下，并没有VII_DPM产生，看上去都是正常的：
+
 ![0013_0041.png](images/0013_0041.png)
 
 * SW脚接适配器如下，看上去也是正常的：
+
 ![0013_0042.png](images/0013_0042.png)
 
 * SW脚接电脑如下，看上去不正常，高电平后有一段600ms左右的延迟才开始正弦波：
+
 ![0013_0043.png](images/0013_0043.png)
 
 但是我们I2C代码是在完成bc1.2后就开始设置电流和打开充电功能，而且我们是先读取寄存器状态再写，如果读取出错了就完了,log如下，在enable_charger时如果刚好

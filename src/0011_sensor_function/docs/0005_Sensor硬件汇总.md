@@ -21,11 +21,11 @@ Sensor型号汇总
 | eint_num中断号        | EINT12     | EINT12                       |
 | 供电 | VIO18_PUM | VIO18_PUM                   |
 
-![0005_硬件原理图.png](images/0005_硬件原理图.png)
+![0005_1.png](images/0005_hw.png)
 
-![0005_中断号.png](images/0005_中断号.png)
+![0005_2.png](images/0005_int.png)
 
-![0005_gsensor供电.png](images/0005_gsensor供电.png)
+![0005_3.png](images/0005_gsensor.png)
 
 ### 2.ALSPS
 
@@ -35,7 +35,7 @@ Sensor型号汇总
 | eint_num中断号        | EINT6    |
 | 供电 | VIO18_PUM |
 
-![0005_光距感原理图.png](images/0005_光距感原理图.png)
+![0005_4.png](images/0005_als.png)
 
 ### 3.MAGNETOMETER
 
@@ -44,12 +44,12 @@ Sensor型号汇总
 | I2C总线及地址     | i2c1 0x30 |
 | 供电 | VIO18_PUM |
 
-![0005_磁力计原理图.png](images/0005_磁力计原理图.png)
+![0005_5.png](images/0005_mag.png)
 
 
 ## 规格书
 
-* [0005_地磁MMC5603.pdf](refers/0005_地磁MMC5603.pdf)
+* [0005_地磁MMC5603.pdf](refers/MMC5603.pdf)
 
 * [0005_LTR-553ALS-01_DS_V1.2_300501990000169.pdf](refers/0005_LTR-553ALS-01_DS_V1.2_300501990000169.pdf)
 

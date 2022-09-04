@@ -17,7 +17,7 @@ AE调试记录
 
 ![0001_NV.png](images/0001_NV.png)
 
-![0001_ABL对应关系.png](images/0001_ABL对应关系.png)
+![0001_ABL.png](images/0001_ABLok.png)
 
 ## AE ABL调试
 
@@ -33,4 +33,4 @@ AE调试记录
 
 ## 效果
 
-![0001_调试效果.png](images/0001_调试效果.png)
+![0001_.png](images/0001_camera.png)

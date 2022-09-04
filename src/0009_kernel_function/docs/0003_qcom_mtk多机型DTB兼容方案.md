@@ -91,8 +91,11 @@ A800_MT6761_V05_V03.dts
   * 根据机型选择对应机型的dtbo，在cmdline 中增加机型信息，将机型参数传入kernel
   * Kernel 加载init进程，init根据机器类型，加载不同的init.rc配置文件
   * Init根据配置，加载不同硬件服务，设置屏幕的分辨率，加载设备驱动
+
 ![0003_0002.png](images/0003_0002.png)
+
 * 通过dts overlay技术，将所有的dtbo合并到main dtb中：
+
 ![0003_0003.png](images/0003_0003.png)
 
 ## LK修改

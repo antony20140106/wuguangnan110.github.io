@@ -13,7 +13,7 @@ Android HIDL服务可以通过java层service或者C++ jni方式进行binder通�
 
 目前M8/M50项目中paxservice用的时java直接调用binder和HIDL通信，架构如下：
 
-![0002_架构图.png](/docs/0004_framework_function/docs/images/0002_架构图.png)
+![0002_alg.png](/src/0004_framework_function/docs/images/0002_alg.png)
 
 参考文档：
 
@@ -23,7 +23,7 @@ Android HIDL服务可以通过java层service或者C++ jni方式进行binder通�
 
 目前M8/M50项目中paxbms采用的是C++ jni方式和HIDL进行binder通信，架构如下：
 
-![0009_0014.png](/docs/0001_charger/docs/images/0009_0014.png)
+![0009_0014.png](/src/0001_charger/docs/images/0009_0014.png)
 
 参考文档：
 

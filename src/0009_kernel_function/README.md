@@ -1,6 +1,6 @@
 # README
 
-kernel驱动分析
+记录kernel底层一些常用API或者通用性知识。
 
 ## docs
 
