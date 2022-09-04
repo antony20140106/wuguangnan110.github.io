@@ -16,6 +16,7 @@
         <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
         <script src="../../../_static/jquery.js"></script>
         <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="../../../_static/doctools.js"></script>
     <script src="../../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../../genindex.html" />
@@ -75,12 +76,12 @@
            <div itemprop="articleBody">
              
   <section id="readme">
-<h1>README<a class="headerlink" href="#readme" title="Permalink to this headline"></a></h1>
+<h1>README<a class="headerlink" href="#readme" title="Permalink to this heading"></a></h1>
 <p>Android 传统HAL层介绍。</p>
 <p>本文介绍了 Android 中最为常见的两种硬件接口，传统 HAL 和 HIDL。其中 HAL 在 Android 8 中弃用，取而代之的是基于 IPC 的 HIDL 方案，后者同时支持 passthrough 模式兼容传统的 HAL，这也是很多厂商移植前的临时过渡方案。虽然使用 IPC 会在一定程度影响性能，但 HIDL 方案提供了许多优化的措施，比如通过共享内存快速消息队列(FMQ)进行数据交互。此外，我们还基于 HIDL 编写了一个简单的 demo 驱动以及配套的 service 和 client 示例，便于理解硬件创建和调用的流程，这对于固件驱动逆向而言也是必要的知识。</p>
 </section>
 <section id="refers">
-<h1>refers<a class="headerlink" href="#refers" title="Permalink to this headline"></a></h1>
+<h1>refers<a class="headerlink" href="#refers" title="Permalink to this heading"></a></h1>
 <ul class="simple">
 <li><p><a class="reference external" href="https://blog.csdn.net/u010206565/article/details/109424991">Android HAL 与 HIDL 开发笔记</a></p></li>
 </ul>
@@ -89,7 +90,7 @@
 <p>现在的时间已经来到了 Android 11，其实早在 Android 8 之后就已经弃用了曾经的 HAL 方式，不过由于碎片化原因，现在还有许多 IoT 设备等还是使用传统的 HAL 模式。另外出于对历史进展的研究，了解传统 HAL 也是有必要的。</p>
 </section>
 <section id="id1">
-<h1>分析<a class="headerlink" href="#id1" title="Permalink to this headline"></a></h1>
+<h1>分析<a class="headerlink" href="#id1" title="Permalink to this heading"></a></h1>
 <p>传统 HAL (Legacy HALs) 的接口文件为 hardware/libhardware/include/hardware/hardware.h ，主要定义了三个结构，分别是:</p>
 <div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="k">struct</span><span class="w"> </span><span class="nc">hw_module_t</span><span class="p">;</span><span class="w"></span>
 <span class="k">struct</span><span class="w"> </span><span class="nc">hw_module_methods_t</span><span class="p">;</span><span class="w"></span>
@@ -98,7 +99,7 @@
 </div>
 </section>
 <section id="hw-module-t">
-<h1>hw_module_t<a class="headerlink" href="#hw-module-t" title="Permalink to this headline"></a></h1>
+<h1>hw_module_t<a class="headerlink" href="#hw-module-t" title="Permalink to this heading"></a></h1>
 <p>硬件模块 (hardware module) 表示 HAL 中打包的实现，即输出的.so动态链接库文件。hw_module_t 结构中主要包括 tab、version、name、author 等信息字段以及一个 struct hw_module_methods_t *methods 字段。methods 中包括打开设备的函数指针，如下:</p>
 <div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="k">typedef</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">hw_module_methods_t</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
 <span class="w">    </span><span class="cm">/** Open a specific device */</span><span class="w"></span>
@@ -119,7 +120,7 @@
 <p>这也是使用 C 语言实现继承的一种典型方式。</p>
 </section>
 <section id="hw-device-t">
-<h1>hw_device_t<a class="headerlink" href="#hw-device-t" title="Permalink to this headline"></a></h1>
+<h1>hw_device_t<a class="headerlink" href="#hw-device-t" title="Permalink to this heading"></a></h1>
 <p>device 用于抽象产品的某个具体硬件，比如对于某些摄像头模组，其硬件模块中就可能包括 2D 摄像头、3D 深度摄像头、红外摄像头等具体的 device。设备的结构基本元素如下:</p>
 <div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="cm">/**</span>
 <span class="cm"> * Every device data structure must begin with hw_device_t</span>
@@ -166,7 +167,7 @@
 <p>和模块一样，厂商也是通过继承拓展 device 结构来实现具体的设备。除了上面这些简单的标准属性，其实对于不同种类的硬件，也有特定的数据结构类型，见 Android HAL Reference。例如，对于摄像头类型的硬件，在 hardware/camera.h 中定义了其标准拓展接口和数据类型，比如打开/关闭摄像头、设置参数、数据回调等等。</p>
 </section>
 <section id="id2">
-<h1>历程<a class="headerlink" href="#id2" title="Permalink to this headline"></a></h1>
+<h1>历程<a class="headerlink" href="#id2" title="Permalink to this heading"></a></h1>
 <p>bms hal层如下：</p>
 <div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span>├── 1.0
 │   └── default

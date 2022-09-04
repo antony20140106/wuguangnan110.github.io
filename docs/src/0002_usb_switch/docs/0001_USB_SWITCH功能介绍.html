@@ -16,6 +16,7 @@
         <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
         <script src="../../../_static/jquery.js"></script>
         <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="../../../_static/doctools.js"></script>
     <script src="../../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../../genindex.html" />
@@ -95,17 +96,17 @@
            <div itemprop="articleBody">
              
   <section id="id1">
-<h1>概述<a class="headerlink" href="#id1" title="Permalink to this headline"></a></h1>
+<h1>概述<a class="headerlink" href="#id1" title="Permalink to this heading"></a></h1>
 <p>M8项目USB_SWITCH功能介绍。</p>
 <section id="id2">
-<h2>参考<a class="headerlink" href="#id2" title="Permalink to this headline"></a></h2>
+<h2>参考<a class="headerlink" href="#id2" title="Permalink to this heading"></a></h2>
 <ul class="simple">
 <li><p>驱动代码：</p></li>
 </ul>
 <p><a class="reference download internal" download="" href="../../../_downloads/d8bdd85490cb5d65831bafd42a62860d/pax_usb_switch.c"><span class="xref download myst">pax_usb_switch.c</span></a></p>
 </section>
 <section id="id3">
-<h2>硬件架构<a class="headerlink" href="#id3" title="Permalink to this headline"></a></h2>
+<h2>硬件架构<a class="headerlink" href="#id3" title="Permalink to this heading"></a></h2>
 <ul class="simple">
 <li><p>硬件架构</p></li>
 </ul>
@@ -115,22 +116,22 @@
 <p><img alt="0001_V04实物图.png" src="src/0002_usb_switch/docs/images/0001_V04%E5%AE%9E%E7%89%A9%E5%9B%BE.png" /></p>
 <p>主要修改为，增加CHECK脚检测R15状态，插入则打开VOUT电。BBL供电去掉，单独一路VOUT供电，由R15内部转BBL。</p>
 <section id="usb">
-<h3>1.USB逻辑图<a class="headerlink" href="#usb" title="Permalink to this headline"></a></h3>
+<h3>1.USB逻辑图<a class="headerlink" href="#usb" title="Permalink to this heading"></a></h3>
 <p><img alt="0001_usbswitch硬件架构" src="src/0002_usb_switch/docs/images/0001_usbswitch%E7%A1%AC%E4%BB%B6%E6%9E%B6%E6%9E%84.jpg" /></p>
 <p><img alt="0001_usb逻辑.png" src="src/0002_usb_switch/docs/images/0001_usb%E9%80%BB%E8%BE%91.png" /></p>
 </section>
 <section id="vbus-vin">
-<h3>2.Vbus(VIN)逻辑图<a class="headerlink" href="#vbus-vin" title="Permalink to this headline"></a></h3>
+<h3>2.Vbus(VIN)逻辑图<a class="headerlink" href="#vbus-vin" title="Permalink to this heading"></a></h3>
 <p>USB_HOST_EN为高，VIN是输出方向，输出5v，USB_HOST_EN低电平VIN为输入方向，相当于充电，该功能是监听typec vbus状态改变的，比如当接入R15时，会接收到typec通知<code class="docutils literal notranslate"><span class="pre">TCP_NOTIFY_SOURCE_VBUS</span></code>打开vbus。</p>
 <p><img alt="0001_Vbus输入输出逻辑.png" src="src/0002_usb_switch/docs/images/0001_Vbus%E8%BE%93%E5%85%A5%E8%BE%93%E5%87%BA%E9%80%BB%E8%BE%91.png" /></p>
 </section>
 <section id="check">
-<h3>3.Check脚逻辑图<a class="headerlink" href="#check" title="Permalink to this headline"></a></h3>
+<h3>3.Check脚逻辑图<a class="headerlink" href="#check" title="Permalink to this heading"></a></h3>
 <p>目前软件不控制VCC_OUT_EN，也就是说只要Check脚检测在位，POWER_EN会输出电压，VOUT就会供电，完全由硬件控制。
 <img alt="0001_Check脚逻辑.png" src="src/0002_usb_switch/docs/images/0001_Check%E8%84%9A%E9%80%BB%E8%BE%91.png" /></p>
 </section>
 <section id="gpio">
-<h3>4.涉及的GPIO作用<a class="headerlink" href="#gpio" title="Permalink to this headline"></a></h3>
+<h3>4.涉及的GPIO作用<a class="headerlink" href="#gpio" title="Permalink to this heading"></a></h3>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>USB_HOST_EN （AE23）  双输入电源方向控制，高电平输出Vbus，低电平vbus输入
 
 USB_SW1_SEL  （F24）   USB信号切换开关
@@ -145,12 +146,12 @@ VCC_OUT_EN  （AD23）   在POGO端接USB device时候控制5V输出；开机默
 </section>
 </section>
 <section id="id4">
-<h2>软件交互逻辑<a class="headerlink" href="#id4" title="Permalink to this headline"></a></h2>
+<h2>软件交互逻辑<a class="headerlink" href="#id4" title="Permalink to this heading"></a></h2>
 <ul class="simple">
 <li><p>目前需要两种切换，第一是usb role mode切换(host device)，第二是usb swtich通路切换(hub or OTG)。</p></li>
 </ul>
 <section id="usb-swtich-hub-or-otg">
-<h3>1.usb swtich通路切换(hub or OTG)<a class="headerlink" href="#usb-swtich-hub-or-otg" title="Permalink to this headline"></a></h3>
+<h3>1.usb swtich通路切换(hub or OTG)<a class="headerlink" href="#usb-swtich-hub-or-otg" title="Permalink to this heading"></a></h3>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>host模式:
 USB_SW1_SEL  （F24）   USB信号切换开关 高
 
@@ -168,7 +169,7 @@ GL850_EN     （AD24）  控制HUB芯片POWER 低
 </div>
 </section>
 <section id="usb-role-mode-host-device">
-<h3>2. usb role mode切换逻辑(host device)<a class="headerlink" href="#usb-role-mode-host-device" title="Permalink to this headline"></a></h3>
+<h3>2. usb role mode切换逻辑(host device)<a class="headerlink" href="#usb-role-mode-host-device" title="Permalink to this heading"></a></h3>
 <ul class="simple">
 <li><p>目前是通过cc脚切换host device，目前默认不接任何设备为host。</p></li>
 <li><p>1.没有皮套</p>
@@ -188,7 +189,7 @@ GL850_EN     （AD24）  控制HUB芯片POWER 低
 </ul>
 </section>
 <section id="vin">
-<h3>3.VIN方向控制<a class="headerlink" href="#vin" title="Permalink to this headline"></a></h3>
+<h3>3.VIN方向控制<a class="headerlink" href="#vin" title="Permalink to this heading"></a></h3>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>充电方向:
 1.PD_ROLE_SINK  作为输入
 2.PD_ROLE_SOURCE  输出，但是驱动不需要做
@@ -197,7 +198,7 @@ GL850_EN     （AD24）  控制HUB芯片POWER 低
 </div>
 </section>
 <section id="usb2-0">
-<h3>4.usb2.0亮灭屏逻辑<a class="headerlink" href="#usb2-0" title="Permalink to this headline"></a></h3>
+<h3>4.usb2.0亮灭屏逻辑<a class="headerlink" href="#usb2-0" title="Permalink to this heading"></a></h3>
 <div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="n">usb20_host</span><span class="p">.</span><span class="n">c</span><span class="o">:</span><span class="w"></span>
 <span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">musb_fb_notifier_call</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">notifier_block</span><span class="w"> </span><span class="o">*</span><span class="n">self</span><span class="p">,</span><span class="w"> </span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">long</span><span class="w"> </span><span class="n">event</span><span class="p">,</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="o">*</span><span class="n">data</span><span class="p">)</span><span class="w"></span>
 <span class="p">{</span><span class="w"></span>
@@ -212,7 +213,7 @@ GL850_EN     （AD24）  控制HUB芯片POWER 低
 <span class="w">	</span><span class="n">DBG</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;blank: %d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">blank</span><span class="p">);</span><span class="w"></span>
 
 <span class="w">	</span><span class="k">switch</span><span class="w"> </span><span class="p">(</span><span class="n">blank</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">		</span><span class="k">case</span><span class="w"> </span><span class="nl">FB_BLANK_UNBLANK</span><span class="p">:</span><span class="w"> </span><span class="c1">//亮屏</span>
+<span class="w">		</span><span class="k">case</span><span class="w"> </span><span class="no">FB_BLANK_UNBLANK</span><span class="p">:</span><span class="w"> </span><span class="c1">//亮屏</span>
 <span class="w">			</span><span class="p">{</span><span class="w"></span>
 <span class="w">				</span><span class="kt">bool</span><span class="w"> </span><span class="n">connect</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">false</span><span class="p">;</span><span class="w"></span>
 
@@ -246,7 +247,7 @@ GL850_EN     （AD24）  控制HUB芯片POWER 低
 <span class="w">				</span><span class="p">}</span><span class="w"></span>
 <span class="w">			</span><span class="p">}</span><span class="w"></span>
 <span class="w">			</span><span class="k">break</span><span class="p">;</span><span class="w"></span>
-<span class="w">		</span><span class="k">case</span><span class="w"> </span><span class="nl">FB_BLANK_POWERDOWN</span><span class="p">:</span><span class="w"> </span><span class="c1">//灭屏</span>
+<span class="w">		</span><span class="k">case</span><span class="w"> </span><span class="no">FB_BLANK_POWERDOWN</span><span class="p">:</span><span class="w"> </span><span class="c1">//灭屏</span>
 <span class="w">			</span><span class="p">{</span><span class="w"></span>
 <span class="w">				</span><span class="kt">bool</span><span class="w"> </span><span class="n">disconnet</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">false</span><span class="p">;</span><span class="w"></span>
 
@@ -286,7 +287,7 @@ GL850_EN     （AD24）  控制HUB芯片POWER 低
 </div>
 </section>
 <section id="usb-switch">
-<h3>5.usb_switch亮灭屏逻辑<a class="headerlink" href="#usb-switch" title="Permalink to this headline"></a></h3>
+<h3>5.usb_switch亮灭屏逻辑<a class="headerlink" href="#usb-switch" title="Permalink to this heading"></a></h3>
 <p>usb_switch亮灭屏逻辑其实和usb20切换逻辑一样。</p>
 <div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">pax_usb_fb_notifier_call</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">notifier_block</span><span class="w"> </span><span class="o">*</span><span class="n">self</span><span class="p">,</span><span class="w"> </span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">long</span><span class="w"> </span><span class="n">event</span><span class="p">,</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="o">*</span><span class="n">data</span><span class="p">)</span><span class="w"></span>
 <span class="p">{</span><span class="w"></span>
@@ -301,13 +302,13 @@ GL850_EN     （AD24）  控制HUB芯片POWER 低
 <span class="w">	</span><span class="n">blank</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">*</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="n">evdata</span><span class="o">-&gt;</span><span class="n">data</span><span class="p">;</span><span class="w"></span>
 
 <span class="w">	</span><span class="k">switch</span><span class="w"> </span><span class="p">(</span><span class="n">blank</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">		</span><span class="k">case</span><span class="w"> </span><span class="nl">FB_BLANK_UNBLANK</span><span class="p">:</span><span class="w"></span>
+<span class="w">		</span><span class="k">case</span><span class="w"> </span><span class="no">FB_BLANK_UNBLANK</span><span class="p">:</span><span class="w"></span>
 <span class="w">			</span><span class="k">if</span><span class="w"> </span><span class="p">((</span><span class="n">usb_sdata</span><span class="o">-&gt;</span><span class="n">typec_state</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">TYPEC_UNATTACHED</span><span class="p">)</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="p">(</span><span class="n">usb_sdata</span><span class="o">-&gt;</span><span class="n">usb_type</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">POWER_SUPPLY_USB_TYPE_DCP</span><span class="p">))</span><span class="w"> </span><span class="c1">//收到亮屏，typec是没接或者接了充电器，则切成host。</span>
 <span class="w">				</span><span class="n">usb_host_switch</span><span class="p">(</span><span class="n">usb_sdata</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span><span class="w"></span>
 
 <span class="w">			</span><span class="n">usb_sdata</span><span class="o">-&gt;</span><span class="n">lcd_state</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">blank</span><span class="p">;</span><span class="w"></span>
 <span class="w">			</span><span class="k">break</span><span class="p">;</span><span class="w"></span>
-<span class="w">		</span><span class="k">case</span><span class="w"> </span><span class="nl">FB_BLANK_POWERDOWN</span><span class="p">:</span><span class="w"></span>
+<span class="w">		</span><span class="k">case</span><span class="w"> </span><span class="no">FB_BLANK_POWERDOWN</span><span class="p">:</span><span class="w"></span>
 <span class="w">			</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">usb_sdata</span><span class="o">-&gt;</span><span class="n">typec_state</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">TYPEC_UNATTACHED</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="c1">//收到灭屏，typec是没接任何设备，延迟10s开启工作队列切换device。</span>
 <span class="w">				</span><span class="n">schedule_delayed_work</span><span class="p">(</span><span class="o">&amp;</span><span class="n">usb_sdata</span><span class="o">-&gt;</span><span class="n">usb_switch_work</span><span class="p">,</span><span class="w"> </span><span class="n">msecs_to_jiffies</span><span class="p">(</span><span class="mi">10000</span><span class="p">));</span><span class="w"></span>
 <span class="w">			</span><span class="p">}</span><span class="w"></span>
@@ -333,7 +334,7 @@ GL850_EN     （AD24）  控制HUB芯片POWER 低
 </div>
 </section>
 <section id="usb20-role">
-<h3>6.usb20 role切换逻辑<a class="headerlink" href="#usb20-role" title="Permalink to this headline"></a></h3>
+<h3>6.usb20 role切换逻辑<a class="headerlink" href="#usb20-role" title="Permalink to this heading"></a></h3>
 <div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span>static int otg_tcp_notifier_call(struct notifier_block *nb,
 		unsigned long event, void *data)
 {
@@ -465,7 +466,7 @@ GL850_EN     （AD24）  控制HUB芯片POWER 低
 </div>
 </section>
 <section id="id5">
-<h3>7.usb_switch切换逻辑<a class="headerlink" href="#id5" title="Permalink to this headline"></a></h3>
+<h3>7.usb_switch切换逻辑<a class="headerlink" href="#id5" title="Permalink to this heading"></a></h3>
 <div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="k">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">vbus_en</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">usb_switch_data</span><span class="w"> </span><span class="o">*</span><span class="n">data</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">on</span><span class="p">)</span><span class="w"></span>
 <span class="p">{</span><span class="w"></span>
 <span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">gpio_is_valid</span><span class="p">(</span><span class="n">data</span><span class="o">-&gt;</span><span class="n">usb_host_en_gpio</span><span class="p">))</span><span class="w"></span>
@@ -480,11 +481,11 @@ GL850_EN     （AD24）  控制HUB芯片POWER 低
 <span class="w">	</span><span class="n">pr_info</span><span class="p">(</span><span class="s">&quot;%s: action:%d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">__func__</span><span class="p">,</span><span class="w"> </span><span class="n">action</span><span class="p">);</span><span class="w"></span>
 
 <span class="w">	</span><span class="k">switch</span><span class="p">(</span><span class="n">action</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">		</span><span class="k">case</span><span class="w"> </span><span class="nl">TCP_NOTIFY_SOURCE_VBUS</span><span class="p">:</span><span class="w"></span>
+<span class="w">		</span><span class="k">case</span><span class="w"> </span><span class="no">TCP_NOTIFY_SOURCE_VBUS</span><span class="p">:</span><span class="w"></span>
 <span class="w">			</span><span class="n">vbus_en</span><span class="p">(</span><span class="n">data</span><span class="p">,</span><span class="w"> </span><span class="o">!!</span><span class="n">noti</span><span class="o">-&gt;</span><span class="n">vbus_state</span><span class="p">.</span><span class="n">mv</span><span class="p">);</span><span class="w">  </span><span class="c1">//跟随vbus打开关闭usb_host_en</span>
 <span class="w">			</span><span class="k">break</span><span class="p">;</span><span class="w"></span>
 
-<span class="w">		</span><span class="k">case</span><span class="w"> </span><span class="nl">TCP_NOTIFY_TYPEC_STATE</span><span class="p">:</span><span class="w"></span>
+<span class="w">		</span><span class="k">case</span><span class="w"> </span><span class="no">TCP_NOTIFY_TYPEC_STATE</span><span class="p">:</span><span class="w"></span>
 <span class="w">			</span><span class="n">data</span><span class="o">-&gt;</span><span class="n">typec_state</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">noti</span><span class="o">-&gt;</span><span class="n">typec_state</span><span class="p">.</span><span class="n">new_state</span><span class="p">;</span><span class="w"></span>
 
 <span class="w">			</span><span class="k">if</span><span class="w"> </span><span class="p">((</span><span class="n">noti</span><span class="o">-&gt;</span><span class="n">typec_state</span><span class="p">.</span><span class="n">old_state</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">TYPEC_UNATTACHED</span><span class="p">)</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"></span>
@@ -513,7 +514,7 @@ GL850_EN     （AD24）  控制HUB芯片POWER 低
 <span class="w">			</span><span class="p">}</span><span class="w"></span>
 <span class="w">			</span><span class="k">break</span><span class="p">;</span><span class="w"></span>
 
-<span class="w">		</span><span class="k">case</span><span class="w"> </span><span class="nl">TCP_NOTIFY_DR_SWAP</span><span class="p">:</span><span class="w"></span>
+<span class="w">		</span><span class="k">case</span><span class="w"> </span><span class="no">TCP_NOTIFY_DR_SWAP</span><span class="p">:</span><span class="w"></span>
 <span class="w">			</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">noti</span><span class="o">-&gt;</span><span class="n">swap_state</span><span class="p">.</span><span class="n">new_role</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">PD_ROLE_UFP</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
 <span class="w">				</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="p">((</span><span class="n">data</span><span class="o">-&gt;</span><span class="n">default_mode</span><span class="p">)</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="p">(</span><span class="n">data</span><span class="o">-&gt;</span><span class="n">usb_type</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">POWER_SUPPLY_USB_TYPE_DCP</span><span class="p">)))</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
 <span class="w">					</span><span class="n">usb_host_switch</span><span class="p">(</span><span class="n">data</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span><span class="w"> </span><span class="c1">//识别成UFP，不是DCP充电器，切device</span>
@@ -524,7 +525,7 @@ GL850_EN     （AD24）  控制HUB芯片POWER 低
 <span class="w">			</span><span class="p">}</span><span class="w"></span>
 <span class="w">			</span><span class="k">break</span><span class="p">;</span><span class="w"></span>
 
-<span class="w">		</span><span class="k">case</span><span class="w"> </span><span class="nl">TCP_NOTIFY_PR_SWAP</span><span class="p">:</span><span class="w"></span>
+<span class="w">		</span><span class="k">case</span><span class="w"> </span><span class="no">TCP_NOTIFY_PR_SWAP</span><span class="p">:</span><span class="w"></span>
 <span class="w">			</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">noti</span><span class="o">-&gt;</span><span class="n">swap_state</span><span class="p">.</span><span class="n">new_role</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">PD_ROLE_SINK</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
 <span class="w">				</span><span class="n">vbus_en</span><span class="p">(</span><span class="n">data</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span><span class="w"></span>
 <span class="w">			</span><span class="p">}</span><span class="w"></span>
@@ -540,9 +541,9 @@ GL850_EN     （AD24）  控制HUB芯片POWER 低
 </div>
 </section>
 <section id="pogo-pin">
-<h3>8.pogo pin交互逻辑<a class="headerlink" href="#pogo-pin" title="Permalink to this headline"></a></h3>
+<h3>8.pogo pin交互逻辑<a class="headerlink" href="#pogo-pin" title="Permalink to this heading"></a></h3>
 <section id="usb-switch-notify">
-<h4>8.1 usb_switch发送/处理notify<a class="headerlink" href="#usb-switch-notify" title="Permalink to this headline"></a></h4>
+<h4>8.1 usb_switch发送/处理notify<a class="headerlink" href="#usb-switch-notify" title="Permalink to this heading"></a></h4>
 <ul class="simple">
 <li><p>pogo dev设备检测目前放在usb_switch驱动里面，采用gpio中断方式，notify机制发送通知，亮屏情况下，pogo pin插入后将直接切为host模式。notify处理驱动分别是usb_switch和usb20驱动。</p></li>
 <li><p>驱动提供应用层接口set_usb_switch_mode手动切换host/device，原因是pogo dev接入后，当接入电脑时，为了不切device断开r15，而让用户手动切。</p></li>
@@ -637,7 +638,7 @@ static int r15_status_notifier_call(struct notifier_block *self, unsigned long e
 </div>
 </section>
 <section id="usb20notify">
-<h4>8.2 usb20处理notify<a class="headerlink" href="#usb20notify" title="Permalink to this headline"></a></h4>
+<h4>8.2 usb20处理notify<a class="headerlink" href="#usb20notify" title="Permalink to this heading"></a></h4>
 <div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span><span class="w"> </span><span class="nf">mt_usb_otg_init</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">musb</span><span class="w"> </span><span class="o">*</span><span class="n">musb</span><span class="p">)</span><span class="w"></span>
 <span class="p">{</span><span class="w"></span>
 <span class="w">	</span><span class="cp">#ifdef CONFIG_PAX_GPIOS_CONTROL</span>

@@ -16,6 +16,7 @@
         <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
         <script src="../../../_static/jquery.js"></script>
         <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="../../../_static/doctools.js"></script>
     <script src="../../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../../genindex.html" />
@@ -74,10 +75,10 @@
            <div itemprop="articleBody">
              
   <section id="id1">
-<h1>概述<a class="headerlink" href="#id1" title="Permalink to this headline"></a></h1>
+<h1>概述<a class="headerlink" href="#id1" title="Permalink to this heading"></a></h1>
 <p>SensorHub兼容M50、M8功能开发。</p>
 <section id="id2">
-<h2>软件方案<a class="headerlink" href="#id2" title="Permalink to this headline"></a></h2>
+<h2>软件方案<a class="headerlink" href="#id2" title="Permalink to this heading"></a></h2>
 <ul class="simple">
 <li><p>1.因为scp里面无法通过boardid判断是哪种机型，需要kernel往下发。kernel hub驱动检测到scp起来后会发送一段DRAM CFG数据给scp，通过这次发送可以将产品型号数据发下去，具体代码如下：</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">kernel-4.19/drivers/misc/mediatek/sensors-1.0/sensorHub/SCP_nanoHub/SCP_nanoHub.c</span></code>:</p></li>
@@ -87,7 +88,7 @@
 <span class="w">    </span><span class="o">*</span><span class="w"> </span><span class="n">SCP_sensorHub_IPI_handler</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="c1">//ipi中断处理函数</span>
 <span class="w">      </span><span class="o">*</span><span class="w"> </span><span class="n">SCP_sensorHub_find_cmd</span><span class="p">(</span><span class="n">rsp</span><span class="o">-&gt;</span><span class="n">rsp</span><span class="p">.</span><span class="n">action</span><span class="p">);</span><span class="w"> </span><span class="c1">//寻找指令类型</span>
 <span class="w">        </span><span class="o">*</span><span class="w"> </span><span class="n">SCP_sensorHub_notify_cmd</span><span class="w"> </span><span class="c1">//scp通知中断处理函数</span>
-<span class="w">          </span><span class="o">*</span><span class="w"> </span><span class="k">case</span><span class="w"> </span><span class="n">SCP_INIT_DONE</span><span class="o">:</span><span class="w"></span>
+<span class="w">          </span><span class="o">*</span><span class="w"> </span><span class="k">case</span><span class="w"> </span><span class="no">SCP_INIT_DONE</span><span class="p">:</span><span class="w"></span>
 <span class="w">          </span><span class="o">*</span><span class="w"> </span><span class="n">WRITE_ONCE</span><span class="p">(</span><span class="n">scp_chre_ready</span><span class="p">,</span><span class="w"> </span><span class="nb">true</span><span class="p">);</span><span class="w"> </span><span class="c1">//重要，写chre初始化完成变量</span>
 <span class="w">          </span><span class="o">*</span><span class="w"> </span><span class="n">atomic_set</span><span class="p">(</span><span class="o">&amp;</span><span class="n">power_status</span><span class="p">,</span><span class="w"> </span><span class="n">SENSOR_POWER_UP</span><span class="p">);</span><span class="w"></span>
 <span class="w">  </span><span class="o">*</span><span class="w"> </span><span class="n">scp_A_register_notify</span><span class="p">(</span><span class="o">&amp;</span><span class="n">sensorHub_ready_notifier</span><span class="p">);</span><span class="w"></span>
@@ -284,7 +285,7 @@ struct SCP_SENSOR_HUB_SET_CONFIG_REQ {
 <li><p>4.scp这边接收IPI流程如下,上层传下来的数据格式是SENSOR_HUB_SET_CONFIG：</p></li>
 </ul>
 <div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="o">*</span><span class="w"> </span><span class="n">INTERNAL_APP_INIT</span><span class="p">(</span><span class="n">contextHubFwHandleEvent</span><span class="p">);</span><span class="w"> </span>
-<span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">case</span><span class="w"> </span><span class="n">EVT_IPI_RX</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">case</span><span class="w"> </span><span class="no">EVT_IPI_RX</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
 <span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">contextHubHandleIpiRxEvent</span><span class="p">();</span><span class="w"></span>
 <span class="w">   </span><span class="o">*</span><span class="w"> </span><span class="n">contextHubFindCmd</span><span class="p">(</span><span class="n">mTask</span><span class="p">.</span><span class="n">ipi_req</span><span class="p">.</span><span class="n">action</span><span class="p">);</span><span class="w"></span>
 <span class="w">     </span><span class="o">*</span><span class="w"> </span><span class="n">contextHubFwSetCfg</span><span class="w"> </span><span class="c1">//因为上层传下来的数据格式是SENSOR_HUB_SET_CONFIG</span>
@@ -360,7 +361,7 @@ struct SCP_SENSOR_HUB_SET_CONFIG_REQ {
 </div>
 </section>
 <section id="scp">
-<h2>scp驱动功能实现<a class="headerlink" href="#scp" title="Permalink to this headline"></a></h2>
+<h2>scp驱动功能实现<a class="headerlink" href="#scp" title="Permalink to this heading"></a></h2>
 <ul class="simple">
 <li><p>主要思路是driver里面增加一个FSM函数，开机的时候去获取机型就好：</p></li>
 </ul>

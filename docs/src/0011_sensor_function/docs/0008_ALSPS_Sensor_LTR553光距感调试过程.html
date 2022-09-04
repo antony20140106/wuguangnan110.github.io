@@ -16,6 +16,7 @@
         <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
         <script src="../../../_static/jquery.js"></script>
         <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="../../../_static/doctools.js"></script>
     <script src="../../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../../genindex.html" />
@@ -88,10 +89,10 @@
            <div itemprop="articleBody">
              
   <section id="id1">
-<h1>概述<a class="headerlink" href="#id1" title="Permalink to this headline"></a></h1>
+<h1>概述<a class="headerlink" href="#id1" title="Permalink to this heading"></a></h1>
 <p>光距感sensor ltr553 sensorhub调试记录</p>
 <section id="id2">
-<h2>硬件<a class="headerlink" href="#id2" title="Permalink to this headline"></a></h2>
+<h2>硬件<a class="headerlink" href="#id2" title="Permalink to this heading"></a></h2>
 <p>目前kernel端是通的，sensorhub一直不支持。</p>
 <table class="colwidths-auto docutils align-default">
 <thead>
@@ -114,7 +115,7 @@
 <p><img alt="0005_光距感原理图.png" src="src/0011_sensor_function/docs/images/0005_%E5%85%89%E8%B7%9D%E6%84%9F%E5%8E%9F%E7%90%86%E5%9B%BE.png" /></p>
 </section>
 <section id="sensorlist">
-<h2>1.sensorlist无法获取<a class="headerlink" href="#sensorlist" title="Permalink to this headline"></a></h2>
+<h2>1.sensorlist无法获取<a class="headerlink" href="#sensorlist" title="Permalink to this heading"></a></h2>
 <ul class="simple">
 <li><p>1.首先按照移植步骤，将ltr553驱动移植到sensorhub中，发现sensorlist中并没有支持，先看一下getsensorlist接口流程：</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">vendor/mediatek/proprietary/hardware/sensor/hidl/1.0/Sensors.cpp</span></code>:</p></li>
@@ -182,7 +183,7 @@
 <span class="w">        </span><span class="o">*</span><span class="w"> </span><span class="n">strlcpy</span><span class="p">(</span><span class="n">sensorlist_info</span><span class="p">[</span><span class="n">handle</span><span class="p">].</span><span class="n">name</span><span class="p">,</span><span class="n">devinfo</span><span class="p">.</span><span class="n">name</span><span class="p">,</span><span class="k">sizeof</span><span class="p">(</span><span class="n">sensorlist_info</span><span class="p">[</span><span class="n">handle</span><span class="p">].</span><span class="n">name</span><span class="p">));</span><span class="w"> </span><span class="c1">// 赋值填充sensorlist_info列表</span>
 <span class="w">  </span><span class="o">*</span><span class="w"> </span><span class="n">scp_power_monitor_register</span><span class="p">(</span><span class="o">&amp;</span><span class="n">scp_ready_notifier</span><span class="p">);</span><span class="w"> </span><span class="c1">//注册scp启动通知链</span>
 <span class="w">    </span><span class="o">*</span><span class="w"> </span><span class="n">scp_ready_event</span><span class="p">(</span><span class="kt">uint8_t</span><span class="w"> </span><span class="n">event</span><span class="p">,</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="o">*</span><span class="n">ptr</span><span class="p">)</span><span class="w">  </span><span class="c1">//通知链函数</span>
-<span class="w">      </span><span class="o">*</span><span class="w"> </span><span class="k">case</span><span class="w"> </span><span class="n">SENSOR_POWER_UP</span><span class="o">:</span><span class="w"></span>
+<span class="w">      </span><span class="o">*</span><span class="w"> </span><span class="k">case</span><span class="w"> </span><span class="no">SENSOR_POWER_UP</span><span class="p">:</span><span class="w"></span>
 <span class="w">      </span><span class="o">*</span><span class="w"> </span><span class="n">schedule_work</span><span class="p">(</span><span class="o">&amp;</span><span class="n">sensorlist_work</span><span class="p">);</span><span class="w"> </span><span class="c1">//scp启动后开启sensorlist_work工作队列</span>
 </pre></div>
 </div>
@@ -253,9 +254,9 @@ static void alsGetSensorInfo(struct sensorInfo_t *data)
 </div>
 </section>
 <section id="psals">
-<h2>PS及ALS优化(包括动态校准及数据算法）<a class="headerlink" href="#psals" title="Permalink to this headline"></a></h2>
+<h2>PS及ALS优化(包括动态校准及数据算法）<a class="headerlink" href="#psals" title="Permalink to this heading"></a></h2>
 <section id="ps">
-<h3>1.PS动态校准移植<a class="headerlink" href="#ps" title="Permalink to this headline"></a></h3>
+<h3>1.PS动态校准移植<a class="headerlink" href="#ps" title="Permalink to this heading"></a></h3>
 <p>PS传感器一般都是靠近3cm，远离5cm。每次开启监听都会获取一个noise值，相当于一个初始值，如果旁边有遮挡，这个noise值会很大。所以PS传感器每次会根据开启监听后的noise值进行动态阈值校准：</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">middleware/contexthub/MEMS_Driver/alsps/ltr553.c</span></code>:</p></li>
@@ -373,7 +374,7 @@ framework打印：
 </div>
 </section>
 <section id="als">
-<h3>2.ALS数据算法分析<a class="headerlink" href="#als" title="Permalink to this headline"></a></h3>
+<h3>2.ALS数据算法分析<a class="headerlink" href="#als" title="Permalink to this heading"></a></h3>
 <div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span>cust_alsps.c
 #ifdef CFG_LTR553_SUPPORT
     {
@@ -554,7 +555,7 @@ static int ltr559_get_als_value(struct ltr559_priv *obj, u16 als)
 </section>
 </section>
 <section id="id3">
-<h2>数据上报<a class="headerlink" href="#id3" title="Permalink to this headline"></a></h2>
+<h2>数据上报<a class="headerlink" href="#id3" title="Permalink to this heading"></a></h2>
 <ul class="simple">
 <li><p>这里PS采用的是中断的方式上报数据，ALS采用的是轮询，首先介绍PS中断上报：</p></li>
 </ul>
@@ -575,7 +576,7 @@ static int ltr559_get_als_value(struct ltr559_priv *obj, u16 als)
 </pre></div>
 </div>
 <section id="id4">
-<h3>1.PS数据上报<a class="headerlink" href="#id4" title="Permalink to this headline"></a></h3>
+<h3>1.PS数据上报<a class="headerlink" href="#id4" title="Permalink to this heading"></a></h3>
 <ul class="simple">
 <li><p>中断打印如下：</p></li>
 </ul>
@@ -632,7 +633,7 @@ static void handleEvent(uint32_t evtType, const void* evtData)
 </div>
 </section>
 <section id="id5">
-<h3>2.ALS数据上报<a class="headerlink" href="#id5" title="Permalink to this headline"></a></h3>
+<h3>2.ALS数据上报<a class="headerlink" href="#id5" title="Permalink to this heading"></a></h3>
 <ul class="simple">
 <li><p>打印如下：</p></li>
 </ul>
@@ -697,9 +698,9 @@ static void handleEvent(uint32_t evtType, const void* evtData)
 </section>
 </section>
 <section id="id6">
-<h2>问题点<a class="headerlink" href="#id6" title="Permalink to this headline"></a></h2>
+<h2>问题点<a class="headerlink" href="#id6" title="Permalink to this heading"></a></h2>
 <section id="id7">
-<h3>1.重启或者久休眠唤醒经常误报成靠近<a class="headerlink" href="#id7" title="Permalink to this headline"></a></h3>
+<h3>1.重启或者久休眠唤醒经常误报成靠近<a class="headerlink" href="#id7" title="Permalink to this heading"></a></h3>
 <ul class="simple">
 <li><p>查看打印，发现如下：</p></li>
 </ul>

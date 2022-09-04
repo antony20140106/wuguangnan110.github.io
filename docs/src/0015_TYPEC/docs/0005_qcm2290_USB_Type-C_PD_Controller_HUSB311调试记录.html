@@ -16,6 +16,7 @@
         <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
         <script src="../../../_static/jquery.js"></script>
         <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="../../../_static/doctools.js"></script>
     <script src="../../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../../genindex.html" />
@@ -94,18 +95,18 @@
            <div itemprop="articleBody">
              
   <section id="id1">
-<h1>概述<a class="headerlink" href="#id1" title="Permalink to this headline"></a></h1>
+<h1>概述<a class="headerlink" href="#id1" title="Permalink to this heading"></a></h1>
 <p>TypeC_高通A6650_USB_Type-C_PD_Controller_HUSB311调试记录。</p>
 </section>
 <section id="id2">
-<h1>参考<a class="headerlink" href="#id2" title="Permalink to this headline"></a></h1>
+<h1>参考<a class="headerlink" href="#id2" title="Permalink to this heading"></a></h1>
 <ul class="simple">
 <li><p>[HUSB311 code.zip](refers/HUSB311 code.zip)</p></li>
 <li><p><a class="reference download internal" download="" href="../../../_downloads/9038e905979fb2d4fa6f52b6689ab354/HUSB311_ACC_DatasheetRev2p2.pdf"><span class="xref download myst">HUSB311_ACC_DatasheetRev2p2.pdf</span></a></p></li>
 </ul>
 </section>
 <section id="id3">
-<h1>硬件信息<a class="headerlink" href="#id3" title="Permalink to this headline"></a></h1>
+<h1>硬件信息<a class="headerlink" href="#id3" title="Permalink to this heading"></a></h1>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>pin97：GPIO_31   连接充电IC的中断  
 pin98： GPIO_107 连接PD中断
 pin36：I2C_SDA
@@ -114,9 +115,9 @@ pin37：I2C_SCL
 </div>
 </section>
 <section id="id4">
-<h1>调试过程<a class="headerlink" href="#id4" title="Permalink to this headline"></a></h1>
+<h1>调试过程<a class="headerlink" href="#id4" title="Permalink to this heading"></a></h1>
 <section id="i2c">
-<h2>1.i2c不通<a class="headerlink" href="#i2c" title="Permalink to this headline"></a></h2>
+<h2>1.i2c不通<a class="headerlink" href="#i2c" title="Permalink to this heading"></a></h2>
 <p>将代码移植进去，发现i2c不通，打印如下：</p>
 <p><img alt="0005_0000.png" src="../../../_images/0005_00001.png" /></p>
 <p>硬件测试，发现sda没有输出：</p>
@@ -154,7 +155,7 @@ pin37：I2C_SCL
 </pre></div>
 </div>
 <section id="devcfg">
-<h3>替换默认devcfg配置<a class="headerlink" href="#devcfg" title="Permalink to this headline"></a></h3>
+<h3>替换默认devcfg配置<a class="headerlink" href="#devcfg" title="Permalink to this heading"></a></h3>
 <ul class="simple">
 <li><p>需要将SE0默认配置修改为i2c，移远提供默认配置镜像过来烧录，发现起不来，应该是avb校验不过，我们开了efuse不能直接用他们编出来的镜像：</p></li>
 <li><p>镜像名称：devcfg.mbn</p></li>
@@ -191,7 +192,7 @@ B -   4891669 - ^^^^^- Done Printing -^^^^^
 <p><img alt="0005_0002.png" src="../../../_images/0005_0002.png" /></p>
 </section>
 <section id="i2cget-greater-than-highest-fmax">
-<h3>i2cget无法获取数据，报错greater than highest Fmax<a class="headerlink" href="#i2cget-greater-than-highest-fmax" title="Permalink to this headline"></a></h3>
+<h3>i2cget无法获取数据，报错greater than highest Fmax<a class="headerlink" href="#i2cget-greater-than-highest-fmax" title="Permalink to this heading"></a></h3>
 <p>以下是启动log：</p>
 <div class="highlight-log notranslate"><div class="highlight"><pre><span></span>[    7.957778] i2c /dev entries driver
 [    7.964917] i2c_geni 4a80000.i2c: Bus frequency is set to 400000Hz
@@ -373,7 +374,7 @@ static int find_vdd_level(struct clk_init_data *clk_intd, unsigned long rate)
 </div>
 </section>
 <section id="patch">
-<h3>高通提供patch<a class="headerlink" href="#patch" title="Permalink to this headline"></a></h3>
+<h3>高通提供patch<a class="headerlink" href="#patch" title="Permalink to this heading"></a></h3>
 <p>使用patch后，i2c通了，如下：</p>
 <div class="highlight-diff notranslate"><div class="highlight"><pre><span></span><span class="gd">--- a/A6650_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/SocPkg/AgattiPkg/Library/ClockTargetLib/ClockBSP.c</span><span class="w"></span>
 <span class="gi">+++ b/A6650_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/SocPkg/AgattiPkg/Library/ClockTargetLib/ClockBSP.c</span><span class="w"></span>
@@ -472,7 +473,7 @@ static inline int husb311_check_revision(struct i2c_client *client)
 </section>
 </section>
 <section id="dts">
-<h2>2.dts无法加载启动<a class="headerlink" href="#dts" title="Permalink to this headline"></a></h2>
+<h2>2.dts无法加载启动<a class="headerlink" href="#dts" title="Permalink to this heading"></a></h2>
 <p>烧录最新软件发现打印<code class="docutils literal notranslate"><span class="pre">Get</span> <span class="pre">Pax</span> <span class="pre">Main</span> <span class="pre">Board</span> <span class="pre">Failed.</span></code>，启动不了，咨询剑锋说目前<code class="docutils literal notranslate"><span class="pre">Main</span> <span class="pre">Board</span></code>都是从cfg分区获取的，需要烧录配置文件<code class="docutils literal notranslate"><span class="pre">A6650-AA200-260A-2N0-EA_Config_2570000_SIG_V1.0.ini</span></code>，内容如下：</p>
 <div class="highlight-log notranslate"><div class="highlight"><pre><span></span>TOUCH_SCREEN=&quot;257&quot;
 LCD=&quot;257&quot;
@@ -530,7 +531,7 @@ Output is saved at: /home/wugn/A6650-project/Unpacking_Tool/QCM2290.LA.2.0/commo
 </div>
 </section>
 <section id="kernel">
-<h2>3.烧录后kernel报错<a class="headerlink" href="#kernel" title="Permalink to this headline"></a></h2>
+<h2>3.烧录后kernel报错<a class="headerlink" href="#kernel" title="Permalink to this heading"></a></h2>
 <p>i2c通了，但是卡在kernel死机了，log如下：</p>
 <div class="highlight-log notranslate"><div class="highlight"><pre><span></span>[    5.933431] i2c /dev entries driver
 [    5.940515] i2c_geni 4a80000.i2c: Bus frequency is set to 400000Hz
@@ -872,7 +873,7 @@ Output is saved at: /home/wugn/A6650-project/Unpacking_Tool/QCM2290.LA.2.0/commo
 </pre></div>
 </div>
 <section id="id5">
-<h3>软件流程<a class="headerlink" href="#id5" title="Permalink to this headline"></a></h3>
+<h3>软件流程<a class="headerlink" href="#id5" title="Permalink to this heading"></a></h3>
 <p><code class="docutils literal notranslate"><span class="pre">tcpc_init_work</span></code>工作队列完成lpm模式的进入，<code class="docutils literal notranslate"><span class="pre">tcpc_event_init_work</span></code>完成创建PD event处理线程，<code class="docutils literal notranslate"><span class="pre">tcpc_init_work</span></code>和<code class="docutils literal notranslate"><span class="pre">tcpc_event_init_work</span></code>工作队列注册及触发过程：</p>
 <div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span>* husb311_i2c_probe(struct i2c_client *client,
   * ret = husb311_tcpcdev_init(chip, &amp;client-&gt;dev);
@@ -991,7 +992,7 @@ out:
 </div>
 </section>
 <section id="id6">
-<h3>打印分析<a class="headerlink" href="#id6" title="Permalink to this headline"></a></h3>
+<h3>打印分析<a class="headerlink" href="#id6" title="Permalink to this heading"></a></h3>
 <p>tcpc_init_work启动后，发送内核软死锁。</p>
 <div class="highlight-log notranslate"><div class="highlight"><pre><span></span>[   37.859208] tcpc_init_work force start
 [   37.862996] tcpc_init_work force start
@@ -1202,11 +1203,11 @@ out:
 </section>
 </section>
 <section id="v">
-<h2>4.中断脚电压0.8v<a class="headerlink" href="#v" title="Permalink to this headline"></a></h2>
+<h2>4.中断脚电压0.8v<a class="headerlink" href="#v" title="Permalink to this heading"></a></h2>
 <p>原因：将多余的三极管去掉。</p>
 </section>
 <section id="retrylpm">
-<h2>5.RetryLPM不成功，无法进入低功耗模式<a class="headerlink" href="#retrylpm" title="Permalink to this headline"></a></h2>
+<h2>5.RetryLPM不成功，无法进入低功耗模式<a class="headerlink" href="#retrylpm" title="Permalink to this heading"></a></h2>
 <p>正常typec在拔出后将进入LPM低功耗模式，目前系统报错无法进入，打印如下：</p>
 <div class="highlight-log notranslate"><div class="highlight"><pre><span></span>[Sun Apr 24 16:13:46 2022] ///PD dbg info 49d
 [Sun Apr 24 16:13:46 2022] &lt; 1191.576&gt;Trigger TYPEC_RT_TIMER_LOW_POWER_MODE
@@ -1342,7 +1343,7 @@ static int husb311_set_low_power_mode(
 <img alt="0005_0006.png" src="../../../_images/0005_0006.png" /></p>
 </section>
 <section id="typec">
-<h2>6.插入typec没有中断下拉<a class="headerlink" href="#typec" title="Permalink to this headline"></a></h2>
+<h2>6.插入typec没有中断下拉<a class="headerlink" href="#typec" title="Permalink to this heading"></a></h2>
 <p>发现机器插入typec后没有中断下拉，也没有打印输入触发中断，CC脚也被拉低了，抓取逻辑分析仪如下：</p>
 <p><img alt="0005_0007.png" src="../../../_images/0005_0007.png" /></p>
 <p>后面发现由于板子坏了导致，更换开发板后，正常插入情况如下：</p>
@@ -1354,13 +1355,13 @@ static int husb311_set_low_power_mode(
 </ul>
 </section>
 <section id="attached-sink">
-<h2>7.返回打印Attached-&gt; SINK<a class="headerlink" href="#attached-sink" title="Permalink to this headline"></a></h2>
+<h2>7.返回打印Attached-&gt; SINK<a class="headerlink" href="#attached-sink" title="Permalink to this heading"></a></h2>
 <p>插入充电时，反复打印如下：</p>
 <p><img alt="0005_0009.png" src="../../../_images/0005_0009.png" /></p>
 <p>发现是因为插入power-z导致的，但是用带e-mark的线又没事，原因不明。</p>
 </section>
 <section id="ext-discharge">
-<h2>8.EXT-Discharge 重启<a class="headerlink" href="#ext-discharge" title="Permalink to this headline"></a></h2>
+<h2>8.EXT-Discharge 重启<a class="headerlink" href="#ext-discharge" title="Permalink to this heading"></a></h2>
 <p>log如下，每次跑到<code class="docutils literal notranslate"><span class="pre">TCPC-TCPC:EXT-Discharge</span></code>就死机了。</p>
 <div class="highlight-log notranslate"><div class="highlight"><pre><span></span>[    5.903511] rt-pd-manager soc:rt_pd_manager: rt_pd_manager_probe (0.0.8_G) probe_cnt = 2
 [    5.911823] register_tcp_dev_notifier supply_num = 0
@@ -1584,7 +1585,7 @@ drivers/misc/pax/tcpc/rt_pd_manager.c
 </div>
 </section>
 <section id="usb">
-<h2>9.插usb启动死机重启<a class="headerlink" href="#usb" title="Permalink to this headline"></a></h2>
+<h2>9.插usb启动死机重启<a class="headerlink" href="#usb" title="Permalink to this heading"></a></h2>
 <div class="highlight-log notranslate"><div class="highlight"><pre><span></span>[   17.211198] binder: 506:506 ioctl 40046210 7fcd7d5154 returned -22
 [   17.281837] fscrypt: AES-256-CTS-CBC using implementation &quot;cts(cbc-aes-ce)&quot;
 [   17.343775] binder: 514:514 ioctl 40046210 7fc2840884 returned -22
@@ -1864,7 +1865,7 @@ int tcpci_event_init(struct tcpc_device *tcpc)
 </div>
 </section>
 <section id="otg">
-<h2>10.接OTG线死机<a class="headerlink" href="#otg" title="Permalink to this headline"></a></h2>
+<h2>10.接OTG线死机<a class="headerlink" href="#otg" title="Permalink to this heading"></a></h2>
 <p>每次插入OTG线必死机重启，<code class="docutils literal notranslate"><span class="pre">dmesg</span> <span class="pre">-T</span> <span class="pre">-w</span></code>打印如下：</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="n">Sun</span> <span class="n">Apr</span> <span class="mi">24</span> <span class="mi">03</span><span class="p">:</span><span class="mi">59</span><span class="p">:</span><span class="mi">24</span> <span class="mi">2022</span><span class="p">]</span> <span class="o">///</span><span class="n">PD</span> <span class="n">dbg</span> <span class="n">info</span> <span class="mi">49</span><span class="n">d</span>
 <span class="p">[</span><span class="n">Sun</span> <span class="n">Apr</span> <span class="mi">24</span> <span class="mi">03</span><span class="p">:</span><span class="mi">59</span><span class="p">:</span><span class="mi">24</span> <span class="mi">2022</span><span class="p">]</span> <span class="o">&lt;</span>  <span class="mf">358.989</span><span class="o">&gt;</span><span class="n">TCPC</span><span class="o">-</span><span class="n">TCPC</span><span class="p">:</span><span class="n">Alert</span><span class="p">:</span><span class="mh">0x0001</span><span class="p">,</span> <span class="n">Mask</span><span class="p">:</span><span class="mh">0x21067f</span>
@@ -2110,8 +2111,8 @@ static int pd_tcp_notifier_call(struct notifier_block *nb,
 <span class="w">	</span><span class="n">dev_err</span><span class="p">(</span><span class="n">rpmd</span><span class="o">-&gt;</span><span class="n">dev</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;%s %s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">__func__</span><span class="p">,</span><span class="w"> </span><span class="n">dr_names</span><span class="p">[</span><span class="n">usb_dr</span><span class="p">]);</span><span class="w"></span>
 
 <span class="w">	</span><span class="k">switch</span><span class="w"> </span><span class="p">(</span><span class="n">usb_dr</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">	</span><span class="k">case</span><span class="w"> </span><span class="nl">DR_IDLE</span><span class="p">:</span><span class="w"></span>
-<span class="w">	</span><span class="k">case</span><span class="w"> </span><span class="nl">DR_MAX</span><span class="p">:</span><span class="w"></span>
+<span class="w">	</span><span class="k">case</span><span class="w"> </span><span class="no">DR_IDLE</span><span class="p">:</span><span class="w"></span>
+<span class="w">	</span><span class="k">case</span><span class="w"> </span><span class="no">DR_MAX</span><span class="p">:</span><span class="w"></span>
 <span class="w">		</span><span class="n">stop_usb_peripheral</span><span class="p">(</span><span class="n">rpmd</span><span class="p">);</span><span class="w"></span>
 <span class="w">		</span><span class="n">stop_usb_host</span><span class="p">(</span><span class="n">rpmd</span><span class="p">);</span><span class="w"></span>
 <span class="w">		</span><span class="n">set_charger_plug_status</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span><span class="w"> </span><span class="c1">//加在这</span>
@@ -2176,7 +2177,7 @@ void handle_typec_attach_dettach(bool en)
 </pre></div>
 </div>
 <p>去掉如上mp2721 setprop里面加notify，然后将插入拔出事件通知都加到typec监听函数里面，device和host功能都正常了：</p>
-<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="w">	</span><span class="k">case</span><span class="w"> </span><span class="nl">TCP_NOTIFY_TYPEC_STATE</span><span class="p">:</span><span class="w"></span>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="w">	</span><span class="k">case</span><span class="w"> </span><span class="no">TCP_NOTIFY_TYPEC_STATE</span><span class="p">:</span><span class="w"></span>
 <span class="w">		</span><span class="n">old_state</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">noti</span><span class="o">-&gt;</span><span class="n">typec_state</span><span class="p">.</span><span class="n">old_state</span><span class="p">;</span><span class="w"></span>
 <span class="w">		</span><span class="n">new_state</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">noti</span><span class="o">-&gt;</span><span class="n">typec_state</span><span class="p">.</span><span class="n">new_state</span><span class="p">;</span><span class="w"></span>
 <span class="w">		</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">old_state</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">TYPEC_UNATTACHED</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"></span>

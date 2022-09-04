@@ -16,6 +16,7 @@
         <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
         <script src="../../../_static/jquery.js"></script>
         <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="../../../_static/doctools.js"></script>
     <script src="../../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../../genindex.html" />
@@ -77,14 +78,14 @@
            <div itemprop="articleBody">
              
   <section id="id1">
-<h1>概述<a class="headerlink" href="#id1" title="Permalink to this headline"></a></h1>
+<h1>概述<a class="headerlink" href="#id1" title="Permalink to this heading"></a></h1>
 <p>qcom qcm2290 验证普通TypeC接拓展坞作为host功能，插入外电至拓展坞后，外电反向给拓展坞及整机供电验证。</p>
 </section>
 <section id="id2">
-<h1>分析过程<a class="headerlink" href="#id2" title="Permalink to this headline"></a></h1>
+<h1>分析过程<a class="headerlink" href="#id2" title="Permalink to this heading"></a></h1>
 <p>由于typec的data role和power role是分开控制的，讲道理，当设备data role为host时，power role是可以作为sink的，也就是被供电。</p>
 <section id="a6650">
-<h2>A6650接拓展坞<a class="headerlink" href="#a6650" title="Permalink to this headline"></a></h2>
+<h2>A6650接拓展坞<a class="headerlink" href="#a6650" title="Permalink to this heading"></a></h2>
 <p>很奇怪，当插入外电至拓展坞后，整机typec消息由host变成device，重点是后面typec发送了<code class="docutils literal notranslate"><span class="pre">PR_SWAP</span></code>信号，将power_role设置为<code class="docutils literal notranslate"><span class="pre">PD_ROLE_SINK</span></code>状态，紧接着会收到<code class="docutils literal notranslate"><span class="pre">SINK_VBUS</span></code>消息，将charger vbus关闭，由拓展坞供电。</p>
 <ul class="simple">
 <li><p><a class="reference internal" href="log/a6650%E6%8B%93%E5%B1%95%E5%9D%9E%E6%8E%A5U%E7%9B%98%E6%8F%92%E5%A4%96%E7%94%B5.html"><span class="doc std std-doc">a6650拓展坞接U盘插外电.txt</span></a></p></li>
@@ -148,7 +149,7 @@ console:/sys/class/typec/port0 # cat data_role
 </div>
 </section>
 <section id="a800">
-<h2>A800接拓展坞<a class="headerlink" href="#a800" title="Permalink to this headline"></a></h2>
+<h2>A800接拓展坞<a class="headerlink" href="#a800" title="Permalink to this heading"></a></h2>
 <ul class="simple">
 <li><p><a class="reference internal" href="log/A800%E6%8B%93%E5%B1%95%E5%9D%9E%E6%8E%A5U%E7%9B%98%E6%8F%92%E5%A4%96%E7%94%B5.html"><span class="doc std std-doc">A800拓展坞接U盘插外电.txt</span></a></p></li>
 </ul>
@@ -422,7 +423,7 @@ console:/sys/class/typec/port0 # cat data_role
 </section>
 </section>
 <section id="id3">
-<h1>软件分析<a class="headerlink" href="#id3" title="Permalink to this headline"></a></h1>
+<h1>软件分析<a class="headerlink" href="#id3" title="Permalink to this heading"></a></h1>
 <ul class="simple">
 <li><p><span class="xref myst">0002_TypeC_PD驱动软件架构总结.md</span>
 参考上面的软件流程，我们知道普通typec接口处理role_swap函数就两个，分别是<code class="docutils literal notranslate"><span class="pre">typec_handle_role_swap_start</span></code>和<code class="docutils literal notranslate"><span class="pre">typec_handle_role_swap_stop</span></code>,<code class="docutils literal notranslate"><span class="pre">tcpc_typec_handle_timeout</span></code>是timer唤醒的线程处理函数，如下：</p></li>
@@ -430,11 +431,11 @@ console:/sys/class/typec/port0 # cat data_role
 <div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="kt">int</span><span class="w"> </span><span class="nf">tcpc_typec_handle_timeout</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">tcpc_device</span><span class="w"> </span><span class="o">*</span><span class="n">tcpc</span><span class="p">,</span><span class="w"> </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">timer_id</span><span class="p">)</span><span class="w"></span>
 <span class="p">{</span><span class="w"></span>
 <span class="cp">#ifdef CONFIG_TYPEC_CAP_ROLE_SWAP</span>
-<span class="w">	</span><span class="k">case</span><span class="w"> </span><span class="nl">TYPEC_RT_TIMER_ROLE_SWAP_START</span><span class="p">:</span><span class="w"></span>
+<span class="w">	</span><span class="k">case</span><span class="w"> </span><span class="no">TYPEC_RT_TIMER_ROLE_SWAP_START</span><span class="p">:</span><span class="w"></span>
 <span class="w">		</span><span class="n">typec_handle_role_swap_start</span><span class="p">(</span><span class="n">tcpc</span><span class="p">);</span><span class="w"></span>
 <span class="w">		</span><span class="k">break</span><span class="p">;</span><span class="w"></span>
 
-<span class="w">	</span><span class="k">case</span><span class="w"> </span><span class="nl">TYPEC_RT_TIMER_ROLE_SWAP_STOP</span><span class="p">:</span><span class="w"></span>
+<span class="w">	</span><span class="k">case</span><span class="w"> </span><span class="no">TYPEC_RT_TIMER_ROLE_SWAP_STOP</span><span class="p">:</span><span class="w"></span>
 <span class="w">		</span><span class="n">typec_handle_role_swap_stop</span><span class="p">(</span><span class="n">tcpc</span><span class="p">);</span><span class="w"></span>
 <span class="w">		</span><span class="k">break</span><span class="p">;</span><span class="w"></span>
 <span class="cp">#endif	</span><span class="cm">/* CONFIG_TYPEC_CAP_ROLE_SWAP */</span><span class="cp"></span>
@@ -475,7 +476,7 @@ console:/sys/class/typec/port0 # cat data_role
 </div>
 </section>
 <section id="id4">
-<h1>结论<a class="headerlink" href="#id4" title="Permalink to this headline"></a></h1>
+<h1>结论<a class="headerlink" href="#id4" title="Permalink to this heading"></a></h1>
 <p>也就是说普通的swap并不支持power/data dual role独立切换，都是绑定死的，只有pd才支持该功能，具体PD如何处理的请参考<code class="docutils literal notranslate"><span class="pre">PD</span> <span class="pre">Typec</span> <span class="pre">CC处理流程</span></code>章节：</p>
 <ul class="simple">
 <li><p><a class="reference internal" href="0002_TypeC_PD%E9%A9%B1%E5%8A%A8%E8%BD%AF%E4%BB%B6%E6%9E%B6%E6%9E%84%E6%80%BB%E7%BB%93.html"><span class="doc std std-doc">0002_TypeC_PD驱动软件架构总结.md</span></a></p></li>

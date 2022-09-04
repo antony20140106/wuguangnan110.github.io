@@ -16,6 +16,7 @@
         <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
         <script src="../../../_static/jquery.js"></script>
         <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="../../../_static/doctools.js"></script>
     <script src="../../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../../genindex.html" />
@@ -83,22 +84,22 @@
            <div itemprop="articleBody">
              
   <section id="id1">
-<h1>概述<a class="headerlink" href="#id1" title="Permalink to this headline"></a></h1>
+<h1>概述<a class="headerlink" href="#id1" title="Permalink to this heading"></a></h1>
 <p>本文主要讲解kernel层如何上传事件给到用户空间的几种方法。</p>
 <section id="id2">
-<h2>上报方式<a class="headerlink" href="#id2" title="Permalink to this headline"></a></h2>
+<h2>上报方式<a class="headerlink" href="#id2" title="Permalink to this heading"></a></h2>
 <section id="id3">
-<h3>1.上报键值方式<a class="headerlink" href="#id3" title="Permalink to this headline"></a></h3>
+<h3>1.上报键值方式<a class="headerlink" href="#id3" title="Permalink to this heading"></a></h3>
 <ul class="simple">
 <li><p><a class="reference external" href="https://blog.csdn.net/Ciellee/article/details/101312350">高通驱动实现 GPIO 中断上报键值</a></p></li>
 </ul>
 <section id="keycode">
-<h4>1.确认keycode值，同步修改上层键值映射表<a class="headerlink" href="#keycode" title="Permalink to this headline"></a></h4>
+<h4>1.确认keycode值，同步修改上层键值映射表<a class="headerlink" href="#keycode" title="Permalink to this heading"></a></h4>
 <p>从Generic.kl文件中，我们可以看到<code class="docutils literal notranslate"><span class="pre">CHANNEL_UP</span> <span class="pre">CHANNEL_DOWN</span> </code>是没人使用的，为避免和默认代码有冲突，我们使用 key 402 403 （0x192 0x193）来做为按键 keycoe。</p>
-<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="n">frameworks</span><span class="o">/</span><span class="n">base</span><span class="o">/</span><span class="n">data</span><span class="o">/</span><span class="n">keyboards</span><span class="o">/</span><span class="n">Generic</span><span class="p">.</span><span class="na">kl</span><span class="p">:</span>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="n">frameworks</span><span class="o">/</span><span class="n">base</span><span class="o">/</span><span class="n">data</span><span class="o">/</span><span class="n">keyboards</span><span class="o">/</span><span class="n">Generic</span><span class="p">.</span><span class="na">kl</span><span class="p">:</span><span class="w"></span>
 
-<span class="n">key</span> <span class="mi">402</span>   <span class="n">CHANNEL_UP</span>
-<span class="n">key</span> <span class="mi">403</span>   <span class="n">CHANNEL_DOWN</span>
+<span class="n">key</span><span class="w"> </span><span class="mi">402</span><span class="w">   </span><span class="n">CHANNEL_UP</span><span class="w"></span>
+<span class="n">key</span><span class="w"> </span><span class="mi">403</span><span class="w">   </span><span class="n">CHANNEL_DOWN</span><span class="w"></span>
 </pre></div>
 </div>
 <ul class="simple">
@@ -111,7 +112,7 @@
 </div>
 </section>
 <section id="id4">
-<h4>2.驱动代码<a class="headerlink" href="#id4" title="Permalink to this headline"></a></h4>
+<h4>2.驱动代码<a class="headerlink" href="#id4" title="Permalink to this heading"></a></h4>
 <div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="cm">/* input device */</span><span class="w"></span>
 <span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">create_input_device</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">pax_gpio_set</span><span class="w"> </span><span class="o">*</span><span class="n">data</span><span class="p">)</span><span class="w"></span>
 <span class="p">{</span><span class="w"></span>
@@ -158,15 +159,15 @@
 <span class="w">	</span><span class="kt">int</span><span class="w"> </span><span class="n">power_en</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
 
 <span class="w">	</span><span class="k">switch</span><span class="w"> </span><span class="p">(</span><span class="n">event</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">		</span><span class="k">case</span><span class="w"> </span><span class="nl">SET_POWER_EN</span><span class="p">:</span><span class="w"></span>
+<span class="w">		</span><span class="k">case</span><span class="w"> </span><span class="no">SET_POWER_EN</span><span class="p">:</span><span class="w"></span>
 <span class="w">			</span><span class="n">power_en</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">*</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="n">value</span><span class="p">;</span><span class="w"></span>
 <span class="w">			</span><span class="n">PAX_GPIO_DBG</span><span class="p">(</span><span class="s">&quot;SET_POWER_EN: %d&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">power_en</span><span class="p">);</span><span class="w"></span>
 <span class="w">			</span><span class="k">break</span><span class="p">;</span><span class="w"></span>
-<span class="w">		</span><span class="k">case</span><span class="w"> </span><span class="nl">SET_POWER_STATUS</span><span class="p">:</span><span class="w"></span>
+<span class="w">		</span><span class="k">case</span><span class="w"> </span><span class="no">SET_POWER_STATUS</span><span class="p">:</span><span class="w"></span>
 <span class="w">			</span><span class="n">power_en</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">*</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="n">value</span><span class="p">;</span><span class="w"></span>
 <span class="w">			</span><span class="n">PAX_GPIO_DBG</span><span class="p">(</span><span class="s">&quot;SET_POWER_STATUS: %d&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">power_en</span><span class="p">);</span><span class="w"></span>
 <span class="w">			</span><span class="k">break</span><span class="p">;</span><span class="w"></span>
-<span class="w">        </span><span class="k">case</span><span class="w"> </span><span class="nl">SET_POGO_DEV_STATE</span><span class="p">:</span><span class="w"></span>
+<span class="w">        </span><span class="k">case</span><span class="w"> </span><span class="no">SET_POGO_DEV_STATE</span><span class="p">:</span><span class="w"></span>
 <span class="w">		    </span><span class="n">power_en</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">*</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="n">value</span><span class="p">;</span><span class="w"></span>
 <span class="w">			</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">power_en</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
 <span class="w">				</span><span class="n">input_report_key</span><span class="p">(</span><span class="n">g_pax_gpio_set</span><span class="o">-&gt;</span><span class="n">input</span><span class="p">,</span><span class="w"> </span><span class="n">KEY_CHANNELUP</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span><span class="w"> </span><span class="c1">//上报键值</span>
@@ -193,7 +194,7 @@
 </div>
 </section>
 <section id="id5">
-<h4>3.调试<a class="headerlink" href="#id5" title="Permalink to this headline"></a></h4>
+<h4>3.调试<a class="headerlink" href="#id5" title="Permalink to this heading"></a></h4>
 <p>如果映射不对，可以调用<code class="docutils literal notranslate"><span class="pre">adb</span> <span class="pre">shell</span> <span class="pre">dumpsys</span> <span class="pre">input</span></code>看下调用的是哪个 kl 文件，然后把对应的键值 定义在 kl 文件中，就可以了。</p>
 <p>如下：</p>
 <div class="highlight-log notranslate"><div class="highlight"><pre><span></span>adb dumpsys input :
@@ -215,7 +216,7 @@
 </div>
 </section>
 <section id="framework">
-<h4>4.framework处理流程<a class="headerlink" href="#framework" title="Permalink to this headline"></a></h4>
+<h4>4.framework处理流程<a class="headerlink" href="#framework" title="Permalink to this heading"></a></h4>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">frameworks/base/services/core/java/com/android/server/policy/PhoneWindowManager.java</span></code>:</p></li>
 </ul>
@@ -311,7 +312,7 @@
 </section>
 </section>
 <section id="uevent">
-<h3>2.uevent事件方式<a class="headerlink" href="#uevent" title="Permalink to this headline"></a></h3>
+<h3>2.uevent事件方式<a class="headerlink" href="#uevent" title="Permalink to this heading"></a></h3>
 </section>
 </section>
 </section>

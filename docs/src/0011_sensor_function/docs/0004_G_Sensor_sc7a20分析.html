@@ -16,6 +16,7 @@
         <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
         <script src="../../../_static/jquery.js"></script>
         <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="../../../_static/doctools.js"></script>
     <script src="../../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../../genindex.html" />
@@ -82,17 +83,17 @@
            <div itemprop="articleBody">
              
   <section id="accel-sensor">
-<h1>Accel Sensor 分析<a class="headerlink" href="#accel-sensor" title="Permalink to this headline"></a></h1>
+<h1>Accel Sensor 分析<a class="headerlink" href="#accel-sensor" title="Permalink to this heading"></a></h1>
 <p>Accel Sensor 驱动分析</p>
 <section id="id1">
-<h2>参考<a class="headerlink" href="#id1" title="Permalink to this headline"></a></h2>
+<h2>参考<a class="headerlink" href="#id1" title="Permalink to this heading"></a></h2>
 <ul class="simple">
 <li><p><span class="xref myst">sensor_all_in_one.pdf</span></p></li>
 <li><p>[CS6853-BD9D-PGD-V1.7EN_MT6853_SCP_Development_Guide.pdf](CS6853-BD9D-PGD-V1.7EN_MT6853_SCP_Development_Guide.pdf refer/CS6853-BD9D-PGD-V1.7EN_MT6853_SCP_Development_Guide.pdf)</p></li>
 </ul>
 </section>
 <section id="id2">
-<h2>代码分析<a class="headerlink" href="#id2" title="Permalink to this headline"></a></h2>
+<h2>代码分析<a class="headerlink" href="#id2" title="Permalink to this heading"></a></h2>
 <ul class="simple">
 <li><p>dts：</p></li>
 </ul>
@@ -118,7 +119,7 @@
 </div>
 </section>
 <section id="debug">
-<h2>debug调试<a class="headerlink" href="#debug" title="Permalink to this headline"></a></h2>
+<h2>debug调试<a class="headerlink" href="#debug" title="Permalink to this heading"></a></h2>
 <ul class="simple">
 <li><p>acc sensorhub调通后，scp打印如下：</p></li>
 </ul>
@@ -182,7 +183,7 @@
 </div>
 </section>
 <section id="id3">
-<h2>初始化流程<a class="headerlink" href="#id3" title="Permalink to this headline"></a></h2>
+<h2>初始化流程<a class="headerlink" href="#id3" title="Permalink to this heading"></a></h2>
 <ul class="simple">
 <li><p>首先看初始化流程：</p></li>
 </ul>
@@ -238,12 +239,12 @@ OVERLAY_DECLARE(sc7a20, OVERLAY_WORK_00, sc7a20Init);
 </div>
 </section>
 <section id="id4">
-<h2>数据上报流程<a class="headerlink" href="#id4" title="Permalink to this headline"></a></h2>
+<h2>数据上报流程<a class="headerlink" href="#id4" title="Permalink to this heading"></a></h2>
 </section>
 <section id="id5">
-<h2>问题点分析<a class="headerlink" href="#id5" title="Permalink to this headline"></a></h2>
+<h2>问题点分析<a class="headerlink" href="#id5" title="Permalink to this heading"></a></h2>
 <section id="acc">
-<h3>1.acc上报数据很卡顿<a class="headerlink" href="#acc" title="Permalink to this headline"></a></h3>
+<h3>1.acc上报数据很卡顿<a class="headerlink" href="#acc" title="Permalink to this heading"></a></h3>
 <ul class="simple">
 <li><p>根据设置频率打印如下,使用AKM_sENSORmONITOR看，延时周期为62ms，频率计算为16HZ，太慢了，rate换算应该是除以1000：</p></li>
 </ul>
@@ -271,29 +272,29 @@ OVERLAY_DECLARE(sc7a20, OVERLAY_WORK_00, sc7a20Init);
 <li><p>但是采用kernel驱动方式，延时周期为65ms~66ms，频率是15HZ，不卡顿，难道是频率不匹配导致？继续看看framwork如何定义频率，下面可以看到framework层定义了4中频率，分别是fastest、50HZ/15HZ/5HZ四种：</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">frameworks/native/libs/sensor/SensorEventQueue.cpp</span></code>传感器采样频率,是在android注册sensor的时候，会有一个delay的时间，这个时间就是采样的频率。上层注册 API registerListener（listener, sensor,rate）rate 即为时间:</p></li>
 </ul>
-<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="n">status_t</span> <span class="n">SensorEventQueue</span><span class="p">::</span><span class="n">enableSensor</span><span class="p">(</span><span class="n">Sensor</span> <span class="kd">const</span><span class="o">*</span> <span class="n">sensor</span><span class="p">)</span> <span class="kd">const</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="n">enableSensor</span><span class="p">(</span><span class="n">sensor</span><span class="p">,</span> <span class="n">SENSOR_DELAY_NORMAL</span><span class="p">);</span>
-<span class="p">}</span>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="n">status_t</span><span class="w"> </span><span class="n">SensorEventQueue</span><span class="p">::</span><span class="n">enableSensor</span><span class="p">(</span><span class="n">Sensor</span><span class="w"> </span><span class="kd">const</span><span class="o">*</span><span class="w"> </span><span class="n">sensor</span><span class="p">)</span><span class="w"> </span><span class="kd">const</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">enableSensor</span><span class="p">(</span><span class="n">sensor</span><span class="p">,</span><span class="w"> </span><span class="n">SENSOR_DELAY_NORMAL</span><span class="p">);</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
 
-<span class="kd">class</span> <span class="nc">SensorEventQueue</span> <span class="p">:</span> <span class="kd">public</span> <span class="n">ASensorEventQueue</span><span class="p">,</span> <span class="kd">public</span> <span class="n">RefBase</span>
-<span class="p">{</span>
-<span class="kd">public</span><span class="p">:</span>
+<span class="kd">class</span> <span class="nc">SensorEventQueue</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="kd">public</span><span class="w"> </span><span class="n">ASensorEventQueue</span><span class="p">,</span><span class="w"> </span><span class="kd">public</span><span class="w"> </span><span class="n">RefBase</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="kd">public</span><span class="p">:</span><span class="w"></span>
 
-    <span class="kd">enum</span> <span class="p">{</span> <span class="n">MAX_RECEIVE_BUFFER_EVENT_COUNT</span> <span class="o">=</span> <span class="mi">256</span> <span class="p">};</span>
+<span class="w">    </span><span class="kd">enum</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">MAX_RECEIVE_BUFFER_EVENT_COUNT</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">256</span><span class="w"> </span><span class="p">};</span><span class="w"></span>
 
-    <span class="cm">/**</span>
+<span class="w">    </span><span class="cm">/**</span>
 <span class="cm">     * Typical sensor delay (sample period) in microseconds.</span>
-<span class="cm">     */</span>
-    <span class="c1">// Fastest sampling, system will bound it to minDelay</span>
-    <span class="kd">static</span> <span class="n">constexpr</span> <span class="n">int32_t</span> <span class="n">SENSOR_DELAY_FASTEST</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
-    <span class="c1">// Typical sample period for game, 50Hz;</span>
-    <span class="kd">static</span> <span class="n">constexpr</span> <span class="n">int32_t</span> <span class="n">SENSOR_DELAY_GAME</span> <span class="o">=</span> <span class="mi">20000</span><span class="p">;</span>
-    <span class="c1">// Typical sample period for UI, 15Hz</span>
-    <span class="kd">static</span> <span class="n">constexpr</span> <span class="n">int32_t</span> <span class="n">SENSOR_DELAY_UI</span> <span class="o">=</span> <span class="mi">66667</span><span class="p">;</span>
-    <span class="c1">// Default sensor sample period</span>
-    <span class="kd">static</span> <span class="n">constexpr</span> <span class="n">int32_t</span> <span class="n">SENSOR_DELAY_NORMAL</span> <span class="o">=</span> <span class="mi">200000</span><span class="p">;</span>
-	<span class="p">...</span><span class="na">省略</span><span class="p">...</span>
-<span class="p">}</span>
+<span class="cm">     */</span><span class="w"></span>
+<span class="w">    </span><span class="c1">// Fastest sampling, system will bound it to minDelay</span><span class="w"></span>
+<span class="w">    </span><span class="kd">static</span><span class="w"> </span><span class="n">constexpr</span><span class="w"> </span><span class="n">int32_t</span><span class="w"> </span><span class="n">SENSOR_DELAY_FASTEST</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="c1">// Typical sample period for game, 50Hz;</span><span class="w"></span>
+<span class="w">    </span><span class="kd">static</span><span class="w"> </span><span class="n">constexpr</span><span class="w"> </span><span class="n">int32_t</span><span class="w"> </span><span class="n">SENSOR_DELAY_GAME</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">20000</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="c1">// Typical sample period for UI, 15Hz</span><span class="w"></span>
+<span class="w">    </span><span class="kd">static</span><span class="w"> </span><span class="n">constexpr</span><span class="w"> </span><span class="n">int32_t</span><span class="w"> </span><span class="n">SENSOR_DELAY_UI</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">66667</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="c1">// Default sensor sample period</span><span class="w"></span>
+<span class="w">    </span><span class="kd">static</span><span class="w"> </span><span class="n">constexpr</span><span class="w"> </span><span class="n">int32_t</span><span class="w"> </span><span class="n">SENSOR_DELAY_NORMAL</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">200000</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="p">...</span><span class="na">省略</span><span class="p">...</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
 </pre></div>
 </div>
 <ul class="simple">
@@ -326,7 +327,7 @@ OVERLAY_DECLARE(sc7a20, OVERLAY_WORK_00, sc7a20Init);
 </ul>
 </section>
 <section id="id6">
-<h3>2.acc软重启后平放数据偏差较大有问题<a class="headerlink" href="#id6" title="Permalink to this headline"></a></h3>
+<h3>2.acc软重启后平放数据偏差较大有问题<a class="headerlink" href="#id6" title="Permalink to this heading"></a></h3>
 <ul class="simple">
 <li><p>正常数据如下：</p></li>
 </ul>

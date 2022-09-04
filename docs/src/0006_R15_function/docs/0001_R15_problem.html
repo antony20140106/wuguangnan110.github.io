@@ -16,6 +16,7 @@
         <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
         <script src="../../../_static/jquery.js"></script>
         <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="../../../_static/doctools.js"></script>
     <script src="../../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../../genindex.html" />
@@ -80,10 +81,10 @@
            <div itemprop="articleBody">
              
   <section id="id1">
-<h1>概述<a class="headerlink" href="#id1" title="Permalink to this headline"></a></h1>
+<h1>概述<a class="headerlink" href="#id1" title="Permalink to this heading"></a></h1>
 <p>R15问题汇总</p>
 <section id="r15">
-<h2>1.开机第一次R15不枚举<a class="headerlink" href="#r15" title="Permalink to this headline"></a></h2>
+<h2>1.开机第一次R15不枚举<a class="headerlink" href="#r15" title="Permalink to this heading"></a></h2>
 <ul class="simple">
 <li><p>原因是PDM应用调用了<code class="docutils literal notranslate"><span class="pre">wakeup</span></code>旧接口，M50是vbus控制，没做特殊处理，电源被关闭了。</p></li>
 </ul>
@@ -250,7 +251,7 @@ kernel log:
 <span class="k">static</span><span class="w"> </span><span class="kt">long</span><span class="w"> </span><span class="n">gpios_ioctl</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">file</span><span class="w"> </span><span class="o">*</span><span class="n">file</span><span class="p">,</span><span class="w"> </span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">cmd</span><span class="p">,</span><span class="w"> </span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">long</span><span class="w"> </span><span class="n">arg</span><span class="p">)</span><span class="w"></span>
 <span class="p">{</span><span class="w"></span>
 <span class="w">    </span><span class="k">switch</span><span class="w"> </span><span class="p">(</span><span class="n">cmd</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">	</span><span class="k">case</span><span class="w"> </span><span class="nl">PAX_GPIO_IOCTL_READ</span><span class="p">:</span><span class="w"></span>
+<span class="w">	</span><span class="k">case</span><span class="w"> </span><span class="no">PAX_GPIO_IOCTL_READ</span><span class="p">:</span><span class="w"></span>
 <span class="w">		</span><span class="p">{</span><span class="w"></span>
 <span class="w">			</span><span class="n">value</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">read_gpios_value</span><span class="p">(</span><span class="n">g_pax_gpio_set</span><span class="p">);</span><span class="w"></span>
 <span class="w">			</span><span class="n">copy_to_user</span><span class="p">((</span><span class="kt">void</span><span class="w"> </span><span class="n">__user</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="n">arg</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="kt">void</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="o">&amp;</span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="k">sizeof</span><span class="p">(</span><span class="n">value</span><span class="p">));</span><span class="w"></span>
@@ -259,7 +260,7 @@ kernel log:
 <span class="w">		</span><span class="p">}</span><span class="w"></span>
 <span class="w">		</span><span class="k">break</span><span class="p">;</span><span class="w"></span>
 
-<span class="w">	</span><span class="k">case</span><span class="w"> </span><span class="nl">PAX_GPIO_IOCTL_WRITE</span><span class="p">:</span><span class="w"></span>
+<span class="w">	</span><span class="k">case</span><span class="w"> </span><span class="no">PAX_GPIO_IOCTL_WRITE</span><span class="p">:</span><span class="w"></span>
 <span class="w">		</span><span class="p">{</span><span class="w"></span>
 <span class="w">			</span><span class="n">copy_from_user</span><span class="p">((</span><span class="kt">void</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="o">&amp;</span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="kt">void</span><span class="w"> </span><span class="n">__user</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="n">arg</span><span class="p">,</span><span class="w"> </span><span class="k">sizeof</span><span class="p">(</span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">int</span><span class="p">));</span><span class="w"></span>
 <span class="w">			</span><span class="n">PAX_GPIO_DBG</span><span class="p">(</span><span class="s">&quot;ioctl write: 0x%x&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">);</span><span class="w"></span>
@@ -309,7 +310,7 @@ kernel log:
 </pre></div>
 </div>
 <section id="id2">
-<h3>解决方案<a class="headerlink" href="#id2" title="Permalink to this headline"></a></h3>
+<h3>解决方案<a class="headerlink" href="#id2" title="Permalink to this heading"></a></h3>
 <ul class="simple">
 <li><p>增加M50 R15状态读取功能。</p></li>
 </ul>
@@ -389,7 +390,7 @@ kernel log:
 </section>
 </section>
 <section id="id3">
-<h2>2.休眠状态无法充电唤醒<a class="headerlink" href="#id3" title="Permalink to this headline"></a></h2>
+<h2>2.休眠状态无法充电唤醒<a class="headerlink" href="#id3" title="Permalink to this heading"></a></h2>
 <ul class="simple">
 <li><p>根据原理图如下：</p></li>
 </ul>
@@ -399,7 +400,7 @@ kernel log:
 <div><p>PD需要检测vbus上电的情况下，才会响应充电，才会有CC中断。</p>
 </div></blockquote>
 <section id="id4">
-<h3>解决方案<a class="headerlink" href="#id4" title="Permalink to this headline"></a></h3>
+<h3>解决方案<a class="headerlink" href="#id4" title="Permalink to this heading"></a></h3>
 <ul class="simple">
 <li><p>供应商修改PD芯片<code class="docutils literal notranslate"><span class="pre">FL7102</span></code>固件，Vbus不在位的情况下，插入充电器，有CC中断并充电。</p></li>
 <li><p>更新固件后，typec中断如下：</p></li>
