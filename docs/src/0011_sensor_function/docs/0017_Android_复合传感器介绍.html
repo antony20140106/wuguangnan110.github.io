@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>wugn</title>
+
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../index.html" class="icon icon-home"> wugn_note
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">概述</a></li>
+<li><a class="reference internal" href="#id2">参考</a></li>
+<li><a class="reference internal" href="#id3">复合传感器简介</a></li>
+<li><a class="reference internal" href="#id4">动作复合传感器</a><ul>
+<li><a class="reference internal" href="#id5">线性加速器</a></li>
+<li><a class="reference internal" href="#id6">大幅度动作传感器</a></li>
+<li><a class="reference internal" href="#id7">步测器</a></li>
+<li><a class="reference internal" href="#id8">计步器</a></li>
+<li><a class="reference internal" href="#id9">倾斜检测器</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id10">姿势复合传感器</a><ul>
+<li><a class="reference internal" href="#id11">旋转矢量传感器</a></li>
+<li><a class="reference internal" href="#id12">游戏旋转矢量传感器</a></li>
+<li><a class="reference internal" href="#id13">重力传感器</a></li>
+<li><a class="reference internal" href="#id14">地磁旋转矢量传感器</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id15">未校准传感器</a><ul>
+<li><a class="reference internal" href="#id16">未校准加速度计</a></li>
+<li><a class="reference internal" href="#id17">未校准陀螺仪传感器</a></li>
+<li><a class="reference internal" href="#id18">未校准磁场传感器</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id19">互动复合传感器</a><ul>
+<li><a class="reference internal" href="#id20">唤醒手势传感器</a></li>
+<li><a class="reference internal" href="#id21">拿起手势传感器</a></li>
+<li><a class="reference internal" href="#id22">快览手势传感器</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#mt6762">MT6762平台</a></li>
+<li><a class="reference internal" href="#realmesensorlist">realme手机支持sensorlist</a></li>
+</ul>
+</div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">wugn_note</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs"> 
+<li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+<li>概述</li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.forward()">Forward</a></li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.back()">Go Back</a> | </li>
+<li style="float: right;margin-left: 10px;"><a href="/index.html">Home</a> | </li>
+
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="id1">
+<h1>概述<a class="headerlink" href="#id1" title="Permalink to this headline"></a></h1>
+<p>Android平台虚拟传感器<code class="docutils literal notranslate"><span class="pre">(fusion/virtual</span> <span class="pre">sensor)</span></code>介绍。</p>
+<p>Android中引入的传感器分为两种：原始传感器（物理传感器）和合成传感器（复合传感器）。 原始传感器给出从传感器获得的原始数据，而一台原始传感器对应的是一台Android设备中实际存在的物理传感器组件。 合成传感器结合多个原始传感器的原始数据，或修改原始传输传感器数据在应用代码和底层设备之间提供抽象层，为上层业务提供服务。</p>
+</section>
+<section id="id2">
+<h1>参考<a class="headerlink" href="#id2" title="Permalink to this headline"></a></h1>
+<ul class="simple">
+<li><p><a class="reference external" href="https://blog.csdn.net/json_zjs/article/details/83008658">Android传感器的使用</a></p></li>
+</ul>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span>TYPE_AMBIENT_TEMPERATURE
+温度传感器，单位是 ℃，返回当前的温度。
+TYPE_GAME_ROTATION_VECTOR
+用来探测运动而不必受到电磁干扰的影响，因为它并不依赖于磁北极。
+TYPE_GEOMAGNETIC_ROTATION_VECTOR
+地磁旋转矢量传感器，提供手机的旋转矢量，当手机处于休眠状态时，仍可以记录设备的方位。
+TYPE_GRAVITY
+重力传感器简称 GV-sensor，单位是 $m/s^2%，测量应用于设备X、Y、Z轴上的重力。在地球上，重力数值为9.8，
+TYPE_GYROSCOPE
+陀螺仪传感器叫做Gyro-sensor，返回x、y、z三轴的角加速度数据。单位是 radians/second。
+TYPE_GYROSCOPE_UNCALIBRATED
+未校准陀螺仪传感器，提供原始的、未校准、补偿的陀螺仪数据，用于后期处理和融合定位数据。
+TYPE_LIGHT
+光线感应传感器检测实时的光线强度，光强单位是lux，其物理意义是照射到单位面积上的光通量。
+TYPE_LINEAR_ACCELERATION
+线性加速度传感器简称LA-sensor。线性加速度传感器是加速度传感器减去重力影响获取的数据。单位是 m/s2。
+TYPE_MAGNETIC_FIELD
+磁力传感器简称为M-sensor，返回 x、y、z 三轴的环境磁场数据。该数值的单位是微特斯拉（micro-Tesla），用uT表示。单位也可以是高斯（Gauss），1Tesla=10000Gauss。硬件上一般没有独立的磁力传感器，磁力数据由电子罗盘传感器提供（E-compass）。电子罗盘传感器同时提供方向传感器数据。
+TYPE_MAGNETIC_FIELD_UNCALIBRATED
+未校准磁力传感器，提供原始的、未校准的磁场数据。
+TYPE_ORIENTATION
+方向传感器简称为O-sensor，返回三轴的角度数据，方向数据的单位是角度。为了得到精确的角度数据，E-compass 需要获取 G-sensor 的数据，经过计算生产 O-sensor 数据，否则只能获取水平方向的角度。方向传感器提供三个数据，分别为azimuth、pitch和roll：
+azimuth： 方位，返回水平时磁北极和 Y 轴的夹角，范围为0°至360°。0°为北，90°为东，180°为南，270°为西。
+pitch： x 轴和水平面的夹角，范围为-180°至180°。当 z 轴向 y 轴转动时，角度为正值。
+roll： y 轴和水平面的夹角，由于历史原因，范围为-90°至90°。当 x 轴向 z 轴移动时，角度为正值。
+TYPE_PRESSURE
+压力传感器，单位是hPa(百帕斯卡)，返回当前环境下的压强。
+TYPE_PROXIMITY
+接近传感器检测物体与手机的距离，单位是厘米。一些接近传感器只能返回远和近两个状态，因此，接近传感器将最大距离返回远状态，小于最大距离返回近状态。
+TYPE_RELATIVE_HUMIDITY
+湿度传感器，单位是 %，来测量周围环境的相对湿度。
+TYPE_ROTATION_VECTOR
+旋转矢量传感器简称RV-sensor。旋转矢量代表设备的方向，是一个将坐标轴和角度混合计算得到的数据。RV-sensor输出三个数据：
+xsin(theta/2)
+ysin(theta/2)
+z*sin(theta/2)
+sin(theta/2)是 RV 的数量级。RV 的方向与轴旋转的方向相同。RV 的三个数值，与cos(theta/2)组成一个四元组。
+TYPE_SIGNIFICANT_MOTION
+特殊动作触发传感器。
+TYPE_STEP_COUNTER
+计步传感器，用于记录激活后的步伐数。
+TYPE_STEP_DETECTOR
+步行检测传感器，用户每走一步就触发一次事件。
+TYPE_TEMPERATURE
+温度传感器，目前已被TYPE_AMBIENT_TEMPERATURE替代。
+</pre></div>
+</div>
+</section>
+<section id="id3">
+<h1>复合传感器简介<a class="headerlink" href="#id3" title="Permalink to this headline"></a></h1>
+<p>复合传感器通过处理和/或融合来自一个或多个物理传感器的数据来生成数据。（任何非基础传感器的传感器均称为复合传感器。）复合传感器的功能包括：</p>
+<ol class="arabic simple">
+<li><p>手势识别：感测人的手势，如：翻转手机，敲打手机，摇晃手机，拿起手机等手势。</p></li>
+</ol>
+<p>可实现案例：翻转静音，拒接电话，摇晃切换背景图片以及拿起接听电话等功能。</p>
+<ol class="arabic simple" start="2">
+<li><p>设备状态识别：感测设备的状态，如：手机面朝上/朝下， 手机在桌子上，还是在口袋里，还是在人手里。</p></li>
+</ol>
+<p>可实现案例：手机在口袋里时，自动将来电铃声放至最大；而在桌子上的时候，调至静音震动模式。</p>
+<ol class="arabic simple" start="3">
+<li><p>用户状态识别：感测用户的状态，如：跑步，走路，站立，坐下等。</p></li>
+</ol>
+<p>实现功能： 在走路/跑步时，自动打开记步功能，而站立和坐下后，暂停相关功能</p>
+<ol class="arabic simple" start="4">
+<li><p>用户交通行为判断：感测用户乘坐交通时的状态，如：开车，坐火车，坐电梯等。</p></li>
+</ol>
+<p>实现功能： 在开车状态，自动蓝牙连接；而在火车上接电话，开启消噪功能。</p>
+<ol class="arabic simple" start="5">
+<li><p>室内定位/室内导航：室外定位目前主要是GPS+AGPS。AGPS是通过手机附近的基站获取GPS辅助信息（包含GPS的星历和方位俯仰角等），从而帮助GPS快速，准确定位。在GPS信号不强的情况下，手机也可以通过多个手机基站进行定位。</p></li>
+</ol>
+<p>下表列出了可用的复合传感器类型。每种复合传感器都依赖于来自一个或多个物理传感器的数据。请避免选择使用其他底层物理传感器来估算结果，因为这样带来的用户体验较差。</p>
+<p>注意：当且仅当设备没有配备陀螺仪时，您才可以在不使用陀螺仪的情况下，实现旋转矢量传感器、线性加速度传感器和重力传感器。</p>
+<table class="colwidths-auto docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>传感器类型</p></th>
+<th class="head"><p>类别</p></th>
+<th class="head"><p>底层物理传感器</p></th>
+<th class="head"><p>报告模式</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><a class="reference external" href="https://source.android.com/devices/sensors/sensor-types#game_rotation_vector">游戏旋转矢量传感器</a></p></td>
+<td><p>姿势类</p></td>
+<td><p>加速度计、陀螺仪，不得使用磁力计</p></td>
+<td><p>连续模式</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://source.android.com/devices/sensors/sensor-types#geomagnetic_rotation_vector">地磁旋转矢量传感器 </a></p></td>
+<td><p>姿势类</p></td>
+<td><p>加速度计、磁力计，不得使用陀螺仪</p></td>
+<td><p>连续模式</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://source.android.com/devices/sensors/sensor-types#glance_gesture">快览手势传感器 </a></p></td>
+<td><p>交互</p></td>
+<td><p>未定义</p></td>
+<td><p>单次模式</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://source.android.com/devices/sensors/sensor-types#gravity">重力传感器</a></p></td>
+<td><p>姿势类</p></td>
+<td><p>加速度计、陀螺仪</p></td>
+<td><p>连续模式</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://source.android.com/devices/sensors/sensor-types#gyroscope_uncalibrated">未校准陀螺仪传感器</a></p></td>
+<td><p>未校准类</p></td>
+<td><p>陀螺仪</p></td>
+<td><p>连续模式</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://source.android.com/devices/sensors/sensor-types#linear_acceleration">线性加速器</a></p></td>
+<td><p>动作传感器</p></td>
+<td><p>加速度计、陀螺仪（如有）或磁力计（如果陀螺仪不存在）</p></td>
+<td><p>连续模式</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://source.android.com/devices/sensors/sensor-types#magnetic_field_uncalibrated">未校准磁场传感器</a></p></td>
+<td><p>未校准类</p></td>
+<td><p>磁力计</p></td>
+<td><p>连续模式</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://source.android.com/devices/sensors/sensor-types#orientation_deprecated">方向传感器（已弃用）</a></p></td>
+<td><p>姿势类</p></td>
+<td><p>加速度计、磁力计、陀螺仪（如有）</p></td>
+<td><p>连续模式</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://source.android.com/devices/sensors/sensor-types#pick_up_gesture">拿起手势传感器 </a></p></td>
+<td><p>交互</p></td>
+<td><p>未定义</p></td>
+<td><p>单次模式</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://source.android.com/devices/sensors/sensor-types#rotation_vector">旋转矢量传感器</a></p></td>
+<td><p>姿势类</p></td>
+<td><p>加速度计、磁力计、陀螺仪</p></td>
+<td><p>连续模式</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://source.android.com/devices/sensors/sensor-types#significant_motion">大幅度动作传感器 </a></p></td>
+<td><p>动作传感器</p></td>
+<td><p>加速度计（或其他功耗极低的传感器）</p></td>
+<td><p>单次模式</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://source.android.com/devices/sensors/sensor-types#step_counter">计步器 </a></p></td>
+<td><p>动作传感器</p></td>
+<td><p>加速度计</p></td>
+<td><p>变化时触发模式</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://source.android.com/devices/sensors/sensor-types#step_detector">步测器 </a></p></td>
+<td><p>动作传感器</p></td>
+<td><p>加速度计</p></td>
+<td><p>特殊模式</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://source.android.com/devices/sensors/sensor-types#tilt_detector">倾斜检测器 </a></p></td>
+<td><p>动作传感器</p></td>
+<td><p>加速度计</p></td>
+<td><p>特殊模式</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://source.android.com/devices/sensors/sensor-types#wake_up_gesture">唤醒手势传感器 </a></p></td>
+<td><p>交互</p></td>
+<td><p>未定义</p></td>
+<td><p>单次模式</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="id4">
+<h1>动作复合传感器<a class="headerlink" href="#id4" title="Permalink to this headline"></a></h1>
+<section id="id5">
+<h2>线性加速器<a class="headerlink" href="#id5" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p>底层物理传感器：加速度计和（如有）陀螺仪（或如果陀螺仪不存在，则使用磁力计）</p></li>
+<li><p>报告模式：连续模式</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">getDefaultSensor</span><span class="p">(</span><span class="n">SENSOR_TYPE_LINEAR_ACCELERATION</span><span class="p">)</span> <span class="n">返回非唤醒传感器</span>
+</pre></div>
+</div>
+<p>线性加速度传感器可报告传感器框架内设备的线性加速度（不包括重力加速度）。</p>
+<p>从概念上看，输出结果为：加速度计的输出结果减去重力传感器的输出结果。结果在 <code class="docutils literal notranslate"><span class="pre">sensors_event_t.acceleration</span></code> 的 <code class="docutils literal notranslate"><span class="pre">x、y</span></code> 和<code class="docutils literal notranslate"> <span class="pre">z</span></code> 字段中报告，单位为 <code class="docutils literal notranslate"><span class="pre">m/s^2</span></code>。</p>
+<p>当设备不动时，所有轴上的读数应接近 0。</p>
+<p>如果设备配备陀螺仪，则线性加速度传感器必须将陀螺仪和加速度计作为输入源。</p>
+<p>如果设备未配备陀螺仪，则线性加速度传感器必须将加速度计和磁力计作为输入源。</p>
+</section>
+<section id="id6">
+<h2>大幅度动作传感器<a class="headerlink" href="#id6" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p>底层物理传感器：加速度计（或其他低功耗的传感器）</p></li>
+<li><p>报告模式：单次模式</p></li>
+<li><p>低功耗</p>
+<ul>
+<li><p>仅实现该传感器的唤醒版本。</p></li>
+</ul>
+</li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">getDefaultSensor</span><span class="p">(</span><span class="n">SENSOR_TYPE_SIGNIFICANT_MOTION</span><span class="p">)</span> <span class="n">返回唤醒传感器</span>
+</pre></div>
+</div>
+<p>当检测到大幅度动作时，会触发大幅度动作传感器；大幅度动作是指可能导致用户位置发生变化的动作。</p>
+<p>此类大幅度动作示例如下：</p>
+<p>步行或骑自行车
+乘坐在正在行驶的汽车、巴士或火车内
+不会触发大幅度动作传感器的情况示例如下：</p>
+<ul class="simple">
+<li><p>手机放在口袋里，人不动</p></li>
+<li><p>手机放在桌子上，而桌子由于附近的交通情况或洗衣机运转而轻微振动</p></li>
+<li><p>从更高层面来看，大幅度动作传感器可用于降低位置测定的功耗。当定位算法检测到设备静止时，可将设备切换到低功耗模式，在该模式下，这些算法依赖用户改变位置时发生的大幅度动作来唤醒设备。</p></li>
+<li><p>该传感器必须具备低功耗特性。这样可以节省功耗，但可能会导致少量漏报情况。这样做是出于以下几个原因：</p>
+<ul>
+<li><p>该传感器的目标是节省电量。</p></li>
+<li><p>用户不动时触发事件（误报）会消耗大量电量，因此应尽量加以避免。</p></li>
+<li><p>在用户移动时不触发事件（漏报）是可以接受的，只要不频繁出现这种情况即可。如果用户已经行走 10 秒钟，但这 10 秒内一直未触发事件，则是不可接受的。</p></li>
+</ul>
+</li>
+</ul>
+</section>
+<section id="id7">
+<h2>步测器<a class="headerlink" href="#id7" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p>底层物理传感器：加速度计（可能还有其他低功耗计量器）</p></li>
+<li><p>报告模式：特殊模式（一步触发一个事件）</p></li>
+<li><p>低功耗</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">getDefaultSensor</span><span class="p">(</span><span class="n">SENSOR_TYPE_STEP_DETECTOR</span><span class="p">)</span> <span class="n">返回非唤醒传感器</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>触发方式：
+用户每走一步，步测器就触发一个事件。
+<code class="docutils literal notranslate"><span class="pre">sensors_event_t.timestamp</span></code> 事件的时间戳对应脚部触地的时刻，此时会产生较大的加速度变化。
+与计步器相比，步测器的延迟较低（小于两秒）。步测器和计步器都可以在用户步行、奔跑和走楼梯时进行感测。当用户骑自行车、驾车或乘坐其他交通工具时，不应触发感测。</p></li>
+</ul>
+<p>该传感器必须具备低功耗特性。也就是说，如果在硬件中无法完成步数感测，则不应定义此传感器。尤其是，当启用步测器但未启用加速度计时，只有步数（而非每次加速度计读取）会触发中断。
+sampling_period_ns 对步测器没有影响。</p>
+</section>
+<section id="id8">
+<h2>计步器<a class="headerlink" href="#id8" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p>底层物理传感器：加速度计（可能还有其他低功耗计量器）</p></li>
+<li><p>报告模式：变化时触发模式</p></li>
+<li><p>低功耗</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">getDefaultSensor</span><span class="p">(</span><span class="n">SENSOR_TYPE_STEP_COUNTER</span><span class="p">)</span> <span class="n">返回非唤醒传感器</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>触发方式：
+计步器报告自激活后上一次重新启动以来用户行走的步数。</p></li>
+</ul>
+<p>事件的时间戳设置为该事件最后一次迈步的时间。</p>
+<p>请参阅步测器传感器类型，了解一步所对应的时间的意义。</p>
+<ul class="simple">
+<li><p>使用场景：
+与步测器相比，计步器可能具有更高的延迟（最多 10 秒）。也正因这种延迟，该传感器具备较高的准确性；完成一整天的测量后，步数应在实际步数的 10% 偏差范围内。步测器和计步器都可以在用户步行、奔跑和走楼梯时进行感测。当用户骑自行车、驾车或乘坐其他交通工具时，不应触发感测。</p></li>
+</ul>
+<p>硬件必须确保内部步数始终不会溢出。硬件内部计数器的大小下限应为 16 位。在即将发生溢出时（最多约每 2^16 步一次），可以唤醒 SoC，以便驱动程序可进行计数器维护。</p>
+<p>正如互动传感器中所述，当该传感器工作时，不得干扰任何其他传感器，特别是很可能正在使用中的加速度计。</p>
+<p>如果特定设备不支持这些操作模式，则 HAL 不得报告该传感器类型。也就是说，不能在 HAL 中“模拟”该传感器。</p>
+<p>该传感器必须具备低功耗特性。也就是说，如果在硬件中无法完成步数感测，则不应定义此传感器。尤其是，当启用计步器但未启用加速度计时，只有步数（而非加速度计数据）会触发中断。</p>
+</section>
+<section id="id9">
+<h2>倾斜检测器<a class="headerlink" href="#id9" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p>底层物理传感器：加速度计（可能还有其他低功耗计量器）</p></li>
+<li><p>报告模式：特殊模式</p></li>
+<li><p>低功耗:
+仅实现该传感器的唤醒版本。</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">getDefaultSensor</span><span class="p">(</span><span class="n">SENSOR_TYPE_TILT_DETECTOR</span><span class="p">)</span> <span class="n">返回唤醒传感器</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>触发方式：
+每次检测到倾斜事件时，倾斜检测器会生成一个事件。</p></li>
+<li><p>倾斜事件定义如下：自激活或自传感器生成的最后一次事件起，2 秒时隙内平均重力加速度方向变化至少 35 度。算法如下：</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">reference_estimated_gravity</span></code> = 激活后的第一秒内加速度计的平均测量值或生成最后一次倾斜事件时的估算重力。</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">current_estimated_gravity</span></code> = 过去 2 秒内加速度计的平均测量值。</p></li>
+</ul>
+</li>
+<li><p>触发条件为 <code class="docutils literal notranslate"><span class="pre">angle(reference_estimated_gravity,</span> <span class="pre">current_estimated_gravity)</span> <span class="pre">&gt;</span> <span class="pre">35</span> <span class="pre">degrees</span></code></p></li>
+</ul>
+<p>当加速度较大而手机方向未发生改变时，不应触发倾斜事件。例如，驾驶汽车时急转弯或猛烈加速不应触发倾斜事件，即使平均加速度的角度变化可能超过 35 度亦如此。通常情况下，只需借助加速度计就能实现该传感器。也可以使用其他传感器（如果功耗增加不明显的话）。这是一个低功耗传感器，应允许 SoC 进入挂起模式。请勿在 HAL 中模拟此传感器。每个传感器事件在 sensors_event_t.data[0] 中报告 1。</p>
+<ul class="simple">
+<li><p>使用场景：
+*</p></li>
+</ul>
+</section>
+</section>
+<section id="id10">
+<h1>姿势复合传感器<a class="headerlink" href="#id10" title="Permalink to this headline"></a></h1>
+<section id="id11">
+<h2>旋转矢量传感器<a class="headerlink" href="#id11" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p>底层物理传感器：加速度计、磁力计和陀螺仪</p></li>
+<li><p>报告模式：连续模式</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">getDefaultSensor</span><span class="p">(</span><span class="n">SENSOR_TYPE_ROTATION_VECTOR</span><span class="p">)</span> <span class="n">返回非唤醒传感器</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>原理：</p></li>
+<li><p>旋转矢量传感器可报告设备相对于东北天坐标系的方向。通常通过集成加速度计、陀螺仪和磁力计的读数获得该值。东北天坐标系是指完全正交基，其中：</p>
+<ul>
+<li><p>X 轴指向东，与地面相切。</p></li>
+<li><p>Y 轴指向北，与地面相切。</p></li>
+<li><p>Z 轴指向上，与地面垂直。</p></li>
+</ul>
+</li>
+</ul>
+<p>手机方向表示为东北天坐标系与手机坐标系对齐所需的旋转幅度。也就是说，对世界坐标系 <code class="docutils literal notranslate"><span class="pre">(X,Y,Z)</span></code> 应用这一幅度的旋转将使该坐标系与手机坐标系 <code class="docutils literal notranslate"><span class="pre">(x,y,z)</span></code> 对齐。</p>
+<p>该旋转可看作围绕轴 <code class="docutils literal notranslate"><span class="pre">rot_axis</span> </code>将手机旋转 θ 角度，从参照（与东北天对齐）设备方向转到当前设备方向。该旋转被编码为一个单位四元数的四个无量纲<code class="docutils literal notranslate"><span class="pre">x、y、z、w</span></code>分量：</p>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="n">sensors_event_t</span><span class="p">.</span><span class="na">data</span><span class="o">[</span><span class="mi">0</span><span class="o">]</span> <span class="o">=</span> <span class="n">rot_axis</span><span class="p">.</span><span class="na">x</span><span class="o">*</span><span class="n">sin</span><span class="p">(</span><span class="n">theta</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">sensors_event_t</span><span class="p">.</span><span class="na">data</span><span class="o">[</span><span class="mi">1</span><span class="o">]</span> <span class="o">=</span> <span class="n">rot_axis</span><span class="p">.</span><span class="na">y</span><span class="o">*</span><span class="n">sin</span><span class="p">(</span><span class="n">theta</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">sensors_event_t</span><span class="p">.</span><span class="na">data</span><span class="o">[</span><span class="mi">2</span><span class="o">]</span> <span class="o">=</span> <span class="n">rot_axis</span><span class="p">.</span><span class="na">z</span><span class="o">*</span><span class="n">sin</span><span class="p">(</span><span class="n">theta</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">sensors_event_t</span><span class="p">.</span><span class="na">data</span><span class="o">[</span><span class="mi">3</span><span class="o">]</span> <span class="o">=</span> <span class="n">cos</span><span class="p">(</span><span class="n">theta</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>其中：</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">rot_axis</span></code> 的 <code class="docutils literal notranslate"><span class="pre">x、y</span></code> 和 <code class="docutils literal notranslate"><span class="pre">z</span></code> 字段是表示旋转轴的单位长度向量的东北天坐标。</p></li>
+<li><p>theta 是旋转角度。</p></li>
+<li><p>四元数是一个单位四元数：其范数必须为 1。 不满足此要求将导致客户端行为不稳定。</p></li>
+</ul>
+</li>
+</ul>
+<p>此外，该传感器会报告估算的首向精度：</p>
+<p><code class="docutils literal notranslate"><span class="pre">sensors_event_t.data[4]</span> <span class="pre">=</span> <span class="pre">estimated_accuracy</span></code>（以弧度为单位）</p>
+<p>在 95% 的时间里，首向误差必须小于 <code class="docutils literal notranslate"><span class="pre">estimated_accuracy</span></code>。该传感器必须使用陀螺仪作为主要方向变化输入源。</p>
+<p>该传感器还使用加速度计和磁力计输入源来弥补陀螺仪偏移，但不能仅使用加速度计和磁力计来实现该传感器。</p>
+<ul class="simple">
+<li><p>使用场景：</p>
+<ul>
+<li><p>各类3D、AR游戏。</p></li>
+</ul>
+</li>
+</ul>
+</section>
+<section id="id12">
+<h2>游戏旋转矢量传感器<a class="headerlink" href="#id12" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p>底层物理传感器：加速度计和陀螺仪（无磁力计）</p></li>
+<li><p>报告模式：连续模式</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">getDefaultSensor</span><span class="p">(</span><span class="n">SENSOR_TYPE_GAME_ROTATION_VECTOR</span><span class="p">)</span> <span class="n">返回非唤醒传感器</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>原理：
+游戏旋转矢量传感器类似于旋转矢量传感器，但不使用地磁场。因此，Y 轴不指向北，而是指向其他参照坐标。该参考坐标可以偏移与陀螺仪沿 Z 轴偏移时的幅度相同数量级的幅度。</p></li>
+</ul>
+<p>请参阅旋转矢量传感器，详细了解如何设置 <code class="docutils literal notranslate"><span class="pre">sensors_event_t.data[0-3]</span></code>。此传感器不报告估算的首向精度：保留 <code class="docutils literal notranslate"><span class="pre">sensors_event_t.data[4]</span></code>，并且应将其设置为 0。</p>
+<p>理想情况下，经过旋转并返回到与现实世界方向同向的手机应该报告相同的游戏旋转矢量。</p>
+<p>该传感器必须基于陀螺仪和加速度计。不能使用磁力计作为输入源，也不可通过估算陀螺仪偏差间接作为输入源。</p>
+<ul class="simple">
+<li><p>使用场景：</p>
+<ul>
+<li><p>各类3D、AR游戏。</p></li>
+<li><p>游戏与3D应用程序：第一人称设计游戏和飞行类游戏。</p></li>
+</ul>
+</li>
+</ul>
+</section>
+<section id="id13">
+<h2>重力传感器<a class="headerlink" href="#id13" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p>底层物理传感器：加速度计和（如有）陀螺仪（或如果陀螺仪不存在，则使用磁力计）</p></li>
+<li><p>报告模式：连续模式</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">getDefaultSensor</span><span class="p">(</span><span class="n">SENSOR_TYPE_GRAVITY</span><span class="p">)</span> <span class="n">返回非唤醒传感器</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>重力传感器可报告设备坐标系中重力的方向和大小。</p></li>
+<li><p>重力矢量分量在 <code class="docutils literal notranslate"><span class="pre">sensors_event_t.acceleration、x、y</span></code> 和 <code class="docutils literal notranslate"><span class="pre">z</span></code> 字段中报告（以 <code class="docutils literal notranslate"><span class="pre">m/s^2</span></code> 为单位）。</p></li>
+<li><p>当设备静止时，重力传感器的输出结果应与加速度计的输出结果相同。在地球上，重力加速度约为 <code class="docutils literal notranslate"><span class="pre">9.8</span> <span class="pre">m/s^2</span></code>。</p></li>
+<li><p>如果设备具有陀螺仪，则重力传感器必须使用陀螺仪和加速度计作为输入源。</p></li>
+<li><p>如果设备不具有陀螺仪，则重力传感器必须使用加速度计和磁力计作为输入源。</p></li>
+<li><p>使用场景：</p>
+<ul>
+<li><p>重力传感器在进入消费电子市场之前，已被广泛应用于汽车电子领域，主要集中在车身操控、安全系统和导航。典型的应用：比如汽车安全气囊(Airbag)、ABS防抱死刹车系统、电子稳定程序(ESP)、电控悬挂系统等。</p></li>
+</ul>
+</li>
+</ul>
+</section>
+<section id="id14">
+<h2>地磁旋转矢量传感器<a class="headerlink" href="#id14" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p>底层物理传感器：加速度计和磁力计（无陀螺仪）</p></li>
+<li><p>报告模式：连续模式</p></li>
+<li><p>低功耗</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">getDefaultSensor</span><span class="p">(</span><span class="n">SENSOR_TYPE_GEOMAGNETIC_ROTATION_VECTOR</span><span class="p">)</span> <span class="n">返回非唤醒传感器</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>地磁旋转矢量传感器与旋转矢量传感器类似，但它使用磁力计而不是陀螺仪。</p></li>
+<li><p>该传感器必须基于磁力计。它不能使用陀螺仪来实现，并且不能使用陀螺仪输入。</p></li>
+<li><p>请参阅旋转矢量传感器，详细了解如何设置 <code class="docutils literal notranslate"><span class="pre">sensors_event_t.data[0-4]</span></code>。</p></li>
+<li><p>与旋转矢量传感器类似，在 95% 的时间里，首向误差必须小于估算精度 (<code class="docutils literal notranslate"><span class="pre">sensors_event_t.data[4]</span></code>)。</p></li>
+<li><p>该传感器必须具备低功耗特性，因此必须在硬件中实现。</p></li>
+<li><p>使用场景：</p>
+<ul>
+<li><p>AR/3D类游戏。</p></li>
+</ul>
+</li>
+</ul>
+</section>
+</section>
+<section id="id15">
+<h1>未校准传感器<a class="headerlink" href="#id15" title="Permalink to this headline"></a></h1>
+<p>未校准传感器可提供更多的原始结果，可能包括一些偏差，还包含校准后更正结果中的少数“激增”值。一些应用可能更倾向于使用这些未校准结果，因为此类结果更流畅、可靠。例如，如果应用试图自己进行传感器融合，则引入校准可能会使结果失真。</p>
+<ul class="simple">
+<li><p>使用场景：
+用户自行融合传感器。</p></li>
+</ul>
+<section id="id16">
+<h2>未校准加速度计<a class="headerlink" href="#id16" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p>底层物理传感器：加速度计</p></li>
+<li><p>报告模式：连续模式</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">getDefaultSensor</span><span class="p">(</span><span class="n">SENSOR_TYPE_ACCELEROMETER_UNCALIBRATED</span><span class="p">)</span> <span class="n">返回非唤醒传感器</span>
+</pre></div>
+</div>
+<p>未校准加速度计传感器可在没有偏差校正的情况下报告设备沿三个传感器坐标轴的加速度（出厂设置偏差和温度补偿应用于未校准的测量结果）以及偏差估值。所有值均采用国际单位制单位 <code class="docutils literal notranslate"><span class="pre">(m/s^2)</span></code>，并在 <code class="docutils literal notranslate"><span class="pre">sensors_event_t.uncalibrated_accelerometer</span></code> 的字段中报告：</p>
+<ul class="simple">
+<li><p>x_uncalib：沿 X 轴的加速度（无偏差补偿）</p></li>
+<li><p>y_uncalib：沿 Y 轴的加速度（无偏差补偿）</p></li>
+<li><p>z_uncalib：沿 Z 轴的加速度（无偏差补偿）</p></li>
+<li><p>x_bias：沿 X 轴的估算偏差</p></li>
+<li><p>y_bias：沿 Y 轴的估算偏差</p></li>
+<li><p>z_bias：沿 Z 轴的估算偏差</p></li>
+</ul>
+</section>
+<section id="id17">
+<h2>未校准陀螺仪传感器<a class="headerlink" href="#id17" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p>底层物理传感器：陀螺仪</p></li>
+<li><p>报告模式：连续模式</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">getDefaultSensor</span><span class="p">(</span><span class="n">SENSOR_TYPE_GYROSCOPE_UNCALIBRATED</span><span class="p">)</span> <span class="n">返回非唤醒传感器</span>
+</pre></div>
+</div>
+<p>未校准陀螺仪可报告围绕传感器坐标轴的旋转速率（未应用偏差补偿）以及偏差估值。所有值均以弧度/秒为单位，并在 sensors_event_t.uncalibrated_gyro 的字段中报告：</p>
+<ul class="simple">
+<li><p>x_uncalib：绕 X 轴的角速度（无偏移补偿）</p></li>
+<li><p>y_uncalib：绕 Y 轴的角速度（无偏移补偿）</p></li>
+<li><p>z_uncalib：绕 Z 轴的角速度（无偏移补偿）</p></li>
+<li><p>x_bias：绕 X 轴的偏移估值</p></li>
+<li><p>y_bias：绕 Y 轴的偏移估值</p></li>
+<li><p>z_bias：绕 Z 轴的偏移估值</p></li>
+</ul>
+<p>在概念上看，未校准的测量结果是校准测量结果和估算偏差之和：_uncalibrated = _calibrated + _bias。</p>
+<p>一旦估算偏差发生变化，x_bias、y_bias 和 z_bias 值就会激增，而在其余时间则应保持不变。</p>
+</section>
+<section id="id18">
+<h2>未校准磁场传感器<a class="headerlink" href="#id18" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p>底层物理传感器：磁力计</p></li>
+<li><p>报告模式：连续模式</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">getDefaultSensor</span><span class="p">(</span><span class="n">SENSOR_TYPE_MAGNETIC_FIELD_UNCALIBRATED</span><span class="p">)</span> <span class="n">返回非唤醒传感器</span>
+</pre></div>
+</div>
+<p>未校准磁场传感器可报告环境磁场以及硬铁校准估值。所有值均以微特斯拉 (uT) 为单位，并在 sensors_event_t.uncalibrated_magnetic 的字段中报告：</p>
+<ul class="simple">
+<li><p>x_uncalib：沿 X 轴的磁场（无硬铁补偿）</p></li>
+<li><p>y_uncalib：沿 Y 轴的磁场（无硬铁补偿）</p></li>
+<li><p>z_uncalib：沿 Z 轴的磁场（无硬铁补偿）</p></li>
+<li><p>x_bias：沿 X 轴的估算硬铁偏差</p></li>
+<li><p>y_bias：沿 Y 轴的估算硬铁偏差</p></li>
+<li><p>z_bias：沿 Z 轴的估算硬铁偏差</p></li>
+</ul>
+<p>在概念上看，未校准的测量结果是校准测量结果和估算偏差之和：_uncalibrated = _calibrated + _bias。</p>
+<p>对于未校准的磁力计，可使用更高级别的算法来处理不良的硬铁估算。一旦硬铁估值发生变化，x_bias、y_bias 和 z_bias 值就会激增，而在其余时间则应保持不变。</p>
+<p>必须将软铁校准和温度补偿应用于测量结果。此外，必须实现硬铁估算，以便在 x_bias、y_bias 和 z_bias 中报告合理的估值。如果该实现无法估算偏差，则不得实现该传感器。</p>
+<p>如果存在此传感器，则相应的磁场传感器也必须存在，并且这两个传感器必须共用相同的 sensor_t.name 和 sensor_t.vendor 值。</p>
+<ul class="simple">
+<li><p>使用场景：</p>
+<ul>
+<li><p>利用车辆通过道路时对地球磁场的影响来完成车辆检测。</p></li>
+<li><p>交通工具识别（地铁/公交/飞机等）。</p></li>
+<li><p>实现功能： 在开车状态，自动蓝牙连接；而在火车上接电话，开启消噪功能。</p></li>
+</ul>
+</li>
+</ul>
+</section>
+</section>
+<section id="id19">
+<h1>互动复合传感器<a class="headerlink" href="#id19" title="Permalink to this headline"></a></h1>
+<p>一些传感器主要用于检测与用户的互动。我们没有定义这些传感器的实现方式，但它们必须具备低功耗特性，并且设备制造商有责任验证它们在用户体验方面的质量。</p>
+<section id="id20">
+<h2>唤醒手势传感器<a class="headerlink" href="#id20" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p>底层物理传感器：未定义（任何低功耗传感器）</p></li>
+<li><p>报告模式：单次模式</p></li>
+<li><p>低功耗
+仅实现该传感器的唤醒版本。</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">getDefaultSensor</span><span class="p">(</span><span class="n">SENSOR_TYPE_WAKE_GESTURE</span><span class="p">)</span> <span class="n">返回唤醒传感器</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>使用场景：</p>
+<ul>
+<li><p>唤醒手势传感器可以使用特定设备动作来唤醒设备。当该传感器被触发时，设备会开启屏幕，就如同按下电源按钮一样。用户可在设备设置中禁用这种设备行为（当该传感器被触发时开启屏幕）。更改设置不会影响该传感器的行为：仅改变当该传感器被触发时，框架是否会开启屏幕。未指定待感测的实际手势，可由设备制造商进行选择。</p></li>
+<li><p>抬起亮屏/放下灭屏。</p></li>
+</ul>
+</li>
+</ul>
+<p>该传感器必须具备低功耗特性，因为它可能会全天候启用。</p>
+</section>
+<section id="id21">
+<h2>拿起手势传感器<a class="headerlink" href="#id21" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p>底层物理传感器：未定义（任何低功耗传感器）</p></li>
+<li><p>报告模式：单次模式</p></li>
+<li><p>低功耗
+仅实现该传感器的唤醒版本。</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">getDefaultSensor</span><span class="p">(</span><span class="n">SENSOR_TYPE_PICK_UP_GESTURE</span><span class="p">)</span> <span class="n">返回唤醒传感器</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>使用场景：</p>
+<ul>
+<li><p>拿起手势传感器仅在拿起设备时被触发，并且不考虑设备在拿起前的所在位置（桌面、口袋里或袋子里）。</p></li>
+<li><p>拿起接听电话等功能。</p></li>
+</ul>
+</li>
+</ul>
+</section>
+<section id="id22">
+<h2>快览手势传感器<a class="headerlink" href="#id22" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p>底层物理传感器：未定义（任何低功耗传感器）</p></li>
+<li><p>报告模式：单次模式</p></li>
+<li><p>低功耗
+仅实现该传感器的唤醒版本。</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">getDefaultSensor</span><span class="p">(</span><span class="n">SENSOR_TYPE_GLANCE_GESTURE</span><span class="p">)</span> <span class="n">返回唤醒传感器</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>使用场景：</p>
+<ul>
+<li><p>快览手势传感器可短暂开启屏幕，方便用户使用特定动作浏览屏幕内容。当该传感器被触发时，设备将短暂开启屏幕，让用户可以在设备处于锁定且非互动状态（低电耗模式）时浏览通知或其他内容，然后屏幕将再次关闭。用户可在设备设置中禁用这种行为（当该传感器被触发时，短暂开启屏幕）。更改设置不会影响传感器的行为：仅改变当该传感器被触发时，Android 框架是否短暂开启屏幕。未指定待感测的实际手势，可由设备制造商进行选择。</p></li>
+<li><p>智能手环/手表翻腕看表。</p></li>
+</ul>
+</li>
+</ul>
+<table class="colwidths-auto docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>传感器类型</p></th>
+<th class="head"><p>类别</p></th>
+<th class="head"><p>底层物理传感器</p></th>
+<th class="head"><p>报告模式</p></th>
+<th class="head"><p>使用场景</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><a class="reference external" href="https://source.android.com/devices/sensors/sensor-types#game_rotation_vector">手势识别（SHAKE）</a></p></td>
+<td><p>互动</p></td>
+<td><p>加速度计、陀螺仪</p></td>
+<td><p>单次模式</p></td>
+<td><p>微信摇一摇</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://source.android.com/devices/sensors/sensor-types#geomagnetic_rotation_vector">手势识别（SNAPSHOT）快照</a></p></td>
+<td><p>互动</p></td>
+<td><p>加速度计、陀螺仪</p></td>
+<td><p>单次模式</p></td>
+<td><p>快速进入相机拍照</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://source.android.com/devices/sensors/sensor-types#glance_gesture">手势识别（ANSWERCALL）</a></p></td>
+<td><p>互动</p></td>
+<td><p>加速度计</p></td>
+<td><p>单次模式</p></td>
+<td><p>拿起手机接听电话</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://source.android.com/devices/sensors/sensor-types#glance_gesture">手势识别（TITL）倾斜</a></p></td>
+<td><p>互动</p></td>
+<td><p>加速度计、陀螺仪</p></td>
+<td><p>单次模式</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://source.android.com/devices/sensors/sensor-types#gravity">动作传感器(anyMotion/noMotion)</a></p></td>
+<td><p>互动</p></td>
+<td><p>加速度计、陀螺仪</p></td>
+<td><p>单次模式</p></td>
+<td><p>屏下指纹亮屏</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://source.android.com/devices/sensors/sensor-types#gyroscope_uncalibrated">快览手势传感器(flat)</a></p></td>
+<td><p>互动</p></td>
+<td><p>未定义</p></td>
+<td><p>单次模式</p></td>
+<td><p>拿起看时间</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://source.android.com/devices/sensors/sensor-types#linear_acceleration">口袋传感器（inPocket）</a></p></td>
+<td><p>动作传感器</p></td>
+<td><p>近距、光感</p></td>
+<td><p>单次模式</p></td>
+<td><p>手机在口袋里时，自动将来电铃声放至最大</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://source.android.com/devices/sensors/sensor-types#magnetic_field_uncalibrated">自由落体识别传感器(freefallRecognition)</a></p></td>
+<td><p>动作传感器</p></td>
+<td><p>加速度计</p></td>
+<td><p>连续模式</p></td>
+<td><p>自由落体关机</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://source.android.com/devices/sensors/sensor-types#orientation_deprecated">提升和放下传感器(Lift   and putdown)</a></p></td>
+<td><p>动作传感器</p></td>
+<td><p>加速度计、陀螺仪（如有）</p></td>
+<td><p>单次模式</p></td>
+<td><p>拿起看时间</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://source.android.com/devices/sensors/sensor-types#pick_up_gesture">拿起手势传感器(pickup)</a></p></td>
+<td><p>互动</p></td>
+<td><p>未定义</p></td>
+<td><p>单次模式</p></td>
+<td><p>拿起亮屏</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://source.android.com/devices/sensors/sensor-types#rotation_vector">楼层传感器（floorCount）</a></p></td>
+<td><p>动作传感器</p></td>
+<td><p>气压计</p></td>
+<td><p>连续模式</p></td>
+<td><p>统计楼层</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://source.android.com/devices/sensors/sensor-types#significant_motion">大幅度动作传感器(SIGNIFICANT_MOTION)</a></p></td>
+<td><p>动作传感器</p></td>
+<td><p>加速度计（或其他功耗极低的传感器）</p></td>
+<td><p>单次模式</p></td>
+<td><p>判断是运动还是静止状态</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://source.android.com/devices/sensors/sensor-types#step_counter">计步器(STEP_COUNTER)</a></p></td>
+<td><p>动作传感器</p></td>
+<td><p>加速度计</p></td>
+<td><p>变化时触发模式</p></td>
+<td><p>步数统计</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://source.android.com/devices/sensors/sensor-types#step_detector">步测器(STEP_DETECTOR)</a></p></td>
+<td><p>动作传感器</p></td>
+<td><p>加速度计</p></td>
+<td><p>特殊模式</p></td>
+<td><p>跑步步频统计</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://source.android.com/devices/sensors/sensor-types#tilt_detector">倾斜检测器(TILT)</a></p></td>
+<td><p>动作传感器</p></td>
+<td><p>加速度计</p></td>
+<td><p>特殊模式</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://source.android.com/devices/sensors/sensor-types#wake_up_gesture">唤醒手势传感器(wakeup)</a></p></td>
+<td><p>互动</p></td>
+<td><p>未定义</p></td>
+<td><p>单次模式</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://source.android.com/devices/sensors/sensor-types#glance_gesture">手势识别（FLIP）</a></p></td>
+<td><p>互动</p></td>
+<td><p>加速度计</p></td>
+<td><p>单次模式</p></td>
+<td><p>翻转静音，拒接电话</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="mt6762">
+<h1>MT6762平台<a class="headerlink" href="#mt6762" title="Permalink to this headline"></a></h1>
+</section>
+<section id="realmesensorlist">
+<h1>realme手机支持sensorlist<a class="headerlink" href="#realmesensorlist" title="Permalink to this headline"></a></h1>
+<p>realme GT RMX3560手机使用MTK天玑8100平台，支持的sensorlist，<code class="docutils literal notranslate"><span class="pre">dumpsys</span> <span class="pre">sensorservice</span></code>：</p>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="n">Sensor</span><span class="w"> </span><span class="n">List</span><span class="o">:</span><span class="w"></span>
+<span class="mh">0x00000001</span><span class="p">)</span><span class="w"> </span><span class="n">bmi2xy</span><span class="w"> </span><span class="n">acc</span><span class="w">                </span><span class="o">|</span><span class="w"> </span><span class="n">bosch</span><span class="w">           </span><span class="o">|</span><span class="w"> </span><span class="n">ver</span><span class="o">:</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">type</span><span class="o">:</span><span class="w"> </span><span class="n">android</span><span class="p">.</span><span class="n">sensor</span><span class="p">.</span><span class="n">accelerometer</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">perm</span><span class="o">:</span><span class="w"> </span><span class="n">n</span><span class="o">/</span><span class="n">a</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">flags</span><span class="o">:</span><span class="w"> </span><span class="mh">0x00000000</span><span class="w"></span>
+<span class="w">        </span><span class="n">continuous</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">minRate</span><span class="o">=</span><span class="mf">12.50</span><span class="n">Hz</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">maxRate</span><span class="o">=</span><span class="mf">400.00</span><span class="n">Hz</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">FIFO</span><span class="w"> </span><span class="p">(</span><span class="n">max</span><span class="p">,</span><span class="n">reserved</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="mi">4500</span><span class="p">,</span><span class="w"> </span><span class="mi">3000</span><span class="p">)</span><span class="w"> </span><span class="n">events</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">non</span><span class="o">-</span><span class="n">wakeUp</span><span class="w"> </span><span class="o">|</span><span class="w"></span>
+<span class="mh">0x00000002</span><span class="p">)</span><span class="w"> </span><span class="n">mmc5603</span><span class="w"> </span><span class="n">mag</span><span class="w">               </span><span class="o">|</span><span class="w"> </span><span class="n">memsic</span><span class="w">          </span><span class="o">|</span><span class="w"> </span><span class="n">ver</span><span class="o">:</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">type</span><span class="o">:</span><span class="w"> </span><span class="n">android</span><span class="p">.</span><span class="n">sensor</span><span class="p">.</span><span class="n">magnetic_field</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">perm</span><span class="o">:</span><span class="w"> </span><span class="n">n</span><span class="o">/</span><span class="n">a</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">flags</span><span class="o">:</span><span class="w"> </span><span class="mh">0x00000000</span><span class="w"></span>
+<span class="w">        </span><span class="n">continuous</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">minRate</span><span class="o">=</span><span class="mf">5.00</span><span class="n">Hz</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">maxRate</span><span class="o">=</span><span class="mf">50.00</span><span class="n">Hz</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">FIFO</span><span class="w"> </span><span class="p">(</span><span class="n">max</span><span class="p">,</span><span class="n">reserved</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="mi">4500</span><span class="p">,</span><span class="w"> </span><span class="mi">600</span><span class="p">)</span><span class="w"> </span><span class="n">events</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">non</span><span class="o">-</span><span class="n">wakeUp</span><span class="w"> </span><span class="o">|</span><span class="w"></span>
+<span class="mh">0x00000003</span><span class="p">)</span><span class="w"> </span><span class="n">orientation</span><span class="w">               </span><span class="o">|</span><span class="w"> </span><span class="n">mtk</span><span class="w">             </span><span class="o">|</span><span class="w"> </span><span class="n">ver</span><span class="o">:</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">type</span><span class="o">:</span><span class="w"> </span><span class="n">android</span><span class="p">.</span><span class="n">sensor</span><span class="p">.</span><span class="n">orientation</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">perm</span><span class="o">:</span><span class="w"> </span><span class="n">n</span><span class="o">/</span><span class="n">a</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">flags</span><span class="o">:</span><span class="w"> </span><span class="mh">0x00000000</span><span class="w"></span>
+<span class="w">        </span><span class="n">continuous</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">minRate</span><span class="o">=</span><span class="mf">50.00</span><span class="n">Hz</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">maxRate</span><span class="o">=</span><span class="mf">200.00</span><span class="n">Hz</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">no</span><span class="w"> </span><span class="n">batching</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">non</span><span class="o">-</span><span class="n">wakeUp</span><span class="w"> </span><span class="o">|</span><span class="w"></span>
+<span class="mh">0x00000004</span><span class="p">)</span><span class="w"> </span><span class="n">bmi2xy</span><span class="w"> </span><span class="n">gyro</span><span class="w">               </span><span class="o">|</span><span class="w"> </span><span class="n">bosch</span><span class="w">           </span><span class="o">|</span><span class="w"> </span><span class="n">ver</span><span class="o">:</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">type</span><span class="o">:</span><span class="w"> </span><span class="n">android</span><span class="p">.</span><span class="n">sensor</span><span class="p">.</span><span class="n">gyroscope</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">perm</span><span class="o">:</span><span class="w"> </span><span class="n">n</span><span class="o">/</span><span class="n">a</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">flags</span><span class="o">:</span><span class="w"> </span><span class="mh">0x00000000</span><span class="w"></span>
+<span class="w">        </span><span class="n">continuous</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">minRate</span><span class="o">=</span><span class="mf">12.50</span><span class="n">Hz</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">maxRate</span><span class="o">=</span><span class="mf">400.00</span><span class="n">Hz</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">FIFO</span><span class="w"> </span><span class="p">(</span><span class="n">max</span><span class="p">,</span><span class="n">reserved</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="mi">4500</span><span class="p">,</span><span class="w"> </span><span class="mi">3000</span><span class="p">)</span><span class="w"> </span><span class="n">events</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">non</span><span class="o">-</span><span class="n">wakeUp</span><span class="w"> </span><span class="o">|</span><span class="w"></span>
+<span class="mh">0x00000008</span><span class="p">)</span><span class="w"> </span><span class="n">tcs3701</span><span class="w"> </span><span class="n">ps</span><span class="w">                </span><span class="o">|</span><span class="w"> </span><span class="n">ams</span><span class="w">             </span><span class="o">|</span><span class="w"> </span><span class="n">ver</span><span class="o">:</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">type</span><span class="o">:</span><span class="w"> </span><span class="n">android</span><span class="p">.</span><span class="n">sensor</span><span class="p">.</span><span class="n">proximity</span><span class="p">(</span><span class="mi">8</span><span class="p">)</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">perm</span><span class="o">:</span><span class="w"> </span><span class="n">n</span><span class="o">/</span><span class="n">a</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">flags</span><span class="o">:</span><span class="w"> </span><span class="mh">0x00000003</span><span class="w"></span>
+<span class="w">        </span><span class="n">on</span><span class="o">-</span><span class="n">change</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">minRate</span><span class="o">=</span><span class="mf">1.00</span><span class="n">Hz</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">minDelay</span><span class="o">=</span><span class="mi">0u</span><span class="n">s</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">FIFO</span><span class="w"> </span><span class="p">(</span><span class="n">max</span><span class="p">,</span><span class="n">reserved</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="mi">4500</span><span class="p">,</span><span class="w"> </span><span class="mi">100</span><span class="p">)</span><span class="w"> </span><span class="n">events</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">wakeUp</span><span class="w"> </span><span class="o">|</span><span class="w"></span>
+<span class="mh">0x00000009</span><span class="p">)</span><span class="w"> </span><span class="n">gravity</span><span class="w">                 </span><span class="o">|</span><span class="w"> </span><span class="n">mtk</span><span class="w">             </span><span class="o">|</span><span class="w"> </span><span class="n">ver</span><span class="o">:</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">type</span><span class="o">:</span><span class="w"> </span><span class="n">android</span><span class="p">.</span><span class="n">sensor</span><span class="p">.</span><span class="n">gravity</span><span class="p">(</span><span class="mi">9</span><span class="p">)</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">perm</span><span class="o">:</span><span class="w"> </span><span class="n">n</span><span class="o">/</span><span class="n">a</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">flags</span><span class="o">:</span><span class="w"> </span><span class="mh">0x00000000</span><span class="w"></span>
+<span class="w">        </span><span class="n">continuous</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">minRate</span><span class="o">=</span><span class="mf">50.00</span><span class="n">Hz</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">maxRate</span><span class="o">=</span><span class="mf">200.00</span><span class="n">Hz</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">no</span><span class="w"> </span><span class="n">batching</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">non</span><span class="o">-</span><span class="n">wakeUp</span><span class="w"> </span><span class="o">|</span><span class="w"></span>
+<span class="mh">0x0000000a</span><span class="p">)</span><span class="w"> </span><span class="n">linear_acc</span><span class="w">                </span><span class="o">|</span><span class="w"> </span><span class="n">mtk</span><span class="w">             </span><span class="o">|</span><span class="w"> </span><span class="n">ver</span><span class="o">:</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">type</span><span class="o">:</span><span class="w"> </span><span class="n">android</span><span class="p">.</span><span class="n">sensor</span><span class="p">.</span><span class="n">linear_acceleration</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">perm</span><span class="o">:</span><span class="w"> </span><span class="n">n</span><span class="o">/</span><span class="n">a</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">flags</span><span class="o">:</span><span class="w"> </span><span class="mh">0x00000000</span><span class="w"> </span><span class="c1">//线性加速度  </span>
+<span class="w">        </span><span class="n">continuous</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">minRate</span><span class="o">=</span><span class="mf">50.00</span><span class="n">Hz</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">maxRate</span><span class="o">=</span><span class="mf">200.00</span><span class="n">Hz</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">no</span><span class="w"> </span><span class="n">batching</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">non</span><span class="o">-</span><span class="n">wakeUp</span><span class="w"> </span><span class="o">|</span><span class="w"></span>
+<span class="mh">0x0000000b</span><span class="p">)</span><span class="w"> </span><span class="n">rot_vec</span><span class="w">                   </span><span class="o">|</span><span class="w"> </span><span class="n">mtk</span><span class="w">             </span><span class="o">|</span><span class="w"> </span><span class="n">ver</span><span class="o">:</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">type</span><span class="o">:</span><span class="w"> </span><span class="n">android</span><span class="p">.</span><span class="n">sensor</span><span class="p">.</span><span class="n">rotation_vector</span><span class="p">(</span><span class="mi">11</span><span class="p">)</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">perm</span><span class="o">:</span><span class="w"> </span><span class="n">n</span><span class="o">/</span><span class="n">a</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">flags</span><span class="o">:</span><span class="w"> </span><span class="mh">0x00000000</span><span class="w"> </span><span class="c1">//方向矢量</span>
+<span class="w">        </span><span class="n">continuous</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">minRate</span><span class="o">=</span><span class="mf">50.00</span><span class="n">Hz</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">maxRate</span><span class="o">=</span><span class="mf">200.00</span><span class="n">Hz</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">FIFO</span><span class="w"> </span><span class="p">(</span><span class="n">max</span><span class="p">,</span><span class="n">reserved</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="mi">4500</span><span class="p">,</span><span class="w"> </span><span class="mi">300</span><span class="p">)</span><span class="w"> </span><span class="n">events</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">non</span><span class="o">-</span><span class="n">wakeUp</span><span class="w"> </span><span class="o">|</span><span class="w"></span>
+<span class="mh">0x0000000e</span><span class="p">)</span><span class="w"> </span><span class="n">uncali_mag</span><span class="w">                </span><span class="o">|</span><span class="w"> </span><span class="n">mtk</span><span class="w">             </span><span class="o">|</span><span class="w"> </span><span class="n">ver</span><span class="o">:</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">type</span><span class="o">:</span><span class="w"> </span><span class="n">android</span><span class="p">.</span><span class="n">sensor</span><span class="p">.</span><span class="n">magnetic_field_uncalibrated</span><span class="p">(</span><span class="mi">14</span><span class="p">)</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">perm</span><span class="o">:</span><span class="w"> </span><span class="n">n</span><span class="o">/</span><span class="n">a</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">flags</span><span class="o">:</span><span class="w"> </span><span class="mh">0x00000000</span><span class="w"></span>
+<span class="w">        </span><span class="n">continuous</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">minRate</span><span class="o">=</span><span class="mf">5.00</span><span class="n">Hz</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">maxRate</span><span class="o">=</span><span class="mf">50.00</span><span class="n">Hz</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">FIFO</span><span class="w"> </span><span class="p">(</span><span class="n">max</span><span class="p">,</span><span class="n">reserved</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="mi">4500</span><span class="p">,</span><span class="w"> </span><span class="mi">600</span><span class="p">)</span><span class="w"> </span><span class="n">events</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">non</span><span class="o">-</span><span class="n">wakeUp</span><span class="w"> </span><span class="o">|</span><span class="w"></span>
+<span class="mh">0x0000000f</span><span class="p">)</span><span class="w"> </span><span class="n">game_rotvec</span><span class="w">               </span><span class="o">|</span><span class="w"> </span><span class="n">mtk</span><span class="w">             </span><span class="o">|</span><span class="w"> </span><span class="n">ver</span><span class="o">:</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">type</span><span class="o">:</span><span class="w"> </span><span class="n">android</span><span class="p">.</span><span class="n">sensor</span><span class="p">.</span><span class="n">game_rotation_vector</span><span class="p">(</span><span class="mi">15</span><span class="p">)</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">perm</span><span class="o">:</span><span class="w"> </span><span class="n">n</span><span class="o">/</span><span class="n">a</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">flags</span><span class="o">:</span><span class="w"> </span><span class="mh">0x00000000</span><span class="w"> </span><span class="c1">//游戏方向矢量</span>
+<span class="w">        </span><span class="n">continuous</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">minRate</span><span class="o">=</span><span class="mf">50.00</span><span class="n">Hz</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">maxRate</span><span class="o">=</span><span class="mf">200.00</span><span class="n">Hz</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">FIFO</span><span class="w"> </span><span class="p">(</span><span class="n">max</span><span class="p">,</span><span class="n">reserved</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="mi">4500</span><span class="p">,</span><span class="w"> </span><span class="mi">300</span><span class="p">)</span><span class="w"> </span><span class="n">events</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">non</span><span class="o">-</span><span class="n">wakeUp</span><span class="w"> </span><span class="o">|</span><span class="w"></span>
+<span class="mh">0x00000010</span><span class="p">)</span><span class="w"> </span><span class="n">uncali_gyro</span><span class="w">               </span><span class="o">|</span><span class="w"> </span><span class="n">mtk</span><span class="w">             </span><span class="o">|</span><span class="w"> </span><span class="n">ver</span><span class="o">:</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">type</span><span class="o">:</span><span class="w"> </span><span class="n">android</span><span class="p">.</span><span class="n">sensor</span><span class="p">.</span><span class="n">gyroscope_uncalibrated</span><span class="p">(</span><span class="mi">16</span><span class="p">)</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">perm</span><span class="o">:</span><span class="w"> </span><span class="n">n</span><span class="o">/</span><span class="n">a</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">flags</span><span class="o">:</span><span class="w"> </span><span class="mh">0x00000000</span><span class="w"></span>
+<span class="w">        </span><span class="n">continuous</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">minRate</span><span class="o">=</span><span class="mf">12.50</span><span class="n">Hz</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">maxRate</span><span class="o">=</span><span class="mf">400.00</span><span class="n">Hz</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">FIFO</span><span class="w"> </span><span class="p">(</span><span class="n">max</span><span class="p">,</span><span class="n">reserved</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="mi">4500</span><span class="p">,</span><span class="w"> </span><span class="mi">3000</span><span class="p">)</span><span class="w"> </span><span class="n">events</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">non</span><span class="o">-</span><span class="n">wakeUp</span><span class="w"> </span><span class="o">|</span><span class="w"></span>
+<span class="mh">0x00000011</span><span class="p">)</span><span class="w"> </span><span class="n">significant</span><span class="w">               </span><span class="o">|</span><span class="w"> </span><span class="n">mtk</span><span class="w">             </span><span class="o">|</span><span class="w"> </span><span class="n">ver</span><span class="o">:</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">type</span><span class="o">:</span><span class="w"> </span><span class="n">android</span><span class="p">.</span><span class="n">sensor</span><span class="p">.</span><span class="n">significant_motion</span><span class="p">(</span><span class="mi">17</span><span class="p">)</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">perm</span><span class="o">:</span><span class="w"> </span><span class="n">n</span><span class="o">/</span><span class="n">a</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">flags</span><span class="o">:</span><span class="w"> </span><span class="mh">0x00000005</span><span class="w"> </span><span class="c1">//重大动作</span>
+<span class="w">        </span><span class="n">one</span><span class="o">-</span><span class="n">shot</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">maxDelay</span><span class="o">=</span><span class="mi">0u</span><span class="n">s</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">minDelay</span><span class="o">=</span><span class="mi">-1u</span><span class="n">s</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">no</span><span class="w"> </span><span class="n">batching</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">wakeUp</span><span class="w"> </span><span class="o">|</span><span class="w"></span>
+<span class="mh">0x00000012</span><span class="p">)</span><span class="w"> </span><span class="n">step_detect</span><span class="w">               </span><span class="o">|</span><span class="w"> </span><span class="n">mtk</span><span class="w">             </span><span class="o">|</span><span class="w"> </span><span class="n">ver</span><span class="o">:</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">type</span><span class="o">:</span><span class="w"> </span><span class="n">android</span><span class="p">.</span><span class="n">sensor</span><span class="p">.</span><span class="n">step_detector</span><span class="p">(</span><span class="mi">18</span><span class="p">)</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">perm</span><span class="o">:</span><span class="w"> </span><span class="n">android</span><span class="p">.</span><span class="n">permission</span><span class="p">.</span><span class="n">ACTIVITY_RECOGNITION</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">flags</span><span class="o">:</span><span class="w"> </span><span class="mh">0x00000006</span><span class="w"></span>
+<span class="w">        </span><span class="n">special</span><span class="o">-</span><span class="n">trigger</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">maxDelay</span><span class="o">=</span><span class="mi">0u</span><span class="n">s</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">minDelay</span><span class="o">=</span><span class="mi">0u</span><span class="n">s</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">FIFO</span><span class="w"> </span><span class="p">(</span><span class="n">max</span><span class="p">,</span><span class="n">reserved</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="mi">4500</span><span class="p">,</span><span class="w"> </span><span class="mi">100</span><span class="p">)</span><span class="w"> </span><span class="n">events</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">non</span><span class="o">-</span><span class="n">wakeUp</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="c1">//走路察觉</span>
+<span class="mh">0x00000013</span><span class="p">)</span><span class="w"> </span><span class="n">step_count</span><span class="w">                </span><span class="o">|</span><span class="w"> </span><span class="n">mtk</span><span class="w">             </span><span class="o">|</span><span class="w"> </span><span class="n">ver</span><span class="o">:</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">type</span><span class="o">:</span><span class="w"> </span><span class="n">android</span><span class="p">.</span><span class="n">sensor</span><span class="p">.</span><span class="n">step_counter</span><span class="p">(</span><span class="mi">19</span><span class="p">)</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">perm</span><span class="o">:</span><span class="w"> </span><span class="n">android</span><span class="p">.</span><span class="n">permission</span><span class="p">.</span><span class="n">ACTIVITY_RECOGNITION</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">flags</span><span class="o">:</span><span class="w"> </span><span class="mh">0x00000002</span><span class="w"></span>
+<span class="w">        </span><span class="n">on</span><span class="o">-</span><span class="n">change</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">minRate</span><span class="o">=</span><span class="mf">1.00</span><span class="n">Hz</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">minDelay</span><span class="o">=</span><span class="mi">0u</span><span class="n">s</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">no</span><span class="w"> </span><span class="n">batching</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">non</span><span class="o">-</span><span class="n">wakeUp</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="c1">//步数统计</span>
+<span class="mh">0x00000014</span><span class="p">)</span><span class="w"> </span><span class="n">geo_rotvec</span><span class="w">                </span><span class="o">|</span><span class="w"> </span><span class="n">mtk</span><span class="w">             </span><span class="o">|</span><span class="w"> </span><span class="n">ver</span><span class="o">:</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">type</span><span class="o">:</span><span class="w"> </span><span class="n">android</span><span class="p">.</span><span class="n">sensor</span><span class="p">.</span><span class="n">geomagnetic_rotation_vector</span><span class="p">(</span><span class="mi">20</span><span class="p">)</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">perm</span><span class="o">:</span><span class="w"> </span><span class="n">n</span><span class="o">/</span><span class="n">a</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">flags</span><span class="o">:</span><span class="w"> </span><span class="mh">0x00000000</span><span class="w"> </span><span class="c1">//地磁旋转矢量</span>
+<span class="w">        </span><span class="n">continuous</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">minRate</span><span class="o">=</span><span class="mf">50.00</span><span class="n">Hz</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">maxRate</span><span class="o">=</span><span class="mf">200.00</span><span class="n">Hz</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">no</span><span class="w"> </span><span class="n">batching</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">non</span><span class="o">-</span><span class="n">wakeUp</span><span class="w"> </span><span class="o">|</span><span class="w"></span>
+<span class="mh">0x00000017</span><span class="p">)</span><span class="w"> </span><span class="n">wake</span><span class="w">                      </span><span class="o">|</span><span class="w"> </span><span class="n">mtk</span><span class="w">             </span><span class="o">|</span><span class="w"> </span><span class="n">ver</span><span class="o">:</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">type</span><span class="o">:</span><span class="w"> </span><span class="n">android</span><span class="p">.</span><span class="n">sensor</span><span class="p">.</span><span class="n">wake_gesture</span><span class="p">(</span><span class="mi">23</span><span class="p">)</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">perm</span><span class="o">:</span><span class="w"> </span><span class="n">n</span><span class="o">/</span><span class="n">a</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">flags</span><span class="o">:</span><span class="w"> </span><span class="mh">0x00000005</span><span class="w"> </span><span class="c1">//唤醒手势</span>
+<span class="w">        </span><span class="n">one</span><span class="o">-</span><span class="n">shot</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">maxDelay</span><span class="o">=</span><span class="mi">0u</span><span class="n">s</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">minDelay</span><span class="o">=</span><span class="mi">-1u</span><span class="n">s</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">no</span><span class="w"> </span><span class="n">batching</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">wakeUp</span><span class="w"> </span><span class="o">|</span><span class="w"></span>
+<span class="mh">0x0000001b</span><span class="p">)</span><span class="w"> </span><span class="n">dev_orient</span><span class="w">                </span><span class="o">|</span><span class="w"> </span><span class="n">mtk</span><span class="w">             </span><span class="o">|</span><span class="w"> </span><span class="n">ver</span><span class="o">:</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">type</span><span class="o">:</span><span class="w"> </span><span class="n">android</span><span class="p">.</span><span class="n">sensor</span><span class="p">.</span><span class="n">device_orientation</span><span class="p">(</span><span class="mi">27</span><span class="p">)</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">perm</span><span class="o">:</span><span class="w"> </span><span class="n">n</span><span class="o">/</span><span class="n">a</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">flags</span><span class="o">:</span><span class="w"> </span><span class="mh">0x00000002</span><span class="w"> </span><span class="c1">//设备方向</span>
+<span class="w">        </span><span class="n">on</span><span class="o">-</span><span class="n">change</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">minRate</span><span class="o">=</span><span class="mf">1.00</span><span class="n">Hz</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">minDelay</span><span class="o">=</span><span class="mi">0u</span><span class="n">s</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">no</span><span class="w"> </span><span class="n">batching</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">non</span><span class="o">-</span><span class="n">wakeUp</span><span class="w"> </span><span class="o">|</span><span class="w"></span>
+<span class="mh">0x00000023</span><span class="p">)</span><span class="w"> </span><span class="n">uncali_acc</span><span class="w">                </span><span class="o">|</span><span class="w"> </span><span class="n">mtk</span><span class="w">             </span><span class="o">|</span><span class="w"> </span><span class="n">ver</span><span class="o">:</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">type</span><span class="o">:</span><span class="w"> </span><span class="n">android</span><span class="p">.</span><span class="n">sensor</span><span class="p">.</span><span class="n">accelerometer_uncalibrated</span><span class="p">(</span><span class="mi">35</span><span class="p">)</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">perm</span><span class="o">:</span><span class="w"> </span><span class="n">n</span><span class="o">/</span><span class="n">a</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">flags</span><span class="o">:</span><span class="w"> </span><span class="mh">0x00000000</span><span class="w"></span>
+<span class="w">        </span><span class="n">continuous</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">minRate</span><span class="o">=</span><span class="mf">12.50</span><span class="n">Hz</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">maxRate</span><span class="o">=</span><span class="mf">400.00</span><span class="n">Hz</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">FIFO</span><span class="w"> </span><span class="p">(</span><span class="n">max</span><span class="p">,</span><span class="n">reserved</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="mi">4500</span><span class="p">,</span><span class="w"> </span><span class="mi">3000</span><span class="p">)</span><span class="w"> </span><span class="n">events</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">non</span><span class="o">-</span><span class="n">wakeUp</span><span class="w"> </span><span class="o">|</span><span class="w"></span>
+<span class="mh">0x0000004b</span><span class="p">)</span><span class="w"> </span><span class="n">pickup</span><span class="w">                    </span><span class="o">|</span><span class="w"> </span><span class="n">oplus</span><span class="w">           </span><span class="o">|</span><span class="w"> </span><span class="n">ver</span><span class="o">:</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">type</span><span class="o">:</span><span class="w"> </span><span class="n">android</span><span class="p">.</span><span class="n">sensor</span><span class="p">.</span><span class="n">pickup_detect</span><span class="p">(</span><span class="mi">65611</span><span class="p">)</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">perm</span><span class="o">:</span><span class="w"> </span><span class="n">n</span><span class="o">/</span><span class="n">a</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">flags</span><span class="o">:</span><span class="w"> </span><span class="mh">0x00000003</span><span class="w"> </span><span class="c1">//抬起手势</span>
+<span class="w">        </span><span class="n">on</span><span class="o">-</span><span class="n">change</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">maxDelay</span><span class="o">=</span><span class="mi">0u</span><span class="n">s</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">minDelay</span><span class="o">=</span><span class="mi">0u</span><span class="n">s</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">no</span><span class="w"> </span><span class="n">batching</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">wakeUp</span><span class="w"> </span><span class="o">|</span><span class="w"></span>
+<span class="mh">0x0000004c</span><span class="p">)</span><span class="w"> </span><span class="n">fp_display</span><span class="w">                </span><span class="o">|</span><span class="w"> </span><span class="n">oplus</span><span class="w">           </span><span class="o">|</span><span class="w"> </span><span class="n">ver</span><span class="o">:</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">type</span><span class="o">:</span><span class="w"> </span><span class="n">android</span><span class="p">.</span><span class="n">sensor</span><span class="p">.</span><span class="n">fp_display</span><span class="p">(</span><span class="mi">65612</span><span class="p">)</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">perm</span><span class="o">:</span><span class="w"> </span><span class="n">n</span><span class="o">/</span><span class="n">a</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">flags</span><span class="o">:</span><span class="w"> </span><span class="mh">0x00000003</span><span class="w"> </span><span class="c1">//flip display</span>
+<span class="w">        </span><span class="n">on</span><span class="o">-</span><span class="n">change</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">minRate</span><span class="o">=</span><span class="mf">1.00</span><span class="n">Hz</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">minDelay</span><span class="o">=</span><span class="mi">0u</span><span class="n">s</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">no</span><span class="w"> </span><span class="n">batching</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">wakeUp</span><span class="w"> </span><span class="o">|</span><span class="w"></span>
+<span class="mh">0x0000004e</span><span class="p">)</span><span class="w"> </span><span class="n">lux_aod</span><span class="w">                   </span><span class="o">|</span><span class="w"> </span><span class="n">oplus</span><span class="w">           </span><span class="o">|</span><span class="w"> </span><span class="n">ver</span><span class="o">:</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">type</span><span class="o">:</span><span class="w"> </span><span class="n">android</span><span class="p">.</span><span class="n">sensor</span><span class="p">.</span><span class="n">lux_aod</span><span class="p">(</span><span class="mi">65614</span><span class="p">)</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">perm</span><span class="o">:</span><span class="w"> </span><span class="n">n</span><span class="o">/</span><span class="n">a</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">flags</span><span class="o">:</span><span class="w"> </span><span class="mh">0x00000003</span><span class="w"> </span><span class="c1">//</span>
+<span class="w">        </span><span class="n">on</span><span class="o">-</span><span class="n">change</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">minRate</span><span class="o">=</span><span class="mf">1.00</span><span class="n">Hz</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">minDelay</span><span class="o">=</span><span class="mi">0u</span><span class="n">s</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">no</span><span class="w"> </span><span class="n">batching</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">wakeUp</span><span class="w"> </span><span class="o">|</span><span class="w"></span>
+<span class="mh">0x0000004f</span><span class="p">)</span><span class="w"> </span><span class="n">pedo_minute</span><span class="w">               </span><span class="o">|</span><span class="w"> </span><span class="n">oplus</span><span class="w">           </span><span class="o">|</span><span class="w"> </span><span class="n">ver</span><span class="o">:</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">type</span><span class="o">:</span><span class="w"> </span><span class="n">qti</span><span class="p">.</span><span class="n">sensor</span><span class="p">.</span><span class="n">pedometer_minute</span><span class="p">(</span><span class="mi">33171034</span><span class="p">)</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">perm</span><span class="o">:</span><span class="w"> </span><span class="n">android</span><span class="p">.</span><span class="n">permission</span><span class="p">.</span><span class="n">ACTIVITY_RECOGNITION</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">flags</span><span class="o">:</span><span class="w"> </span><span class="mh">0x00000003</span><span class="w"> </span><span class="c1">//每分钟的计步</span>
+<span class="w">        </span><span class="n">on</span><span class="o">-</span><span class="n">change</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">minRate</span><span class="o">=</span><span class="mf">1.00</span><span class="n">Hz</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">minDelay</span><span class="o">=</span><span class="mi">0u</span><span class="n">s</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">no</span><span class="w"> </span><span class="n">batching</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">wakeUp</span><span class="w"> </span><span class="o">|</span><span class="w"></span>
+<span class="mh">0x00000051</span><span class="p">)</span><span class="w"> </span><span class="n">elevator_detect</span><span class="w">           </span><span class="o">|</span><span class="w"> </span><span class="n">oplus</span><span class="w">           </span><span class="o">|</span><span class="w"> </span><span class="n">ver</span><span class="o">:</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">type</span><span class="o">:</span><span class="w"> </span><span class="n">android</span><span class="p">.</span><span class="n">sensor</span><span class="p">.</span><span class="n">elevator_detect</span><span class="p">(</span><span class="mi">65617</span><span class="p">)</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">perm</span><span class="o">:</span><span class="w"> </span><span class="n">n</span><span class="o">/</span><span class="n">a</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">flags</span><span class="o">:</span><span class="w"> </span><span class="mh">0x00000003</span><span class="w"> </span><span class="c1">//电梯检测</span>
+<span class="w">        </span><span class="n">on</span><span class="o">-</span><span class="n">change</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">minRate</span><span class="o">=</span><span class="mf">1.00</span><span class="n">Hz</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">minDelay</span><span class="o">=</span><span class="mi">0u</span><span class="n">s</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">no</span><span class="w"> </span><span class="n">batching</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">wakeUp</span><span class="w"> </span><span class="o">|</span><span class="w"></span>
+<span class="mh">0x00000052</span><span class="p">)</span><span class="w"> </span><span class="n">oplus_act_recog</span><span class="w">           </span><span class="o">|</span><span class="w"> </span><span class="n">oplus</span><span class="w">           </span><span class="o">|</span><span class="w"> </span><span class="n">ver</span><span class="o">:</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">type</span><span class="o">:</span><span class="w"> </span><span class="n">android</span><span class="p">.</span><span class="n">sensor</span><span class="p">.</span><span class="n">oplus_activity_recognition</span><span class="p">(</span><span class="mi">65618</span><span class="p">)</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">perm</span><span class="o">:</span><span class="w"> </span><span class="n">n</span><span class="o">/</span><span class="n">a</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">flags</span><span class="o">:</span><span class="w"> </span><span class="mh">0x00000003</span><span class="w"> </span><span class="c1">//oplus 活动识别?</span>
+<span class="w">        </span><span class="n">on</span><span class="o">-</span><span class="n">change</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">minRate</span><span class="o">=</span><span class="mf">1.00</span><span class="n">Hz</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">minDelay</span><span class="o">=</span><span class="mi">0u</span><span class="n">s</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">no</span><span class="w"> </span><span class="n">batching</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">wakeUp</span><span class="w"> </span><span class="o">|</span><span class="w"></span>
+<span class="mh">0x00000053</span><span class="p">)</span><span class="w"> </span><span class="n">stationary</span><span class="w">                </span><span class="o">|</span><span class="w"> </span><span class="n">oplus</span><span class="w">           </span><span class="o">|</span><span class="w"> </span><span class="n">ver</span><span class="o">:</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">type</span><span class="o">:</span><span class="w"> </span><span class="n">android</span><span class="p">.</span><span class="n">sensor</span><span class="p">.</span><span class="n">oplus_station_detect</span><span class="p">(</span><span class="mi">65619</span><span class="p">)</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">perm</span><span class="o">:</span><span class="w"> </span><span class="n">n</span><span class="o">/</span><span class="n">a</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">flags</span><span class="o">:</span><span class="w"> </span><span class="mh">0x00000004</span><span class="w"> </span><span class="c1">//车站识别？</span>
+<span class="w">        </span><span class="n">one</span><span class="o">-</span><span class="n">shot</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">maxDelay</span><span class="o">=</span><span class="mi">0u</span><span class="n">s</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">minDelay</span><span class="o">=</span><span class="mi">-1u</span><span class="n">s</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">no</span><span class="w"> </span><span class="n">batching</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">non</span><span class="o">-</span><span class="n">wakeUp</span><span class="w"> </span><span class="o">|</span><span class="w"></span>
+<span class="mh">0x0000005b</span><span class="p">)</span><span class="w"> </span><span class="n">tcs3701</span><span class="w"> </span><span class="n">rgbw</span><span class="w">              </span><span class="o">|</span><span class="w"> </span><span class="n">ams</span><span class="w">             </span><span class="o">|</span><span class="w"> </span><span class="n">ver</span><span class="o">:</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">type</span><span class="o">:</span><span class="w"> </span><span class="n">android</span><span class="p">.</span><span class="n">sensor</span><span class="p">.</span><span class="n">wise_light</span><span class="p">(</span><span class="mi">65627</span><span class="p">)</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">perm</span><span class="o">:</span><span class="w"> </span><span class="n">n</span><span class="o">/</span><span class="n">a</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">flags</span><span class="o">:</span><span class="w"> </span><span class="mh">0x00000002</span><span class="w"> </span><span class="c1">//智慧之光？？</span>
+<span class="w">        </span><span class="n">on</span><span class="o">-</span><span class="n">change</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">minRate</span><span class="o">=</span><span class="mf">1.00</span><span class="n">Hz</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">minDelay</span><span class="o">=</span><span class="mi">0u</span><span class="n">s</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">no</span><span class="w"> </span><span class="n">batching</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">non</span><span class="o">-</span><span class="n">wakeUp</span><span class="w"> </span><span class="o">|</span><span class="w"></span>
+<span class="mh">0x00000062</span><span class="p">)</span><span class="w"> </span><span class="n">tcs3408</span><span class="w"> </span><span class="n">als</span><span class="w">               </span><span class="o">|</span><span class="w"> </span><span class="n">ams</span><span class="w">             </span><span class="o">|</span><span class="w"> </span><span class="n">ver</span><span class="o">:</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">type</span><span class="o">:</span><span class="w"> </span><span class="n">qti</span><span class="p">.</span><span class="n">sensor</span><span class="p">.</span><span class="n">light_rear</span><span class="p">(</span><span class="mi">33171055</span><span class="p">)</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">perm</span><span class="o">:</span><span class="w"> </span><span class="n">n</span><span class="o">/</span><span class="n">a</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">flags</span><span class="o">:</span><span class="w"> </span><span class="mh">0x00000002</span><span class="w"></span>
+<span class="w">        </span><span class="n">on</span><span class="o">-</span><span class="n">change</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">minRate</span><span class="o">=</span><span class="mf">1.00</span><span class="n">Hz</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">minDelay</span><span class="o">=</span><span class="mi">0u</span><span class="n">s</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">no</span><span class="w"> </span><span class="n">batching</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">non</span><span class="o">-</span><span class="n">wakeUp</span><span class="w"> </span><span class="o">|</span><span class="w"></span>
+<span class="mh">0x00000063</span><span class="p">)</span><span class="w"> </span><span class="n">tcs3408</span><span class="w"> </span><span class="n">cct</span><span class="w">               </span><span class="o">|</span><span class="w"> </span><span class="n">ams</span><span class="w">             </span><span class="o">|</span><span class="w"> </span><span class="n">ver</span><span class="o">:</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">type</span><span class="o">:</span><span class="w">  </span><span class="n">qti</span><span class="p">.</span><span class="n">sensor</span><span class="p">.</span><span class="n">rgb_rear</span><span class="p">(</span><span class="mi">33171052</span><span class="p">)</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">perm</span><span class="o">:</span><span class="w"> </span><span class="n">n</span><span class="o">/</span><span class="n">a</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">flags</span><span class="o">:</span><span class="w"> </span><span class="mh">0x00000002</span><span class="w"></span>
+<span class="w">        </span><span class="n">on</span><span class="o">-</span><span class="n">change</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">minRate</span><span class="o">=</span><span class="mf">1.00</span><span class="n">Hz</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">minDelay</span><span class="o">=</span><span class="mi">0u</span><span class="n">s</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">no</span><span class="w"> </span><span class="n">batching</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">non</span><span class="o">-</span><span class="n">wakeUp</span><span class="w"> </span><span class="o">|</span><span class="w"></span>
+<span class="mh">0x00000064</span><span class="p">)</span><span class="w"> </span><span class="n">tcs3408</span><span class="w"> </span><span class="n">flicker</span><span class="w">           </span><span class="o">|</span><span class="w"> </span><span class="n">ams</span><span class="w">             </span><span class="o">|</span><span class="w"> </span><span class="n">ver</span><span class="o">:</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">type</span><span class="o">:</span><span class="w"> </span><span class="n">qti</span><span class="p">.</span><span class="n">sensor</span><span class="p">.</span><span class="n">flicker_rear</span><span class="p">(</span><span class="mi">33171054</span><span class="p">)</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">perm</span><span class="o">:</span><span class="w"> </span><span class="n">n</span><span class="o">/</span><span class="n">a</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">flags</span><span class="o">:</span><span class="w"> </span><span class="mh">0x00000002</span><span class="w"></span>
+<span class="w">        </span><span class="n">on</span><span class="o">-</span><span class="n">change</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">minRate</span><span class="o">=</span><span class="mf">1.00</span><span class="n">Hz</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">minDelay</span><span class="o">=</span><span class="mi">0u</span><span class="n">s</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">no</span><span class="w"> </span><span class="n">batching</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">non</span><span class="o">-</span><span class="n">wakeUp</span><span class="w"> </span><span class="o">|</span><span class="w"></span>
+<span class="mh">0x00000077</span><span class="p">)</span><span class="w"> </span><span class="n">step_detect_wakeup</span><span class="w">        </span><span class="o">|</span><span class="w"> </span><span class="n">mtk</span><span class="w">             </span><span class="o">|</span><span class="w"> </span><span class="n">ver</span><span class="o">:</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">type</span><span class="o">:</span><span class="w"> </span><span class="n">android</span><span class="p">.</span><span class="n">sensor</span><span class="p">.</span><span class="n">step_detector</span><span class="p">(</span><span class="mi">18</span><span class="p">)</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">perm</span><span class="o">:</span><span class="w"> </span><span class="n">android</span><span class="p">.</span><span class="n">permission</span><span class="p">.</span><span class="n">ACTIVITY_RECOGNITION</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">flags</span><span class="o">:</span><span class="w"> </span><span class="mh">0x00000007</span><span class="w"></span>
+<span class="w">        </span><span class="n">special</span><span class="o">-</span><span class="n">trigger</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">maxDelay</span><span class="o">=</span><span class="mi">0u</span><span class="n">s</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">minDelay</span><span class="o">=</span><span class="mi">0u</span><span class="n">s</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">FIFO</span><span class="w"> </span><span class="p">(</span><span class="n">max</span><span class="p">,</span><span class="n">reserved</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="mi">4500</span><span class="p">,</span><span class="w"> </span><span class="mi">100</span><span class="p">)</span><span class="w"> </span><span class="n">events</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">wakeUp</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="c1">//走路识别并唤醒</span>
+<span class="mh">0x000003e9</span><span class="p">)</span><span class="w"> </span><span class="n">OPLUS</span><span class="w"> </span><span class="n">Fusion</span><span class="w"> </span><span class="n">Light</span><span class="w"> </span><span class="n">Sensor</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">OPLUS</span><span class="w">           </span><span class="o">|</span><span class="w"> </span><span class="n">ver</span><span class="o">:</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">type</span><span class="o">:</span><span class="w"> </span><span class="n">android</span><span class="p">.</span><span class="n">sensor</span><span class="p">.</span><span class="n">light</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">perm</span><span class="o">:</span><span class="w"> </span><span class="n">n</span><span class="o">/</span><span class="n">a</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">flags</span><span class="o">:</span><span class="w"> </span><span class="mh">0x00000002</span><span class="w"></span>
+<span class="w">        </span><span class="n">on</span><span class="o">-</span><span class="n">change</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">maxDelay</span><span class="o">=</span><span class="mi">0u</span><span class="n">s</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">minDelay</span><span class="o">=</span><span class="mi">0u</span><span class="n">s</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">no</span><span class="w"> </span><span class="n">batching</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">non</span><span class="o">-</span><span class="n">wakeUp</span><span class="w"> </span><span class="o">|</span><span class="w"></span>
+<span class="mh">0x000003ee</span><span class="p">)</span><span class="w"> </span><span class="n">OPLUS</span><span class="w"> </span><span class="n">Side</span><span class="w"> </span><span class="n">Panel</span><span class="w"> </span><span class="n">Fusion</span><span class="w"> </span><span class="n">Light</span><span class="w"> </span><span class="n">Sensor</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">OPLUS</span><span class="w">           </span><span class="o">|</span><span class="w"> </span><span class="n">ver</span><span class="o">:</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">type</span><span class="o">:</span><span class="w"> </span><span class="n">oplus</span><span class="p">.</span><span class="n">sensor</span><span class="p">.</span><span class="n">side_panel_fusion_light</span><span class="p">(</span><span class="mi">33171103</span><span class="p">)</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">perm</span><span class="o">:</span><span class="w"> </span><span class="n">n</span><span class="o">/</span><span class="n">a</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">flags</span><span class="o">:</span><span class="w"> </span><span class="mh">0x00000002</span><span class="w"> </span><span class="c1">//侧面板融合光传感器</span>
+<span class="w">        </span><span class="n">on</span><span class="o">-</span><span class="n">change</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">maxDelay</span><span class="o">=</span><span class="mi">0u</span><span class="n">s</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">minDelay</span><span class="o">=</span><span class="mi">0u</span><span class="n">s</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">no</span><span class="w"> </span><span class="n">batching</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">non</span><span class="o">-</span><span class="n">wakeUp</span><span class="w"> </span><span class="o">|</span><span class="w"></span>
+<span class="mh">0x5f636779</span><span class="p">)</span><span class="w"> </span><span class="n">Corrected</span><span class="w"> </span><span class="n">Gyroscope</span><span class="w"> </span><span class="n">Sensor</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">AOSP</span><span class="w">            </span><span class="o">|</span><span class="w"> </span><span class="n">ver</span><span class="o">:</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">type</span><span class="o">:</span><span class="w"> </span><span class="n">android</span><span class="p">.</span><span class="n">sensor</span><span class="p">.</span><span class="n">gyroscope</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">perm</span><span class="o">:</span><span class="w"> </span><span class="n">n</span><span class="o">/</span><span class="n">a</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">flags</span><span class="o">:</span><span class="w"> </span><span class="mh">0x00000000</span><span class="w"></span>
+<span class="w">        </span><span class="n">continuous</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">maxDelay</span><span class="o">=</span><span class="mi">0u</span><span class="n">s</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">maxRate</span><span class="o">=</span><span class="mf">400.00</span><span class="n">Hz</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">no</span><span class="w"> </span><span class="n">batching</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">non</span><span class="o">-</span><span class="n">wakeUp</span><span class="w"> </span><span class="o">|</span><span class="w"></span>
+<span class="mh">0x5f676172</span><span class="p">)</span><span class="w"> </span><span class="n">Game</span><span class="w"> </span><span class="n">Rotation</span><span class="w"> </span><span class="n">Vector</span><span class="w"> </span><span class="n">Sensor</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">AOSP</span><span class="w">            </span><span class="o">|</span><span class="w"> </span><span class="n">ver</span><span class="o">:</span><span class="w"> </span><span class="mi">3</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">type</span><span class="o">:</span><span class="w"> </span><span class="n">android</span><span class="p">.</span><span class="n">sensor</span><span class="p">.</span><span class="n">game_rotation_vector</span><span class="p">(</span><span class="mi">15</span><span class="p">)</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">perm</span><span class="o">:</span><span class="w"> </span><span class="n">n</span><span class="o">/</span><span class="n">a</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">flags</span><span class="o">:</span><span class="w"> </span><span class="mh">0x00000000</span><span class="w"> </span><span class="c1">//游戏旋转矢量传感器</span>
+<span class="w">        </span><span class="n">continuous</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">maxDelay</span><span class="o">=</span><span class="mi">0u</span><span class="n">s</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">maxRate</span><span class="o">=</span><span class="mf">400.00</span><span class="n">Hz</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">no</span><span class="w"> </span><span class="n">batching</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">non</span><span class="o">-</span><span class="n">wakeUp</span><span class="w"> </span><span class="o">|</span><span class="w"></span>
+<span class="mh">0x5f676273</span><span class="p">)</span><span class="w"> </span><span class="n">Gyroscope</span><span class="w"> </span><span class="n">Bias</span><span class="w"> </span><span class="p">(</span><span class="n">debug</span><span class="p">)</span><span class="w">    </span><span class="o">|</span><span class="w"> </span><span class="n">AOSP</span><span class="w">            </span><span class="o">|</span><span class="w"> </span><span class="n">ver</span><span class="o">:</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">type</span><span class="o">:</span><span class="w"> </span><span class="n">android</span><span class="p">.</span><span class="n">sensor</span><span class="p">.</span><span class="n">accelerometer</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">perm</span><span class="o">:</span><span class="w"> </span><span class="n">n</span><span class="o">/</span><span class="n">a</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">flags</span><span class="o">:</span><span class="w"> </span><span class="mh">0x00000000</span><span class="w"> </span><span class="c1">//陀螺仪偏置</span>
+<span class="w">        </span><span class="n">continuous</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">maxDelay</span><span class="o">=</span><span class="mi">0u</span><span class="n">s</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">maxRate</span><span class="o">=</span><span class="mf">400.00</span><span class="n">Hz</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">no</span><span class="w"> </span><span class="n">batching</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">non</span><span class="o">-</span><span class="n">wakeUp</span><span class="w"> </span><span class="o">|</span><span class="w"></span>
+<span class="mh">0x5f67656f</span><span class="p">)</span><span class="w"> </span><span class="n">GeoMag</span><span class="w"> </span><span class="n">Rotation</span><span class="w"> </span><span class="n">Vector</span><span class="w"> </span><span class="n">Sensor</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">AOSP</span><span class="w">            </span><span class="o">|</span><span class="w"> </span><span class="n">ver</span><span class="o">:</span><span class="w"> </span><span class="mi">3</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">type</span><span class="o">:</span><span class="w"> </span><span class="n">android</span><span class="p">.</span><span class="n">sensor</span><span class="p">.</span><span class="n">geomagnetic_rotation_vector</span><span class="p">(</span><span class="mi">20</span><span class="p">)</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">perm</span><span class="o">:</span><span class="w"> </span><span class="n">n</span><span class="o">/</span><span class="n">a</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">flags</span><span class="o">:</span><span class="w"> </span><span class="mh">0x00000000</span><span class="w"> </span><span class="c1">//地磁旋转矢量传感器</span>
+<span class="w">        </span><span class="n">continuous</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">maxDelay</span><span class="o">=</span><span class="mi">0u</span><span class="n">s</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">maxRate</span><span class="o">=</span><span class="mf">400.00</span><span class="n">Hz</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">no</span><span class="w"> </span><span class="n">batching</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">non</span><span class="o">-</span><span class="n">wakeUp</span><span class="w"> </span><span class="o">|</span><span class="w"></span>
+<span class="mh">0x5f677276</span><span class="p">)</span><span class="w"> </span><span class="n">Gravity</span><span class="w"> </span><span class="n">Sensor</span><span class="w">            </span><span class="o">|</span><span class="w"> </span><span class="n">AOSP</span><span class="w">            </span><span class="o">|</span><span class="w"> </span><span class="n">ver</span><span class="o">:</span><span class="w"> </span><span class="mi">3</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">type</span><span class="o">:</span><span class="w"> </span><span class="n">android</span><span class="p">.</span><span class="n">sensor</span><span class="p">.</span><span class="n">gravity</span><span class="p">(</span><span class="mi">9</span><span class="p">)</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">perm</span><span class="o">:</span><span class="w"> </span><span class="n">n</span><span class="o">/</span><span class="n">a</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">flags</span><span class="o">:</span><span class="w"> </span><span class="mh">0x00000000</span><span class="w"> </span><span class="c1">//重力传感器</span>
+<span class="w">        </span><span class="n">continuous</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">maxDelay</span><span class="o">=</span><span class="mi">0u</span><span class="n">s</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">maxRate</span><span class="o">=</span><span class="mf">400.00</span><span class="n">Hz</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">no</span><span class="w"> </span><span class="n">batching</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">non</span><span class="o">-</span><span class="n">wakeUp</span><span class="w"> </span><span class="o">|</span><span class="w"></span>
+<span class="mh">0x5f6c696e</span><span class="p">)</span><span class="w"> </span><span class="n">Linear</span><span class="w"> </span><span class="n">Acceleration</span><span class="w"> </span><span class="n">Sensor</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">AOSP</span><span class="w">            </span><span class="o">|</span><span class="w"> </span><span class="n">ver</span><span class="o">:</span><span class="w"> </span><span class="mi">3</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">type</span><span class="o">:</span><span class="w"> </span><span class="n">android</span><span class="p">.</span><span class="n">sensor</span><span class="p">.</span><span class="n">linear_acceleration</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">perm</span><span class="o">:</span><span class="w"> </span><span class="n">n</span><span class="o">/</span><span class="n">a</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">flags</span><span class="o">:</span><span class="w"> </span><span class="mh">0x00000000</span><span class="w"> </span><span class="c1">//线性加速度</span>
+<span class="w">        </span><span class="n">continuous</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">maxDelay</span><span class="o">=</span><span class="mi">0u</span><span class="n">s</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">maxRate</span><span class="o">=</span><span class="mf">400.00</span><span class="n">Hz</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">no</span><span class="w"> </span><span class="n">batching</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">non</span><span class="o">-</span><span class="n">wakeUp</span><span class="w"> </span><span class="o">|</span><span class="w"></span>
+<span class="mh">0x5f726f76</span><span class="p">)</span><span class="w"> </span><span class="n">Rotation</span><span class="w"> </span><span class="n">Vector</span><span class="w"> </span><span class="n">Sensor</span><span class="w">    </span><span class="o">|</span><span class="w"> </span><span class="n">AOSP</span><span class="w">            </span><span class="o">|</span><span class="w"> </span><span class="n">ver</span><span class="o">:</span><span class="w"> </span><span class="mi">3</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">type</span><span class="o">:</span><span class="w"> </span><span class="n">android</span><span class="p">.</span><span class="n">sensor</span><span class="p">.</span><span class="n">rotation_vector</span><span class="p">(</span><span class="mi">11</span><span class="p">)</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">perm</span><span class="o">:</span><span class="w"> </span><span class="n">n</span><span class="o">/</span><span class="n">a</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">flags</span><span class="o">:</span><span class="w"> </span><span class="mh">0x00000000</span><span class="w"> </span><span class="c1">//旋转矢量传感器</span>
+<span class="w">        </span><span class="n">continuous</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">maxDelay</span><span class="o">=</span><span class="mi">0u</span><span class="n">s</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">maxRate</span><span class="o">=</span><span class="mf">400.00</span><span class="n">Hz</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">no</span><span class="w"> </span><span class="n">batching</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">non</span><span class="o">-</span><span class="n">wakeUp</span><span class="w"> </span><span class="o">|</span><span class="w"></span>
+<span class="mh">0x5f797072</span><span class="p">)</span><span class="w"> </span><span class="n">Orientation</span><span class="w"> </span><span class="n">Sensor</span><span class="w">        </span><span class="o">|</span><span class="w"> </span><span class="n">AOSP</span><span class="w">            </span><span class="o">|</span><span class="w"> </span><span class="n">ver</span><span class="o">:</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">type</span><span class="o">:</span><span class="w"> </span><span class="n">android</span><span class="p">.</span><span class="n">sensor</span><span class="p">.</span><span class="n">orientation</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">perm</span><span class="o">:</span><span class="w"> </span><span class="n">n</span><span class="o">/</span><span class="n">a</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">flags</span><span class="o">:</span><span class="w"> </span><span class="mh">0x00000000</span><span class="w"></span>
+<span class="w">        </span><span class="n">continuous</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">maxDelay</span><span class="o">=</span><span class="mi">0u</span><span class="n">s</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">maxRate</span><span class="o">=</span><span class="mf">400.00</span><span class="n">Hz</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">no</span><span class="w"> </span><span class="n">batching</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">non</span><span class="o">-</span><span class="n">wakeUp</span><span class="w"> </span><span class="o">|</span><span class="w"></span>
+</pre></div>
+</div>
+<p>其中lux_aod传感器解释如下：</p>
+<ul class="simple">
+<li><p>AOD: always on display</p></li>
+<li><p>依赖传感器：als/ps</p></li>
+</ul>
+<p><img alt="0015_0000.png" src="../../../_images/0015_0000.png" /></p>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, wugn.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+  
+
+<script charset="UTF-8" id="LA_COLLECT" src="//sdk.51.la/js-sdk-pro.min.js"></script>
+<script>LA.init({id: "JjOE14XScyd75b2C",ck: "JjOE14XScyd75b2C"})</script>
+
+<br/>
+<script id="LA-DATA-WIDGET" crossorigin="anonymous" charset="UTF-8" src="https://v6-widget.51.la/v6/JjOE14XScyd75b2C/quote.js?theme=0&f=12&display=1,0,0,0,0,0,1,1"></script>
+
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

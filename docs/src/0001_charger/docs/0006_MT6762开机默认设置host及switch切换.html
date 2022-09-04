@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>wugn</title>
+
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../index.html" class="icon icon-home"> wugn_note
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">概述</a><ul>
+<li><a class="reference internal" href="#id2">软件分析</a></li>
+</ul>
+</li>
+</ul>
+</div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">wugn_note</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs"> 
+<li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+<li>概述</li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.forward()">Forward</a></li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.back()">Go Back</a> | </li>
+<li style="float: right;margin-left: 10px;"><a href="/index.html">Home</a> | </li>
+
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="id1">
+<h1>概述<a class="headerlink" href="#id1" title="Permalink to this headline"></a></h1>
+<p>mt6762平台如何设置开机默认host功能</p>
+<section id="id2">
+<h2>软件分析<a class="headerlink" href="#id2" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p>1.typec默认设置为<code class="docutils literal notranslate"><span class="pre">Try.SRC</span></code>模式。</p></li>
+<li><p>2.初始化处理，包括usb（mt_usb_otg_init）及usb_switch（pax_tcpc_dev_init），这里都是驱动初始化走一遍。</p></li>
+<li><p>3.CC状态回调切换逻辑<code class="docutils literal notranslate"><span class="pre">otg_tcp_notifier_call</span></code>处理。</p></li>
+</ul>
+<div class="highlight-diff notranslate"><div class="highlight"><pre><span></span><span class="w">From 030762fb27163d196409abcdca2dd2a963ec7a15 Mon Sep 17 00:00:00 2001</span>
+<span class="w">From: shanliangliang &lt;shanliangliang@paxsz.com&gt;</span>
+<span class="w">Date: Sun, 15 Aug 2021 15:10:03 +0800</span>
+<span class="w">Subject: [PATCH] =?UTF-8?q?[Title]:=20=E5=A2=9E=E5=8A=A0M8=20usb=20otg?=</span>
+<span class="w"> </span>=?UTF-8?q?=E5=8A=9F=E8=83=BD?=<span class="w"></span>
+<span class="w">MIME-Version: 1.0</span>
+<span class="w">Content-Type: text/plain; charset=UTF-8</span>
+<span class="w">Content-Transfer-Encoding: 8bit</span>
+
+<span class="w">[Summary]: 1. 增加M8 usb otg功能</span>
+<span class="w">2. 默认为host模式</span>
+
+<span class="w">[Test Plan]: usb otg功能正常</span>
+
+<span class="w">[Module]: USB</span>
+
+<span class="w">[Model]: M8</span>
+
+<span class="w">[author]: shanliangliang@paxsz.com</span>
+
+<span class="w">[date]: 2021-08-15</span>
+<span class="gd">---</span><span class="w"></span>
+<span class="w"> </span>.../arch/arm64/boot/dts/mediatek/M8.dts       |   5 +<span class="w"></span>
+<span class="w"> </span>.../arm64/boot/dts/mediatek/mt6370_pd_m8.dtsi |   4 +<span class="w"></span>
+<span class="w"> </span>.../misc/mediatek/usb20/mt6765/usb20.c        |   6 +<span class="w"></span>
+<span class="w"> </span>.../misc/mediatek/usb20/mt6765/usb20_host.c   |  37 ++++-<span class="w"></span>
+<span class="w"> </span>.../drivers/misc/mediatek/usb20/musb.h        |   5 +<span class="w"></span>
+<span class="w"> </span>.../drivers/misc/mediatek/usb20/musb_core.c   |   3 +<span class="w"></span>
+<span class="w"> </span>.../drivers/misc/mediatek/usb20/musb_core.h   |   3 +<span class="w"></span>
+<span class="w"> </span>.../drivers/misc/pax/usb_switch/Makefile      |   2 +<span class="w"></span>
+<span class="w"> </span>.../misc/pax/usb_switch/pax_usb_switch.c      | 143 +++++++++++++++++-<span class="w"></span>
+<span class="w"> </span>9 files changed, 198 insertions(+), 10 deletions(-)<span class="w"></span>
+
+<span class="gh">diff --git a/kernel-4.19/arch/arm64/boot/dts/mediatek/M8.dts b/kernel-4.19/arch/arm64/boot/dts/mediatek/M8.dts</span><span class="w"></span>
+<span class="gh">index 82c2802e29d..38b81ea25d8 100755</span><span class="w"></span>
+<span class="gd">--- a/kernel-4.19/arch/arm64/boot/dts/mediatek/M8.dts</span><span class="w"></span>
+<span class="gi">+++ b/kernel-4.19/arch/arm64/boot/dts/mediatek/M8.dts</span><span class="w"></span>
+<span class="gu">@@ -626,6 +626,11 @@</span><span class="w"></span>
+<span class="w"> </span>	gl850_en_gpio = &lt;&amp;pio 151 0x0&gt;;<span class="w"></span>
+<span class="w"> </span>	otg_en_gpio  = &lt;&amp;pio 7 0x0&gt;;<span class="w"></span>
+<span class="w"> </span>	vcc_out_en_gpio  = &lt;&amp;pio 152 0x0&gt;;<span class="w"></span>
+<span class="gi">+	default_mode = &lt;1&gt;;  //0-device mode, 1-host mode</span><span class="w"></span>
+<span class="gi">+};</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+&amp;usb {</span><span class="w"></span>
+<span class="gi">+	default_mode = &lt;1&gt;;</span><span class="w"></span>
+<span class="w"> </span>};<span class="w"></span>
+<span class="w"> </span>
+<span class="w"> </span>&amp;charger {<span class="w"></span>
+<span class="gh">diff --git a/kernel-4.19/arch/arm64/boot/dts/mediatek/mt6370_pd_m8.dtsi b/kernel-4.19/arch/arm64/boot/dts/mediatek/mt6370_pd_m8.dtsi</span><span class="w"></span>
+<span class="gh">index b83447ec585..46ae1628a36 100755</span><span class="w"></span>
+<span class="gd">--- a/kernel-4.19/arch/arm64/boot/dts/mediatek/mt6370_pd_m8.dtsi</span><span class="w"></span>
+<span class="gi">+++ b/kernel-4.19/arch/arm64/boot/dts/mediatek/mt6370_pd_m8.dtsi</span><span class="w"></span>
+<span class="gu">@@ -4,3 +4,7 @@</span><span class="w"></span>
+<span class="w"> </span> * Author: Owen Chen &lt;owen.chen@mediatek.com&gt;<span class="w"></span>
+<span class="w"> </span> */<span class="w"></span>
+<span class="w"> </span>
+<span class="gi">+&amp;mt6370_typec {</span><span class="w"></span>
+<span class="gi">+	/* 0: SNK Only, 1: SRC Only, 2: DRP, 3: Try.SRC, 4: Try.SNK */</span><span class="w"></span>
+<span class="gi">+	mt-tcpc,role_def = &lt;3&gt;;</span><span class="w"></span>
+<span class="gi">+};</span><span class="w"></span>
+<span class="gh">diff --git a/kernel-4.19/drivers/misc/mediatek/usb20/mt6765/usb20.c b/kernel-4.19/drivers/misc/mediatek/usb20/mt6765/usb20.c</span><span class="w"></span>
+<span class="gh">index c0a5772aef4..cf63a8f6dc7 100644</span><span class="w"></span>
+<span class="gd">--- a/kernel-4.19/drivers/misc/mediatek/usb20/mt6765/usb20.c</span><span class="w"></span>
+<span class="gi">+++ b/kernel-4.19/drivers/misc/mediatek/usb20/mt6765/usb20.c</span><span class="w"></span>
+<span class="gu">@@ -1713,6 +1713,12 @@ static int mt_usb_probe(struct platform_device *pdev)</span><span class="w"></span>
+<span class="w"> </span>	of_property_read_u32(np, &quot;mode&quot;, (u32 *) &amp;pdata-&gt;mode);<span class="w"></span>
+<span class="w"> </span>#endif<span class="w"></span>
+<span class="w"> </span>
+<span class="gi">+	/* Add-BEGIN by (shanliangliang@paxsz.com), 2021/08/15 add for M8 usb otg */</span><span class="w"></span>
+<span class="gi">+	ret = of_property_read_u32(np, &quot;default_mode&quot;, (u32 *) &amp;pdata-&gt;default_mode);</span><span class="w"></span>
+<span class="gi">+	if (ret &lt; 0)</span><span class="w"></span>
+<span class="gi">+		pdata-&gt;default_mode = MUSB_PERIPHERAL;</span><span class="w"></span>
+<span class="gi">+	/* Add-END by (shanliangliang@paxsz.com), 2021/08/15 add for M8 usb otg */</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="w"> </span>#ifdef CONFIG_MTK_UART_USB_SWITCH<span class="w"></span>
+<span class="w"> </span>	ap_gpio_node =<span class="w"></span>
+<span class="w"> </span>		of_find_compatible_node(NULL, NULL, AP_GPIO_COMPATIBLE_NAME);<span class="w"></span>
+<span class="gh">diff --git a/kernel-4.19/drivers/misc/mediatek/usb20/mt6765/usb20_host.c b/kernel-4.19/drivers/misc/mediatek/usb20/mt6765/usb20_host.c</span><span class="w"></span>
+<span class="gh">index 794465f9b1f..c6a346bfc2a 100644</span><span class="w"></span>
+<span class="gd">--- a/kernel-4.19/drivers/misc/mediatek/usb20/mt6765/usb20_host.c</span><span class="w"></span>
+<span class="gi">+++ b/kernel-4.19/drivers/misc/mediatek/usb20/mt6765/usb20_host.c</span><span class="w"></span>
+<span class="gu">@@ -322,13 +322,31 @@ static int otg_tcp_notifier_call(struct notifier_block *nb,</span><span class="w"></span>
+<span class="w"> </span>			noti-&gt;typec_state.old_state ==<span class="w"></span>
+<span class="w"> </span>					TYPEC_ATTACHED_NORP_SRC) &amp;&amp;<span class="w"></span>
+<span class="w"> </span>			noti-&gt;typec_state.new_state == TYPEC_UNATTACHED) {<span class="w"></span>
+<span class="gd">-			if (is_host_active(mtk_musb)) {</span><span class="w"></span>
+<span class="gd">-				DBG(0, &quot;OTG Plug out\n&quot;);</span><span class="w"></span>
+<span class="gd">-				mt_usb_host_disconnect(0);</span><span class="w"></span>
+<span class="gd">-			} else {</span><span class="w"></span>
+<span class="gd">-				DBG(0, &quot;USB Plug out\n&quot;);</span><span class="w"></span>
+<span class="gd">-				mt_usb_dev_disconnect();</span><span class="w"></span>
+<span class="gd">-			}</span><span class="w"></span>
+<span class="gi">+			/* Add-BEGIN by (shanliangliang@paxsz.com), 2021/08/15 add for M8 usb otg */</span><span class="w"></span>
+<span class="gi">+				if (mtk_musb-&gt;default_mode != MUSB_HOST) {</span><span class="w"></span>
+<span class="gi">+					if (is_host_active(mtk_musb)) {</span><span class="w"></span>
+<span class="gi">+						DBG(0, &quot;OTG Plug out\n&quot;);</span><span class="w"></span>
+<span class="gi">+						mt_usb_host_disconnect(0);</span><span class="w"></span>
+<span class="gi">+					} else {</span><span class="w"></span>
+<span class="gi">+						DBG(0, &quot;USB Plug out\n&quot;);</span><span class="w"></span>
+<span class="gi">+						mt_usb_dev_disconnect();</span><span class="w"></span>
+<span class="gi">+					}</span><span class="w"></span>
+<span class="gi">+				}</span><span class="w"></span>
+<span class="gi">+				else { //默认host</span><span class="w"></span>
+<span class="gi">+					if ((noti-&gt;typec_state.old_state != TYPEC_ATTACHED_SRC) &amp;&amp; </span><span class="w"></span>
+<span class="gi">+							(noti-&gt;typec_state.new_state == TYPEC_UNATTACHED)) {</span><span class="w"></span>
+<span class="gi">+						if (is_host_active(mtk_musb)) {</span><span class="w"></span>
+<span class="gi">+							DBG(0, &quot;OTG Plug out\n&quot;);</span><span class="w"></span>
+<span class="gi">+							mt_usb_host_disconnect(0);</span><span class="w"></span>
+<span class="gi">+						} else { //1.拔出前是device，先断device</span><span class="w"></span>
+<span class="gi">+							DBG(0, &quot;USB Plug out\n&quot;);</span><span class="w"></span>
+<span class="gi">+							mt_usb_dev_disconnect();</span><span class="w"></span>
+<span class="gi">+						}</span><span class="w"></span>
+<span class="gi">+						msleep(50);</span><span class="w"></span>
+<span class="gi">+						mt_usb_host_connect(100); //2.还原成host</span><span class="w"></span>
+<span class="gi">+					}</span><span class="w"></span>
+<span class="gi">+				}</span><span class="w"></span>
+<span class="gi">+		/* Add-END by (shanliangliang@paxsz.com), 2021/08/15 add for M8 usb otg */</span><span class="w"></span>
+<span class="w"> </span>#ifdef CONFIG_MTK_UART_USB_SWITCH<span class="w"></span>
+<span class="w"> </span>		} else if ((noti-&gt;typec_state.new_state ==<span class="w"></span>
+<span class="w"> </span>					TYPEC_ATTACHED_SNK ||<span class="w"></span>
+<span class="gu">@@ -743,6 +761,11 @@ void mt_usb_otg_init(struct musb *musb)</span><span class="w"></span>
+<span class="w"> </span>	musb-&gt;fifo_cfg_host = fifo_cfg_host;<span class="w"></span>
+<span class="w"> </span>	musb-&gt;fifo_cfg_host_size = ARRAY_SIZE(fifo_cfg_host);<span class="w"></span>
+<span class="w"> </span>
+<span class="gi">+	/* Add-BEGIN by (shanliangliang@paxsz.com), 2021/08/15 add for M8 usb otg */</span><span class="w"></span>
+<span class="gi">+	if (mtk_musb-&gt;default_mode == MUSB_HOST)</span><span class="w"></span>
+<span class="gi">+		mt_usb_host_connect(0);   // 初始化成host模式</span><span class="w"></span>
+<span class="gi">+	/* Add-END by (shanliangliang@paxsz.com), 2021/08/15 add for M8 usb otg */</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="w"> </span>}<span class="w"></span>
+<span class="w"> </span>void mt_usb_otg_exit(struct musb *musb)<span class="w"></span>
+<span class="w"> </span>{<span class="w"></span>
+<span class="gh">diff --git a/kernel-4.19/drivers/misc/mediatek/usb20/musb.h b/kernel-4.19/drivers/misc/mediatek/usb20/musb.h</span><span class="w"></span>
+<span class="gh">index eb9c4f389f8..1cdf864764f 100644</span><span class="w"></span>
+<span class="gd">--- a/kernel-4.19/drivers/misc/mediatek/usb20/musb.h</span><span class="w"></span>
+<span class="gi">+++ b/kernel-4.19/drivers/misc/mediatek/usb20/musb.h</span><span class="w"></span>
+<span class="gu">@@ -104,6 +104,11 @@ struct musb_hdrc_platform_data {</span><span class="w"></span>
+<span class="w"> </span>	/* MUSB_HOST, MUSB_PERIPHERAL, or MUSB_OTG */<span class="w"></span>
+<span class="w"> </span>	u8 mode;<span class="w"></span>
+<span class="w"> </span>
+<span class="gi">+	/* Add-BEGIN by (shanliangliang@paxsz.com), 2021/08/15 add for M8 usb otg */</span><span class="w"></span>
+<span class="gi">+	/* MUSB_HOST, MUSB_PERIPHERAL */</span><span class="w"></span>
+<span class="gi">+	u8 default_mode;</span><span class="w"></span>
+<span class="gi">+	/* Add-END by (shanliangliang@paxsz.com), 2021/08/15 add for M8 usb otg */</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="w"> </span>	/* for clk_get() */<span class="w"></span>
+<span class="w"> </span>	const char *clock;<span class="w"></span>
+<span class="w"> </span>
+<span class="gh">diff --git a/kernel-4.19/drivers/misc/mediatek/usb20/musb_core.c b/kernel-4.19/drivers/misc/mediatek/usb20/musb_core.c</span><span class="w"></span>
+<span class="gh">index 747b3540495..5f7f4fb72d4 100644</span><span class="w"></span>
+<span class="gd">--- a/kernel-4.19/drivers/misc/mediatek/usb20/musb_core.c</span><span class="w"></span>
+<span class="gi">+++ b/kernel-4.19/drivers/misc/mediatek/usb20/musb_core.c</span><span class="w"></span>
+<span class="gu">@@ -2407,6 +2407,9 @@ static int musb_init_controller</span><span class="w"></span>
+<span class="w"> </span>	musb-&gt;board_set_power = plat-&gt;set_power;<span class="w"></span>
+<span class="w"> </span>	musb-&gt;min_power = plat-&gt;min_power;<span class="w"></span>
+<span class="w"> </span>	musb-&gt;ops = plat-&gt;platform_ops;<span class="w"></span>
+<span class="gi">+	/* Add-BEGIN by (shanliangliang@paxsz.com), 2021/08/15 add for M8 usb otg */</span><span class="w"></span>
+<span class="gi">+	musb-&gt;default_mode = plat-&gt;default_mode;</span><span class="w"></span>
+<span class="gi">+	/* Add-END by (shanliangliang@paxsz.com), 2021/08/15 add for M8 usb otg */</span><span class="w"></span>
+<span class="w"> </span>	musb-&gt;nIrq = nIrq;<span class="w"></span>
+<span class="w"> </span>	/* The musb_platform_init() call:<span class="w"></span>
+<span class="w"> </span>	 *   - adjusts musb-&gt;mregs<span class="w"></span>
+<span class="gh">diff --git a/kernel-4.19/drivers/misc/mediatek/usb20/musb_core.h b/kernel-4.19/drivers/misc/mediatek/usb20/musb_core.h</span><span class="w"></span>
+<span class="gh">index d6a8291f762..95010c19d00 100644</span><span class="w"></span>
+<span class="gd">--- a/kernel-4.19/drivers/misc/mediatek/usb20/musb_core.h</span><span class="w"></span>
+<span class="gi">+++ b/kernel-4.19/drivers/misc/mediatek/usb20/musb_core.h</span><span class="w"></span>
+<span class="gu">@@ -494,6 +494,9 @@ struct musb {</span><span class="w"></span>
+<span class="w"> </span>#endif /* CONFIG_DUAL_ROLE_USB_INTF */<span class="w"></span>
+<span class="w"> </span>	struct power_supply *usb_psy;<span class="w"></span>
+<span class="w"> </span>	struct notifier_block psy_nb;<span class="w"></span>
+<span class="gi">+/* Add-BEGIN by (shanliangliang@paxsz.com), 2021/08/15 add for M8 usb otg */</span><span class="w"></span>
+<span class="gi">+	u8 default_mode;</span><span class="w"></span>
+<span class="gi">+/* Add-END by (shanliangliang@paxsz.com), 2021/08/15 add for M8 usb otg */</span><span class="w"></span>
+<span class="w"> </span>};<span class="w"></span>
+<span class="w"> </span>
+<span class="w"> </span>static inline struct musb *gadget_to_musb(struct usb_gadget *g)<span class="w"></span>
+<span class="gh">diff --git a/kernel-4.19/drivers/misc/pax/usb_switch/Makefile b/kernel-4.19/drivers/misc/pax/usb_switch/Makefile</span><span class="w"></span>
+<span class="gh">index 4a5627c3025..0c3e640a3f8 100755</span><span class="w"></span>
+<span class="gd">--- a/kernel-4.19/drivers/misc/pax/usb_switch/Makefile</span><span class="w"></span>
+<span class="gi">+++ b/kernel-4.19/drivers/misc/pax/usb_switch/Makefile</span><span class="w"></span>
+<span class="gu">@@ -1,5 +1,7 @@</span><span class="w"></span>
+<span class="w"> </span>ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/<span class="w"></span>
+<span class="w"> </span>ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include/<span class="w"></span>
+<span class="gi">+ccflags-y += -I$(srctree)/drivers/misc/mediatek/typec/tcpc/inc</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="w"> </span>obj-y += pax_usb_switch.o<span class="w"></span>
+<span class="w"> </span>
+<span class="w"> </span>ccflags-y += -Wno-unused-function<span class="w"></span>
+<span class="gh">diff --git a/kernel-4.19/drivers/misc/pax/usb_switch/pax_usb_switch.c b/kernel-4.19/drivers/misc/pax/usb_switch/pax_usb_switch.c</span><span class="w"></span>
+<span class="gh">index 840c39fd0d0..3fdf37eacc2 100755</span><span class="w"></span>
+<span class="gd">--- a/kernel-4.19/drivers/misc/pax/usb_switch/pax_usb_switch.c</span><span class="w"></span>
+<span class="gi">+++ b/kernel-4.19/drivers/misc/pax/usb_switch/pax_usb_switch.c</span><span class="w"></span>
+<span class="gu">@@ -19,10 +19,16 @@</span><span class="w"></span>
+<span class="w"> </span>#include &lt;linux/interrupt.h&gt;<span class="w"></span>
+<span class="w"> </span>#include &lt;mt-plat/mtk_boot.h&gt;<span class="w"></span>
+<span class="w"> </span>
+<span class="gi">+#include &quot;tcpm.h&quot;</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="w"> </span>struct usb_switch_data {<span class="w"></span>
+<span class="w"> </span>	struct class *pax_class;<span class="w"></span>
+<span class="w"> </span>	struct device *dev;<span class="w"></span>
+<span class="w"> </span>
+<span class="gi">+	struct tcpc_device *tcpc_dev;</span><span class="w"></span>
+<span class="gi">+	struct notifier_block tcpc_nb;</span><span class="w"></span>
+<span class="gi">+	struct delayed_work tcpc_dwork;</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="w"> </span>	struct mutex lock;<span class="w"></span>
+<span class="w"> </span>	struct delayed_work usb_switch_work;<span class="w"></span>
+<span class="w"> </span>
+<span class="gu">@@ -33,6 +39,8 @@ struct usb_switch_data {</span><span class="w"></span>
+<span class="w"> </span>	int otg_en_gpio;<span class="w"></span>
+<span class="w"> </span>	int vcc_out_en_gpio;<span class="w"></span>
+<span class="w"> </span>	int status;<span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+	u32 default_mode;</span><span class="w"></span>
+<span class="w"> </span>};<span class="w"></span>
+<span class="w"> </span>
+<span class="w"> </span>extern struct class *g_class_pax;<span class="w"></span>
+<span class="gu">@@ -77,6 +85,7 @@ static int check_boot_mode(struct device *dev)</span><span class="w"></span>
+<span class="w"> </span> *	usb plug in : sw1sw2 = 00(USB1 = OTG USB2 = CLOSE) host_en = 0  gl850_en = 0<span class="w"></span>
+<span class="w"> </span> *  usb plug out : sw1sw2 = 11(USB1 = HOST USB2 = HOST) host_en = 1  gl850_en = 1<span class="w"></span>
+<span class="w"> </span> */<span class="w"></span>
+<span class="gi">+#if 0</span><span class="w"></span>
+<span class="w"> </span>static irqreturn_t pax_otg_gpio_irq_handle(int irq, void *dev_id)<span class="w"></span>
+<span class="w"> </span>{<span class="w"></span>
+<span class="w"> </span>	struct usb_switch_data *data = (struct usb_switch_data *)dev_id;<span class="w"></span>
+<span class="gu">@@ -102,12 +111,14 @@ static irqreturn_t pax_otg_gpio_irq_handle(int irq, void *dev_id)</span><span class="w"></span>
+<span class="w"> </span>	}<span class="w"></span>
+<span class="w"> </span>	return IRQ_HANDLED;	<span class="w"></span>
+<span class="w"> </span>}<span class="w"></span>
+<span class="gi">+#endif</span><span class="w"></span>
+<span class="w"> </span>
+<span class="w"> </span>extern const char *cmdline_get_value(const char *key);<span class="w"></span>
+<span class="w"> </span>
+<span class="w"> </span>int pax_charger_gpio_init(struct usb_switch_data *data, struct device_node *np)<span class="w"></span>
+<span class="w"> </span>{<span class="w"></span>
+<span class="gd">-	int ret,irq;</span><span class="w"></span>
+<span class="gi">+	int ret;</span><span class="w"></span>
+<span class="gi">+	//int irq;</span><span class="w"></span>
+<span class="w"> </span>	data-&gt;usb_host_en_gpio = of_get_named_gpio(np, &quot;usb_host_en_gpio&quot;, 0);<span class="w"></span>
+<span class="w"> </span>	ret = gpio_request(data-&gt;usb_host_en_gpio, &quot;usb_host_en_gpio&quot;);	<span class="w"></span>
+<span class="w"> </span>	if (ret &lt; 0) {<span class="w"></span>
+<span class="gu">@@ -148,6 +159,11 @@ int pax_charger_gpio_init(struct usb_switch_data *data, struct device_node *np)</span><span class="w"></span>
+<span class="w"> </span>		goto init_alert_err;<span class="w"></span>
+<span class="w"> </span>	}<span class="w"></span>
+<span class="w"> </span>
+<span class="gi">+	ret = of_property_read_u32(np, &quot;default_mode&quot;, (u32 *)&amp;data-&gt;default_mode);</span><span class="w"></span>
+<span class="gi">+	if (ret &lt; 0)</span><span class="w"></span>
+<span class="gi">+		data-&gt;default_mode = 0;</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+#if 0</span><span class="w"></span>
+<span class="w"> </span>	data-&gt;otg_en_gpio = of_get_named_gpio(np, &quot;otg_en_gpio&quot;, 0);<span class="w"></span>
+<span class="w"> </span>	ret = gpio_request(data-&gt;otg_en_gpio, &quot;otg_en_gpio&quot;);<span class="w"></span>
+<span class="w"> </span>	ret = gpio_direction_input(data-&gt;otg_en_gpio);<span class="w"></span>
+<span class="gu">@@ -159,13 +175,15 @@ int pax_charger_gpio_init(struct usb_switch_data *data, struct device_node *np)</span><span class="w"></span>
+<span class="w"> </span>		data-&gt;otg_en_gpio, ret);<span class="w"></span>
+<span class="w"> </span>		goto init_alert_err;<span class="w"></span>
+<span class="w"> </span>	}<span class="w"></span>
+<span class="gd">-</span><span class="w"></span>
+<span class="gi">+#endif</span><span class="w"></span>
+<span class="w"> </span>
+<span class="w"> </span>	return 0;<span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="w"> </span>init_alert_err:<span class="w"></span>
+<span class="w"> </span>	return -EINVAL;<span class="w"></span>
+<span class="w"> </span>}<span class="w"></span>
+<span class="w"> </span>
+<span class="gi">+#if 0</span><span class="w"></span>
+<span class="w"> </span>/**<span class="w"></span>
+<span class="w"> </span> *     When starting the system, if there is an enumerated device on the usb port, <span class="w"></span>
+<span class="w"> </span> *     a gpio initialization is required.<span class="w"></span>
+<span class="gu">@@ -192,6 +210,7 @@ void pax_charger_usbswitch_set(struct usb_switch_data *data)</span><span class="w"></span>
+<span class="w"> </span>		data-&gt;status = 1;<span class="w"></span>
+<span class="w"> </span>	}<span class="w"></span>
+<span class="w"> </span>}<span class="w"></span>
+<span class="gi">+#endif</span><span class="w"></span>
+<span class="w"> </span>
+<span class="w"> </span>#define USB_SWITCH_TIME 300<span class="w"></span>
+<span class="w"> </span>static void do_usb_switch_work(struct work_struct *work)<span class="w"></span>
+<span class="gu">@@ -256,6 +275,121 @@ int pax_usb_switch_poweoff_charging_mode(struct device *dev)</span><span class="w"></span>
+<span class="w"> </span>	return 0;<span class="w"></span>
+<span class="w"> </span>}<span class="w"></span>
+<span class="w"> </span>
+<span class="gi">+static void prog_vbus_en(struct usb_switch_data *data, int on)</span><span class="w"></span>
+<span class="gi">+{</span><span class="w"></span>
+<span class="gi">+	if (gpio_is_valid(data-&gt;vcc_out_en_gpio))</span><span class="w"></span>
+<span class="gi">+		gpio_set_value(data-&gt;vcc_out_en_gpio, 1);</span><span class="w"></span>
+<span class="gi">+}</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+static void vbus_en(struct usb_switch_data *data, int on)</span><span class="w"></span>
+<span class="gi">+{</span><span class="w"></span>
+<span class="gi">+	if (gpio_is_valid(data-&gt;usb_host_en_gpio))</span><span class="w"></span>
+<span class="gi">+		gpio_set_value(data-&gt;usb_host_en_gpio, 0);</span><span class="w"></span>
+<span class="gi">+}</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+static void usb_host_switch(struct usb_switch_data *data, int on)</span><span class="w"></span>
+<span class="gi">+{</span><span class="w"></span>
+<span class="gi">+	pr_info(&quot;%s: on:%d\n&quot;, __func__, on);</span><span class="w"></span>
+<span class="gi">+	if (on) {</span><span class="w"></span>
+<span class="gi">+		if (gpio_is_valid(data-&gt;gl850_en_gpio))</span><span class="w"></span>
+<span class="gi">+			gpio_set_value(data-&gt;gl850_en_gpio, 1);</span><span class="w"></span>
+<span class="gi">+		if (gpio_is_valid(data-&gt;usb_sw1_sel_gpio))</span><span class="w"></span>
+<span class="gi">+			gpio_set_value(data-&gt;usb_sw1_sel_gpio, 1);</span><span class="w"></span>
+<span class="gi">+		if (gpio_is_valid(data-&gt;usb_sw2_sel_gpio))</span><span class="w"></span>
+<span class="gi">+			gpio_set_value(data-&gt;usb_sw2_sel_gpio, 1);</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+		prog_vbus_en(data, 1);</span><span class="w"></span>
+<span class="gi">+	}</span><span class="w"></span>
+<span class="gi">+	else {</span><span class="w"></span>
+<span class="gi">+		if (gpio_is_valid(data-&gt;gl850_en_gpio))</span><span class="w"></span>
+<span class="gi">+			gpio_set_value(data-&gt;gl850_en_gpio, 0);</span><span class="w"></span>
+<span class="gi">+		if (gpio_is_valid(data-&gt;usb_sw1_sel_gpio))</span><span class="w"></span>
+<span class="gi">+			gpio_set_value(data-&gt;usb_sw1_sel_gpio, 0);</span><span class="w"></span>
+<span class="gi">+		if (gpio_is_valid(data-&gt;usb_sw2_sel_gpio))</span><span class="w"></span>
+<span class="gi">+			gpio_set_value(data-&gt;usb_sw2_sel_gpio, 0);</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+		prog_vbus_en(data, 0);</span><span class="w"></span>
+<span class="gi">+	}</span><span class="w"></span>
+<span class="gi">+}</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+static int tcpc_notifier_call(struct notifier_block *nb,  unsigned long action, void *noti_data)</span><span class="w"></span>
+<span class="gi">+{</span><span class="w"></span>
+<span class="gi">+	struct tcp_notify *noti = noti_data;</span><span class="w"></span>
+<span class="gi">+	struct usb_switch_data *data = (struct usb_switch_data *)container_of(nb, struct usb_switch_data, tcpc_nb);</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+	pr_info(&quot;%s: action:%d\n&quot;, __func__, action);;</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+	switch(action) {</span><span class="w"></span>
+<span class="gi">+		case TCP_NOTIFY_SOURCE_VBUS:</span><span class="w"></span>
+<span class="gi">+			vbus_en(data, !!noti-&gt;vbus_state.mv);</span><span class="w"></span>
+<span class="gi">+			break;</span><span class="w"></span>
+<span class="gi">+		case TCP_NOTIFY_TYPEC_STATE:</span><span class="w"></span>
+<span class="gi">+			if ((noti-&gt;typec_state.old_state == TYPEC_UNATTACHED) &amp;&amp;</span><span class="w"></span>
+<span class="gi">+					(noti-&gt;typec_state.new_state == TYPEC_ATTACHED_SRC)) { //usb插入，M8识别host try_src，切host</span><span class="w"></span>
+<span class="gi">+				usb_host_switch(data, 1);   </span><span class="w"></span>
+<span class="gi">+			}</span><span class="w"></span>
+<span class="gi">+			else if ((noti-&gt;typec_state.old_state == TYPEC_UNATTACHED) &amp;&amp;</span><span class="w"></span>
+<span class="gi">+					(noti-&gt;typec_state.new_state == TYPEC_ATTACHED_SNK)) {//usb插入，M8识别device try_snk，切device</span><span class="w"></span>
+<span class="gi">+				usb_host_switch(data, 0);</span><span class="w"></span>
+<span class="gi">+			}</span><span class="w"></span>
+<span class="gi">+			else if ((noti-&gt;typec_state.old_state != TYPEC_UNATTACHED) &amp;&amp;</span><span class="w"></span>
+<span class="gi">+					(noti-&gt;typec_state.new_state == TYPEC_UNATTACHED)) { //usb拔出，m8切换成默认状态，目前默认是host</span><span class="w"></span>
+<span class="gi">+					usb_host_switch(data, !!data-&gt;default_mode);</span><span class="w"></span>
+<span class="gi">+			}</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+			break;</span><span class="w"></span>
+<span class="gi">+		case TCP_NOTIFY_DR_SWAP: //数据role</span><span class="w"></span>
+<span class="gi">+			if (noti-&gt;swap_state.new_role == PD_ROLE_UFP) {  //UFP相当于device</span><span class="w"></span>
+<span class="gi">+				usb_host_switch(data, 0);</span><span class="w"></span>
+<span class="gi">+			}</span><span class="w"></span>
+<span class="gi">+			else if (noti-&gt;swap_state.new_role == PD_ROLE_DFP) { //DFP相当于host</span><span class="w"></span>
+<span class="gi">+				usb_host_switch(data, 1);</span><span class="w"></span>
+<span class="gi">+			}</span><span class="w"></span>
+<span class="gi">+			break;</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+		case TCP_NOTIFY_PR_SWAP: //power role</span><span class="w"></span>
+<span class="gi">+			if (noti-&gt;swap_state.new_role == PD_ROLE_SINK) { //当作为device时关闭vbus</span><span class="w"></span>
+<span class="gi">+				vbus_en(data, 0);</span><span class="w"></span>
+<span class="gi">+			}</span><span class="w"></span>
+<span class="gi">+			else if (noti-&gt;swap_state.new_role == PD_ROLE_SOURCE) {//当作为host时打开vbus</span><span class="w"></span>
+<span class="gi">+				vbus_en(data, 1);</span><span class="w"></span>
+<span class="gi">+			}</span><span class="w"></span>
+<span class="gi">+			break;</span><span class="w"></span>
+<span class="gi">+	}</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+	return NOTIFY_OK;</span><span class="w"></span>
+<span class="gi">+}</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+static void pax_tcpc_dev_init_work(struct work_struct *work)</span><span class="w"></span>
+<span class="gi">+{</span><span class="w"></span>
+<span class="gi">+	int ret = 0;</span><span class="w"></span>
+<span class="gi">+	struct usb_switch_data *data = (struct usb_switch_data *)container_of(work, struct usb_switch_data, tcpc_dwork.work);</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+	if (!data-&gt;tcpc_dev) {</span><span class="w"></span>
+<span class="gi">+		data-&gt;tcpc_dev = tcpc_dev_get_by_name(&quot;type_c_port0&quot;);</span><span class="w"></span>
+<span class="gi">+		if (!data-&gt;tcpc_dev) {</span><span class="w"></span>
+<span class="gi">+			schedule_delayed_work(&amp;data-&gt;tcpc_dwork, msecs_to_jiffies(200));</span><span class="w"></span>
+<span class="gi">+			return;</span><span class="w"></span>
+<span class="gi">+		}</span><span class="w"></span>
+<span class="gi">+	}</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+	data-&gt;tcpc_nb.notifier_call = tcpc_notifier_call;</span><span class="w"></span>
+<span class="gi">+	ret = register_tcp_dev_notifier(data-&gt;tcpc_dev, &amp;data-&gt;tcpc_nb,</span><span class="w"></span>
+<span class="gi">+			TCP_NOTIFY_TYPE_VBUS | TCP_NOTIFY_TYPE_USB | TCP_NOTIFY_TYPE_MISC); //注册监听cc、vbus、misc(DR/PR)</span><span class="w"></span>
+<span class="gi">+	if (ret &lt; 0) {</span><span class="w"></span>
+<span class="gi">+		schedule_delayed_work(&amp;data-&gt;tcpc_dwork, msecs_to_jiffies(200));</span><span class="w"></span>
+<span class="gi">+		return;</span><span class="w"></span>
+<span class="gi">+	}</span><span class="w"></span>
+<span class="gi">+}</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+static void pax_tcpc_dev_init(struct usb_switch_data *data)</span><span class="w"></span>
+<span class="gi">+{</span><span class="w"></span>
+<span class="gi">+	usb_host_switch(data, !!data-&gt;default_mode); //开机默认切换一次</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+	INIT_DELAYED_WORK(&amp;data-&gt;tcpc_dwork, pax_tcpc_dev_init_work);</span><span class="w"></span>
+<span class="gi">+	schedule_delayed_work(&amp;data-&gt;tcpc_dwork, 0);</span><span class="w"></span>
+<span class="gi">+}</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="w"> </span>extern const char *cmdline_get_value(const char *key);<span class="w"></span>
+<span class="w"> </span>static int pax_usb_swtich_probe(struct platform_device *pdev)<span class="w"></span>
+<span class="w"> </span>{<span class="w"></span>
+<span class="gu">@@ -287,8 +421,10 @@ static int pax_usb_swtich_probe(struct platform_device *pdev)</span><span class="w"></span>
+<span class="w"> </span>	if (ret) {<span class="w"></span>
+<span class="w"> </span>		goto req_res_fail;<span class="w"></span>
+<span class="w"> </span>	}<span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+	pax_tcpc_dev_init(data);</span><span class="w"></span>
+<span class="w"> </span>	<span class="w"></span>
+<span class="gd">-	pax_charger_usbswitch_set(data);</span><span class="w"></span>
+<span class="gi">+	//pax_charger_usbswitch_set(data);</span><span class="w"></span>
+<span class="w"> </span>
+<span class="w"> </span>	if (g_class_pax != NULL) {<span class="w"></span>
+<span class="w"> </span>		data-&gt;pax_class = g_class_pax;<span class="w"></span>
+<span class="gu">@@ -310,6 +446,7 @@ static int pax_usb_swtich_probe(struct platform_device *pdev)</span><span class="w"></span>
+<span class="w"> </span>
+<span class="w"> </span>	//schedule_delayed_work(&amp;data-&gt;usb_switch_work, msecs_to_jiffies(time_interval));<span class="w"></span>
+<span class="w"> </span>	<span class="w"></span>
+<span class="gi">+	pr_info(&quot;%s: success.\n&quot;, __func__);</span><span class="w"></span>
+<span class="w"> </span>	return 0;<span class="w"></span>
+<span class="w"> </span>
+<span class="w"> </span>req_res_fail:<span class="w"></span>
+<span class="gd">-- </span><span class="w"></span>
+<span class="w">2.17.1</span>
+</pre></div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, wugn.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+  
+
+<script charset="UTF-8" id="LA_COLLECT" src="//sdk.51.la/js-sdk-pro.min.js"></script>
+<script>LA.init({id: "JjOE14XScyd75b2C",ck: "JjOE14XScyd75b2C"})</script>
+
+<br/>
+<script id="LA-DATA-WIDGET" crossorigin="anonymous" charset="UTF-8" src="https://v6-widget.51.la/v6/JjOE14XScyd75b2C/quote.js?theme=0&f=12&display=1,0,0,0,0,0,1,1"></script>
+
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

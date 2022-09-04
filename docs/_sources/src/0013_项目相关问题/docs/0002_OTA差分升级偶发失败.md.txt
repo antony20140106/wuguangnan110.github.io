@@ -1,0 +1,125 @@
+# 简述
+
+MTK OTA差分升级概率性失败
+
+## 参考
+
+* [[MT6771R][AB OTA打开preloader OTA升级失败]](https://eservice.mediatek.com/eservice-portal/issue_manager/update/107699595)
+
+## 问题描述
+
+机器为Uniphiz_11.0.0_Birch_V15.3.00_20220429_Release版本，把Uniphiz_11.0.0_Birch_V15.3.00_V15.3.01_OTA_DIFF包放入本地根目录后ota升级失败
+
+测试步骤：
+* 1、打开usb文件传输模式
+* 2、把diff包放入机器的根目录下
+* 3、在系统中选择本地升级
+测试结果：
+* 1、本地升级失败
+预期结果：
+* 1、可以成功升级
+
+![0002_0000.png](images/0002_0000.png)
+
+* log出错如下：
+
+```log
+
+05-07 14:35:31.597244   837   837 I update_engine: [INFO:delta_performer.cc(385)] Opening /dev/block/platform/bootdevice/by-name/preloader_b partition without O_DSYNC
+05-07 14:35:31.606187   837   837 I update_engine: [INFO:delta_performer.cc(128)] Caching writes.
+05-07 14:35:31.612072   837   837 I update_engine: [INFO:delta_performer.cc(397)] Applying 2 operations to partition "preloader"
+05-07 14:35:31.633807   837   837 E update_engine: [ERROR:fec_file_descriptor.cc(30)] No ECC data in the passed file
+05-07 14:35:31.639535   837   837 E update_engine: [ERROR:delta_performer.cc(431)] Unable to open ECC source partition preloader on slot A, file /dev/block/platform/bootdevice/by-name/preloader_a: Invalid argument (22)
+05-07 14:35:31.645165   837   837 E update_engine: [ERROR:delta_performer.cc(1158)] The hash of the source data on disk for this operation doesn't match the expected value. This could mean that the delta update payload was targeted for another version, or that the source partition was modified after it was installed, for example, by mounting a filesystem.
+05-07 14:35:31.650370   837   837 E update_engine: [ERROR:delta_performer.cc(1163)] Expected:   sha256|hex = 75CABE3BDC142DF50494342FF2D404F5CBA019CF7440DA79745B8218D759061C
+05-07 14:35:31.655465   837   837 E update_engine: [ERROR:delta_performer.cc(1166)] Calculated: sha256|hex = 135ECF8D5F1178329942569A9E532816038FECF5C6802AFEB9FE8CE7B57FAB19
+05-07 14:35:31.660241   837   837 E update_engine: [ERROR:delta_performer.cc(1177)] Operation source (offset:size) in blocks: 0:60
+05-07 14:35:31.665635   837   837 E update_engine: [ERROR:delta_performer.cc(297)] Failed to perform SOURCE_COPY operation 781, which is the operation 0 in partition "preloader"
+05-07 14:35:31.670953   837   837 E update_engine: [ERROR:download_action.cc(336)] Error ErrorCode::kDownloadStateInitializationError (20) in DeltaPerformer's Write method when processing the received payload -- Terminating processing
+```
+
+## 分析过程
+
+* `device/mediatek/mt6765/init.mt6765.rc`:我们发现虽然preloader分区表里面没有ab分区，但其实也是有ab分区的，如下软链接：
+
+```SHELL
+# Support A/B feature for emmc boot region
+symlink /dev/block/sda /dev/block/mmcblk0boot0
+symlink /dev/block/sdb /dev/block/mmcblk0boot1
+symlink /dev/block/mmcblk0boot0 /dev/block/platform/bootdevice/by-name/preloader_a
+symlink /dev/block/mmcblk0boot1 /dev/block/platform/bootdevice/by-name/preloader_b
+
+查看节点：
+PAYPHONEM50:/ $ ls dev/block/by-name  -l
+total 0
+lrwxrwxrwx 1 root root 21 2010-01-01 08:00 boot_a -> /dev/block/mmcblk0p24
+lrwxrwxrwx 1 root root 21 2010-01-01 08:00 boot_b -> /dev/block/mmcblk0p37
+lrwxrwxrwx 1 root root 20 2010-01-01 08:00 boot_para -> /dev/block/mmcblk0p1
+lrwxrwxrwx 1 root root 21 2010-01-01 08:00 dtbo_a -> /dev/block/mmcblk0p26
+lrwxrwxrwx 1 root root 21 2010-01-01 08:00 dtbo_b -> /dev/block/mmcblk0p39
+lrwxrwxrwx 1 root root 21 2010-01-01 08:00 efuse -> /dev/block/mmcblk0p15
+lrwxrwxrwx 1 root root 20 2010-01-01 08:00 expdb -> /dev/block/mmcblk0p3
+lrwxrwxrwx 1 root root 21 2010-01-01 08:00 flashinfo -> /dev/block/mmcblk0p48
+lrwxrwxrwx 1 root root 20 2010-01-01 08:00 frp -> /dev/block/mmcblk0p4
+lrwxrwxrwx 1 root root 21 2010-01-01 08:00 gz_a -> /dev/block/mmcblk0p22
+lrwxrwxrwx 1 root root 21 2010-01-01 08:00 gz_b -> /dev/block/mmcblk0p35
+lrwxrwxrwx 1 root root 21 2010-01-01 08:00 lk_a -> /dev/block/mmcblk0p23
+lrwxrwxrwx 1 root root 21 2010-01-01 08:00 lk_b -> /dev/block/mmcblk0p36
+lrwxrwxrwx 1 root root 21 2010-01-01 08:00 logo -> /dev/block/mmcblk0p17
+lrwxrwxrwx 1 root root 21 2010-01-01 08:00 md1img_a -> /dev/block/mmcblk0p18
+lrwxrwxrwx 1 root root 21 2010-01-01 08:00 md1img_b -> /dev/block/mmcblk0p31
+lrwxrwxrwx 1 root root 20 2010-01-01 08:00 md_udc -> /dev/block/mmcblk0p7
+lrwxrwxrwx 1 root root 20 2010-01-01 08:00 metadata -> /dev/block/mmcblk0p8
+lrwxrwxrwx 1 root root 18 2010-01-01 08:00 mmcblk0 -> /dev/block/mmcblk0
+lrwxrwxrwx 1 root root 23 2010-01-01 08:00 mmcblk0boot0 -> /dev/block/mmcblk0boot0
+lrwxrwxrwx 1 root root 23 2010-01-01 08:00 mmcblk0boot1 -> /dev/block/mmcblk0boot1
+
+PAYPHONEM50:/ $ ls dev/block/platform/bootdevice/by-name/
+boot_a     expdb      lk_b      nvcfg    preapp       scp_a    sspm_a    vbmeta_a         vendor_boot_a
+boot_b     flashinfo  logo      nvdata   preloader_a  scp_b    sspm_b    vbmeta_b         vendor_boot_b
+boot_para  frp        md1img_a  nvram    preloader_b  sec1     super     vbmeta_system_a
+dtbo_a     gz_a       md1img_b  otp      proinfo      seccfg   tee_a     vbmeta_system_b
+dtbo_b     gz_b       md_udc    para     protect1     spmfw_a  tee_b     vbmeta_vendor_a
+efuse      lk_a       metadata  persist  protect2     spmfw_b  userdata  vbmeta_vendor_b
+```
+
+* log分析原因是OTA升级前会比对机器部分image是否和OTA包里面的hash一致，如下，通过以上log发现preloader镜像不一样。
+
+```log
+	行 3637: 05-07 14:35:10.202301   837   837 I update_engine: [INFO:delta_performer.cc(397)] Applying 18 operations to partition "boot"
+	行 3680: 05-07 14:35:12.956066   837   837 I update_engine: [INFO:delta_performer.cc(397)] Applying 592 operations to partition "system"
+	行 3735: 05-07 14:35:27.682759   837   837 I update_engine: [INFO:delta_performer.cc(397)] Applying 171 operations to partition "vendor"
+	行 3748: 05-07 14:35:31.612072   837   837 I update_engine: [INFO:delta_performer.cc(397)] Applying 2 operations to partition "preloader"
+```
+
+* 通过云华那边fail读取的preloader AB分区的烧录镜像，发现AB分区不一样，A分区是非eea，B分区是eea版本的preloader，然而升级选择的diff包是eea版本的，所以会导致镜像不匹配。
+
+* 测试反馈信息如下：
+
+```
+从eea版本刷到非eea版本，然后再通过diff包升级会失败
+或者从非eea版本刷到eea版本后，再通过diff包升级也是失败的
+```
+
+## 原因
+
+* 我们发现当升级完ota包成功后，slot属性会从a变成b，从而导致下次使用命令`fastboot flash preloader`烧录时会烧到b分区，烧录完会执行`paydroidboot erase para`重置slot为a分区，那下次ota升级比对hash的应该是b分区，但是因为重置了还是a分区，a分区镜像不一致，导致升级失败。
+
+```
+PAYTABLETM8:/ $ getprop | grep slot
+[ro.boot.slot]: [b]
+[ro.boot.slot_suffix]: [_b]
+
+烧录时如果不带分区，会变成b分区：
+C:\Users\wugangnan\images>fastboot flash preloader preloader_k62v1_64_pax_eea.bin
+Sending 'preloader_b' (240 KB)                     OKAY [  0.012s]
+Writing 'preloader_b'                              FAILED (remote: 'not allowed in locked state')
+```
+
+* 解决方案：
+
+```log
+paydroid tool升级改为ab分区都刷：
+paydroidboot flash preloader_a    preloader_k62v1_64_pax.bin
+paydroidboot flash preloader_b    preloader_k62v1_64_pax.bin
+```

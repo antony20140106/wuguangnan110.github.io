@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>wugn</title>
+
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../index.html" class="icon icon-home"> wugn_note
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">概述</a></li>
+<li><a class="reference internal" href="#id2">参考</a></li>
+<li><a class="reference internal" href="#id3">架构</a></li>
+<li><a class="reference internal" href="#id4">术语</a></li>
+<li><a class="reference internal" href="#id5">编译文件</a></li>
+</ul>
+</div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">wugn_note</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs"> 
+<li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+<li>概述</li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.forward()">Forward</a></li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.back()">Go Back</a> | </li>
+<li style="float: right;margin-left: 10px;"><a href="/index.html">Home</a> | </li>
+
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="id1">
+<h1>概述<a class="headerlink" href="#id1" title="Permalink to this headline"></a></h1>
+<p>高通A6650 healthd 守护进程分析。</p>
+<p>Android 9 引入了从 health&#64;1.0 HAL 升级的主要版本 android.hardware.health HAL 2.0。这一新 HAL 具有以下优势：</p>
+<ul class="simple">
+<li><p>框架代码和供应商代码之间的区别更清楚。</p></li>
+<li><p>弃用了不必要的 healthd 守护程序。</p></li>
+<li><p>供应商对运行状况信息报告进行自定义的自由度更高。</p></li>
+<li><p>更多设备运行状况信息（不仅包括电池信息）。</p></li>
+</ul>
+<p>Android 11 包含 android.hardware.health HAL 2.1，这是一个从 health&#64;2.0 HAL 升级的次要版本。这一新 HAL 具有以下优势：</p>
+<ul class="simple">
+<li><p>更易于实现</p></li>
+<li><p>更好地与现有 2.0 HAL API 保持一致</p></li>
+<li><p>在关机模式充电代码中可以实现更好的 Treble 分离</p></li>
+<li><p>更好地支持框架来指示设备的电池运行状况</p></li>
+</ul>
+</section>
+<section id="id2">
+<h1>参考<a class="headerlink" href="#id2" title="Permalink to this headline"></a></h1>
+<ul class="simple">
+<li><p><a class="reference external" href="https://source.android.com/devices/tech/health?hl=zh-cn">Android 运行状况</a></p></li>
+<li><p><a class="reference external" href="https://blog.csdn.net/u010632165/article/details/88651035">Android 电池管理系统架构总结 Android power and battery management architecture summaries</a></p></li>
+<li><p><a class="reference external" href="https://blog.csdn.net/dfysy/article/details/7330919">Android Uevent 分析，从kernel到framework</a></p></li>
+</ul>
+</section>
+<section id="id3">
+<h1>架构<a class="headerlink" href="#id3" title="Permalink to this headline"></a></h1>
+<p><img alt="0014_0000.png" src="../../../_images/0014_0000.png" /></p>
+<p>可以看到文件比较多，主要是通过BatteryMonitor.cpp中的bool BatteryMonitor::update(void)函数上报信息，其中，内核首先会更新数据到/sys/class/power_supply/battery节点下各个属性，这个在上一个小节有做解释，先来看一下整体的架构，后面再来深入到代码中去分析；具体图片（该图片来自互联网，因为被转载较多，已经不知道出处），具体的流程整理的很清楚，如下所示；
+<img alt="0014_0001.png" src="../../../_images/0014_0001.png" /></p>
+<p>这幅图片再一次把整体的数据走向具体化，可以看到主要负责工作的是BatteryMonitor，主要分析一下该文件中的init和update就可以搞清楚大部分的问题。</p>
+</section>
+<section id="id4">
+<h1>术语<a class="headerlink" href="#id4" title="Permalink to this headline"></a></h1>
+<ul class="simple">
+<li><p>health&#64;1.0：android.hardware.health&#64;1.0 的缩写。指的是 Android 8.0 中发布的运行状况 HIDL 的 1.0 版 HAL。</p></li>
+<li><p>health&#64;2.0：android.hardware.health&#64;2.0 的缩写。指的是 Android 9 中发布的运行状况 HIDL 的 2.0 版 HAL。</p></li>
+<li><p>health&#64;2.1：android.hardware.health&#64;2.1 的缩写。指的是 Android 11 中发布的运行状况 HIDL 的 2.1 版 HAL。</p></li>
+<li><p>charger：在关机模式充电过程中运行的可执行文件，用于显示手机充电动画。</p></li>
+<li><p>recovery：在恢复模式下运行的可执行文件，必须检索电池信息。</p></li>
+<li><p>healthd：在 Android 中运行的旧版守护进程，用于检索与运行状况相关的信息并将其提供给框架。</p></li>
+<li><p>storaged：在 Android 中运行的守护进程，用于检索存储信息并将其提供给框架。</p></li>
+</ul>
+</section>
+<section id="id5">
+<h1>编译文件<a class="headerlink" href="#id5" title="Permalink to this headline"></a></h1>
+<div class="highlight-log notranslate"><div class="highlight"><pre><span></span>./vendor/lib64/hw/android.hardware.health@2.0-impl-2.1-qti.so
+./vendor/lib64/libsystem_health_mon.so
+./vendor/etc/vintf/manifest/android.hardware.health@2.1.xml
+./vendor/etc/init/android.hardware.health@2.1-service.rc
+./vendor/bin/hw/android.hardware.health@2.1-service
+</pre></div>
+</div>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, wugn.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+  
+
+<script charset="UTF-8" id="LA_COLLECT" src="//sdk.51.la/js-sdk-pro.min.js"></script>
+<script>LA.init({id: "JjOE14XScyd75b2C",ck: "JjOE14XScyd75b2C"})</script>
+
+<br/>
+<script id="LA-DATA-WIDGET" crossorigin="anonymous" charset="UTF-8" src="https://v6-widget.51.la/v6/JjOE14XScyd75b2C/quote.js?theme=0&f=12&display=1,0,0,0,0,0,1,1"></script>
+
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

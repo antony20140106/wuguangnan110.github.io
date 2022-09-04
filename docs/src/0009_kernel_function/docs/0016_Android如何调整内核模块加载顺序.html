@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>wugn</title>
+
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../index.html" class="icon icon-home"> wugn_note
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">概述</a></li>
+<li><a class="reference internal" href="#id2">参考</a></li>
+<li><a class="reference internal" href="#id3">优先级原理</a></li>
+<li><a class="reference internal" href="#id4">内核加载流程</a></li>
+<li><a class="reference internal" href="#id5">同一级别优先级顺序</a></li>
+<li><a class="reference internal" href="#platform-driver">platform driver详解</a></li>
+<li><a class="reference internal" href="#id6">实例</a></li>
+</ul>
+</div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">wugn_note</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs"> 
+<li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+<li>概述</li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.forward()">Forward</a></li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.back()">Go Back</a> | </li>
+<li style="float: right;margin-left: 10px;"><a href="/index.html">Home</a> | </li>
+
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="id1">
+<h1>概述<a class="headerlink" href="#id1" title="Permalink to this headline"></a></h1>
+<p>Android kernel经常碰到调整驱动加载顺序，详细看一下。</p>
+</section>
+<section id="id2">
+<h1>参考<a class="headerlink" href="#id2" title="Permalink to this headline"></a></h1>
+<ul class="simple">
+<li><p><a class="reference external" href="https://www.bbsmax.com/A/rV57Y7bjzP/">linux 设备驱动加载的先后顺序</a></p></li>
+<li><p><a class="reference external" href="https://blog.csdn.net/qq_44710568/article/details/124356552">调整内核模块加载顺序</a></p></li>
+</ul>
+</section>
+<section id="id3">
+<h1>优先级原理<a class="headerlink" href="#id3" title="Permalink to this headline"></a></h1>
+<p>Linux系统使用两种方式去加载系统中的模块：动态和静态。</p>
+<p>静态加载：将所有模块的程序编译到Linux内核中，由do_initcall函数加载</p>
+<p>核心进程（/init/main.c）kernel_inità do_basic_setup()àdo_initcalls（）该函数中会将在__initcall_start和__initcall_end之间定义的各个模块依次加载。那么在__initcall_start 和 __initcall_end之间都有些什么呢？</p>
+<p>找到<code class="docutils literal notranslate"><span class="pre">include/linux/init.h</span></code>文件，找到.initcall.init段,可以看出在这两个宏之间依次排列了14个等级的宏，由于这其中的宏是按先后顺序链接的，所以也就表示，这14个宏有优先级：0&gt;1&gt;1s&gt;2&gt;2s………&gt;7&gt;7s。：</p>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="cm">/*</span>
+<span class="cm"> * A &quot;pure&quot; initcall has no dependencies on anything else, and purely</span>
+<span class="cm"> * initializes variables that couldn&#39;t be statically initialized.</span>
+<span class="cm"> *</span>
+<span class="cm"> * This only exists for built-in code, not for modules.</span>
+<span class="cm"> * Keep main.c:initcall_level_names[] in sync.</span>
+<span class="cm"> */</span><span class="w"></span>
+<span class="cp">#define pure_initcall(fn)               __define_initcall(fn, 0)</span>
+
+<span class="cp">#define core_initcall(fn)               __define_initcall(fn, 1)</span>
+<span class="cp">#define core_initcall_sync(fn)          __define_initcall(fn, 1s)</span>
+<span class="cp">#define postcore_initcall(fn)           __define_initcall(fn, 2)</span>
+<span class="cp">#define postcore_initcall_sync(fn)      __define_initcall(fn, 2s)</span>
+<span class="cp">#define arch_initcall(fn)               __define_initcall(fn, 3)</span>
+<span class="cp">#define arch_initcall_sync(fn)          __define_initcall(fn, 3s)</span>
+<span class="cp">#define subsys_initcall(fn)             __define_initcall(fn, 4)</span>
+<span class="cp">#define subsys_initcall_sync(fn)        __define_initcall(fn, 4s)</span>
+<span class="cp">#define fs_initcall(fn)                 __define_initcall(fn, 5)</span>
+<span class="cp">#define fs_initcall_sync(fn)            __define_initcall(fn, 5s)</span>
+<span class="cp">#define rootfs_initcall(fn)             __define_initcall(fn, rootfs)</span>
+<span class="cp">#define device_initcall(fn)             __define_initcall(fn, 6)</span>
+<span class="cp">#define device_initcall_sync(fn)        __define_initcall(fn, 6s)</span>
+<span class="cp">#define late_initcall(fn)               __define_initcall(fn, 7)</span>
+<span class="cp">#define late_initcall_sync(fn)          __define_initcall(fn, 7s)</span>
+</pre></div>
+</div>
+</section>
+<section id="id4">
+<h1>内核加载流程<a class="headerlink" href="#id4" title="Permalink to this headline"></a></h1>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">init/main.c</span></code>:</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="o">*</span><span class="w"> </span><span class="n">__init</span><span class="w"> </span><span class="n">do_basic_setup</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="o">*</span><span class="w"> </span><span class="n">do_initcalls</span><span class="p">();</span><span class="w"></span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">__init</span><span class="w"> </span><span class="nf">do_initcalls</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="n">level</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">        </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="n">level</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">level</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">ARRAY_SIZE</span><span class="p">(</span><span class="n">initcall_levels</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span><span class="w"> </span><span class="n">level</span><span class="o">++</span><span class="p">)</span><span class="w"></span>
+<span class="w">                </span><span class="n">do_initcall_level</span><span class="p">(</span><span class="n">level</span><span class="p">);</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">__init</span><span class="w"> </span><span class="nf">do_initcall_level</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">level</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="n">initcall_entry_t</span><span class="w"> </span><span class="o">*</span><span class="n">fn</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">        </span><span class="n">strcpy</span><span class="p">(</span><span class="n">initcall_command_line</span><span class="p">,</span><span class="w"> </span><span class="n">saved_command_line</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="n">parse_args</span><span class="p">(</span><span class="n">initcall_level_names</span><span class="p">[</span><span class="n">level</span><span class="p">],</span><span class="w"></span>
+<span class="w">                   </span><span class="n">initcall_command_line</span><span class="p">,</span><span class="w"> </span><span class="n">__start___param</span><span class="p">,</span><span class="w"></span>
+<span class="w">                   </span><span class="n">__stop___param</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">__start___param</span><span class="p">,</span><span class="w"></span>
+<span class="w">                   </span><span class="n">level</span><span class="p">,</span><span class="w"> </span><span class="n">level</span><span class="p">,</span><span class="w"></span>
+<span class="w">                   </span><span class="nb">NULL</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">repair_env_string</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">        </span><span class="n">trace_initcall_level</span><span class="p">(</span><span class="n">initcall_level_names</span><span class="p">[</span><span class="n">level</span><span class="p">]);</span><span class="w"></span>
+<span class="w">        </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="n">fn</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">initcall_levels</span><span class="p">[</span><span class="n">level</span><span class="p">];</span><span class="w"> </span><span class="n">fn</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">initcall_levels</span><span class="p">[</span><span class="n">level</span><span class="o">+</span><span class="mi">1</span><span class="p">];</span><span class="w"> </span><span class="n">fn</span><span class="o">++</span><span class="p">)</span><span class="w"></span>
+<span class="w">                </span><span class="n">do_one_initcall</span><span class="p">(</span><span class="n">initcall_from_entry</span><span class="p">(</span><span class="n">fn</span><span class="p">));</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<p><img alt="0017_0000.png" src="../../../_images/0017_00001.png" /></p>
+<p>通过for循环逐个调用函数指针,遍历相同优先级的initcall时，是按照地址从低到高进行的，因此调用顺序就是编译时连接到initcall section的顺序，通过System.map可以查到顺序，例如：
+<img alt="0017_0001.png" src="../../../_images/0017_00011.png" /></p>
+<p>链接顺序可以通过调整Makefile中的.o文件的先后进行调整。
+<img alt="0017_0002.png" src="../../../_images/0017_00021.png" /></p>
+</section>
+<section id="id5">
+<h1>同一级别优先级顺序<a class="headerlink" href="#id5" title="Permalink to this headline"></a></h1>
+<p>同一级别的初始化是和编译顺序有关的，并不是和设备列表一致，比如Makefile中：</p>
+<div class="highlight-makefile notranslate"><div class="highlight"><pre><span></span>obj-$(CONFIG_VT)   += console/
+obj-$(CONFIG_LOGO)   += logo/
+obj-y   += backlight/ display/
+...
+obj-$(CONFIG_FB_xxx)   += xxxfb.o ak_logo.o
+obj-$(CONFIG_FB_AK88)   += ak88-fb/
+
+
+</pre></div>
+</div>
+<p>这样编译生成的System.map中的顺序为：</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">c001f540</span> <span class="n">t</span> <span class="n">__initcall_pwm_backlight_init6</span>
+<span class="n">c001f544</span> <span class="n">t</span> <span class="n">__initcall_display_class_init6</span>
+<span class="n">c001f548</span> <span class="n">t</span> <span class="n">__initcall_xxxfb_init6</span>
+</pre></div>
+</div>
+<p>Makefile增加backlight：</p>
+<div class="highlight-makefile notranslate"><div class="highlight"><pre><span></span>obj-$(CONFIG_VT)   += console/
+obj-$(CONFIG_LOGO)   += logo/
+obj-y   += display/
+...
+obj-$(CONFIG_FB_xxx)   += xxxfb.o ak_logo.o
+obj-$(CONFIG_FB_AK88)   += ak88-fb/
+obj-y   += backlight/
+</pre></div>
+</div>
+<p>这样编译生成的System.map中的顺序为：</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">c001f53c</span> <span class="n">t</span> <span class="n">__initcall_display_class_init6</span>
+<span class="n">c001f540</span> <span class="n">t</span> <span class="n">__initcall_xxxfb_init6</span>
+<span class="n">c001f544</span> <span class="n">t</span> <span class="n">__initcall_genericbl_init6</span>
+<span class="n">c001f548</span> <span class="n">t</span> <span class="n">__initcall_pwm_backlight_init6</span>
+</pre></div>
+</div>
+<p>xxxpwm_backlight_device(backlight)的probe就会在xxx_lcd_device(display)的probe之后执行，即LCD初始化先于PWM的初始化。</p>
+</section>
+<section id="platform-driver">
+<h1>platform driver详解<a class="headerlink" href="#platform-driver" title="Permalink to this headline"></a></h1>
+<p>一般platform驱动都是采用以下<code class="docutils literal notranslate"><span class="pre">module_platform_driver</span></code>方式加载的，关于详情可以看看:</p>
+<ul class="simple">
+<li><p><span class="xref myst">0018_Android_module_platform_driver与module_init区别.md</span></p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="k">static</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">of_device_id</span><span class="w"> </span><span class="n">match_table</span><span class="p">[]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="p">{</span><span class="w"> </span><span class="p">.</span><span class="n">compatible</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;qcom,qpnp-smblite&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">},</span><span class="w"></span>
+<span class="w">	</span><span class="p">{</span><span class="w"> </span><span class="p">},</span><span class="w"></span>
+<span class="p">};</span><span class="w"></span>
+
+<span class="k">static</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">platform_driver</span><span class="w"> </span><span class="n">smblite_driver</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">driver</span><span class="w">		</span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="p">.</span><span class="n">name</span><span class="w">		</span><span class="o">=</span><span class="w"> </span><span class="s">&quot;qcom,qpnp-smblite&quot;</span><span class="p">,</span><span class="w"></span>
+<span class="w">		</span><span class="p">.</span><span class="n">of_match_table</span><span class="w">	</span><span class="o">=</span><span class="w"> </span><span class="n">match_table</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="p">},</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">probe</span><span class="w">		</span><span class="o">=</span><span class="w"> </span><span class="n">smblite_probe</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">remove</span><span class="w">		</span><span class="o">=</span><span class="w"> </span><span class="n">smblite_remove</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">shutdown</span><span class="w">	</span><span class="o">=</span><span class="w"> </span><span class="n">smblite_shutdown</span><span class="p">,</span><span class="w"></span>
+<span class="p">};</span><span class="w"></span>
+<span class="n">module_platform_driver</span><span class="p">(</span><span class="n">smblite_driver</span><span class="p">);</span><span class="w"></span>
+</pre></div>
+</div>
+<p>跟进代码发现，其</p>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="o">/</span><span class="n">kernel</span><span class="o">/</span><span class="n">include</span><span class="o">/</span><span class="n">linux</span><span class="o">/</span><span class="n">platform_device</span><span class="p">.</span><span class="n">h</span><span class="w"></span>
+<span class="cp">#define module_platform_driver(__platform_driver) \</span>
+<span class="cp">        module_driver(__platform_driver, platform_driver_register, \</span>
+<span class="cp">                        platform_driver_unregister)</span>
+
+
+<span class="n">device</span><span class="p">.</span><span class="n">h</span><span class="w"></span>
+<span class="cp">#define module_driver(__driver, __register, __unregister, ...) \</span>
+<span class="cp">static int __init __driver##_init(void) \</span>
+<span class="cp">{ \</span>
+<span class="cp">        return __register(&amp;(__driver) , ##__VA_ARGS__); \</span>
+<span class="cp">} \</span>
+<span class="cp">module_init(__driver##_init); \</span>
+<span class="cp">static void __exit __driver##_exit(void) \</span>
+<span class="cp">{ \</span>
+<span class="cp">        __unregister(&amp;(__driver) , ##__VA_ARGS__); \</span>
+<span class="cp">} \</span>
+<span class="cp">module_exit(__driver##_exit);</span>
+
+
+<span class="k">module</span><span class="p">.</span><span class="n">h</span><span class="w"></span>
+<span class="cp">#define module_init(x)     __initcall(x);  </span>
+
+
+<span class="n">init</span><span class="p">.</span><span class="n">h</span><span class="w"></span>
+<span class="cp">#define __initcall(fn) device_initcall(fn)</span>
+<span class="cp">#define device_initcall(fn)                 __define_initcall(&quot;6&quot;,fn,6)</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>得出结论</p>
+<ul>
+<li><p>module_platform_driver这个宏本身展开后找到module_init，使用低优先级的宏进行替换。</p></li>
+<li><p>在内核源代码中，platform设备的初始化（注册）用arch_initcall（）调用，它的initcall的level为3；而驱动的注册用module_init（）调用，即device_initcall（），它的initcall的level为6。</p></li>
+</ul>
+</li>
+<li><p>修改方案</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="cp">#修改module_platform_driver的加载顺序代码，以下将其优先级由6改为7。</span>
+<span class="c1">//module_platform_driver(XXX_driver);</span>
+<span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">__init</span><span class="w"> </span><span class="nf">XXX_driver_init</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="k">return</span><span class="w"> </span><span class="n">platform_driver_register</span><span class="p">(</span><span class="o">&amp;</span><span class="n">XXX_driver</span><span class="p">);</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+<span class="n">late_initcall</span><span class="p">(</span><span class="n">XXX_driver_init</span><span class="p">);</span><span class="w"></span>
+<span class="k">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">__exit</span><span class="w"> </span><span class="nf">XXX_driver_exit</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="n">platform_driver_unregister</span><span class="p">(</span><span class="o">&amp;</span><span class="n">XXX_driver</span><span class="p">);</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+<span class="n">module_exit</span><span class="p">(</span><span class="n">XXX_driver_exit</span><span class="p">);</span><span class="w"></span>
+</pre></div>
+</div>
+</section>
+<section id="id6">
+<h1>实例<a class="headerlink" href="#id6" title="Permalink to this headline"></a></h1>
+<ol class="arabic simple">
+<li><p>mp2721采用module_i2c_driver注册，最终也是调用的module_init：</p></li>
+</ol>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="k">static</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">i2c_driver</span><span class="w"> </span><span class="n">mp2721_charger_driver</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">driver</span><span class="w">   </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="p">.</span><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;mp2721&quot;</span><span class="p">,</span><span class="w"></span>
+<span class="w">		</span><span class="p">.</span><span class="n">of_match_table</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mp2721_charger_match_table</span><span class="p">,</span><span class="w"></span>
+<span class="w">		</span><span class="p">.</span><span class="n">pm</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">MP2721_CHARGER_PM</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="p">},</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">id_table</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mp2721_charger_id</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">probe</span><span class="w">    </span><span class="o">=</span><span class="w"> </span><span class="n">mp2721_charger_probe</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">remove</span><span class="w">   </span><span class="o">=</span><span class="w"> </span><span class="n">mp2721_charger_remove</span><span class="p">,</span><span class="w"></span>
+<span class="p">};</span><span class="w"></span>
+
+<span class="n">module_i2c_driver</span><span class="p">(</span><span class="n">mp2721_charger_driver</span><span class="p">);</span><span class="w"></span>
+
+<span class="n">include</span><span class="o">/</span><span class="n">linux</span><span class="o">/</span><span class="n">i2c</span><span class="p">.</span><span class="n">h</span><span class="o">:</span><span class="w"></span>
+<span class="cp">#define module_i2c_driver(__i2c_driver) \</span>
+<span class="cp">        module_driver(__i2c_driver, i2c_add_driver, \</span>
+<span class="cp">                        i2c_del_driver)</span>
+
+<span class="n">include</span><span class="o">/</span><span class="n">linux</span><span class="o">/</span><span class="n">device</span><span class="p">.</span><span class="n">h</span><span class="w"></span>
+<span class="cp">#define module_driver(__driver, __register, __unregister, ...) \</span>
+<span class="cp">static int __init __driver##_init(void) \</span>
+<span class="cp">{ \</span>
+<span class="cp">        return __register(&amp;(__driver) , ##__VA_ARGS__); \</span>
+<span class="cp">} \</span>
+<span class="cp">module_init(__driver##_init); \</span>
+<span class="cp">static void __exit __driver##_exit(void) \</span>
+<span class="cp">{ \</span>
+<span class="cp">        __unregister(&amp;(__driver) , ##__VA_ARGS__); \</span>
+<span class="cp">} \</span>
+<span class="cp">module_exit(__driver##_exit);</span>
+</pre></div>
+</div>
+<ol class="arabic simple" start="2">
+<li><p>rt_pd_manager从6改为7:</p></li>
+</ol>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">__init</span><span class="w"> </span><span class="nf">rt_pd_manager_init</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">platform_driver_register</span><span class="p">(</span><span class="o">&amp;</span><span class="n">rt_pd_manager_driver</span><span class="p">);</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">__exit</span><span class="w"> </span><span class="nf">rt_pd_manager_exit</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="n">platform_driver_unregister</span><span class="p">(</span><span class="o">&amp;</span><span class="n">rt_pd_manager_driver</span><span class="p">);</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="n">late_initcall</span><span class="p">(</span><span class="n">rt_pd_manager_init</span><span class="p">);</span><span class="w"></span>
+</pre></div>
+</div>
+<p>由于<code class="docutils literal notranslate"><span class="pre">drivers/usb/phy/phy-msm-qusb.c</span></code>中绑定了rt_pd_manager的extcon，需要rt_pd_manager先启动，而将rt_pd_manager配置成了late_initcall，等级是7，后启动了，不行。</p>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="n">ffffff8008946298</span><span class="w"> </span><span class="n">t</span><span class="w"> </span><span class="n">qusb_phy_probe</span><span class="w"> </span><span class="c1">//qusb先跑了</span>
+
+<span class="n">ffffff8009e60bf4</span><span class="w"> </span><span class="n">t</span><span class="w"> </span><span class="n">quectel_gpio_init</span><span class="w"></span>
+<span class="n">ffffff8009e60c14</span><span class="w"> </span><span class="n">t</span><span class="w"> </span><span class="n">proc_uid_sys_stats_init</span><span class="w"></span>
+<span class="n">ffffff8009e60d8c</span><span class="w"> </span><span class="n">t</span><span class="w"> </span><span class="n">fpc1020_driver_init</span><span class="w"></span>
+<span class="n">ffffff8009e60dac</span><span class="w"> </span><span class="n">t</span><span class="w"> </span><span class="n">mp2721_charger_driver_init</span><span class="w"></span>
+<span class="n">ffffff8009e60dcc</span><span class="w"> </span><span class="n">t</span><span class="w"> </span><span class="n">charger_class_init</span><span class="w"></span>
+<span class="n">ffffff8009e60e34</span><span class="w"> </span><span class="n">t</span><span class="w"> </span><span class="n">pax_charger_init</span><span class="w"></span>
+<span class="n">ffffff8009e60e54</span><span class="w"> </span><span class="n">t</span><span class="w"> </span><span class="n">husb311_driver_init</span><span class="w"></span>
+<span class="n">ffffff8009e60e74</span><span class="w"> </span><span class="n">t</span><span class="w"> </span><span class="n">tcpc_class_init</span><span class="w"></span>
+<span class="n">ffffff8009e60f48</span><span class="w"> </span><span class="n">t</span><span class="w"> </span><span class="n">tcpc_class_complete_init</span><span class="w"></span>
+<span class="n">ffffff8009e60f80</span><span class="w"> </span><span class="n">t</span><span class="w"> </span><span class="n">regmap_plat_init</span><span class="w"></span>
+<span class="n">ffffff8009e60fe0</span><span class="w"> </span><span class="n">t</span><span class="w"> </span><span class="n">rt_pd_manager_init</span><span class="w"></span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>修改方案，等级改为5，fs_initcall_sync：</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">__init</span><span class="w"> </span><span class="nf">rt_pd_manager_init</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="k">return</span><span class="w"> </span><span class="n">platform_driver_register</span><span class="p">(</span><span class="o">&amp;</span><span class="n">rt_pd_manager_driver</span><span class="p">);</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">__exit</span><span class="w"> </span><span class="nf">rt_pd_manager_exit</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="n">platform_driver_unregister</span><span class="p">(</span><span class="o">&amp;</span><span class="n">rt_pd_manager_driver</span><span class="p">);</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="n">fs_initcall_sync</span><span class="p">(</span><span class="n">rt_pd_manager_init</span><span class="p">);</span><span class="w"></span>
+</pre></div>
+</div>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, wugn.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+  
+
+<script charset="UTF-8" id="LA_COLLECT" src="//sdk.51.la/js-sdk-pro.min.js"></script>
+<script>LA.init({id: "JjOE14XScyd75b2C",ck: "JjOE14XScyd75b2C"})</script>
+
+<br/>
+<script id="LA-DATA-WIDGET" crossorigin="anonymous" charset="UTF-8" src="https://v6-widget.51.la/v6/JjOE14XScyd75b2C/quote.js?theme=0&f=12&display=1,0,0,0,0,0,1,1"></script>
+
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

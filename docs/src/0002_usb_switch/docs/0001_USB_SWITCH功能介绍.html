@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>wugn</title>
+
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../index.html" class="icon icon-home"> wugn_note
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">概述</a><ul>
+<li><a class="reference internal" href="#id2">参考</a></li>
+<li><a class="reference internal" href="#id3">硬件架构</a><ul>
+<li><a class="reference internal" href="#usb">1.USB逻辑图</a></li>
+<li><a class="reference internal" href="#vbus-vin">2.Vbus(VIN)逻辑图</a></li>
+<li><a class="reference internal" href="#check">3.Check脚逻辑图</a></li>
+<li><a class="reference internal" href="#gpio">4.涉及的GPIO作用</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id4">软件交互逻辑</a><ul>
+<li><a class="reference internal" href="#usb-swtich-hub-or-otg">1.usb swtich通路切换(hub or OTG)</a></li>
+<li><a class="reference internal" href="#usb-role-mode-host-device">2. usb role mode切换逻辑(host device)</a></li>
+<li><a class="reference internal" href="#vin">3.VIN方向控制</a></li>
+<li><a class="reference internal" href="#usb2-0">4.usb2.0亮灭屏逻辑</a></li>
+<li><a class="reference internal" href="#usb-switch">5.usb_switch亮灭屏逻辑</a></li>
+<li><a class="reference internal" href="#usb20-role">6.usb20 role切换逻辑</a></li>
+<li><a class="reference internal" href="#id5">7.usb_switch切换逻辑</a></li>
+<li><a class="reference internal" href="#pogo-pin">8.pogo pin交互逻辑</a><ul>
+<li><a class="reference internal" href="#usb-switch-notify">8.1 usb_switch发送/处理notify</a></li>
+<li><a class="reference internal" href="#usb20notify">8.2 usb20处理notify</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">wugn_note</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs"> 
+<li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+<li>概述</li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.forward()">Forward</a></li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.back()">Go Back</a> | </li>
+<li style="float: right;margin-left: 10px;"><a href="/index.html">Home</a> | </li>
+
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="id1">
+<h1>概述<a class="headerlink" href="#id1" title="Permalink to this headline"></a></h1>
+<p>M8项目USB_SWITCH功能介绍。</p>
+<section id="id2">
+<h2>参考<a class="headerlink" href="#id2" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p>驱动代码：</p></li>
+</ul>
+<p><a class="reference download internal" download="" href="../../../_downloads/d8bdd85490cb5d65831bafd42a62860d/pax_usb_switch.c"><span class="xref download myst">pax_usb_switch.c</span></a></p>
+</section>
+<section id="id3">
+<h2>硬件架构<a class="headerlink" href="#id3" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p>硬件架构</p></li>
+</ul>
+<p>V03版本：</p>
+<p><img alt="0001_pogopin实物图.png" src="src/0002_usb_switch/docs/images/0001_pogopin%E5%AE%9E%E7%89%A9%E5%9B%BE.png" /></p>
+<p>V04版本：</p>
+<p><img alt="0001_V04实物图.png" src="src/0002_usb_switch/docs/images/0001_V04%E5%AE%9E%E7%89%A9%E5%9B%BE.png" /></p>
+<p>主要修改为，增加CHECK脚检测R15状态，插入则打开VOUT电。BBL供电去掉，单独一路VOUT供电，由R15内部转BBL。</p>
+<section id="usb">
+<h3>1.USB逻辑图<a class="headerlink" href="#usb" title="Permalink to this headline"></a></h3>
+<p><img alt="0001_usbswitch硬件架构" src="src/0002_usb_switch/docs/images/0001_usbswitch%E7%A1%AC%E4%BB%B6%E6%9E%B6%E6%9E%84.jpg" /></p>
+<p><img alt="0001_usb逻辑.png" src="src/0002_usb_switch/docs/images/0001_usb%E9%80%BB%E8%BE%91.png" /></p>
+</section>
+<section id="vbus-vin">
+<h3>2.Vbus(VIN)逻辑图<a class="headerlink" href="#vbus-vin" title="Permalink to this headline"></a></h3>
+<p>USB_HOST_EN为高，VIN是输出方向，输出5v，USB_HOST_EN低电平VIN为输入方向，相当于充电，该功能是监听typec vbus状态改变的，比如当接入R15时，会接收到typec通知<code class="docutils literal notranslate"><span class="pre">TCP_NOTIFY_SOURCE_VBUS</span></code>打开vbus。</p>
+<p><img alt="0001_Vbus输入输出逻辑.png" src="src/0002_usb_switch/docs/images/0001_Vbus%E8%BE%93%E5%85%A5%E8%BE%93%E5%87%BA%E9%80%BB%E8%BE%91.png" /></p>
+</section>
+<section id="check">
+<h3>3.Check脚逻辑图<a class="headerlink" href="#check" title="Permalink to this headline"></a></h3>
+<p>目前软件不控制VCC_OUT_EN，也就是说只要Check脚检测在位，POWER_EN会输出电压，VOUT就会供电，完全由硬件控制。
+<img alt="0001_Check脚逻辑.png" src="src/0002_usb_switch/docs/images/0001_Check%E8%84%9A%E9%80%BB%E8%BE%91.png" /></p>
+</section>
+<section id="gpio">
+<h3>4.涉及的GPIO作用<a class="headerlink" href="#gpio" title="Permalink to this headline"></a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>USB_HOST_EN （AE23）  双输入电源方向控制，高电平输出Vbus，低电平vbus输入
+
+USB_SW1_SEL  （F24）   USB信号切换开关
+
+USB_SW2_SEL  （H24）   USB信号切换开关
+
+GL850_EN     （AD24）  控制HUB芯片POWER
+
+VCC_OUT_EN  （AD23）   在POGO端接USB device时候控制5V输出；开机默认5v，由power_control等接口控制，关机时由硬件做插入检测，插入R15输入高，拔出低。
+</pre></div>
+</div>
+</section>
+</section>
+<section id="id4">
+<h2>软件交互逻辑<a class="headerlink" href="#id4" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p>目前需要两种切换，第一是usb role mode切换(host device)，第二是usb swtich通路切换(hub or OTG)。</p></li>
+</ul>
+<section id="usb-swtich-hub-or-otg">
+<h3>1.usb swtich通路切换(hub or OTG)<a class="headerlink" href="#usb-swtich-hub-or-otg" title="Permalink to this headline"></a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>host模式:
+USB_SW1_SEL  （F24）   USB信号切换开关 高
+
+USB_SW2_SEL  （H24）   USB信号切换开关 高
+
+GL850_EN     （AD24）  控制HUB芯片POWER 高
+
+device模式：
+USB_SW1_SEL  （F24）   USB信号切换开关 低
+
+USB_SW2_SEL  （H24）   USB信号切换开关 低
+
+GL850_EN     （AD24）  控制HUB芯片POWER 低
+</pre></div>
+</div>
+</section>
+<section id="usb-role-mode-host-device">
+<h3>2. usb role mode切换逻辑(host device)<a class="headerlink" href="#usb-role-mode-host-device" title="Permalink to this headline"></a></h3>
+<ul class="simple">
+<li><p>目前是通过cc脚切换host device，目前默认不接任何设备为host。</p></li>
+<li><p>1.没有皮套</p>
+<ul>
+<li><p>插入sdp(电脑)或者dcp(充电器)，切换成device。</p></li>
+<li><p>拔出usb，切换成host。</p></li>
+</ul>
+</li>
+<li><p>2.有皮套</p>
+<ul>
+<li><p>插入sdp(电脑)或者dcp(充电器)，通知栏弹框，提示用户手动切换成host还是device。</p></li>
+<li><p>拔出usb，切换成host。</p></li>
+</ul>
+</li>
+<li><p>3.灭屏，host等待10s切换成device，休眠。</p></li>
+<li><p>4.亮屏，device切换成host。</p></li>
+</ul>
+</section>
+<section id="vin">
+<h3>3.VIN方向控制<a class="headerlink" href="#vin" title="Permalink to this headline"></a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>充电方向:
+1.PD_ROLE_SINK  作为输入
+2.PD_ROLE_SOURCE  输出，但是驱动不需要做
+3.TCP_NOTIFY_SOURCE_VBUS 跟随系统vbus方向
+</pre></div>
+</div>
+</section>
+<section id="usb2-0">
+<h3>4.usb2.0亮灭屏逻辑<a class="headerlink" href="#usb2-0" title="Permalink to this headline"></a></h3>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="n">usb20_host</span><span class="p">.</span><span class="n">c</span><span class="o">:</span><span class="w"></span>
+<span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">musb_fb_notifier_call</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">notifier_block</span><span class="w"> </span><span class="o">*</span><span class="n">self</span><span class="p">,</span><span class="w"> </span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">long</span><span class="w"> </span><span class="n">event</span><span class="p">,</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="o">*</span><span class="n">data</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="k">struct</span><span class="w"> </span><span class="nc">fb_event</span><span class="w"> </span><span class="o">*</span><span class="n">evdata</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">data</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="kt">int</span><span class="w"> </span><span class="n">blank</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">event</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">FB_EVENT_BLANK</span><span class="p">)</span><span class="w"></span>
+<span class="w">		</span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">blank</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">*</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="n">evdata</span><span class="o">-&gt;</span><span class="n">data</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">DBG</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;blank: %d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">blank</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">	</span><span class="k">switch</span><span class="w"> </span><span class="p">(</span><span class="n">blank</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="k">case</span><span class="w"> </span><span class="nl">FB_BLANK_UNBLANK</span><span class="p">:</span><span class="w"> </span><span class="c1">//亮屏</span>
+<span class="w">			</span><span class="p">{</span><span class="w"></span>
+<span class="w">				</span><span class="kt">bool</span><span class="w"> </span><span class="n">connect</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">false</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">				</span><span class="n">mtk_musb</span><span class="o">-&gt;</span><span class="n">lcd_state</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">blank</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">				</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mtk_musb</span><span class="o">-&gt;</span><span class="n">pogo_dev_detect_type</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">POGO_DETECT_BY_CC</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">     </span><span class="c1">//条件永远成立，dts配置的是gpio检测pogo dev</span>
+<span class="w">					</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mtk_musb</span><span class="o">-&gt;</span><span class="n">default_mode</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">MUSB_HOST</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">  </span><span class="c1">//收到亮屏，typec是没接或者接了充电器，则切成host。</span>
+<span class="w">						</span><span class="k">if</span><span class="w"> </span><span class="p">((</span><span class="n">mtk_musb</span><span class="o">-&gt;</span><span class="n">typec_state</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">TYPEC_UNATTACHED</span><span class="p">)</span><span class="w"></span>
+<span class="w">								</span><span class="o">||</span><span class="w">  </span><span class="p">(</span><span class="n">mtk_musb</span><span class="o">-&gt;</span><span class="n">usb_type</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">POWER_SUPPLY_USB_TYPE_DCP</span><span class="p">))</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">							</span><span class="n">connect</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">true</span><span class="p">;</span><span class="w"></span>
+<span class="w">						</span><span class="p">}</span><span class="w"></span>
+<span class="w">					</span><span class="p">}</span><span class="w"></span>
+<span class="w">					</span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">						</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mtk_musb</span><span class="o">-&gt;</span><span class="n">r15_state</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">R15_STATUS_ONLINE</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="c1">//收到亮屏，CC没检测到设备，R15在线（因为灭屏且device有10s延迟），则切成host。</span>
+<span class="w">							</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mtk_musb</span><span class="o">-&gt;</span><span class="n">typec_state</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">TYPEC_UNATTACHED</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">								</span><span class="n">connect</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">true</span><span class="p">;</span><span class="w"></span>
+<span class="w">							</span><span class="p">}</span><span class="w"></span>
+<span class="w">						</span><span class="p">}</span><span class="w"></span>
+<span class="w">					</span><span class="p">}</span><span class="w"></span>
+<span class="w">				</span><span class="p">}</span><span class="w"></span>
+<span class="w">				</span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">					</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mtk_musb</span><span class="o">-&gt;</span><span class="n">r15_state</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">R15_STATUS_ONLINE</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">						</span><span class="n">mt_usb_vbus_on</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span><span class="w"></span>
+<span class="w">						</span><span class="n">connect</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">true</span><span class="p">;</span><span class="w"></span>
+<span class="w">					</span><span class="p">}</span><span class="w"></span>
+<span class="w">				</span><span class="p">}</span><span class="w"></span>
+
+<span class="w">				</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">connect</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">					</span><span class="n">mt_usb_dev_disconnect</span><span class="p">();</span><span class="w"></span>
+<span class="w">					</span><span class="n">mt_usb_host_connect</span><span class="p">(</span><span class="mi">100</span><span class="p">);</span><span class="w"></span>
+<span class="w">				</span><span class="p">}</span><span class="w"></span>
+<span class="w">			</span><span class="p">}</span><span class="w"></span>
+<span class="w">			</span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+<span class="w">		</span><span class="k">case</span><span class="w"> </span><span class="nl">FB_BLANK_POWERDOWN</span><span class="p">:</span><span class="w"> </span><span class="c1">//灭屏</span>
+<span class="w">			</span><span class="p">{</span><span class="w"></span>
+<span class="w">				</span><span class="kt">bool</span><span class="w"> </span><span class="n">disconnet</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">false</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">				</span><span class="n">mtk_musb</span><span class="o">-&gt;</span><span class="n">lcd_state</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">blank</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">				</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mtk_musb</span><span class="o">-&gt;</span><span class="n">pogo_dev_detect_type</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">POGO_DETECT_BY_CC</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">					</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mtk_musb</span><span class="o">-&gt;</span><span class="n">default_mode</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">MUSB_HOST</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span>
+<span class="w">						</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mtk_musb</span><span class="o">-&gt;</span><span class="n">typec_state</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">TYPEC_UNATTACHED</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="c1">//typec没接设备，默认是host，按下power键则切成device。</span>
+<span class="w">							</span><span class="n">disconnet</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">true</span><span class="p">;</span><span class="w"></span>
+<span class="w">						</span><span class="p">}</span><span class="w"></span>
+<span class="w">					</span><span class="p">}</span><span class="w"></span>
+<span class="w">					</span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">						</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mtk_musb</span><span class="o">-&gt;</span><span class="n">r15_state</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">R15_STATUS_ONLINE</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="c1">//默认开机是device,此时是host，按下power键则切成device。</span>
+<span class="w">							</span><span class="n">disconnet</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">true</span><span class="p">;</span><span class="w"></span>
+<span class="w">						</span><span class="p">}</span><span class="w"></span>
+<span class="w">					</span><span class="p">}</span><span class="w"></span>
+<span class="w">				</span><span class="p">}</span><span class="w"></span>
+<span class="w">				</span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">					</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mtk_musb</span><span class="o">-&gt;</span><span class="n">r15_state</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">R15_STATUS_ONLINE</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="c1">//如果pogo dev是通过cc检测的，R15在线，按下power键关闭vbus和切成device。</span>
+<span class="w">						</span><span class="n">mt_usb_vbus_off</span><span class="p">(</span><span class="mi">1000</span><span class="p">);</span><span class="w"></span>
+<span class="w">						</span><span class="n">disconnet</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">true</span><span class="p">;</span><span class="w"></span>
+<span class="w">					</span><span class="p">}</span><span class="w"></span>
+<span class="w">				</span><span class="p">}</span><span class="w"></span>
+
+<span class="w">				</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">disconnet</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">					</span><span class="n">mt_usb_host_disconnect</span><span class="p">(</span><span class="mi">10000</span><span class="p">);</span><span class="w"></span>
+<span class="w">				</span><span class="p">}</span><span class="w"></span>
+<span class="w">			</span><span class="p">}</span><span class="w"></span>
+<span class="w">			</span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+<span class="w">		</span><span class="k">default</span><span class="o">:</span><span class="w"></span>
+<span class="w">			</span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+
+<span class="w">	</span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+</section>
+<section id="usb-switch">
+<h3>5.usb_switch亮灭屏逻辑<a class="headerlink" href="#usb-switch" title="Permalink to this headline"></a></h3>
+<p>usb_switch亮灭屏逻辑其实和usb20切换逻辑一样。</p>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">pax_usb_fb_notifier_call</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">notifier_block</span><span class="w"> </span><span class="o">*</span><span class="n">self</span><span class="p">,</span><span class="w"> </span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">long</span><span class="w"> </span><span class="n">event</span><span class="p">,</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="o">*</span><span class="n">data</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="k">struct</span><span class="w"> </span><span class="nc">fb_event</span><span class="w"> </span><span class="o">*</span><span class="n">evdata</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">data</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="kt">int</span><span class="w"> </span><span class="n">blank</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="k">struct</span><span class="w"> </span><span class="nc">usb_switch_data</span><span class="w"> </span><span class="o">*</span><span class="n">usb_sdata</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">usb_switch_data</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="n">container_of</span><span class="p">(</span><span class="w"></span>
+<span class="w">			</span><span class="n">self</span><span class="p">,</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">usb_switch_data</span><span class="p">,</span><span class="w"> </span><span class="n">pax_usb_fb_notifier</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">event</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">FB_EVENT_BLANK</span><span class="p">)</span><span class="w"></span>
+<span class="w">		</span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">blank</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">*</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="n">evdata</span><span class="o">-&gt;</span><span class="n">data</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">	</span><span class="k">switch</span><span class="w"> </span><span class="p">(</span><span class="n">blank</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="k">case</span><span class="w"> </span><span class="nl">FB_BLANK_UNBLANK</span><span class="p">:</span><span class="w"></span>
+<span class="w">			</span><span class="k">if</span><span class="w"> </span><span class="p">((</span><span class="n">usb_sdata</span><span class="o">-&gt;</span><span class="n">typec_state</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">TYPEC_UNATTACHED</span><span class="p">)</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="p">(</span><span class="n">usb_sdata</span><span class="o">-&gt;</span><span class="n">usb_type</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">POWER_SUPPLY_USB_TYPE_DCP</span><span class="p">))</span><span class="w"> </span><span class="c1">//收到亮屏，typec是没接或者接了充电器，则切成host。</span>
+<span class="w">				</span><span class="n">usb_host_switch</span><span class="p">(</span><span class="n">usb_sdata</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">			</span><span class="n">usb_sdata</span><span class="o">-&gt;</span><span class="n">lcd_state</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">blank</span><span class="p">;</span><span class="w"></span>
+<span class="w">			</span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+<span class="w">		</span><span class="k">case</span><span class="w"> </span><span class="nl">FB_BLANK_POWERDOWN</span><span class="p">:</span><span class="w"></span>
+<span class="w">			</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">usb_sdata</span><span class="o">-&gt;</span><span class="n">typec_state</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">TYPEC_UNATTACHED</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="c1">//收到灭屏，typec是没接任何设备，延迟10s开启工作队列切换device。</span>
+<span class="w">				</span><span class="n">schedule_delayed_work</span><span class="p">(</span><span class="o">&amp;</span><span class="n">usb_sdata</span><span class="o">-&gt;</span><span class="n">usb_switch_work</span><span class="p">,</span><span class="w"> </span><span class="n">msecs_to_jiffies</span><span class="p">(</span><span class="mi">10000</span><span class="p">));</span><span class="w"></span>
+<span class="w">			</span><span class="p">}</span><span class="w"></span>
+
+<span class="w">			</span><span class="n">usb_sdata</span><span class="o">-&gt;</span><span class="n">lcd_state</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">blank</span><span class="p">;</span><span class="w"></span>
+<span class="w">			</span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+<span class="w">		</span><span class="k">default</span><span class="o">:</span><span class="w"></span>
+<span class="w">			</span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+
+<span class="w">	</span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">do_usb_switch_work</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">work_struct</span><span class="w"> </span><span class="o">*</span><span class="n">work</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="k">struct</span><span class="w"> </span><span class="nc">usb_switch_data</span><span class="w"> </span><span class="o">*</span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">usb_switch_data</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"></span>
+<span class="w">						</span><span class="n">container_of</span><span class="p">(</span><span class="n">work</span><span class="p">,</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">usb_switch_data</span><span class="p">,</span><span class="w"> </span><span class="n">usb_switch_work</span><span class="p">.</span><span class="n">work</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">usb_host_switch</span><span class="p">(</span><span class="n">data</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span><span class="w"> </span><span class="c1">//切host</span>
+
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+</section>
+<section id="usb20-role">
+<h3>6.usb20 role切换逻辑<a class="headerlink" href="#usb20-role" title="Permalink to this headline"></a></h3>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span>static int otg_tcp_notifier_call(struct notifier_block *nb,
+		unsigned long event, void *data)
+{
+	struct tcp_notify *noti = data;
+
+	switch (event) {
+	case TCP_NOTIFY_SOURCE_VBUS: //系统检测DFP打开vbus，UDP关闭vbus
+		DBG(0, &quot;source vbus = %dmv\n&quot;, noti-&gt;vbus_state.mv);
+		if (noti-&gt;vbus_state.mv)
+			mt_usb_vbus_on(0);
+		else
+			mt_usb_vbus_off(0);
+		break;
+	case TCP_NOTIFY_TYPEC_STATE:
+		DBG(0, &quot;TCP_NOTIFY_TYPEC_STATE, old_state=%d, new_state=%d\n&quot;,
+				noti-&gt;typec_state.old_state,
+				noti-&gt;typec_state.new_state);
+
+		/* Add-BEGIN by (shanliangliang@paxsz.com), 2021/08/15 add for M8 usb otg */
+		mtk_musb-&gt;typec_state = noti-&gt;typec_state.new_state;
+		/* Add-END by (shanliangliang@paxsz.com), 2021/08/15 add for M8 usb otg */
+
+		if (noti-&gt;typec_state.old_state == TYPEC_UNATTACHED &amp;&amp;
+			noti-&gt;typec_state.new_state == TYPEC_ATTACHED_SRC) { //M8 typec识别成source，比如接U盘，切host
+			DBG(0, &quot;OTG Plug in\n&quot;);
+			mt_usb_dev_disconnect();
+			mt_usb_host_connect(100);
+		/* Add-BEGIN by (shanliangliang@paxsz.com), 2021/09/23 add for M8 usb otg */
+		} else if (noti-&gt;typec_state.old_state == TYPEC_UNATTACHED &amp;&amp;
+			noti-&gt;typec_state.new_state == TYPEC_ATTACHED_SNK) { //pogo pin不在位，接了电脑或者充电器，识别成sink，断开host。
+			if (!((mtk_musb-&gt;pogo_dev_detect_type == POGO_DETECT_BY_EXT_PIN) &amp;&amp; (mtk_musb-&gt;pogo_dev_state == POGO_DEV_STATE_ONLINE))) {
+				mt_usb_host_disconnect(0);
+				mt_usb_connect();
+			}
+		/* Add-END by (shanliangliang@paxsz.com), 2021/09/23 add for M8 usb otg */
+		} else if ((noti-&gt;typec_state.old_state == TYPEC_ATTACHED_SRC ||
+			noti-&gt;typec_state.old_state == TYPEC_ATTACHED_SNK ||
+			noti-&gt;typec_state.old_state ==
+					TYPEC_ATTACHED_NORP_SRC) &amp;&amp;
+			noti-&gt;typec_state.new_state == TYPEC_UNATTACHED) { 
+			/* Add-BEGIN by (shanliangliang@paxsz.com), 2021/08/15 add for M8 usb otg */
+				if (mtk_musb-&gt;default_mode != MUSB_HOST) { 
+					if (is_host_active(mtk_musb)) {
+						DBG(0, &quot;OTG Plug out\n&quot;);
+						mt_usb_host_disconnect(0);//拔出usb，默认device，目前是host，断开host。
+					} else {
+						DBG(0, &quot;USB Plug out\n&quot;);
+						mt_usb_dev_disconnect();//拔出usb，默认device，目前是device，断开usb连接。
+					}
+
+					if (mtk_musb-&gt;pogo_dev_detect_type != POGO_DETECT_BY_CC) {
+						if (mtk_musb-&gt;r15_state == R15_STATUS_ONLINE) {
+							mt_usb_host_connect(100);//拔出usb，默认device，R15在线说明目前是host，断开host。
+						}
+					}
+				}
+				else {
+					if ((noti-&gt;typec_state.old_state != TYPEC_ATTACHED_SRC) &amp;&amp; 
+							(noti-&gt;typec_state.new_state == TYPEC_UNATTACHED)) {
+						if (is_host_active(mtk_musb)) {
+							//DBG(0, &quot;OTG Plug out\n&quot;);
+							//mt_usb_host_disconnect(0);
+						} else {
+							DBG(0, &quot;USB Plug out\n&quot;);
+							mt_usb_dev_disconnect();//拔出usb，默认host，拔出前是TYPEC_ATTACHED_SNK，目前是device，断开usb
+						}
+						
+						if (mtk_musb-&gt;lcd_state != FB_BLANK_POWERDOWN) {
+							msleep(50);
+							mt_usb_host_connect(100);//拔出usb，默认host，拔出前是TYPEC_ATTACHED_SNK，当前是亮屏状态，切成host。
+						}
+					}
+					else if ((noti-&gt;typec_state.old_state == TYPEC_ATTACHED_SRC) &amp;&amp; 
+							(noti-&gt;typec_state.new_state == TYPEC_UNATTACHED)) {
+						if (mtk_musb-&gt;lcd_state == FB_BLANK_POWERDOWN) {
+							if (is_host_active(mtk_musb)) {
+								DBG(0, &quot;OTG Plug out\n&quot;);
+								mt_usb_host_disconnect(10000); //灭屏状态下，SRC-&gt;UNATTACHED相当于拔出U盘，当前是host模式，断开host，保证正常休眠。
+							} else {
+								DBG(0, &quot;USB Plug out\n&quot;);
+								mt_usb_dev_disconnect();//灭屏状态下，SRC-&gt;UNATTACHED相当于拔出U盘，当前是device，断开usb，保证正常休眠？？？不知道什么意思
+							}
+						}
+					}
+				}
+
+				if (mtk_musb-&gt;pogo_dev_detect_type == POGO_DETECT_BY_CC) {
+					if (mtk_musb-&gt;r15_state == R15_STATUS_ONLINE) {
+						mtk_musb-&gt;r15_state = R15_STATUS_OFFLINE; //如果R15是CC检测的，usb拔出只有一种情况那就是R15断开了，则更新R15状态。
+					}
+				}
+
+		/* Add-END by (shanliangliang@paxsz.com), 2021/08/15 add for M8 usb otg */
+#ifdef CONFIG_MTK_UART_USB_SWITCH
+		} else if ((noti-&gt;typec_state.new_state ==
+					TYPEC_ATTACHED_SNK ||
+				noti-&gt;typec_state.new_state ==
+					TYPEC_ATTACHED_CUSTOM_SRC ||
+				noti-&gt;typec_state.new_state ==
+					TYPEC_ATTACHED_NORP_SRC) &amp;&amp;
+				in_uart_mode) {
+			pr_info(&quot;%s USB cable plugged-in in UART mode.
+					Switch to USB mode.\n&quot;, __func__);
+			usb_phy_switch_to_usb(); //系统默认的
+#endif
+		}
+		break;
+	case TCP_NOTIFY_DR_SWAP:
+		DBG(0, &quot;TCP_NOTIFY_DR_SWAP, new role=%d\n&quot;,
+				noti-&gt;swap_state.new_role);
+		if (is_host_active(mtk_musb) &amp;&amp;
+			noti-&gt;swap_state.new_role == PD_ROLE_UFP) {
+			if (!((mtk_musb-&gt;default_mode == MUSB_HOST) &amp;&amp; (mtk_musb-&gt;usb_type == POWER_SUPPLY_USB_TYPE_DCP))) {
+				DBG(0, &quot;switch role to device\n&quot;);
+				mt_usb_host_disconnect(0); //UFP、默认device，当且host，usb类型非DCP，可能是电脑，切device
+				mt_usb_connect();
+			}
+		} else if (is_peripheral_active(mtk_musb) &amp;&amp;
+			noti-&gt;swap_state.new_role == PD_ROLE_DFP) {
+			DBG(0, &quot;switch role to host\n&quot;);
+			mt_usb_dev_disconnect(); //DFP切host
+			mt_usb_host_connect(100);
+		}
+		break;
+	}
+	return NOTIFY_OK;
+}
+</pre></div>
+</div>
+</section>
+<section id="id5">
+<h3>7.usb_switch切换逻辑<a class="headerlink" href="#id5" title="Permalink to this headline"></a></h3>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="k">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">vbus_en</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">usb_switch_data</span><span class="w"> </span><span class="o">*</span><span class="n">data</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">on</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">gpio_is_valid</span><span class="p">(</span><span class="n">data</span><span class="o">-&gt;</span><span class="n">usb_host_en_gpio</span><span class="p">))</span><span class="w"></span>
+<span class="w">		</span><span class="n">gpio_set_value</span><span class="p">(</span><span class="n">data</span><span class="o">-&gt;</span><span class="n">usb_host_en_gpio</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">tcpc_notifier_call</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">notifier_block</span><span class="w"> </span><span class="o">*</span><span class="n">nb</span><span class="p">,</span><span class="w">  </span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">long</span><span class="w"> </span><span class="n">action</span><span class="p">,</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="o">*</span><span class="n">noti_data</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="k">struct</span><span class="w"> </span><span class="nc">tcp_notify</span><span class="w"> </span><span class="o">*</span><span class="n">noti</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">noti_data</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="k">struct</span><span class="w"> </span><span class="nc">usb_switch_data</span><span class="w"> </span><span class="o">*</span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">usb_switch_data</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="n">container_of</span><span class="p">(</span><span class="n">nb</span><span class="p">,</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">usb_switch_data</span><span class="p">,</span><span class="w"> </span><span class="n">tcpc_nb</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">pr_info</span><span class="p">(</span><span class="s">&quot;%s: action:%d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">__func__</span><span class="p">,</span><span class="w"> </span><span class="n">action</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">	</span><span class="k">switch</span><span class="p">(</span><span class="n">action</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="k">case</span><span class="w"> </span><span class="nl">TCP_NOTIFY_SOURCE_VBUS</span><span class="p">:</span><span class="w"></span>
+<span class="w">			</span><span class="n">vbus_en</span><span class="p">(</span><span class="n">data</span><span class="p">,</span><span class="w"> </span><span class="o">!!</span><span class="n">noti</span><span class="o">-&gt;</span><span class="n">vbus_state</span><span class="p">.</span><span class="n">mv</span><span class="p">);</span><span class="w">  </span><span class="c1">//跟随vbus打开关闭usb_host_en</span>
+<span class="w">			</span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">		</span><span class="k">case</span><span class="w"> </span><span class="nl">TCP_NOTIFY_TYPEC_STATE</span><span class="p">:</span><span class="w"></span>
+<span class="w">			</span><span class="n">data</span><span class="o">-&gt;</span><span class="n">typec_state</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">noti</span><span class="o">-&gt;</span><span class="n">typec_state</span><span class="p">.</span><span class="n">new_state</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">			</span><span class="k">if</span><span class="w"> </span><span class="p">((</span><span class="n">noti</span><span class="o">-&gt;</span><span class="n">typec_state</span><span class="p">.</span><span class="n">old_state</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">TYPEC_UNATTACHED</span><span class="p">)</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"></span>
+<span class="w">					</span><span class="p">(</span><span class="n">noti</span><span class="o">-&gt;</span><span class="n">typec_state</span><span class="p">.</span><span class="n">new_state</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">TYPEC_ATTACHED_SRC</span><span class="p">))</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">				</span><span class="n">usb_host_switch</span><span class="p">(</span><span class="n">data</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span><span class="w"> </span><span class="c1">//识别为DFP，打开host</span>
+<span class="w">			</span><span class="p">}</span><span class="w"></span>
+<span class="w">			</span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">((</span><span class="n">noti</span><span class="o">-&gt;</span><span class="n">typec_state</span><span class="p">.</span><span class="n">old_state</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">TYPEC_UNATTACHED</span><span class="p">)</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"></span>
+<span class="w">					</span><span class="p">(</span><span class="n">noti</span><span class="o">-&gt;</span><span class="n">typec_state</span><span class="p">.</span><span class="n">new_state</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">TYPEC_ATTACHED_SNK</span><span class="p">))</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">				</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">data</span><span class="o">-&gt;</span><span class="n">pogo_dev_state</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">POGO_DEV_STATE_ONLINE</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">					</span><span class="n">usb_host_switch</span><span class="p">(</span><span class="n">data</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span><span class="w"> </span><span class="c1">//识别为UFP，比如接电脑，且没插入pogo dev，打开device</span>
+<span class="w">				</span><span class="p">}</span><span class="w"></span>
+<span class="w">			</span><span class="p">}</span><span class="w"></span>
+<span class="w">			</span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">((</span><span class="n">noti</span><span class="o">-&gt;</span><span class="n">typec_state</span><span class="p">.</span><span class="n">old_state</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">TYPEC_UNATTACHED</span><span class="p">)</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"></span>
+<span class="w">					</span><span class="p">(</span><span class="n">noti</span><span class="o">-&gt;</span><span class="n">typec_state</span><span class="p">.</span><span class="n">new_state</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">TYPEC_UNATTACHED</span><span class="p">))</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">				</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">noti</span><span class="o">-&gt;</span><span class="n">typec_state</span><span class="p">.</span><span class="n">old_state</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">TYPEC_ATTACHED_SRC</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">					</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">data</span><span class="o">-&gt;</span><span class="n">lcd_state</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">FB_BLANK_POWERDOWN</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">						</span><span class="n">schedule_delayed_work</span><span class="p">(</span><span class="o">&amp;</span><span class="n">data</span><span class="o">-&gt;</span><span class="n">usb_switch_work</span><span class="p">,</span><span class="w"> </span><span class="n">msecs_to_jiffies</span><span class="p">(</span><span class="mi">10000</span><span class="p">));</span><span class="c1">//TYPEC_ATTACHED_SRC -&gt; TYPEC_UNATTACHED 且是关屏状态(关屏情况下拔皮套)，延迟10s切device</span>
+<span class="w">					</span><span class="p">}</span><span class="w"></span>
+<span class="w">					</span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="c1">//TYPEC_ATTACHED_SRC -&gt; TYPEC_UNATTACHED 且是亮屏状态(亮屏情况下拔皮套)，切回默认状态(host)</span>
+<span class="w">						</span><span class="n">usb_host_switch</span><span class="p">(</span><span class="n">data</span><span class="p">,</span><span class="w"> </span><span class="o">!!</span><span class="n">data</span><span class="o">-&gt;</span><span class="n">default_mode</span><span class="p">);</span><span class="w"></span>
+<span class="w">					</span><span class="p">}</span><span class="w"></span>
+<span class="w">				</span><span class="p">}</span><span class="w"></span>
+<span class="w">				</span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">					</span><span class="n">usb_host_switch</span><span class="p">(</span><span class="n">data</span><span class="p">,</span><span class="w"> </span><span class="o">!!</span><span class="n">data</span><span class="o">-&gt;</span><span class="n">default_mode</span><span class="p">);</span><span class="c1">//TYPEC_ATTACHED_SNK -&gt; TYPEC_UNATTACHED 且是亮屏状态(亮屏情况下拔皮套)，直接切回默认状态(host)</span>
+<span class="w">				</span><span class="p">}</span><span class="w"></span>
+<span class="w">			</span><span class="p">}</span><span class="w"></span>
+<span class="w">			</span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">		</span><span class="k">case</span><span class="w"> </span><span class="nl">TCP_NOTIFY_DR_SWAP</span><span class="p">:</span><span class="w"></span>
+<span class="w">			</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">noti</span><span class="o">-&gt;</span><span class="n">swap_state</span><span class="p">.</span><span class="n">new_role</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">PD_ROLE_UFP</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">				</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="p">((</span><span class="n">data</span><span class="o">-&gt;</span><span class="n">default_mode</span><span class="p">)</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="p">(</span><span class="n">data</span><span class="o">-&gt;</span><span class="n">usb_type</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">POWER_SUPPLY_USB_TYPE_DCP</span><span class="p">)))</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">					</span><span class="n">usb_host_switch</span><span class="p">(</span><span class="n">data</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span><span class="w"> </span><span class="c1">//识别成UFP，不是DCP充电器，切device</span>
+<span class="w">				</span><span class="p">}</span><span class="w"></span>
+<span class="w">			</span><span class="p">}</span><span class="w"></span>
+<span class="w">			</span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">noti</span><span class="o">-&gt;</span><span class="n">swap_state</span><span class="p">.</span><span class="n">new_role</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">PD_ROLE_DFP</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">				</span><span class="n">usb_host_switch</span><span class="p">(</span><span class="n">data</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span><span class="c1">//识别成DFP，切host</span>
+<span class="w">			</span><span class="p">}</span><span class="w"></span>
+<span class="w">			</span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">		</span><span class="k">case</span><span class="w"> </span><span class="nl">TCP_NOTIFY_PR_SWAP</span><span class="p">:</span><span class="w"></span>
+<span class="w">			</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">noti</span><span class="o">-&gt;</span><span class="n">swap_state</span><span class="p">.</span><span class="n">new_role</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">PD_ROLE_SINK</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">				</span><span class="n">vbus_en</span><span class="p">(</span><span class="n">data</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span><span class="w"></span>
+<span class="w">			</span><span class="p">}</span><span class="w"></span>
+<span class="w">			</span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">noti</span><span class="o">-&gt;</span><span class="n">swap_state</span><span class="p">.</span><span class="n">new_role</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">PD_ROLE_SOURCE</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">				</span><span class="n">vbus_en</span><span class="p">(</span><span class="n">data</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span><span class="w"></span>
+<span class="w">			</span><span class="p">}</span><span class="w"></span>
+<span class="w">			</span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+
+<span class="w">	</span><span class="k">return</span><span class="w"> </span><span class="n">NOTIFY_OK</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+</section>
+<section id="pogo-pin">
+<h3>8.pogo pin交互逻辑<a class="headerlink" href="#pogo-pin" title="Permalink to this headline"></a></h3>
+<section id="usb-switch-notify">
+<h4>8.1 usb_switch发送/处理notify<a class="headerlink" href="#usb-switch-notify" title="Permalink to this headline"></a></h4>
+<ul class="simple">
+<li><p>pogo dev设备检测目前放在usb_switch驱动里面，采用gpio中断方式，notify机制发送通知，亮屏情况下，pogo pin插入后将直接切为host模式。notify处理驱动分别是usb_switch和usb20驱动。</p></li>
+<li><p>驱动提供应用层接口set_usb_switch_mode手动切换host/device，原因是pogo dev接入后，当接入电脑时，为了不切device断开r15，而让用户手动切。</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span>* static int pax_usb_swtich_probe(struct platform_device *pdev)
+  * pogo_detect_init(data);
+    * ret = request_irq(irq, pogo_detect_irq_handle, IRQF_TRIGGER_RISING|IRQF_TRIGGER_FALLING|IRQF_NO_SUSPEND|IRQF_NO_THREAD, 
+	* data-&gt;r15_nb.notifier_call = r15_status_notifier_call; //
+	* INIT_DELAYED_WORK(&amp;data-&gt;pogo_detect_dwork, pogo_detect_notify_dwork);
+	* schedule_delayed_work(&amp;data-&gt;pogo_detect_dwork, msecs_to_jiffies(500)); //开机，手动识别一次pogo dev，后续都是靠中断
+	  * pogo_detect_irq_handle(gpio_to_irq(data-&gt;pogo_detect_gpio), data); //手动调用中断函数
+
+中断处理函数：
+static irqreturn_t pogo_detect_irq_handle(int irq, void *dev_id)
+{
+	struct usb_switch_data *data = (struct usb_switch_data *)dev_id;
+	int level = 0;
+	int status;
+
+	if (gpio_is_valid(data-&gt;pogo_detect_gpio)) {
+		level = gpio_get_value(data-&gt;pogo_detect_gpio);
+		if (level) {
+			status = POGO_DEV_STATE_ONLINE;
+			SET_BIT(usb_switch_status,0);
+		}
+		else {
+			status = POGO_DEV_STATE_OFFLINE;
+			CLR_BIT(usb_switch_status,0);
+		}
+
+#ifdef CONFIG_PAX_GPIOS_CONTROL
+		r15_status_notify_call_chain(SET_POGO_DEV_STATE, &amp;status); //发送pogo dev通知
+#endif
+		pr_err(&quot;level: %d usb_switch_status: %d\n&quot;, level,usb_switch_status);
+	}
+	
+	return IRQ_HANDLED;	
+}
+
+pogo dev拔插事件处理：
+1.SET_USB_MODE_SWTICH是对应gpio驱动中接口：
+static int set_usb_switch_mode(int value)
+{
+	int val;
+	PAX_GPIO_DBG(&quot;set_usb_switch_mode = %d&quot;,value);
+
+	if (!value)
+		val = USB_MODE_DEV;
+	else
+		val = USB_MODE_HOST;
+
+	r15_status_notify_call_chain(SET_USB_MODE_SWTICH, &amp;val);
+	return 0;
+}
+
+static int r15_status_notifier_call(struct notifier_block *self, unsigned long event, void *data)
+{
+	struct usb_switch_data *usb_sdata = (struct usb_switch_data *)container_of(
+			self, struct usb_switch_data, r15_nb);
+	int mode;
+
+	if (event == SET_POWER_STATUS) {
+		usb_sdata-&gt;r15_state = *(int *)data;
+		pr_info(&quot;r15_state: %d\n&quot;, usb_sdata-&gt;r15_state);
+	}
+	else if (event == SET_USB_MODE_SWTICH) {
+		mode = *(int *)data;
+		pr_info(&quot;set usb mode: %d\n&quot;, mode);
+		if (usb_sdata-&gt;lcd_state == FB_BLANK_UNBLANK) {
+			if (USB_MODE_HOST == mode) {
+				usb_host_switch(usb_sdata, 1);
+			}
+			else {
+				usb_host_switch(usb_sdata, 0);
+			}
+		}
+	}
+	else if (event == SET_POGO_DEV_STATE) {
+		usb_sdata-&gt;pogo_dev_state = *(int *)data;
+		pr_info(&quot;pogo_dev_state: %d\n&quot;, usb_sdata-&gt;pogo_dev_state);
+
+		if (usb_sdata-&gt;pogo_dev_state == POGO_DEV_STATE_ONLINE) {
+			if (usb_sdata-&gt;lcd_state == FB_BLANK_UNBLANK) {
+				usb_host_switch(usb_sdata, 1); //亮屏情况下，pogo pin插入后将直接切为host模式。
+			}
+		}
+	}
+
+	return NOTIFY_OK;
+}
+</pre></div>
+</div>
+</section>
+<section id="usb20notify">
+<h4>8.2 usb20处理notify<a class="headerlink" href="#usb20notify" title="Permalink to this headline"></a></h4>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span><span class="w"> </span><span class="nf">mt_usb_otg_init</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">musb</span><span class="w"> </span><span class="o">*</span><span class="n">musb</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="cp">#ifdef CONFIG_PAX_GPIOS_CONTROL</span>
+<span class="w">		</span><span class="n">musb</span><span class="o">-&gt;</span><span class="n">r15_state</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">R15_STATUS_OFFLINE</span><span class="p">;</span><span class="w"></span>
+<span class="w">		</span><span class="n">r15_status_notify_register_client</span><span class="p">(</span><span class="o">&amp;</span><span class="n">musb_r15_st_notifier</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="cp">#else</span>
+<span class="w">		</span><span class="n">musb</span><span class="o">-&gt;</span><span class="n">r15_state</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="cp">#endif</span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="cp">#ifdef CONFIG_PAX_GPIOS_CONTROL</span>
+<span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">musb_r15_st_notifier_call</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">notifier_block</span><span class="w"> </span><span class="o">*</span><span class="n">self</span><span class="p">,</span><span class="w"> </span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">long</span><span class="w"> </span><span class="n">event</span><span class="p">,</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="o">*</span><span class="n">data</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="kt">int</span><span class="w"> </span><span class="n">state</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="kt">int</span><span class="w"> </span><span class="n">mode</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">event</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">SET_POWER_STATUS</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="n">state</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">*</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="n">data</span><span class="p">;</span><span class="w"></span>
+<span class="w">		</span><span class="n">DBG</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;state : %d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">state</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">		</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">state</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">R15_STATUS_OFFLINE</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">			</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mtk_musb</span><span class="o">-&gt;</span><span class="n">pogo_dev_detect_type</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">POGO_DETECT_BY_CC</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">				</span><span class="n">mtk_musb</span><span class="o">-&gt;</span><span class="n">r15_state</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">state</span><span class="p">;</span><span class="w"></span>
+<span class="w">			</span><span class="p">}</span><span class="w"></span>
+<span class="w">		</span><span class="p">}</span><span class="w"></span>
+<span class="w">		</span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">state</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">R15_STATUS_ONLINE</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">			</span><span class="n">mtk_musb</span><span class="o">-&gt;</span><span class="n">r15_state</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">state</span><span class="p">;</span><span class="w"></span>
+<span class="w">		</span><span class="p">}</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+<span class="w">	</span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">event</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">SET_USB_MODE_SWTICH</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="n">mode</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">*</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="n">data</span><span class="p">;</span><span class="w"></span>
+<span class="w">		</span><span class="n">DBG</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;mode: %d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">mode</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">		</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mode</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">USB_MODE_DEV</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">			</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mtk_musb</span><span class="o">-&gt;</span><span class="n">lcd_state</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">FB_BLANK_UNBLANK</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">				</span><span class="n">mt_usb_host_disconnect</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span><span class="w"></span>
+<span class="w">				</span><span class="n">mt_usb_connect</span><span class="p">();</span><span class="c1">//手动切换device，对应gpio驱动set_usb_switch_mode接口</span>
+<span class="w">			</span><span class="p">}</span><span class="w"></span>
+<span class="w">		</span><span class="p">}</span><span class="w"></span>
+<span class="w">		</span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mode</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">USB_MODE_HOST</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">			</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mtk_musb</span><span class="o">-&gt;</span><span class="n">lcd_state</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">FB_BLANK_UNBLANK</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">				</span><span class="n">mt_usb_dev_disconnect</span><span class="p">();</span><span class="w"></span>
+<span class="w">				</span><span class="n">mt_usb_host_connect</span><span class="p">(</span><span class="mi">100</span><span class="p">);</span><span class="c1">//手动切换host，对应gpio驱动set_usb_switch_mode接口</span>
+<span class="w">			</span><span class="p">}</span><span class="w"></span>
+<span class="w">		</span><span class="p">}</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+<span class="w">	</span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">event</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">SET_POGO_DEV_STATE</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="n">mtk_musb</span><span class="o">-&gt;</span><span class="n">pogo_dev_state</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">*</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="n">data</span><span class="p">;</span><span class="w"></span>
+<span class="w">		</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mtk_musb</span><span class="o">-&gt;</span><span class="n">pogo_dev_detect_type</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">POGO_DETECT_BY_EXT_PIN</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">			</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mtk_musb</span><span class="o">-&gt;</span><span class="n">pogo_dev_state</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">POGO_DEV_STATE_ONLINE</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">				</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mtk_musb</span><span class="o">-&gt;</span><span class="n">lcd_state</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">FB_BLANK_UNBLANK</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">					</span><span class="n">mt_usb_dev_disconnect</span><span class="p">();</span><span class="w"></span>
+<span class="w">					</span><span class="n">mt_usb_host_connect</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span><span class="c1">//亮屏情况下，pogo pin插入后将直接切为host模式。</span>
+<span class="w">				</span><span class="p">}</span><span class="w"></span>
+<span class="w">			</span><span class="p">}</span><span class="w"></span>
+<span class="w">		</span><span class="p">}</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+
+<span class="w">	</span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="k">static</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">notifier_block</span><span class="w"> </span><span class="n">musb_r15_st_notifier</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">priority</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">97</span><span class="p">,</span><span class="w"> </span><span class="c1">//通知优先级？</span>
+<span class="w">	</span><span class="p">.</span><span class="n">notifier_call</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">musb_r15_st_notifier_call</span><span class="p">,</span><span class="w"></span>
+<span class="p">};</span><span class="w"></span>
+<span class="cp">#endif</span>
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, wugn.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+  
+
+<script charset="UTF-8" id="LA_COLLECT" src="//sdk.51.la/js-sdk-pro.min.js"></script>
+<script>LA.init({id: "JjOE14XScyd75b2C",ck: "JjOE14XScyd75b2C"})</script>
+
+<br/>
+<script id="LA-DATA-WIDGET" crossorigin="anonymous" charset="UTF-8" src="https://v6-widget.51.la/v6/JjOE14XScyd75b2C/quote.js?theme=0&f=12&display=1,0,0,0,0,0,1,1"></script>
+
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

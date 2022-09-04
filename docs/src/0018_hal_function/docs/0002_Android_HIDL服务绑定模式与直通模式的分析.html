@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>wugn</title>
+
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../index.html" class="icon icon-home"> wugn_note
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">README</a></li>
+<li><a class="reference internal" href="#refers">refers</a></li>
+<li><a class="reference internal" href="#id1">概述</a></li>
+<li><a class="reference internal" href="#id2">区别</a></li>
+<li><a class="reference internal" href="#id3">代码分析</a><ul>
+<li><a class="reference internal" href="#id4">总体流程</a></li>
+<li><a class="reference internal" href="#id5">具体分析</a></li>
+</ul>
+</li>
+</ul>
+</div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">wugn_note</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs"> 
+<li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+<li>README</li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.forward()">Forward</a></li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.back()">Go Back</a> | </li>
+<li style="float: right;margin-left: 10px;"><a href="/index.html">Home</a> | </li>
+
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="readme">
+<h1>README<a class="headerlink" href="#readme" title="Permalink to this headline"></a></h1>
+<p>Android HIDL绑定方式分析，bms采用直通型，paxserver是采用绑定模式。</p>
+</section>
+<section id="refers">
+<h1>refers<a class="headerlink" href="#refers" title="Permalink to this headline"></a></h1>
+<ul class="simple">
+<li><p><a class="reference external" href="https://blog.csdn.net/tovey2008/article/details/106681126/">Android P HIDL服务绑定模式与直通模式的分析</a></p></li>
+<li><p><a class="reference external" href="https://unbroken.blog.csdn.net/article/details/84879078">Android8.0 HIDL绑定式和直通式区别</a></p></li>
+</ul>
+</section>
+<section id="id1">
+<h1>概述<a class="headerlink" href="#id1" title="Permalink to this headline"></a></h1>
+<p>从Android 8.0之后，Android 引入Treble机制，主要是为了解决目前Android 版本之间升级麻烦的问题，将OEM适配的部分vendor与google 对android  大框架升级的部分system部分做了分离，一旦适配了一个版本的vendor信息之后，之后的版本再进行升级时，直接升级system即可，这个就不会给OEM厂商升级带来太大的工作量，直接升级最新功能，可以解决目前市面上Android版本过来凌乱的问题。</p>
+<ul class="simple">
+<li><p>首先Treble机制在Vendor分区中有两种模式：</p>
+<ul>
+<li><p>一个编译成<code class="docutils literal notranslate"><span class="pre">so</span></code>库，供<code class="docutils literal notranslate"><span class="pre">System</span></code>分区的进程和应用直接加载调用，两者在同一个进程中，这种叫直通式<code class="docutils literal notranslate"><span class="pre">HAL(passthrough)</span></code>模式。这个是由hidl 封装的hal，具体是在hidl封装处dlopen传统的hal（目前8.0上Camera是这种形式）大概形如如下面这个：
+<img alt="0002_0004.png" src="../../../_images/0002_00043.png" /></p></li>
+<li><p>另外一种是直接编译成一个<code class="docutils literal notranslate"><span class="pre">daemon</span></code>可运行的服务，然后<code class="docutils literal notranslate"><span class="pre">System</span></code>分区的进程通过<code class="docutils literal notranslate"><span class="pre">HwBinder</span></code>的<code class="docutils literal notranslate"><span class="pre">IPC</span></code>通信方式来调用，两者在二个独立的进程中，这种称为绑定式<code class="docutils literal notranslate"><span class="pre">HAL(Binderized)</span></code>模式。
+<img alt="0002_0003.png" src="../../../_images/0002_00033.png" /></p></li>
+</ul>
+</li>
+</ul>
+</section>
+<section id="id2">
+<h1>区别<a class="headerlink" href="#id2" title="Permalink to this headline"></a></h1>
+<p>直通模式与 绑定模式最大的区别就是直通模式没有一个独立运行的服务进程，而绑定模式是作为一个独立运行的服务相当于Deamon进程在运行。直通模式是将android 8.0之前的版本的module 封装起来，供System以上的服务进行调用， 上层直接调用 HIDL_FETCH_XXX 来调用此接口的。</p>
+<p><img alt="0002_0002.png" src="../../../_images/0002_00024.png" /></p>
+</section>
+<section id="id3">
+<h1>代码分析<a class="headerlink" href="#id3" title="Permalink to this headline"></a></h1>
+<section id="id4">
+<h2>总体流程<a class="headerlink" href="#id4" title="Permalink to this headline"></a></h2>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="o">*</span><span class="w"> </span><span class="n">getService</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="o">&amp;</span><span class="n">serviceName</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="kt">bool</span><span class="w"> </span><span class="n">getStub</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="o">*</span><span class="w"> </span><span class="n">getServiceInternal</span><span class="o">&lt;</span><span class="n">BpHwMapper</span><span class="o">&gt;</span><span class="p">(</span><span class="n">serviceName</span><span class="p">,</span><span class="w"> </span><span class="nb">true</span><span class="p">,</span><span class="w"> </span><span class="n">getStub</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="o">*</span><span class="w"> </span><span class="n">vintfHwbinder</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">transport</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">Transport</span><span class="o">::</span><span class="n">HWBINDER</span><span class="p">);</span><span class="c1">//绑定模式</span>
+<span class="w">    </span><span class="o">*</span><span class="w"> </span><span class="n">Return</span><span class="o">&lt;</span><span class="n">sp</span><span class="o">&lt;</span><span class="n">IBase</span><span class="o">&gt;&gt;</span><span class="w"> </span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sm</span><span class="o">-&gt;</span><span class="n">get</span><span class="p">(</span><span class="n">descriptor</span><span class="p">,</span><span class="w"> </span><span class="n">instance</span><span class="p">);</span><span class="w">  </span><span class="c1">//绑定模式</span>
+<span class="w">    </span><span class="o">*</span><span class="w"> </span><span class="n">vintfPassthru</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">transport</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">Transport</span><span class="o">::</span><span class="n">PASSTHROUGH</span><span class="p">);</span><span class="c1">//直通模式</span>
+<span class="w">    </span><span class="o">*</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">sp</span><span class="o">&lt;</span><span class="n">IServiceManager</span><span class="o">&gt;</span><span class="w"> </span><span class="n">pm</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">getPassthroughServiceManager</span><span class="p">();</span><span class="c1">//先通过getPassthroughServiceManager ，获取IServiceManager的句柄，然后再get得到对应的服务。</span>
+<span class="w">    </span><span class="o">*</span><span class="w"> </span><span class="n">pm</span><span class="o">-&gt;</span><span class="n">get</span><span class="p">(</span><span class="n">descriptor</span><span class="p">,</span><span class="w"> </span><span class="n">instance</span><span class="p">).</span><span class="n">withDefault</span><span class="p">(</span><span class="k">nullptr</span><span class="p">);</span><span class="c1">//直通模式</span>
+<span class="w">      </span><span class="o">*</span><span class="w"> </span><span class="n">openLibs</span><span class="p">(</span><span class="n">fqName</span><span class="p">,</span><span class="w"> </span><span class="p">[</span><span class="o">&amp;</span><span class="p">](</span><span class="kt">void</span><span class="o">*</span><span class="w"> </span><span class="n">handle</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="o">&amp;</span><span class="n">lib</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="o">&amp;</span><span class="n">sym</span><span class="p">)</span><span class="w"> </span>
+<span class="w">        </span><span class="o">*</span><span class="w"> </span><span class="n">string</span><span class="w"> </span><span class="n">prefix</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">packageAndVersion</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s">&quot;-impl&quot;</span><span class="p">;</span><span class="c1">//路径最后组装成/system 或者/vendor 下面的供调用的xxxxx-impl.so</span>
+<span class="w">        </span><span class="o">*</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="n">fullPath</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">path</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">lib</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="o">*</span><span class="w"> </span><span class="n">dlopen</span><span class="p">(</span><span class="n">fullPath</span><span class="p">.</span><span class="n">c_str</span><span class="p">(),</span><span class="w"> </span><span class="n">dlMode</span><span class="p">);</span><span class="w"></span>
+</pre></div>
+</div>
+</section>
+<section id="id5">
+<h2>具体分析<a class="headerlink" href="#id5" title="Permalink to this headline"></a></h2>
+<p>上面已经说明了直通模式与绑定模式的初始化，现在我们来介绍下如何调用直通模式和绑定模式，两者调用的函数有没有什么区别呢？ 答案是两者使用的调用接口是一样的，都是通过getService 来调用的。</p>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="n">IMapper</span><span class="w"> </span><span class="n">mMapper</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mapper</span><span class="o">::</span><span class="n">V2_0</span><span class="o">::</span><span class="n">IMapper</span><span class="o">::</span><span class="n">getService</span><span class="p">()</span><span class="w"></span>
+</pre></div>
+</div>
+<p>同样getService 也是HIDL的工具生成的函数执行的：</p>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span>out/soong/.intermediates/hardware/interfaces/graphics/mapper/2.1/android.hardware.graphics.mapper@2.1_genc++/gen/android/hardware/graphics/mapper/2.1/MapperAll.cpp
+::android::sp&lt;IMapper&gt; IMapper::getService(const std::string &amp;serviceName, const bool getStub){
+　　return ::android::hardware::details::getServiceInternal&lt;BpHwMapper&gt;(serviceName, true, getStub);
+}
+sp&lt;IType&gt; getServiceInternal(const std::string &amp; instance, bool retry, bool getStub){
+    sp&lt;IBase&gt; base = getRawServiceInternal(IType::descriptor, inst/ance, retyr, getStub);
+.....
+}
+ 
+sp&lt;::android::hidl::base::V1_0::IBase&gt; getRawServiceInternal(const std::string&amp; descriptor,
+                                                             const std::string&amp; instance,
+                                                             bool retry, bool getStub) {
+    const sp&lt;IServiceManager1_1&gt; sm = defaultServiceManager1_1();
+....
+//绑定模式
+    const bool vintfHwbinder = (transport == Transport::HWBINDER);
+//直通模式
+    const bool vintfPassthru = (transport == Transport::PASSTHROUGH);
+......
+//绑定模式
+    for (int tries = 0; !getStub &amp;&amp; (vintfHwbinder || vintfLegacy); tries++) {
+        Return&lt;sp&lt;IBase&gt;&gt; ret = sm-&gt;get(descriptor, instance);
+    }
+//直通模式
+    if (getStub || vintfPassthru || vintfLegacy) {
+        const sp&lt;IServiceManager&gt; pm = getPassthroughServiceManager();
+            sp&lt;IBase&gt; base = pm-&gt;get(descriptor, instance).withDefault(nullptr);
+    }
+ 
+....
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>这里分成了二条路:</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">绑定模式</span></code>就直接通过IServiceManager-&gt;get的方法去获取，是不是觉得很熟悉，就和AIDL一个套路，通过BpBinder 和 BnBinder 直接对Binder驱动的操作来完成数据交换，但AIDL的binder驱动是/dev/binder, HIDL的hwbinder驱动是/dev/hwbinder,具体的我们就不去详细分析了。</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">直通模式</span></code>，先通过getPassthroughServiceManager ，获取IServiceManager的句柄，然后再get得到对应的服务。</p></li>
+</ul>
+</li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="n">sp</span><span class="o">&lt;</span><span class="n">IServiceManager1_0</span><span class="o">&gt;</span><span class="w"> </span><span class="n">getPassthroughServiceManager</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">getPassthroughServiceManager1_1</span><span class="p">();</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+<span class="n">sp</span><span class="o">&lt;</span><span class="n">IServiceManager1_1</span><span class="o">&gt;</span><span class="w"> </span><span class="n">getPassthroughServiceManager1_1</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="k">static</span><span class="w"> </span><span class="n">sp</span><span class="o">&lt;</span><span class="n">PassthroughServiceManager</span><span class="o">&gt;</span><span class="w"> </span><span class="n">manager</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">PassthroughServiceManager</span><span class="p">());</span><span class="w"></span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">manager</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<p>这里相当于直接new了一个PassthroughServiceManager(), 之后再调用get 方法：</p>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="w"> </span><span class="n">Return</span><span class="o">&lt;</span><span class="n">sp</span><span class="o">&lt;</span><span class="n">IBase</span><span class="o">&gt;&gt;</span><span class="w"> </span><span class="n">get</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">hidl_string</span><span class="o">&amp;</span><span class="w"> </span><span class="n">fqName</span><span class="p">,</span><span class="w"></span>
+<span class="w">                          </span><span class="k">const</span><span class="w"> </span><span class="n">hidl_string</span><span class="o">&amp;</span><span class="w"> </span><span class="n">name</span><span class="p">)</span><span class="w"> </span><span class="k">override</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="n">sp</span><span class="o">&lt;</span><span class="n">IBase</span><span class="o">&gt;</span><span class="w"> </span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">nullptr</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="n">openLibs</span><span class="p">(</span><span class="n">fqName</span><span class="p">,</span><span class="w"> </span><span class="p">[</span><span class="o">&amp;</span><span class="p">](</span><span class="kt">void</span><span class="o">*</span><span class="w"> </span><span class="n">handle</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="o">&amp;</span><span class="n">lib</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="o">&amp;</span><span class="n">sym</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">            </span><span class="n">IBase</span><span class="o">*</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="n">generator</span><span class="p">)(</span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">name</span><span class="p">);</span><span class="w"></span>
+<span class="w">            </span><span class="c1">//这里就会调用 到sym 也就是HIDL_FETCH_XXX ，然后通过dlsym 去链接调用了。</span>
+<span class="w">            </span><span class="o">*</span><span class="p">(</span><span class="kt">void</span><span class="w"> </span><span class="o">**</span><span class="p">)(</span><span class="o">&amp;</span><span class="n">generator</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">dlsym</span><span class="p">(</span><span class="n">handle</span><span class="p">,</span><span class="w"> </span><span class="n">sym</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span><span class="w"></span>
+<span class="w">            </span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="n">generator</span><span class="p">)(</span><span class="n">name</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span><span class="w"></span>
+<span class="w">        </span><span class="p">});</span><span class="w"></span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">ret</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="w"> </span>
+<span class="k">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">openLibs</span><span class="p">(</span><span class="w"></span>
+<span class="w">        </span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span><span class="w"> </span><span class="n">fqName</span><span class="p">,</span><span class="w"></span>
+<span class="w">        </span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">function</span><span class="o">&lt;</span><span class="kt">bool</span><span class="w"> </span><span class="cm">/* continue */</span><span class="w"> </span><span class="p">(</span><span class="kt">void</span><span class="o">*</span><span class="w"> </span><span class="cm">/* handle */</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span><span class="w"> </span><span class="cm">/* lib */</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                 </span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span><span class="w"> </span><span class="cm">/* sym */</span><span class="p">)</span><span class="o">&gt;&amp;</span><span class="w"> </span><span class="n">eachLib</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="n">packageAndVersion</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fqName</span><span class="p">.</span><span class="n">substr</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">idx</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="n">ifaceName</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fqName</span><span class="p">.</span><span class="n">substr</span><span class="p">(</span><span class="n">idx</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">strlen</span><span class="p">(</span><span class="s">&quot;::&quot;</span><span class="p">));</span><span class="w"></span>
+<span class="w"> </span>
+<span class="w">        </span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="n">prefix</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">packageAndVersion</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s">&quot;-impl&quot;</span><span class="p">;</span><span class="w"></span>
+<span class="w">　　　　　</span><span class="c1">//HIDL_FETCH_XXX 出现了，就是passthrough模式下需要被调用的方法。</span>
+<span class="w">        </span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="n">sym</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;HIDL_FETCH_&quot;</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">ifaceName</span><span class="p">;</span><span class="w"></span>
+<span class="p">.....</span><span class="w"></span>
+<span class="w">        </span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&gt;</span><span class="w"> </span><span class="n">paths</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="n">HAL_LIBRARY_PATH_ODM</span><span class="p">,</span><span class="w"> </span><span class="n">HAL_LIBRARY_PATH_VENDOR</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                          </span><span class="n">halLibPathVndkSp</span><span class="p">,</span><span class="w"> </span><span class="n">HAL_LIBRARY_PATH_SYSTEM</span><span class="p">};</span><span class="w"></span>
+<span class="p">....</span><span class="w"></span>
+<span class="w">        </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span><span class="w"> </span><span class="n">path</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">paths</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">            </span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&gt;</span><span class="w"> </span><span class="n">libs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">search</span><span class="p">(</span><span class="n">path</span><span class="p">,</span><span class="w"> </span><span class="n">prefix</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;.so&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w"> </span>
+<span class="w">            </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="o">&amp;</span><span class="n">lib</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">libs</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">　　　　　　　　　　</span><span class="c1">//路径最后组装成/system 或者/vendor 下面的供调用的xxxxx-impl.so</span>
+<span class="w">                </span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="n">fullPath</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">path</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">lib</span><span class="p">;</span><span class="w"></span>
+<span class="w"> </span>
+<span class="w">                </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">path</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">HAL_LIBRARY_PATH_SYSTEM</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                    </span><span class="c1">//这里就供dlopen了。</span>
+<span class="w">                    </span><span class="n">handle</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">dlopen</span><span class="p">(</span><span class="n">fullPath</span><span class="p">.</span><span class="n">c_str</span><span class="p">(),</span><span class="w"> </span><span class="n">dlMode</span><span class="p">);</span><span class="w"></span>
+<span class="w">                </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                    </span><span class="n">handle</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">android_load_sphal_library</span><span class="p">(</span><span class="n">fullPath</span><span class="p">.</span><span class="n">c_str</span><span class="p">(),</span><span class="w"> </span><span class="n">dlMode</span><span class="p">);</span><span class="w"></span>
+<span class="w">                </span><span class="p">}</span><span class="w"></span>
+<span class="p">.....</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, wugn.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+  
+
+<script charset="UTF-8" id="LA_COLLECT" src="//sdk.51.la/js-sdk-pro.min.js"></script>
+<script>LA.init({id: "JjOE14XScyd75b2C",ck: "JjOE14XScyd75b2C"})</script>
+
+<br/>
+<script id="LA-DATA-WIDGET" crossorigin="anonymous" charset="UTF-8" src="https://v6-widget.51.la/v6/JjOE14XScyd75b2C/quote.js?theme=0&f=12&display=1,0,0,0,0,0,1,1"></script>
+
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

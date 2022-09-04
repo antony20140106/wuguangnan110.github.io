@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>wugn</title>
+
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../index.html" class="icon icon-home"> wugn_note
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">Accel Sensor 分析</a><ul>
+<li><a class="reference internal" href="#id1">参考</a></li>
+<li><a class="reference internal" href="#id2">代码分析</a></li>
+<li><a class="reference internal" href="#debug">debug调试</a></li>
+<li><a class="reference internal" href="#id3">初始化流程</a></li>
+<li><a class="reference internal" href="#id4">数据上报流程</a></li>
+<li><a class="reference internal" href="#id5">问题点分析</a><ul>
+<li><a class="reference internal" href="#acc">1.acc上报数据很卡顿</a></li>
+<li><a class="reference internal" href="#id6">2.acc软重启后平放数据偏差较大有问题</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">wugn_note</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs"> 
+<li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+<li>Accel Sensor 分析</li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.forward()">Forward</a></li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.back()">Go Back</a> | </li>
+<li style="float: right;margin-left: 10px;"><a href="/index.html">Home</a> | </li>
+
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="accel-sensor">
+<h1>Accel Sensor 分析<a class="headerlink" href="#accel-sensor" title="Permalink to this headline"></a></h1>
+<p>Accel Sensor 驱动分析</p>
+<section id="id1">
+<h2>参考<a class="headerlink" href="#id1" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p><span class="xref myst">sensor_all_in_one.pdf</span></p></li>
+<li><p>[CS6853-BD9D-PGD-V1.7EN_MT6853_SCP_Development_Guide.pdf](CS6853-BD9D-PGD-V1.7EN_MT6853_SCP_Development_Guide.pdf refer/CS6853-BD9D-PGD-V1.7EN_MT6853_SCP_Development_Guide.pdf)</p></li>
+</ul>
+</section>
+<section id="id2">
+<h2>代码分析<a class="headerlink" href="#id2" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p>dts：</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">accel</span> <span class="n">sensor</span><span class="p">:</span>
+<span class="o">&amp;</span><span class="n">cust_accel_sc7a20</span> <span class="p">{</span>
+		<span class="n">i2c_num</span>					<span class="o">=</span> <span class="o">&lt;</span><span class="mi">1</span><span class="o">&gt;</span><span class="p">;</span>
+		<span class="n">i2c_addr</span>				<span class="o">=</span> <span class="o">&lt;</span><span class="mh">0x18</span> <span class="mi">0</span> <span class="mi">0</span> <span class="mi">0</span><span class="o">&gt;</span><span class="p">;</span>
+		<span class="n">direction</span>				<span class="o">=</span> <span class="o">&lt;</span><span class="mi">7</span><span class="o">&gt;</span><span class="p">;</span>
+		<span class="n">power_id</span>				<span class="o">=</span> <span class="o">&lt;</span><span class="mh">0xffff</span><span class="o">&gt;</span><span class="p">;</span>
+		<span class="n">power_vol</span>				<span class="o">=</span> <span class="o">&lt;</span><span class="mi">0</span><span class="o">&gt;</span><span class="p">;</span>
+		<span class="n">firlen</span>					<span class="o">=</span> <span class="o">&lt;</span><span class="mi">0</span><span class="o">&gt;</span><span class="p">;</span>
+		<span class="n">is_batch_supported</span>			<span class="o">=</span> <span class="o">&lt;</span><span class="mi">0</span><span class="o">&gt;</span><span class="p">;</span>
+<span class="p">};</span>
+
+<span class="o">&amp;</span><span class="n">i2c1</span> <span class="p">{</span>
+	<span class="n">gsensor_sc7a20</span><span class="o">@</span><span class="mi">18</span> <span class="p">{</span>
+		<span class="n">compatible</span> <span class="o">=</span> <span class="s2">&quot;mediatek,gsensor_sc7a20&quot;</span><span class="p">;</span>
+		<span class="n">reg</span> <span class="o">=</span> <span class="o">&lt;</span><span class="mh">0x18</span><span class="o">&gt;</span><span class="p">;</span>
+		<span class="n">status</span> <span class="o">=</span> <span class="s2">&quot;okay&quot;</span><span class="p">;</span>
+	<span class="p">};</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section id="debug">
+<h2>debug调试<a class="headerlink" href="#debug" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p>acc sensorhub调通后，scp打印如下：</p></li>
+</ul>
+<div class="highlight-log notranslate"><div class="highlight"><pre><span></span>----- timezone:Asia/Shanghai
+8 overlay remap fail
+
+[0.017]contexthub_fw_start tid: 268
+
+[0.017]accGyro: app start
+
+[0.017]sc7a20ResetRead
+
+[0.017]alsps: app start
+
+[0.017]initSensors:   not ready!
+
+[0.017]LIFT EVT_APP_START
+
+[0.017]TILT EVT_APP_START
+
+[0.017]STEP_RECOGNITION EVT_APP_START
+
+[0.017]alsPs: init done
+
+[0.017]read before sc7a20ResetWrite
+
+[0.028]sc7a20DeviceId
+
+[0.028]sc7a20 acc reso: 0, sensitivity: 1024
+
+[0.028]sc7a20RegisterCore deviceId 0x11
+
+
+[0.028]accGyro: init done
+
+[0.518]initSensors: alloc blocks number:219
+
+[0.520]get dram phy addr=0x8d000000,size=1048520, maxEventNumber:23830
+
+[0.520]get dram phy rp=0,wp=0
+
+[2.029]frequency request: 65535 MHz =&gt; 250 MHz
+
+[2.829]sync time scp:2829537083, ap:4316042615, offset:1486968532
+
+[8.765]hostintf: 8765761097, chreType:1, rate:0, latency:0, cmd:3!
+
+[8.765]sensorCfgAcc:
+
+[8.765]bias: 0.000000, 0.000000, 0.000000
+
+[8.765]cali: 0, 0, 0
+
+[8.765][MPEKlib]: MPE_CAL_A_VER_18082801
+
+[8.765]sc7a20AccCfgCali: cfgData[0]:0, cfgData[1]:0, cfgData[2]:0
+
+[8.765]acc: cfg done
+
+</pre></div>
+</div>
+</section>
+<section id="id3">
+<h2>初始化流程<a class="headerlink" href="#id3" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p>首先看初始化流程：</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span>int sc7a20Init(void)
+{
+    if (mTask.deviceId != SC7A20_WHO_AM_I_WIA_ID) {  匹配ID
+        osLog(LOG_ERROR, &quot;sc7a20: auto detect error wai 0x%x\n&quot;, mTask.deviceId);
+        ret = -1;
+        goto err_out;
+    }
+
+    osLog(LOG_INFO, &quot;sc7a20: auto detect success wai 0x%x\n&quot;, mTask.deviceId);
+    accSensorRegister();
+	配置数据上传类型：
+	ACC_GYRO_FIFO_UNINTERRUPTIBLE  FIFO型
+	ACC_GYRO_FIFO_INTERRUPTIBLE   中断FIFO
+	GYRO_ONLY_FIFO_INTERRUPTIBLE 只有陀螺仪FIFO中断
+    registerAccGyroInterruptMode(ACC_GYRO_FIFO_UNINTERRUPTIBLE);  
+	注册FSM函数
+    * registerAccGyroDriverFsm(sc7a20Fsm, ARRAY_SIZE(sc7a20Fsm));
+	  * osEnqueuePrivateEvt(EVT_APP_START, NULL, NULL, mTask.id);
+	    * sensorFsmRunState(&amp;dataInfo, &amp;mTask.fsm, (const void *)CHIP_RESET, &amp;i2cCallback, &amp;spiCallback);
+	    /* init state */
+    	  * sensorFsmCmd(STATE_RESET_R, STATE_RESET_W, sc7a20ResetRead),
+    	  * sensorFsmCmd(STATE_RESET_W, STATE_DEVID, sc7a20ResetWrite),
+    	  * sensorFsmCmd(STATE_DEVID, STATE_CALC_RESO, sc7a20DeviceId),
+    	  * sensorFsmCmd(STATE_CALC_RESO, STATE_CORE, sc7a20CalcReso),
+    	  * sensorFsmCmd(STATE_CORE, STATE_INIT_DONE, sc7a20RegisterCore),
+		    * handleSensorEvent(const void *state) //接下来跑STATE_INIT_DONE
+			  * case CHIP_INIT_DONE: {
+			    * processPendingEvt();
+				  * mSensorOps[handle].sensorCalibrate((void *)handle);  //校准流程
+				    * sensorCaliAcc(void *cookie) //校准acc
+					  * sc7a20AccCali()  //sc7a20.c
+					    * accFactoryCalibrateInit(&amp;mTask.accFactoryCal);
+					* sensorCaliGyro(void *cookie) //不支持校准gyro
+				  * mSensorOps[handle].sensorCfgData(mTask.mSensorPerUnit[handle].pendCaliCfg,  //cfgdata流程
+				    * sensorCfgAcc() 
+					  * sc7a20AccCfgCali() //sc7a20.c
+					    * mTask.staticCali[AXIS_X] = (float)caliCfgPacket.caliCfgData[0] / 1000;  //赋值一下cali数据，没实际操作
+					* sensorCfgGyro()  //不支持Cfggyro
+					  * setGyroHwCaliCfg(&amp;values[3]);
+					    * sensorFsmRunState(&amp;dataInfo, &amp;mTask.fsm, (const void *)CHIP_GYRO_CFG, &amp;i2cCallback, &amp;spiCallback) //没定义CHIP_GYRO_CFG，也就是说没有陀螺仪校准
+				  * mSensorOps[handle].sensorSelfTest((void *)handle);  //自测
+				    * sensorSelfTestAcc(void *data)
+					  * sensorFsmRunState(&amp;dataInfo, &amp;mTask.fsm, (const void *)CHIP_ACC_SELFTEST, &amp;i2cCallback, &amp;spiCallback)  //没定义CHIP_ACC_SELFTEST,不做
+	注册timer callback函数，无
+    * registerAccGyroTimerCbk(sc7a20TimerCbkF);	
+}
+
+OVERLAY_DECLARE(sc7a20, OVERLAY_WORK_00, sc7a20Init);
+</pre></div>
+</div>
+</section>
+<section id="id4">
+<h2>数据上报流程<a class="headerlink" href="#id4" title="Permalink to this headline"></a></h2>
+</section>
+<section id="id5">
+<h2>问题点分析<a class="headerlink" href="#id5" title="Permalink to this headline"></a></h2>
+<section id="acc">
+<h3>1.acc上报数据很卡顿<a class="headerlink" href="#acc" title="Permalink to this headline"></a></h3>
+<ul class="simple">
+<li><p>根据设置频率打印如下,使用AKM_sENSORmONITOR看，延时周期为62ms，频率计算为16HZ，太慢了，rate换算应该是除以1000：</p></li>
+</ul>
+<div class="highlight-log notranslate"><div class="highlight"><pre><span></span>[10538.230]hostintf: 10538230206894, chreType:1, rate:15359,  latency:100000000, cmd:2! //设置15HZ
+[10538.230]sensorFlushAcc
+
+实际频率：
+[11144.090]sc7a20 acc1 rawdata x:-62, y:30, z:-1130
+[11144.153]sc7a20 acc1 rawdata x:-57, y:34, z:-1130  // 1/153-90 = 15.87 HZ也正常啊
+[11144.215]sc7a20 acc1 rawdata x:-53, y:36, z:-1135
+
+[11144.277]sc7a20 acc1 rawdata x:-49, y:35, z:-1134
+[11144.340]sc7a20 acc1 rawdata x:-50, y:26, z:-1135
+[11144.403]sc7a20 acc1 rawdata x:-51, y:25, z:-1138
+
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>进一次方向传感器后，正常了：</p></li>
+</ul>
+<div class="highlight-log notranslate"><div class="highlight"><pre><span></span>hostintf: 283048948674, chreType:1, rate:51200, latency:0, cmd:2!
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>但是采用kernel驱动方式，延时周期为65ms~66ms，频率是15HZ，不卡顿，难道是频率不匹配导致？继续看看framwork如何定义频率，下面可以看到framework层定义了4中频率，分别是fastest、50HZ/15HZ/5HZ四种：</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">frameworks/native/libs/sensor/SensorEventQueue.cpp</span></code>传感器采样频率,是在android注册sensor的时候，会有一个delay的时间，这个时间就是采样的频率。上层注册 API registerListener（listener, sensor,rate）rate 即为时间:</p></li>
+</ul>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="n">status_t</span> <span class="n">SensorEventQueue</span><span class="p">::</span><span class="n">enableSensor</span><span class="p">(</span><span class="n">Sensor</span> <span class="kd">const</span><span class="o">*</span> <span class="n">sensor</span><span class="p">)</span> <span class="kd">const</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">enableSensor</span><span class="p">(</span><span class="n">sensor</span><span class="p">,</span> <span class="n">SENSOR_DELAY_NORMAL</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="kd">class</span> <span class="nc">SensorEventQueue</span> <span class="p">:</span> <span class="kd">public</span> <span class="n">ASensorEventQueue</span><span class="p">,</span> <span class="kd">public</span> <span class="n">RefBase</span>
+<span class="p">{</span>
+<span class="kd">public</span><span class="p">:</span>
+
+    <span class="kd">enum</span> <span class="p">{</span> <span class="n">MAX_RECEIVE_BUFFER_EVENT_COUNT</span> <span class="o">=</span> <span class="mi">256</span> <span class="p">};</span>
+
+    <span class="cm">/**</span>
+<span class="cm">     * Typical sensor delay (sample period) in microseconds.</span>
+<span class="cm">     */</span>
+    <span class="c1">// Fastest sampling, system will bound it to minDelay</span>
+    <span class="kd">static</span> <span class="n">constexpr</span> <span class="n">int32_t</span> <span class="n">SENSOR_DELAY_FASTEST</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+    <span class="c1">// Typical sample period for game, 50Hz;</span>
+    <span class="kd">static</span> <span class="n">constexpr</span> <span class="n">int32_t</span> <span class="n">SENSOR_DELAY_GAME</span> <span class="o">=</span> <span class="mi">20000</span><span class="p">;</span>
+    <span class="c1">// Typical sample period for UI, 15Hz</span>
+    <span class="kd">static</span> <span class="n">constexpr</span> <span class="n">int32_t</span> <span class="n">SENSOR_DELAY_UI</span> <span class="o">=</span> <span class="mi">66667</span><span class="p">;</span>
+    <span class="c1">// Default sensor sample period</span>
+    <span class="kd">static</span> <span class="n">constexpr</span> <span class="n">int32_t</span> <span class="n">SENSOR_DELAY_NORMAL</span> <span class="o">=</span> <span class="mi">200000</span><span class="p">;</span>
+	<span class="p">...</span><span class="na">省略</span><span class="p">...</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>sensorhub中定义如下：</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="k">static</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">accSupportedRates</span><span class="p">[]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">SENSOR_HZ</span><span class="p">(</span><span class="mf">5.0f</span><span class="p">),</span><span class="w"></span>
+<span class="w">    </span><span class="n">SENSOR_HZ</span><span class="p">(</span><span class="mf">10.0f</span><span class="p">),</span><span class="w"></span>
+<span class="w">    </span><span class="n">SENSOR_HZ</span><span class="p">(</span><span class="mf">16.0f</span><span class="p">),</span><span class="w"></span>
+<span class="w">    </span><span class="n">SENSOR_HZ</span><span class="p">(</span><span class="mf">50.0f</span><span class="p">),</span><span class="w"></span>
+<span class="w">    </span><span class="n">SENSOR_HZ</span><span class="p">(</span><span class="mf">100.0f</span><span class="p">),</span><span class="w"></span>
+<span class="w">    </span><span class="n">SENSOR_HZ</span><span class="p">(</span><span class="mf">200.0f</span><span class="p">),</span><span class="w"></span>
+<span class="w">    </span><span class="n">SENSOR_HZ</span><span class="p">(</span><span class="mf">400.0f</span><span class="p">),</span><span class="w"></span>
+<span class="w">    </span><span class="mi">0</span><span class="w"></span>
+<span class="p">};</span><span class="w"></span>
+<span class="k">static</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="kt">uint64_t</span><span class="w"> </span><span class="n">rateTimerValsAcc</span><span class="p">[]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="c1">//should match &quot;supported rates in length&quot; and be the timer length for that rate in nanosecs</span>
+<span class="w">    </span><span class="mi">1000000000ULL</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">5</span><span class="p">,</span><span class="w"></span>
+<span class="w">    </span><span class="mi">1000000000ULL</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span><span class="w"></span>
+<span class="w">    </span><span class="mi">1000000000ULL</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">16</span><span class="p">,</span><span class="w"></span>
+<span class="w">    </span><span class="mi">1000000000ULL</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">50</span><span class="p">,</span><span class="w"></span>
+<span class="w">    </span><span class="mi">1000000000ULL</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">100</span><span class="p">,</span><span class="w"></span>
+<span class="w">    </span><span class="mi">1000000000ULL</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">200</span><span class="p">,</span><span class="w"></span>
+<span class="w">    </span><span class="mi">1000000000ULL</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">400</span><span class="p">,</span><span class="w"></span>
+<span class="p">};</span><span class="w"></span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>也就是说framework中支持的频率与sensorhub中的不匹配，上层设置15HZ下来，本来周期是66ms。而底层上报的是16hz，62ms，这样一来，两边时序不对等，poll机制可能出现超时，也就是说上层实际rate更低，那解决办法就是让两边频率设置对等，并且加上频率-时间检测，可参考<code class="docutils literal notranslate"><span class="pre">0003_抬起亮屏功能开发.md</span></code>。</p></li>
+</ul>
+</section>
+<section id="id6">
+<h3>2.acc软重启后平放数据偏差较大有问题<a class="headerlink" href="#id6" title="Permalink to this headline"></a></h3>
+<ul class="simple">
+<li><p>正常数据如下：</p></li>
+</ul>
+<p><img alt="0004_123125.png" src="../../../_images/0004_123125.png" /></p>
+<ul class="simple">
+<li><p>软重启后异常数据：</p></li>
+</ul>
+<p><img alt="0004_123124.png" src="../../../_images/0004_123124.png" /></p>
+<ul class="simple">
+<li><p>正常和不正常启动log对比，发现开机后z轴都是慢慢加上去的：</p></li>
+</ul>
+<p><img alt="0004_123126.png" src="../../../_images/0004_123126.png" /></p>
+<ul class="simple">
+<li><p>最后解决方案：</p></li>
+</ul>
+<blockquote>
+<div><p>控制寄存器 4(23h) BDU配置从输出数据寄存器不更新直到 MSB 和 LSB 被读取改为连续更新。</p>
+</div></blockquote>
+<p><img alt="0004_123127.png" src="../../../_images/0004_123127.png" /></p>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span>--- a/vendor/mediatek/proprietary/tinysys/freertos/source/middleware/contexthub/MEMS_Driver/accGyro/sc7a20.c
++++ b/vendor/mediatek/proprietary/tinysys/freertos/source/middleware/contexthub/MEMS_Driver/accGyro/sc7a20.c
+@@ -269,10 +269,8 @@ static int sc7a20ResetWrite(I2cCallbackF i2cCallBack, SpiCbkF spiCallBack, void
+ // end:SDO pull-up resistor close off
+
+    //[BUGFIX]-Modify-BEGIN by (wugangnan@paxsz.com), 2022/3/25, for Z axis data is inaccurate when soft reboot ,so sw reset
+-   // mTask.txBuf[0] = SC7A20_CTRL_REG4;
+-   // mTask.txBuf[1] = 0x88;    //BDU set 1; BLE set 0; HR set 1; scale = 2g
+-    mTask.txBuf[0] = SC7A20_CTRL_REG1;
+-    mTask.txBuf[1] = 0x00;    //close
++   mTask.txBuf[0] = SC7A20_CTRL_REG4;
++   mTask.txBuf[1] = 0x08;    //BDU set 1; BLE set 0; HR set 1; scale = 2g
+</pre></div>
+</div>
+<p>原因未知，可以sensorhub就必须使用连续更新数据吧，且功耗并未增加。</p>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, wugn.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+  
+
+<script charset="UTF-8" id="LA_COLLECT" src="//sdk.51.la/js-sdk-pro.min.js"></script>
+<script>LA.init({id: "JjOE14XScyd75b2C",ck: "JjOE14XScyd75b2C"})</script>
+
+<br/>
+<script id="LA-DATA-WIDGET" crossorigin="anonymous" charset="UTF-8" src="https://v6-widget.51.la/v6/JjOE14XScyd75b2C/quote.js?theme=0&f=12&display=1,0,0,0,0,0,1,1"></script>
+
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

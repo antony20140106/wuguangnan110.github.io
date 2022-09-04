@@ -1,0 +1,957 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>wugn</title>
+
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../index.html" class="icon icon-home"> wugn_note
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">概述</a></li>
+<li><a class="reference internal" href="#refer">refer</a></li>
+<li><a class="reference internal" href="#id2">打印</a></li>
+<li><a class="reference internal" href="#id3">总览</a><ul>
+<li><a class="reference internal" href="#application-primary-boot-loader-apps-pbl">1、Application primary boot loader (APPS PBL)</a></li>
+<li><a class="reference internal" href="#extensible-boot-loader-xbl">2、Extensible boot loader (XBL)</a></li>
+<li><a class="reference internal" href="#xbl-core-uefi-or-lk-abl">3、XBL core (UEFI or LK，ABL)</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#uefi-xbl">一、UEFI XBL</a></li>
+<li><a class="reference internal" href="#uefi">UEFI代码运行流程</a><ul>
+<li><a class="reference internal" href="#sec">SEC:</a></li>
+<li><a class="reference internal" href="#pei">PEI：</a></li>
+<li><a class="reference internal" href="#hob-hand-off-block">HOB : Hand off Block</a></li>
+<li><a class="reference internal" href="#dxe">DXE：</a></li>
+<li><a class="reference internal" href="#bds">BDS：</a></li>
+<li><a class="reference internal" href="#tsl">TSL:</a></li>
+<li><a class="reference internal" href="#rt">RT:</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id4">SEC (安全验证)代码分析</a><ul>
+<li><a class="reference internal" href="#loadandparseplatformcfg-uefiplat-cfg">LoadAndParsePlatformCfg() 加载并解析 uefiplat.cfg平台配置文件</a></li>
+<li><a class="reference internal" href="#displayearlyinfo">DisplayEarlyInfo() 显示模块早期初始化</a></li>
+<li><a class="reference internal" href="#loaddxecorefromfv-dxe-core">LoadDxeCoreFromFv() 加载DXE Core</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id5">DXE (驱动执行环境)</a></li>
+<li><a class="reference internal" href="#id6">BDS (启动设备选择)</a></li>
+<li><a class="reference internal" href="#rt-run-time">RT(Run Time)</a></li>
+</ul>
+</div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">wugn_note</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs"> 
+<li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+<li>概述</li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.forward()">Forward</a></li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.back()">Go Back</a> | </li>
+<li style="float: right;margin-left: 10px;"><a href="/index.html">Home</a> | </li>
+
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="id1">
+<h1>概述<a class="headerlink" href="#id1" title="Permalink to this headline"></a></h1>
+<p>之前学习的lk阶段点亮LCD的流程算是比较经典，但是高通已经推出了很多种基于UEFI方案的启动架构。所以需要对这块比较新的技术进行学习。在学习之前，有必要了解一下高通UEFI启动流程。</p>
+<p>原文（有删改）：https://blog.csdn.net/Ciellee/article/details/113519478</p>
+</section>
+<section id="refer">
+<h1>refer<a class="headerlink" href="#refer" title="Permalink to this headline"></a></h1>
+<ul class="simple">
+<li><p><a class="reference external" href="https://blog.csdn.net/ciellee/category_10787948.html">Android XBL开机流程</a></p></li>
+<li><p><a class="reference external" href="https://www.cnblogs.com/schips/p/qualcomm_uefi_boot_sequence.html">高通Android UEFI XBL 代码流程分析</a></p></li>
+<li><p><a class="reference external" href="https://blog.csdn.net/u011397314/article/details/121515314">UEFI原理与编程实践–UEFI系统的启动过程</a></p></li>
+</ul>
+</section>
+<section id="id2">
+<h1>打印<a class="headerlink" href="#id2" title="Permalink to this headline"></a></h1>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Active</span> <span class="n">Platform</span>          <span class="o">=</span> <span class="o">/</span><span class="n">home</span><span class="o">/</span><span class="n">wugn</span><span class="o">/</span><span class="n">A6650</span><span class="o">-</span><span class="n">project</span><span class="o">/</span><span class="n">Unpacking_Tool</span><span class="o">/</span><span class="n">BOOT</span><span class="o">.</span><span class="n">XF</span><span class="mf">.4.1</span><span class="o">/</span><span class="n">boot_images</span><span class="o">/</span><span class="n">QcomPkg</span><span class="o">/</span><span class="n">SocPkg</span><span class="o">/</span><span class="n">AgattiPkg</span><span class="o">/</span><span class="n">LAA</span><span class="o">/</span><span class="n">Core</span><span class="o">.</span><span class="n">dsc</span>
+<span class="n">Flash</span> <span class="n">Image</span> <span class="n">Definition</span>   <span class="o">=</span> <span class="o">/</span><span class="n">home</span><span class="o">/</span><span class="n">wugn</span><span class="o">/</span><span class="n">A6650</span><span class="o">-</span><span class="n">project</span><span class="o">/</span><span class="n">Unpacking_Tool</span><span class="o">/</span><span class="n">BOOT</span><span class="o">.</span><span class="n">XF</span><span class="mf">.4.1</span><span class="o">/</span><span class="n">boot_images</span><span class="o">/</span><span class="n">QcomPkg</span><span class="o">/</span><span class="n">SocPkg</span><span class="o">/</span><span class="n">AgattiPkg</span><span class="o">/</span><span class="n">LAA</span><span class="o">/</span><span class="n">Core</span><span class="o">.</span><span class="n">fdf</span>
+</pre></div>
+</div>
+</section>
+<section id="id3">
+<h1>总览<a class="headerlink" href="#id3" title="Permalink to this headline"></a></h1>
+<p>先来看下SDM660芯片冷启动的流程。可以看出，在设备上电后，先跑的是 APPS PBL，接着运行XBL SEC、XBL Loader，通过Loader引出XBL CORE APPSBL，最后进入HLOS。</p>
+<p><img alt="0005_0000.png" src="../../../_images/0005_00002.png" /></p>
+<p>我们来看下这几个涉及的模块大概功能：</p>
+<section id="application-primary-boot-loader-apps-pbl">
+<h2>1、Application primary boot loader (APPS PBL)<a class="headerlink" href="#application-primary-boot-loader-apps-pbl" title="Permalink to this headline"></a></h2>
+<p>PBL 启动时，CPU只开启了第一个核心 CPU Core 0，运行固件在ROM中，这部分是高通写死在芯片中的固件，外部开发人员是无法修改这部份的。</p>
+<p>主要功能为：</p>
+<ul class="simple">
+<li><p>（1）系统安全环境的初始化，以确保后续的XBL中的APPS 能够正常运行。</p></li>
+<li><p>（2）根据boot gpio的配置选择从什么设备启动操作系统（如 Nand，USB等）。</p></li>
+<li><p>（3）通过检测GPIO判断是否进入Emergency Download mode，用户可以通过FILE来下载完整的系统镜像。</p></li>
+<li><p>（4）通过L2 TCM来加载XBL1 ELF，OCIMEM 和 RPM CodeRAM 代码。</p></li>
+</ul>
+</section>
+<section id="extensible-boot-loader-xbl">
+<h2>2、Extensible boot loader (XBL)<a class="headerlink" href="#extensible-boot-loader-xbl" title="Permalink to this headline"></a></h2>
+<p>从XBL开始，跑的就是我们编译下载进eMMC/UFS的系统镜像了，在XBL中主要是初始化相关的硬件环境，及代码安全环境。</p>
+<ul class="simple">
+<li><p>（1）初始化 Buses、DDR、Clocks、CDT，启动QSEE，QHEE,RPM_FW, XBL core images。</p></li>
+<li><p>（2）使能memory dump through USB and Sahara（系统死机时memory dump），看门狗，RAM dump to SD support等功能。</p></li>
+<li><p>（3）初始化 USB驱动，USB充电功能，温升检测，PMIC驱动初始化，和 DDR training模块。</p></li>
+</ul>
+</section>
+<section id="xbl-core-uefi-or-lk-abl">
+<h2>3、XBL core (UEFI or LK，ABL)<a class="headerlink" href="#xbl-core-uefi-or-lk-abl" title="Permalink to this headline"></a></h2>
+<p>XBL core，就是之前的bootloader，主要功能就是初始化display驱动，提供fastboot功能，引导进入HLOS kernel操作系统。</p>
+<blockquote>
+<div><p>注意，在ABL中，同样也只有CPU Core0在工作，其他的CPU核以是在进入HLOS Kernel后才开始初始化启用的。</p>
+</div></blockquote>
+<p>本文中，我们重点关注的是Extensible boot loader (XBL)，主要来学学UEFI XBL架构，及UEFI XBL代码流程。</p>
+</section>
+</section>
+<section id="uefi-xbl">
+<h1>一、UEFI XBL<a class="headerlink" href="#uefi-xbl" title="Permalink to this headline"></a></h1>
+<p>代码目录分析
+<code class="docutils literal notranslate"><span class="pre">UEFI</span> <span class="pre">XBL代码路径位于：BOOT.XF.1.4\boot_images\</span></code>:</p>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span># BOOT.XF.1.4\boot_images
+
+ArmPkg					----&gt; ARM 架构相关的Protocols
+ArmPlatformPkg			----&gt; ARM 开发板相关的UEFI代码
+BaseTools				----&gt; 编译EDK和EDK2相关的工具,如
+EmbeddedPkg				----&gt; 
+FatPkg
+IntelFrameworkModulePkg
+IntelFrameworkPkg
+MdeModulePkg
+MdePkg
+QcomPkg					----&gt; 高通定制的相关pkg，如display和usb充电都在里面
+ShellPkg				----&gt; UEFI shell 环境
+</pre></div>
+</div>
+</section>
+<section id="uefi">
+<h1>UEFI代码运行流程<a class="headerlink" href="#uefi" title="Permalink to this headline"></a></h1>
+<p>从图中可以看出，UEFI代码运行流程为：</p>
+<p>SEC(安全验证)—&gt;PEI(EFI前期初始化)—&gt;DXE(驱动执行环境)—&gt;BDS(启动设备选择)—&gt;UEFI Loader(操作系统加载前期)—&gt;RT(Run Time)。</p>
+<p>接下来，我们根据这个流程来分析下UEFI代码。</p>
+<p><img alt="0005_0001.png" src="../../../_images/0005_00011.png" /></p>
+<p>看图粗略说一下：</p>
+<section id="sec">
+<h2>SEC:<a class="headerlink" href="#sec" title="Permalink to this headline"></a></h2>
+<p>安全验证阶段，这个阶段，需要用Assembly做一些 C 无法处理的工作，C语言无法处理CPU的特殊寄存器。让CPU进入Protected Mode(Flat Mode)的环境，会使用到CPU内部的临时ram，其实也就是缓存，这个阶段主要还是使用的汇编，也就是说为后面的阶段建立一个C语言和硬件通信的编译环境，最后将控制权交给PEI Phase。</p>
+</section>
+<section id="pei">
+<h2>PEI：<a class="headerlink" href="#pei" title="Permalink to this headline"></a></h2>
+<p>很基本的Chipset 初始化、 Memory Sizing、 BIOS Recovery、 ACPI S3 Resume 、切换Stack to Memory、启动DxeIpl。这个阶段就是开始一些CPU、主板、芯片的初始化了，也就是EFI前期初始化，这个阶段后期才是内存的初始化，知道内存初始化的地方可以便于debug。PEI阶段对系统的初始化主要是PEIM完成的，PEIM之间的通信又是通过PPI完成，进入DXE阶段需要HOB列表。
+<img alt="0005_0002.png" src="../../../_images/0005_00021.png" /></p>
+</section>
+<section id="hob-hand-off-block">
+<h2>HOB : Hand off Block<a class="headerlink" href="#hob-hand-off-block" title="Permalink to this headline"></a></h2>
+<p>有些 information 要从 PEI Phase 传到 DXE Phase 组成 ，每一个Block有自己的GUID &amp; Structure 。HOB的Block List是动态的，没有顺序要求。
+<img alt="0005_0003.png" src="../../../_images/0005_00031.png" /></p>
+</section>
+<section id="dxe">
+<h2>DXE：<a class="headerlink" href="#dxe" title="Permalink to this headline"></a></h2>
+<p>遍历固件中的所有的DXE driver，也就是驱动执行环境，当然了，DXE阶段也有DXE派遣器，通信通过protocol，也就是协议。当所有的 dxe driver加载完成后，系统完成初始化，DXE通过EFI_BDS_ARCH_PROTOCOL找到BDS并调用BDS的入口函数，从而进入BDS阶段，从本质上讲，BDS是一种特殊的DXE阶段的应用程序。</p>
+</section>
+<section id="bds">
+<h2>BDS：<a class="headerlink" href="#bds" title="Permalink to this headline"></a></h2>
+<p>BDS：Boot Device Selection，启动必要的驱动程序，启动设备选择。BDS策略通过全局NVRAM变量配置，通过修改变量值修改启动顺序（bootorder），这个修改启动顺序在工厂需要经常用到的，工厂都是批量生产，因此需要写个工具给产线TE，批量修改启动顺序。</p>
+</section>
+<section id="tsl">
+<h2>TSL:<a class="headerlink" href="#tsl" title="Permalink to this headline"></a></h2>
+<p>操作系统加载器执行的第一阶段，在这一阶段OS Loader作为一个UEFI应用程序运行，系统资源仍然由UEFI内核控制。</p>
+</section>
+<section id="rt">
+<h2>RT:<a class="headerlink" href="#rt" title="Permalink to this headline"></a></h2>
+<p>Run Time，系统控制权从UEFI内核转交到OS Loader手中。</p>
+<p>上述是很久之前写的，直接copy了，现在回过头来看，其实这样写是很笼统的，这次，咱们就追踪一下代码，看它到底是怎么跑的吧：</p>
+</section>
+</section>
+<section id="id4">
+<h1>SEC (安全验证)代码分析<a class="headerlink" href="#id4" title="Permalink to this headline"></a></h1>
+<p>SEC的汇编代码入口位于：</p>
+<p>BOOT.XF.1.4\boot_images\QcomPkg\XBLCore\AARCH64\ModuleEntryPoint.masm的 _ModuleEntryPoint中</p>
+<p>入口汇编代码分析
+分析看看ModuleEntryPoint.masm 这个文件</p>
+<p>该汇编代码中，主要工作为：</p>
+<ul class="simple">
+<li><p>1、关闭所有中断</p></li>
+<li><p>2、关闭MMU和Caches</p></li>
+<li><p>3、关闭TLB缓存表</p></li>
+<li><p>4、获得当前运行的安全环境：EL1、EL2、EL3</p></li>
+<li><p>5、初始化ELX 安全环境</p></li>
+<li><p>6、使能 Cache</p></li>
+<li><p>7、初始化栈</p></li>
+<li><p>8、调用 CEntryPoint，传参 _StackBase（0x80C00000）、_StackSize（0x00040000）</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span>#include &lt;AsmMacroIoLibV8.h&gt;
+#include &lt;Base.h&gt;
+#include &lt;Library/PcdLib.h&gt;
+#include &lt;AutoGen.h&gt;
+
+    AREA    |.text|,ALIGN=8,CODE,READONLY
+        
+# BOOT.XF.1.4\boot_images\QcomPkg\XBLCore\AARCH64\ModuleEntryPoint.masm
+IMPORT CEntryPoint				// 导入CEntryPoint()函数
+EXPORT _ModuleEntryPoint		// 输出 _ModuleEntryPoint段
+IMPORT InitStackCanary			// 导入InitStackCanary()函数 初始化栈
+
+IMPORT  ArmDisableInterrupts	// 导入ArmDisableInterrupts()函数 禁用arm 中断
+IMPORT  ArmDisableCachesAndMmu  // 导入ArmDisableCachesAndMmu()函数 禁用cache, mmu
+IMPORT  ArmWriteCptr			
+IMPORT  ArmWriteHcr
+IMPORT  ArmWriteVBar
+
+EXPORT _StackBase 				// 输出栈起始地址，起始地址为：0x80C00000
+EXPORT _StackSize				// 输出栈大小，栈大小为 0x00040000，256k
+EXPORT CNTFRQ 					// 输出时钟频率，19200000
+
+//定义于： BOOT.XF.1.4\boot_images\QcomPkg\Sdm660Pkg\Common\Sdm660Pkg_Loader.dsc
+_StackBase
+  dcq FixedPcdGet64(PcdPrePiStackBase)
+        
+_StackSize
+  dcq FixedPcdGet64(PcdPrePiStackSize)
+        
+CNTFRQ
+  dcq FixedPcdGet32(PcdArmArchTimerFreqInHz)
+
+_ModuleEntryPoint
+  mov x0, #0
+  // 1、关闭所有中断	 /* First ensure all interrupts are disabled */
+  bl ArmDisableInterrupts
+
+  // 2、关闭MMU和Caches	 /* Ensure that the MMU and caches are off */
+  bl ArmDisableCachesAndMmu
+  
+  // 3、关闭TLB缓存表	 /* Invalidate Instruction Cache and TLB */ 
+  bl ArmInvalidateInstructionCache
+  bl ArmInvalidateTlb
+  // 4、获得当前运行的安全环境：EL1、EL2、EL3
+  /* Get current EL in x0 */
+  EL1_OR_EL2_OR_EL3(x0)
+  // CurrentEL : 0xC = EL3; 8 = EL2; 4 = EL1
+  // This only selects between EL1 and EL2 and EL3, else we die.
+  // Provide the Macro with a safe temp xreg to use.
+        //mrs    x0, CurrentEL
+        cmp    x0, #0xC			// 比较 x0寄存器是否为 0xc，如果是跳转到 标签3
+        beq   %F3			
+        cmp    x0, #0x8			// 比较 x0寄存器是否为 0x8，如果是跳转到 标签2
+        beq   %F2
+        cmp    x0, #0x4			// 比较 x0寄存器是否为 0x4
+        bne   、                   // We should never get here
+// EL1 code starts here
+
+1  beq _Start
+2  beq _Start					// 如果当前是 EL2，直接跳转到_Start
+  /* Do not trap any access to Floating Point and Advanced SIMD in EL3、*/
+  /* Note this works only in EL3, x0 has current EL mode */
+3  mov x0, #0
+  bl ArmWriteCptr				// 如果当前是 EL3，直接跳转到ArmWriteCptr 
+  // msr cptr_el3, x0  // EL3 Coprocessor Trap Reg (CPTR)
+  
+// 5、初始化ELX 安全环境
+_SetupELx
+  mov x0, #0x30           /* RES1 */				// x0 = 0x30
+  orr x0, x0, #(1 &lt;&lt; 0)   /* Non-secure bit */		// 使能第0位为1
+  orr x0, x0, #(1 &lt;&lt; 8)   /* HVC enable */			// 使能第8位为1
+  orr x0, x0, #(1 &lt;&lt; 10)  /* 64-bit EL2 */			// 使能第10位为1
+  msr scr_el3, x0									// 配置通用寄存器 scr_el3 为-
+  msr cptr_el3, xzr       /* Disable copro、traps to EL3 */
+  ldr x0, CNTFRQ
+  //msr cntfrq_el0, x0
+  msr sctlr_el2, xzr
+  .......省略一部分代码.......
+// 6、使能 Cache
+_EnableCache
+#ifdef PRE_SIL
+  LoadConstantToReg (FixedPcdGet32(PcdSkipEarlyCacheMaint), x0)
+  cmn x0, #0
+  b.ne _PrepareArguments
+#endif
+  bl ArmInvalidateDataCache
+  bl ArmEnableInstructionCache
+  bl ArmEnableDataCache
+// 7、初始化栈
+_PrepareArguments
+  /* Initialize Stack Canary */
+  bl InitStackCanary
+// 8、调用 CEntryPoint，传参 _StackBase（0x80C00000）、_StackSize（0x00040000）
+  /* x0 = _StackBase and x1 = _StackSize */
+  ldr x0, _StackBase     /* Stack base arg0 */
+  ldr x1, _StackSize     /* Stack size arg1 */
+  bl CEntryPoint
+</pre></div>
+</div>
+<p>初始化C运行环境
+前面汇编代码中主要目的是初始化C运行环境，初始化栈，以便可以调C代码运行。</p>
+<p>SEC的C代码入口位于： <code class="docutils literal notranslate"><span class="pre">BOOT.XF.1.4\boot_images\QcomPkg\XBLCore\Sec.c</span></code>的 CEntryPoint 中</p>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="cm">/**  Entry point</span>
+<span class="cm">  @param  StackBase       pointer to the stack base</span>
+<span class="cm">  @param  StackSize       stack size</span>
+<span class="cm">**/</span><span class="w"></span>
+<span class="n">VOID</span><span class="w"> </span><span class="nf">CEntryPoint</span><span class="w"> </span><span class="p">(</span><span class="n">IN</span><span class="w">  </span><span class="n">VOID</span><span class="w">  </span><span class="o">*</span><span class="n">StackBase</span><span class="p">,</span><span class="n">IN</span><span class="w">  </span><span class="n">UINTN</span><span class="w"> </span><span class="n">StackSize</span><span class="p">){</span><span class="w"></span>
+<span class="w">  </span><span class="n">UefiDebugModeEntry</span><span class="p">();</span><span class="w">		</span><span class="c1">// 如果支待jtag调试的话，此处会循环等待，直到debug指向的地址匹配</span>
+<span class="w">  </span><span class="n">TargetEarlyInit</span><span class="p">()</span><span class="w"></span>
+<span class="w">  </span><span class="n">Main</span><span class="w"> </span><span class="p">(</span><span class="n">StackBase</span><span class="p">,</span><span class="w"> </span><span class="n">StackSize</span><span class="p">);</span><span class="w">	</span><span class="c1">//进入main函数，传参 _StackBase（0x80C00000）、_StackSize（0x00040000）</span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<p>接下来，我们进入 main函数分析下：</p>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="n">VOID</span><span class="w"> </span><span class="nf">Main</span><span class="w"> </span><span class="p">(</span><span class="n">IN</span><span class="w">  </span><span class="n">VOID</span><span class="w">  </span><span class="o">*</span><span class="n">StackBase</span><span class="p">,</span><span class="w"> </span><span class="n">IN</span><span class="w">  </span><span class="n">UINTN</span><span class="w"> </span><span class="n">StackSize</span><span class="p">){</span><span class="w"></span>
+<span class="w">  </span><span class="c1">// 1、获得fdf文件所在的地址，fdf可以说是UEFI的配置文件，</span>
+<span class="w">  </span><span class="c1">// 在fdf文件中包含所有的inf文件所在路径，及相关的bmp图片资源路径，以及相关的cfg配置文件路径。</span>
+<span class="w">  </span><span class="c1">// ## FD Base offset (refer to .fdf for FD size)</span>
+<span class="w">  </span><span class="n">UefiFdBase</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">FixedPcdGet64</span><span class="p">(</span><span class="n">PcdEmbeddedFdBaseAddress</span><span class="p">);</span><span class="w">		</span><span class="c1">// 0x80200000</span>
+<span class="w">  </span>
+<span class="w">  </span><span class="n">SecHeapMemBase</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">UefiFdBase</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">SEC_HEAP_MEM_OFFSET</span><span class="p">;</span><span class="w">		</span><span class="c1">// 0x300000</span>
+<span class="w">  </span><span class="n">HobStackSize</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">StackSize</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="c1">// 2、初始化栈</span>
+<span class="w">  </span><span class="n">InitStackCanary</span><span class="p">();</span><span class="w"></span>
+<span class="w">  </span><span class="c1">// 3、启动定时器周期计数</span>
+<span class="w">  </span><span class="n">StartCyclCounter</span><span class="w"> </span><span class="p">();</span><span class="w"></span>
+<span class="w">  </span><span class="c1">// 4、初始化UART，主要是serial port端口初始化，及 serial buffer初始化  /* Start UART debug output */</span>
+<span class="w">  </span><span class="n">UartInit</span><span class="p">();</span><span class="w"></span>
+<span class="w">  </span><span class="c1">// 5、打印&quot;UEFI Start&quot; 串口信息</span>
+<span class="w">  </span><span class="n">PrintUefiStartInfo</span><span class="p">();</span><span class="w"></span>
+<span class="w">  </span><span class="c1">// 6、初始化CPU异常处理入口</span>
+<span class="w">  </span><span class="n">InitializeCpuExceptionHandlers</span><span class="w"> </span><span class="p">(</span><span class="nb">NULL</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="c1">// 7、打印从开机到现在的时间差</span>
+<span class="w">  </span><span class="n">PrintTimerDelta</span><span class="p">();</span><span class="w"></span>
+<span class="w">  </span><span class="c1">// 8、如果支持的话，启动程序流预测 /* Enable program flow prediction, if supported */</span>
+<span class="w">  </span><span class="n">ArmEnableBranchPrediction</span><span class="w"> </span><span class="p">();</span><span class="w"></span>
+<span class="w">  </span><span class="c1">// 9、/* Initialize Info Block */</span>
+<span class="w">  </span><span class="n">UefiInfoBlkPtr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">InitInfoBlock</span><span class="w"> </span><span class="p">(</span><span class="n">UefiFdBase</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">UEFI_INFO_BLK_OFFSET</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="n">UefiInfoBlkPtr</span><span class="o">-&gt;</span><span class="n">StackBase</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">StackBase</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="n">UefiInfoBlkPtr</span><span class="o">-&gt;</span><span class="n">StackSize</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">StackSize</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="c1">// 10、初始化 RAM 分区表，起始地址0x80000000，内存大小512M，检查地址是否非法，是否可正常访问</span>
+<span class="w">  </span><span class="n">InitRamPartitionTableLib</span><span class="w"> </span><span class="p">();</span><span class="w"></span>
+<span class="w">  </span><span class="n">ValidateFdRegion</span><span class="p">(</span><span class="n">UefiFdBase</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">  </span><span class="c1">//TODO: Move this to ACPI-specific location</span>
+<span class="w">  </span><span class="n">InitializeFBPT</span><span class="p">();</span><span class="w"></span>
+<span class="w">  </span>
+<span class="w">  </span><span class="cm">/* Get nibble from random value to adjust SEC heap */</span><span class="w"></span>
+<span class="w">  </span><span class="n">SecHeapAslrVal</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">AslrAdjustRNGVal</span><span class="p">(</span><span class="n">ASLR_HEAP_RNG_BITS</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="c1">// 11、初始化hoblist，有关hob可参考：https://blog.csdn.net/z190814412/article/details/85330324</span>
+<span class="w">  </span><span class="n">InitHobList</span><span class="p">(</span><span class="n">SecHeapMemBase</span><span class="p">,</span><span class="n">SEC_HEAP_MEM_SIZE</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="p">(</span><span class="n">SecHeapAslrVal</span><span class="o">*</span><span class="n">ASLR_HEAP_ALIGN</span><span class="p">),</span><span class="w"> </span><span class="n">UefiInfoBlkPtr</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="cm">/* Add the FVs to the hob list */</span><span class="w"></span>
+<span class="w">  </span><span class="n">BuildFvHob</span><span class="w"> </span><span class="p">(</span><span class="n">PcdGet64</span><span class="p">(</span><span class="n">PcdFlashFvMainBase</span><span class="p">),</span><span class="w"> </span><span class="n">PcdGet64</span><span class="p">(</span><span class="n">PcdFlashFvMainSize</span><span class="p">));</span><span class="w"></span>
+<span class="w">  </span><span class="c1">// 12、打印RAM 分区信息</span>
+<span class="w">  </span><span class="cm">/* Should be done after we have setup HOB for memory allocation  */</span><span class="w"></span>
+<span class="w">  </span><span class="n">PrintRamPartitions</span><span class="w"> </span><span class="p">();</span><span class="w"></span>
+<span class="w">  </span><span class="c1">// 13、初始化cache</span>
+<span class="w">  </span><span class="n">Status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">EarlyCacheInit</span><span class="w"> </span><span class="p">(</span><span class="n">UefiFdBase</span><span class="p">,</span><span class="w"> </span><span class="n">UEFI_FD_SIZE</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span>
+<span class="w">  </span><span class="c1">// 14、加载并解析 uefiplat.cfg平台配置文件，/* Load and Parse platform cfg file, cache re-initialized per cfg file */</span>
+<span class="w">  </span><span class="n">Status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">LoadAndParsePlatformCfg</span><span class="p">();</span><span class="w"></span>
+
+<span class="w">  </span><span class="c1">// 15、更新系统内存区相关信息 /* Add information from all other memory banks */</span>
+<span class="w">  </span><span class="n">Status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">UpdateSystemMemoryRegions</span><span class="p">();</span><span class="w"></span>
+<span class="w">  </span><span class="n">Status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">InitCacheWithMemoryRegions</span><span class="p">();</span><span class="w"></span>
+
+<span class="w">  </span><span class="c1">// 16、初始化所有的共享库 /* All shared lib related initialization */</span>
+<span class="w">  </span><span class="c1">//初始化的lib源码位于 BOOT.XF.1.4/QcomPkg/SocPkg/AgattiPkg/Library</span>
+<span class="w">  </span><span class="c1">//配置文件位于 BOOT.XF.4.1/boot_images/QcomPkg/SocPkg/AgattiPkg/LAA/Core.dsc</span>
+<span class="w">  </span><span class="n">Status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">InitSharedLibs</span><span class="p">();</span><span class="w"></span>
+<span class="w">  </span><span class="n">InitDbiDump</span><span class="p">();</span><span class="w"></span>
+<span class="w">  </span>
+<span class="w">  </span><span class="c1">// 17、获得DXE Heap堆内存信息，/* Look for &quot;DXE Heap&quot; memory region in config file */</span>
+<span class="w">  </span><span class="n">Status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">GetMemRegionInfoByName</span><span class="p">(</span><span class="s">&quot;DXE Heap&quot;</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">DxeHeapMemInfo</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="cm">/* Get nibble from random value to adjust DXE heap */</span><span class="w"></span>
+<span class="w">  </span><span class="n">DxeHeapAslrVal</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">AslrAdjustRNGVal</span><span class="p">(</span><span class="n">ASLR_HEAP_RNG_BITS</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">  </span><span class="cm">/* Re-initialize HOB to point to the DXE Heap in CFG */</span><span class="w"></span>
+<span class="w">  </span><span class="n">ReInitHobList</span><span class="p">(</span><span class="n">DxeHeapMemInfo</span><span class="p">.</span><span class="n">MemBase</span><span class="p">,</span><span class="w"></span>
+<span class="w">                </span><span class="n">DxeHeapMemInfo</span><span class="p">.</span><span class="n">MemSize</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="p">(</span><span class="n">DxeHeapAslrVal</span><span class="o">*</span><span class="n">ASLR_HEAP_ALIGN</span><span class="p">),</span><span class="w"></span>
+<span class="w">                </span><span class="n">UefiInfoBlkPtr</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="c1">// 18、初始化分页池缓存区</span>
+<span class="w">  </span><span class="cm">/* Now we have access to bigger pool, move pre-pi memory allocation pool to it */</span><span class="w"></span>
+<span class="w">  </span><span class="n">ReInitPagePoolBuffer</span><span class="w"> </span><span class="p">();</span><span class="w"></span>
+<span class="w">  </span><span class="c1">// 19、创建Stack、CPU Hob信息</span>
+<span class="w">  </span><span class="n">BuildStackHob</span><span class="w"> </span><span class="p">((</span><span class="n">EFI_PHYSICAL_ADDRESS</span><span class="p">)</span><span class="n">StackBase</span><span class="p">,</span><span class="w"> </span><span class="n">HobStackSize</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="n">BuildCpuHob</span><span class="w"> </span><span class="p">(</span><span class="n">PcdGet8</span><span class="w"> </span><span class="p">(</span><span class="n">PcdPrePiCpuMemorySize</span><span class="p">),</span><span class="w"> </span><span class="n">PcdGet8</span><span class="w"> </span><span class="p">(</span><span class="n">PcdPrePiCpuIoSize</span><span class="p">));</span><span class="w"></span>
+<span class="w">  </span><span class="c1">// 20、Display 早期初始化</span>
+<span class="w">  </span><span class="n">DisplayEarlyInfo</span><span class="p">();</span><span class="w"></span>
+
+<span class="w">  </span><span class="n">AddMemRegionHobs</span><span class="w"> </span><span class="p">();</span><span class="w"></span>
+
+<span class="w">  </span><span class="cm">/* Start perf here, after timer init, start at current tick value */</span><span class="w"></span>
+<span class="w">   </span><span class="c1">// 21. 开启耗费的时间统计，用于计算性能 /* Start perf here, after timer init, start at current tick value */</span>
+<span class="w">  </span><span class="n">InitPerf</span><span class="p">();</span><span class="w"></span>
+
+<span class="w">  </span><span class="cm">/* SEC phase needs to run library constructors by hand */</span><span class="w"></span>
+<span class="w">  </span><span class="n">ExtractGuidedSectionLibConstructor</span><span class="w"> </span><span class="p">();</span><span class="w"></span>
+<span class="w">  </span><span class="n">LzmaDecompressLibConstructor</span><span class="w"> </span><span class="p">();</span><span class="w"></span>
+<span class="w">  </span><span class="n">ZlibDecompressLibConstructor</span><span class="w"> </span><span class="p">();</span><span class="w"></span>
+
+<span class="w">  </span><span class="cm">/* Build HOBs to pass up our Version of stuff the DXE Core needs to save space */</span><span class="w"></span>
+<span class="w">  </span><span class="n">BuildPeCoffLoaderHob</span><span class="w"> </span><span class="p">();</span><span class="w"></span>
+<span class="w">  </span><span class="n">BuildExtractSectionHob</span><span class="w"> </span><span class="p">(</span><span class="w"></span>
+<span class="w">    </span><span class="o">&amp;</span><span class="n">gLzmaCustomDecompressGuid</span><span class="p">,</span><span class="w"></span>
+<span class="w">    </span><span class="n">LzmaGuidedSectionGetInfo</span><span class="p">,</span><span class="w"></span>
+<span class="w">    </span><span class="n">LzmaGuidedSectionExtraction</span><span class="w"></span>
+<span class="w">    </span><span class="p">);</span><span class="w"></span>
+
+<span class="w">  </span><span class="n">BuildExtractSectionHob</span><span class="w"> </span><span class="p">(</span><span class="w"></span>
+<span class="w">    </span><span class="o">&amp;</span><span class="n">gZlibDecompressGuid</span><span class="p">,</span><span class="w"></span>
+<span class="w">    </span><span class="n">ZlibGuidedSectionGetInfo</span><span class="p">,</span><span class="w"></span>
+<span class="w">    </span><span class="n">ZlibGuidedSectionDecompress</span><span class="w"></span>
+<span class="w">    </span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="cm">/* Check PRODMODE flag */</span><span class="w"></span>
+<span class="w">  </span><span class="n">ProdmodeInfo</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">PRODMODE_ENABLED</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="cm">/* Build HOB to pass up prodmode info for security applications */</span><span class="w"></span>
+<span class="w">  </span><span class="n">BuildGuidDataHob</span><span class="w"> </span><span class="p">(</span><span class="o">&amp;</span><span class="n">gQcomProdmodeInfoGuid</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">ProdmodeInfo</span><span class="p">,</span><span class="w"> </span><span class="k">sizeof</span><span class="p">(</span><span class="n">BOOLEAN</span><span class="p">));</span><span class="w"></span>
+<span class="w">  </span><span class="n">UefiStartTime</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ConvertTimerCountms</span><span class="p">(</span><span class="n">gUEFIStartCounter</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="n">BuildGuidDataHob</span><span class="w"> </span><span class="p">(</span><span class="o">&amp;</span><span class="n">gEfiStartTimeHobGuid</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">UefiStartTime</span><span class="p">,</span><span class="w"> </span><span class="k">sizeof</span><span class="p">(</span><span class="n">UINT32</span><span class="p">));</span><span class="w"></span>
+
+
+<span class="w">  </span><span class="cm">/* Assume the FV that contains the SEC (our code) also contains a compressed FV */</span><span class="w"></span>
+<span class="w">  </span><span class="n">DecompressFirstFv</span><span class="w"> </span><span class="p">();</span><span class="w"></span>
+
+<span class="w">  </span><span class="cm">/* Any non-critical initialization */</span><span class="w"></span>
+<span class="w">  </span><span class="n">TargetLateInit</span><span class="p">();</span><span class="w"></span>
+
+<span class="w">  </span><span class="cm">/* Build memory allocation HOB for FV2 type</span>
+<span class="cm">     Need to remove for decompressed image */</span><span class="w"></span>
+<span class="w">  </span><span class="n">BuildMemHobForFv</span><span class="p">(</span><span class="n">EFI_HOB_TYPE_FV2</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">  </span><span class="cm">/* Load the DXE Core and transfer control to it */</span><span class="w"></span>
+<span class="w">   </span><span class="c1">// 22. 加载且将CPU交给 DXE Core。</span>
+<span class="w">  </span><span class="n">LoadDxeCoreFromFv</span><span class="w"> </span><span class="p">(</span><span class="nb">NULL</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">  </span><span class="cm">/* DXE Core should always load and never return */</span><span class="w"></span>
+<span class="w">  </span><span class="n">ASSERT</span><span class="w"> </span><span class="p">(</span><span class="n">FALSE</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="n">CpuDeadLoop</span><span class="p">();</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><ol class="arabic simple">
+<li><p>获得fdf文件所在的地址，在fdf文件中包含所有的inf文件所在路径，及相关的bmp图片资源路径，以及相关的cfg配置文件路径。fdf可以说是UEFI的配置文件。</p></li>
+</ol>
+</li>
+<li><ol class="arabic simple" start="2">
+<li><p>初始化栈</p></li>
+</ol>
+</li>
+<li><ol class="arabic simple" start="3">
+<li><p>启动定时器周期计数</p></li>
+</ol>
+</li>
+<li><ol class="arabic simple" start="4">
+<li><p>初始化UART，主要是serial port端口初始化，及 serial buffer初始化</p></li>
+</ol>
+</li>
+<li><ol class="arabic simple" start="5">
+<li><p>打印”UEFI Start” 串口信息</p></li>
+</ol>
+</li>
+<li><ol class="arabic simple" start="6">
+<li><p>初始化CPU异常处理入口</p></li>
+</ol>
+</li>
+<li><ol class="arabic simple" start="7">
+<li><p>打印从开机到现在的时间差</p></li>
+</ol>
+</li>
+<li><ol class="arabic simple" start="8">
+<li><p>如果支持的话，启动程序流预测 /* Enable program flow prediction, if supported */</p></li>
+</ol>
+</li>
+<li><ol class="arabic simple" start="9">
+<li><p>Initialize Info Block</p></li>
+</ol>
+</li>
+<li><ol class="arabic simple" start="10">
+<li><p>初始化 RAM 分区表，起始地址0x80000000，内存大小512M，检查地址是否非法，是否可正常访问</p></li>
+</ol>
+</li>
+<li><ol class="arabic simple" start="11">
+<li><p>初始化hoblist，有关hob可参考：https://blog.csdn.net/z190814412/article/details/85330324</p></li>
+</ol>
+</li>
+<li><ol class="arabic simple" start="12">
+<li><p>打印RAM 分区信息</p></li>
+</ol>
+</li>
+<li><ol class="arabic simple" start="13">
+<li><p>初始化cache</p></li>
+</ol>
+</li>
+<li><ol class="arabic simple" start="14">
+<li><p>加载并解析 uefiplat.cfg平台配置文件</p></li>
+</ol>
+</li>
+<li><ol class="arabic simple" start="15">
+<li><p>更新系统内存区相关信息 /* Add information from all other memory banks */</p></li>
+</ol>
+</li>
+<li><ol class="arabic simple" start="16">
+<li><p>初始化所有的共享库 /* All shared lib related initialization */</p></li>
+</ol>
+</li>
+</ul>
+<blockquote>
+<div><p>初始化的lib源码位于 BOOT.XF.1.4/QcomPkg/SocPkg/AgattiPkg/Library
+配置文件位于 BOOT.XF.4.1/boot_images/QcomPkg/SocPkg/AgattiPkg/LAA/Core.dsc</p>
+</div></blockquote>
+<ul class="simple">
+<li><ol class="arabic simple" start="17">
+<li><p>获得DXE Heap堆内存信息，/* Look for “DXE Heap” memory region in config file */</p></li>
+</ol>
+</li>
+<li><ol class="arabic simple" start="18">
+<li><p>初始化分页池缓存区</p></li>
+</ol>
+</li>
+<li><ol class="arabic simple" start="19">
+<li><p>创建Stack、CPU Hob信息</p></li>
+</ol>
+</li>
+<li><ol class="arabic simple" start="20">
+<li><p>Display 早期初始化</p></li>
+</ol>
+</li>
+<li><ol class="arabic simple" start="21">
+<li><p>开启耗费的时间统计，用于计算性能</p></li>
+</ol>
+</li>
+<li><ol class="arabic simple" start="22">
+<li><p>加载且将CPU交给 DXE Core。</p></li>
+</ol>
+</li>
+</ul>
+<section id="loadandparseplatformcfg-uefiplat-cfg">
+<h2>LoadAndParsePlatformCfg() 加载并解析 uefiplat.cfg平台配置文件<a class="headerlink" href="#loadandparseplatformcfg-uefiplat-cfg" title="Permalink to this headline"></a></h2>
+<p>主要工作流程如下：</p>
+<ol class="arabic simple">
+<li><p>初始化相关全局变量</p></li>
+<li><p>加载并解析 uefiplat.cfg 配置文件 #define UEFIPLATCFG_FILE “uefiplat.cfg”</p></li>
+<li><p>文件内容保存在 CfgBuffer 中，解析器描述符保存在MemParserDesc 中</p></li>
+<li><p>在cfg文件中包含了内存相关的信息及系统相关的配置，QcomPkg/SocPkg/AgattiPkg/LAA/uefiplat.cfg</p></li>
+<li><p>解析 uefiplat.cfg 中的 [Config] 区域</p></li>
+<li><p>解析 uefiplat.cfg 中的 [MemoryMap] 区域</p></li>
+<li><p>解析 uefiplat.cfg 中的 [RegisterMap] 区域，内容保存在mMemRegions中</p></li>
+<li><p>解析 uefiplat.cfg 中的 [ConfigParameters] 区域</p></li>
+<li><p>内容保存在 ConfigTable 中，ConfigTableEntryCount表示其内容的数量</p></li>
+<li><p>解析 uefiplat.cfg 中的 [ChipIDConfig] 区域</p></li>
+<li><p>uefiplat.cfg配置了启动哪些默认app</p></li>
+</ol>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="n">QcomPkg</span><span class="o">/</span><span class="n">XBLCore</span><span class="o">/</span><span class="n">UefiPlatCfg</span><span class="p">.</span><span class="n">c</span><span class="o">:</span><span class="w"></span>
+<span class="n">EFI_STATUS</span><span class="w"> </span><span class="n">EFIAPI</span><span class="w"> </span><span class="n">LoadAndParsePlatformCfg</span><span class="w"> </span><span class="p">(</span><span class="w"> </span><span class="n">VOID</span><span class="w"> </span><span class="p">){</span><span class="w"></span>
+<span class="w">  </span><span class="c1">// 1. 初始化相关全局变量</span>
+<span class="w">  </span><span class="n">InitGlobals</span><span class="p">();</span><span class="w"></span>
+<span class="w">  </span><span class="c1">// 2. 加载并解析 uefiplat.cfg 配置文件 #define UEFIPLATCFG_FILE &quot;uefiplat.cfg&quot;</span>
+<span class="w">  </span><span class="c1">// 文件内容保存在 CfgBuffer 中，解析器描述符保存在MemParserDesc 中</span>
+<span class="w">  </span><span class="c1">// 在cfg文件中包含了内存相关的信息及系统相关的配置，amss\BOOT.XF.1.4\boot_images\QcomPkg\Sdm660Pkg\LA\uefiplat.cfg</span>
+<span class="w">  </span><span class="n">Status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">LoadFileFromFV0</span><span class="w"> </span><span class="p">(</span><span class="n">UEFIPLATCFG_FILE</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">CfgBuffer</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">FileSize</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="n">MemParserDesc</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">OpenParser</span><span class="w"> </span><span class="p">(</span><span class="n">CfgBuffer</span><span class="p">,</span><span class="w"> </span><span class="n">FileSize</span><span class="p">,</span><span class="w"> </span><span class="nb">NULL</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">  </span><span class="cm">/* Reset Global for RAM load */</span><span class="w"></span>
+<span class="w">  </span><span class="n">mMemRegions</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">NULL</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="n">mNumMemRegions</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="c1">// 3. 解析uefiplat.cfg 中的 [Config] 区域</span>
+<span class="w">  </span><span class="n">EnumKeyValues</span><span class="w"> </span><span class="p">(</span><span class="n">MemParserDesc</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">UINT8</span><span class="o">*</span><span class="p">)</span><span class="s">&quot;Config&quot;</span><span class="p">,</span><span class="w">  </span><span class="n">ProcessConfigTokens</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="n">MemParserDesc</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ReopenParser</span><span class="w"> </span><span class="p">(</span><span class="n">MemParserDesc</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="c1">// 4. 解析uefiplat.cfg 中的 [MemoryMap] 区域</span>
+<span class="w">  </span><span class="n">EnumCommaDelimSectionItems</span><span class="w"> </span><span class="p">(</span><span class="n">MemParserDesc</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">UINT8</span><span class="o">*</span><span class="p">)</span><span class="s">&quot;MemoryMap&quot;</span><span class="p">,</span><span class="w">  </span><span class="n">ProcessMemoryMapTokens</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="n">GetCfgMemMapBounds</span><span class="p">();</span><span class="w"></span>
+<span class="w">  </span><span class="c1">//UpdateSystemMemoryRegions();</span>
+<span class="w">  </span><span class="n">MemParserDesc</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ReopenParser</span><span class="w"> </span><span class="p">(</span><span class="n">MemParserDesc</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="c1">// 5. 解析uefiplat.cfg 中的 [RegisterMap] 区域，内容保存在mMemRegions中</span>
+<span class="w">  </span><span class="n">EnumCommaDelimSectionItems</span><span class="w"> </span><span class="p">(</span><span class="n">MemParserDesc</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">UINT8</span><span class="o">*</span><span class="p">)</span><span class="s">&quot;RegisterMap&quot;</span><span class="p">,</span><span class="w">  </span><span class="n">ProcessMemoryMapTokens</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="n">MemParserDesc</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ReopenParser</span><span class="w"> </span><span class="p">(</span><span class="n">MemParserDesc</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="cm">/* Reset for RAM load */</span><span class="w"></span>
+<span class="w">  </span><span class="n">ConfigTable</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">NULL</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="n">ConfigTableEntryCount</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="c1">// 6. 解析uefiplat.cfg 中的 [ConfigParameters] 区域</span>
+<span class="w">  </span><span class="c1">// 内容保存在 ConfigTable 中，ConfigTableEntryCount表示其内容的数量</span>
+<span class="w">  </span><span class="n">EnumKeyValues</span><span class="w"> </span><span class="p">(</span><span class="n">MemParserDesc</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">UINT8</span><span class="o">*</span><span class="p">)</span><span class="s">&quot;ConfigParameters&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">ParseConfigParameters</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="n">MemParserDesc</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ReopenParser</span><span class="w"> </span><span class="p">(</span><span class="n">MemParserDesc</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="c1">// 7. 解析uefiplat.cfg 中的 [ChipIDConfig] 区域</span>
+<span class="w">  </span><span class="n">EnumCommaDelimSectionItems</span><span class="w"> </span><span class="p">(</span><span class="n">MemParserDesc</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">UINT8</span><span class="o">*</span><span class="p">)</span><span class="s">&quot;ChipIDConfig&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">ParseChipIDConfigParameters</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="n">CloseParser</span><span class="p">(</span><span class="n">MemParserDesc</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">EFI_SUCCESS</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<p>其中比较重要的两个默认APP是charger app和ABL，将在BDS阶段启动，如下：</p>
+<div class="highlight-log notranslate"><div class="highlight"><pre><span></span>## Default app to boot in platform BDS init
+DefaultChargerApp = &quot;QcomChargerApp&quot;
+DefaultBDSBootApp = &quot;LinuxLoader&quot;
+</pre></div>
+</div>
+</section>
+<section id="displayearlyinfo">
+<h2>DisplayEarlyInfo() 显示模块早期初始化<a class="headerlink" href="#displayearlyinfo" title="Permalink to this headline"></a></h2>
+<p>在 DisplayEarlyInfo 中主要工作就是解析 UEFI version 版本号，然后根据版本号加载对应的镜像，接着打印系统启动的路径。</p>
+<p>主要流程为：</p>
+<ol class="arabic simple">
+<li><p>获取UefiPlatCfg.c中的UEFI CORE字段信息，PlatConfigFileName=”uefiplatLA.cfg”</p></li>
+<li><p>获取固件版本号，定义在boot_images\QcomPkg\Sdm660Pkg\LA\Sdm660Pkg_Core.dsc中gEfiMdeModulePkgTokenSpaceGuid.PcdFirmwareVersionString|L”4.2”</p></li>
+<li><p>根据固件版本号查找对应的image镜像 Append Image version string component</p></li>
+<li><p>打印UEFI固件版本号</p></li>
+<li><p>选UEFI启动类型，判断顺序为 UFS &gt; EMMC &gt; SPI</p></li>
+</ol>
+<p>a6650打印版本号如下：</p>
+<div class="highlight-log notranslate"><div class="highlight"><pre><span></span>UEFI Ver   : 5.0.220730.BOOT.XF.4.1-00343-KAMORTALAZ-1
+Platform           : IDP
+Chip Name          : QCM_AGATTI
+Chip Ver           : 1.0
+Chip Serial Number : 0x52834787
+</pre></div>
+</div>
+<p>代码如下：</p>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="n">QcomPkg</span><span class="o">/</span><span class="n">XBLCore</span><span class="o">/</span><span class="n">FwVersion</span><span class="p">.</span><span class="n">c</span><span class="o">:</span><span class="w"></span>
+<span class="n">VOID</span><span class="w"> </span><span class="n">DisplayEarlyInfo</span><span class="p">(</span><span class="n">VOID</span><span class="p">){</span><span class="w"></span>
+<span class="w">  </span><span class="c1">// 1. 获取UefiPlatCfg.c中的UEFI CORE字段信息，PlatConfigFileName=&quot;uefiplatLA.cfg&quot;</span>
+<span class="w">  </span><span class="n">Status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">GetConfigString</span><span class="p">(</span><span class="s">&quot;PlatConfigFileName&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">ImgVerAsciiStr</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">FileNameBuffLen</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="n">DEBUG</span><span class="w"> </span><span class="p">((</span><span class="n">EFI_D_WARN</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;CONF File   : %a</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">ImgVerAsciiStr</span><span class="p">));</span><span class="w"></span>
+<span class="w">  </span><span class="c1">// 2. 获取固件版本号，定义在boot_images\QcomPkg\Sdm660Pkg\LA\Sdm660Pkg_Core.dsc中</span>
+<span class="w">  </span><span class="c1">//  gEfiMdeModulePkgTokenSpaceGuid.PcdFirmwareVersionString|L&quot;4.2&quot;</span>
+<span class="w">  </span><span class="n">VerStr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">FixedPcdGetPtr</span><span class="p">(</span><span class="n">PcdFirmwareVersionString</span><span class="p">);</span><span class="w">  </span>
+<span class="w">  </span><span class="c1">// ...... 省略部分代码</span>
+
+<span class="w">  </span><span class="c1">// 3. 根据固件版本号查找对应的image镜像 Append Image version string component</span>
+<span class="w">  </span><span class="n">Status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">GetImageVersionString</span><span class="p">(</span><span class="n">ImgVerAsciiStr</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="c1">// 4. 打印UEFI固件版本号</span>
+<span class="w">  </span><span class="n">DEBUG</span><span class="w"> </span><span class="p">((</span><span class="n">EFI_D_ERROR</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;UEFI Ver    : %a</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">FinalVersionString</span><span class="p">));</span><span class="w"></span>
+
+<span class="w">  </span><span class="n">BuildGuidDataHob</span><span class="w"> </span><span class="p">(</span><span class="o">&amp;</span><span class="n">gQcomFwVersionStringGuid</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">FinalVersionString</span><span class="p">,</span><span class="w"> </span><span class="n">AsciiStrSize</span><span class="p">(</span><span class="n">FinalVersionString</span><span class="p">));</span><span class="w"></span>
+<span class="w">  </span><span class="n">BuildGuidDataHob</span><span class="w"> </span><span class="p">(</span><span class="o">&amp;</span><span class="n">gQcomFwVersionHexGuid</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">Version</span><span class="p">,</span><span class="w"> </span><span class="k">sizeof</span><span class="p">(</span><span class="n">UINT32</span><span class="p">));</span><span class="w"></span>
+<span class="w">  </span><span class="n">BuildGuidDataHob</span><span class="w"> </span><span class="p">(</span><span class="o">&amp;</span><span class="n">gQcomRelDateStringGuid</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">RelDateString</span><span class="p">,</span><span class="w"> </span><span class="n">AsciiStrSize</span><span class="p">(</span><span class="n">RelDateString</span><span class="p">));</span><span class="w"></span>
+
+<span class="w">  </span><span class="k">if</span><span class="p">(</span><span class="k">sizeof</span><span class="w"> </span><span class="p">(</span><span class="n">UINTN</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mh">0x8</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="n">DEBUG</span><span class="w"> </span><span class="p">((</span><span class="n">EFI_D_ERROR</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Build Info  : 64b %a %a</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">__DATE__</span><span class="p">,</span><span class="w"> </span><span class="n">__TIME__</span><span class="p">));</span><span class="w"></span>
+<span class="w">  </span><span class="k">else</span><span class="w"></span>
+<span class="w">    </span><span class="n">DEBUG</span><span class="w"> </span><span class="p">((</span><span class="n">EFI_D_ERROR</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Build Info  : 32b %a %a</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">__DATE__</span><span class="p">,</span><span class="w"> </span><span class="n">__TIME__</span><span class="p">));</span><span class="w"></span>
+<span class="w">  </span><span class="c1">// 5. 选UEFI启动类型，判断顺序为 UFS &gt; EMMC &gt; SPI</span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">boot_from_ufs</span><span class="p">())</span><span class="w">  </span><span class="n">DEBUG</span><span class="w"> </span><span class="p">((</span><span class="n">EFI_D_ERROR</span><span class="p">,</span><span class="w">   </span><span class="s">&quot;Boot Device : UFS</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">));</span><span class="w"></span>
+<span class="w">  </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">boot_from_emmc</span><span class="p">())</span><span class="w"> </span><span class="n">DEBUG</span><span class="w"> </span><span class="p">((</span><span class="n">EFI_D_ERROR</span><span class="p">,</span><span class="w">   </span><span class="s">&quot;Boot Device : eMMC</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">));</span><span class="w"></span>
+<span class="w">  </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">boot_from_spi_nor</span><span class="p">())</span><span class="w"> </span><span class="n">DEBUG</span><span class="w"> </span><span class="p">((</span><span class="n">EFI_D_ERROR</span><span class="p">,</span><span class="w">   </span><span class="s">&quot;Boot Device : SPI</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">));</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+</section>
+<section id="loaddxecorefromfv-dxe-core">
+<h2>LoadDxeCoreFromFv() 加载DXE Core<a class="headerlink" href="#loaddxecorefromfv-dxe-core" title="Permalink to this headline"></a></h2>
+<p>先查找DXE_CORE的文件地址，接着调用LoadDxeCoreFromFfsFile 加载 EntryPoint函数</p>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="cp"># amss\BOOT.XF.1.4\boot_images\EmbeddedPkg\Library\PrePiLib\PrePiLib.c</span>
+<span class="n">EFI_STATUS</span><span class="w"> </span><span class="n">EFIAPI</span><span class="w"> </span><span class="n">LoadDxeCoreFromFv</span><span class="p">(</span><span class="n">IN</span><span class="w"> </span><span class="n">UINTN</span><span class="w"> </span><span class="o">*</span><span class="n">FvInstance</span><span class="p">,</span><span class="w"> </span><span class="n">OPTIONAL</span><span class="w"> </span><span class="n">IN</span><span class="w"> </span><span class="n">UINTN</span><span class="w">  </span><span class="n">StackSize</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">FvInstance</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="nb">NULL</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="c1">// Caller passed in a specific FV to try, so only try that one</span>
+<span class="w">    </span><span class="n">Status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">FfsFindNextVolume</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="n">FvInstance</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">VolumeHandle</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">EFI_ERROR</span><span class="w"> </span><span class="p">(</span><span class="n">Status</span><span class="p">))</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">      </span><span class="n">Status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">FfsFindNextFile</span><span class="w"> </span><span class="p">(</span><span class="n">EFI_FV_FILETYPE_DXE_CORE</span><span class="p">,</span><span class="w"> </span><span class="n">VolumeHandle</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">FileHandle</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">Status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">FfsAnyFvFindFirstFile</span><span class="w"> </span><span class="p">(</span><span class="n">EFI_FV_FILETYPE_DXE_CORE</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">VolumeHandle</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">FileHandle</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">LoadDxeCoreFromFfsFile</span><span class="w"> </span><span class="p">(</span><span class="n">FileHandle</span><span class="p">,</span><span class="w"> </span><span class="n">StackSize</span><span class="p">);</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<p>在 LoadDxeCoreFromFfsFile() 中最终调用运行 EntryPoint函数。</p>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="w">    </span><span class="n">SwitchStack</span><span class="w"> </span><span class="p">(</span><span class="w"></span>
+<span class="w">      </span><span class="p">(</span><span class="n">SWITCH_STACK_ENTRY_POINT</span><span class="p">)(</span><span class="n">UINTN</span><span class="p">)</span><span class="n">EntryPoint</span><span class="p">,</span><span class="w"></span>
+<span class="w">      </span><span class="n">Hob</span><span class="p">,</span><span class="w"></span>
+<span class="w">      </span><span class="nb">NULL</span><span class="p">,</span><span class="w"></span>
+<span class="w">      </span><span class="n">TopOfStack</span><span class="w"></span>
+<span class="w">      </span><span class="p">);</span><span class="w"></span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="id5">
+<h1>DXE (驱动执行环境)<a class="headerlink" href="#id5" title="Permalink to this headline"></a></h1>
+<ul class="simple">
+<li><p>DXE的加载位置在：</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">BOOT</span><span class="o">.</span><span class="n">XF</span><span class="mf">.1.4</span>\<span class="n">boot_images</span>\<span class="n">EmbeddedPkg</span>\<span class="n">Library</span>\<span class="n">PrePiLib</span>\<span class="n">PrePiLib</span><span class="o">.</span><span class="n">c的</span> <span class="n">LoadDxeCoreFromFv中</span>
+</pre></div>
+</div>
+<p>在前面我们分析，CPU跳转到了ENTRY_POINT函数 DxeMain()中</p>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span>BOOT.XF.1.4\boot_images\MdeModulePkg\Core\Dxe\DxeMain.inf
+[Defines]
+  INF_VERSION                    = 0x00010005
+  BASE_NAME                      = DxeCore
+  MODULE_UNI_FILE                = DxeCore.uni
+  FILE_GUID                      = D6A2CB7F-6A18-4e2f-B43B-9920A733700A
+  MODULE_TYPE                    = DXE_CORE
+  VERSION_STRING                 = 1.0
+  ENTRY_POINT                    = DxeMain
+</pre></div>
+</div>
+<p>我们接下来看下DxeMain的主要工作。</p>
+<p>DXE的入口代码位于：</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">amss</span>\<span class="n">BOOT</span><span class="o">.</span><span class="n">XF</span><span class="mf">.1.4</span>\<span class="n">boot_images</span>\<span class="n">MdeModulePkg</span>\<span class="n">Core</span>\<span class="n">Dxe</span>\<span class="n">DxeMain</span>\<span class="n">DxeMain</span><span class="o">.</span><span class="n">c的</span> <span class="n">DxeMain中</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>主要工作流程为：</p>
+<ul>
+<li><p>初始化CPU异常处理情况。</p></li>
+<li><p>初始化内存、事件等相关基础服务, 主要目的是初始化UEFI代码基础环境（这一大段代码有点看不懂，跳过）</p></li>
+<li><p>初始化DXE 调度器相关</p></li>
+<li><p>遍历固件中的所有的DXE driver</p></li>
+</ul>
+</li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="n">VOID</span><span class="w"> </span><span class="n">EFIAPI</span><span class="w"> </span><span class="n">DxeMain</span><span class="w"> </span><span class="p">(</span><span class="n">IN</span><span class="w">  </span><span class="n">VOID</span><span class="w"> </span><span class="o">*</span><span class="n">HobStart</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="c1">// 1. 初始化CPU异常处理情况。</span>
+<span class="w">  </span><span class="n">Status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">InitializeCpuExceptionHandlers</span><span class="w"> </span><span class="p">(</span><span class="n">VectorInfoList</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="c1">// 2. 初始化内存、事件等相关基础服务, 主要目的是初始化UEFI代码基础环境</span>
+<span class="w">  </span><span class="n">CoreInitializeMemoryServices</span><span class="w"> </span><span class="p">(</span><span class="o">&amp;</span><span class="n">HobStart</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">MemoryBaseAddress</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">MemoryLength</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">  </span><span class="c1">// Start the Image Services.</span>
+<span class="w">  </span><span class="n">Status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">CoreInitializeImageServices</span><span class="w"> </span><span class="p">(</span><span class="n">HobStart</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="c1">// Initialize the Global Coherency Domain Services</span>
+<span class="w">  </span><span class="n">Status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">CoreInitializeGcdServices</span><span class="w"> </span><span class="p">(</span><span class="o">&amp;</span><span class="n">HobStart</span><span class="p">,</span><span class="w"> </span><span class="n">MemoryBaseAddress</span><span class="p">,</span><span class="w"> </span><span class="n">MemoryLength</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="c1">// Call constructor for all libraries</span>
+<span class="w">  </span><span class="n">ProcessLibraryConstructorList</span><span class="w"> </span><span class="p">(</span><span class="n">gDxeCoreImageHandle</span><span class="p">,</span><span class="w"> </span><span class="n">gDxeCoreST</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="c1">// .... 省略一部分代码 .... </span>
+<span class="w">  </span><span class="c1">// Install the DXE Services Table into the EFI System Tables&#39;s Configuration Table</span>
+<span class="w">  </span><span class="n">Status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">CoreInstallConfigurationTable</span><span class="w"> </span><span class="p">(</span><span class="o">&amp;</span><span class="n">gEfiDxeServicesTableGuid</span><span class="p">,</span><span class="w"> </span><span class="n">gDxeCoreDS</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="c1">// Install the HOB List into the EFI System Tables&#39;s Configuration Table</span>
+<span class="w">  </span><span class="n">Status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">CoreInstallConfigurationTable</span><span class="w"> </span><span class="p">(</span><span class="o">&amp;</span><span class="n">gEfiHobListGuid</span><span class="p">,</span><span class="w"> </span><span class="n">HobStart</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="c1">// Install Memory Type Information Table into the EFI System Tables&#39;s Configuration Table</span>
+<span class="w">  </span><span class="n">Status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">CoreInstallConfigurationTable</span><span class="w"> </span><span class="p">(</span><span class="o">&amp;</span><span class="n">gEfiMemoryTypeInformationGuid</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">gMemoryTypeInformation</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="c1">// Initialize the Event Services</span>
+<span class="w">  </span><span class="n">Status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">CoreInitializeEventServices</span><span class="w"> </span><span class="p">();</span><span class="w"></span>
+<span class="w">  </span><span class="n">MemoryProfileInstallProtocol</span><span class="w"> </span><span class="p">();</span><span class="w"></span>
+<span class="w">  </span><span class="n">CoreInitializePropertiesTable</span><span class="w"> </span><span class="p">();</span><span class="w"></span>
+<span class="w">  </span><span class="n">CoreInitializeMemoryAttributesTable</span><span class="w"> </span><span class="p">();</span><span class="w"></span>
+
+<span class="w">  </span><span class="c1">// Get the Protocols that were passed in from PEI to DXE through GUIDed HOBs</span>
+<span class="w">  </span><span class="c1">//</span>
+<span class="w">  </span><span class="c1">// These Protocols are not architectural. This implementation is sharing code between</span>
+<span class="w">  </span><span class="c1">// PEI and DXE in order to save FLASH space. These Protocols could also be implemented</span>
+<span class="w">  </span><span class="c1">// as part of the DXE Core. However, that would also require the DXE Core to be ported</span>
+<span class="w">  </span><span class="c1">// each time a different CPU is used, a different Decompression algorithm is used, or a</span>
+<span class="w">  </span><span class="c1">// different Image type is used. By placing these Protocols in PEI, the DXE Core remains</span>
+<span class="w">  </span><span class="c1">// generic, and only PEI and the Arch Protocols need to be ported from Platform to Platform,</span>
+<span class="w">  </span><span class="c1">// and from CPU to CPU.</span>
+<span class="w">  </span><span class="c1">//</span>
+<span class="w">  </span><span class="c1">// Publish the EFI, Tiano, and Custom Decompress protocols for use by other DXE components</span>
+<span class="w">  </span><span class="n">Status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">CoreInstallMultipleProtocolInterfaces</span><span class="p">(</span><span class="o">&amp;</span><span class="n">mDecompressHandle</span><span class="p">,</span><span class="o">&amp;</span><span class="n">gEfiDecompressProtocolGuid</span><span class="p">,</span><span class="o">&amp;</span><span class="n">gEfiDecompress</span><span class="p">,</span><span class="nb">NULL</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">  </span><span class="c1">// Register for the GUIDs of the Architectural Protocols, so the rest of the</span>
+<span class="w">  </span><span class="c1">// EFI Boot Services and EFI Runtime Services tables can be filled in.</span>
+<span class="w">  </span><span class="c1">// Also register for the GUIDs of optional protocols.</span>
+<span class="w">  </span><span class="c1">//</span>
+<span class="w">  </span><span class="n">CoreNotifyOnProtocolInstallation</span><span class="w"> </span><span class="p">();</span><span class="w"></span>
+
+<span class="w">  </span><span class="c1">// Produce Firmware Volume Protocols, one for each FV in the HOB list.</span>
+<span class="w">  </span><span class="n">Status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">FwVolBlockDriverInit</span><span class="w"> </span><span class="p">(</span><span class="n">gDxeCoreImageHandle</span><span class="p">,</span><span class="w"> </span><span class="n">gDxeCoreST</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="n">ASSERT_EFI_ERROR</span><span class="w"> </span><span class="p">(</span><span class="n">Status</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">  </span><span class="n">Status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">FwVolDriverInit</span><span class="w"> </span><span class="p">(</span><span class="n">gDxeCoreImageHandle</span><span class="p">,</span><span class="w"> </span><span class="n">gDxeCoreST</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="n">ASSERT_EFI_ERROR</span><span class="w"> </span><span class="p">(</span><span class="n">Status</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">  </span><span class="c1">// Produce the Section Extraction Protocol</span>
+<span class="w">  </span><span class="n">Status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">InitializeSectionExtraction</span><span class="w"> </span><span class="p">(</span><span class="n">gDxeCoreImageHandle</span><span class="p">,</span><span class="w"> </span><span class="n">gDxeCoreST</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="n">ASSERT_EFI_ERROR</span><span class="w"> </span><span class="p">(</span><span class="n">Status</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="c1">// 3. 初始化DXE 调度器相关</span>
+<span class="w">  </span><span class="c1">// Initialize the DXE Dispatcher</span>
+<span class="w">  </span><span class="n">PERF_START</span><span class="w"> </span><span class="p">(</span><span class="nb">NULL</span><span class="p">,</span><span class="s">&quot;CoreInitializeDispatcher&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;DxeMain&quot;</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="n">CoreInitializeDispatcher</span><span class="w"> </span><span class="p">();</span><span class="w"></span>
+<span class="w">  </span><span class="n">PERF_END</span><span class="w"> </span><span class="p">(</span><span class="nb">NULL</span><span class="p">,</span><span class="s">&quot;CoreInitializeDispatcher&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;DxeMain&quot;</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="c1">// Invoke the DXE Dispatcher</span>
+<span class="w">  </span><span class="n">PERF_START</span><span class="w"> </span><span class="p">(</span><span class="nb">NULL</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;CoreDispatcher&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;DxeMain&quot;</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="n">CoreDispatcher</span><span class="w"> </span><span class="p">();</span><span class="w"></span>
+<span class="w">  </span><span class="n">PERF_END</span><span class="w"> </span><span class="p">(</span><span class="nb">NULL</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;CoreDispatcher&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;DxeMain&quot;</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">  </span><span class="c1">// Display Architectural protocols that were not loaded if this is DEBUG build</span>
+<span class="w">  </span><span class="n">DEBUG_CODE_BEGIN</span><span class="w"> </span><span class="p">();</span><span class="w"></span>
+<span class="w">  </span><span class="n">CoreDisplayMissingArchProtocols</span><span class="w"> </span><span class="p">();</span><span class="w"></span>
+<span class="w">  </span><span class="n">DEBUG_CODE_END</span><span class="w"> </span><span class="p">();</span><span class="w"></span>
+
+<span class="w">  </span><span class="c1">// Display any drivers that were not dispatched because dependency expression</span>
+<span class="w">  </span><span class="c1">// evaluated to false if this is a debug build</span>
+<span class="w">  </span><span class="n">DEBUG_CODE_BEGIN</span><span class="w"> </span><span class="p">();</span><span class="w"></span>
+<span class="w">  </span><span class="n">CoreDisplayDiscoveredNotDispatched</span><span class="w"> </span><span class="p">();</span><span class="w"></span>
+<span class="w">  </span><span class="n">DEBUG_CODE_END</span><span class="w"> </span><span class="p">();</span><span class="w"></span>
+
+<span class="w">  </span><span class="c1">// Assert if the Architectural Protocols are not present.</span>
+<span class="w">  </span><span class="n">Status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">CoreAllEfiServicesAvailable</span><span class="w"> </span><span class="p">();</span><span class="w"></span>
+
+<span class="w">  </span><span class="c1">// Report Status code before transfer control to BDS</span>
+<span class="w">  </span><span class="n">REPORT_STATUS_CODE</span><span class="w"> </span><span class="p">(</span><span class="w"> </span><span class="n">EFI_PROGRESS_CODE</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">EFI_SOFTWARE_DXE_CORE</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">EFI_SW_DXE_CORE_PC_HANDOFF_TO_NEXT</span><span class="p">));</span><span class="w"></span>
+
+<span class="w">  </span><span class="c1">// Transfer control to the BDS Architectural Protocol</span>
+<span class="w">  </span><span class="n">gBds</span><span class="o">-&gt;</span><span class="n">Entry</span><span class="w"> </span><span class="p">(</span><span class="n">gBds</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">  </span><span class="c1">// BDS should never return</span>
+<span class="w">  </span><span class="n">CpuDeadLoop</span><span class="w"> </span><span class="p">();</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<p>目前QCM6650所有DEX_DRIVER如下，包括<code class="docutils literal notranslate"><span class="pre">UsbConfigLib</span></code>和<code class="docutils literal notranslate"><span class="pre">UsbfnDwc3Lib</span></code>：</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>wugn@jcrj-tf-compile:boot_images$ ack DXE_DRIVER QcomPkg/SocPkg/AgattiPkg:
+
+QcomPkg/SocPkg/AgattiPkg/Settings/DALConfig/DALGenLibCore.inf
+32:  MODULE_TYPE                    = DXE_DRIVER
+
+QcomPkg/SocPkg/AgattiPkg/Settings/DALConfig/DALConfigCoreLib.inf
+20:  MODULE_TYPE                    = DXE_DRIVER
+
+QcomPkg/SocPkg/AgattiPkg/Settings/DALConfig/DALGenLibTools.inf
+28:  MODULE_TYPE                    = DXE_DRIVER
+
+QcomPkg/SocPkg/AgattiPkg/Settings/DALConfig/DALGenLibLoader.inf
+30:  MODULE_TYPE                    = DXE_DRIVER
+
+QcomPkg/SocPkg/AgattiPkg/Library/UsbfnDwc3Lib/UsbfnDwc3Lib.inf
+36:  MODULE_TYPE                    = DXE_DRIVER
+
+QcomPkg/SocPkg/AgattiPkg/Library/UsbConfigLib/UsbConfigLib.inf
+45:  MODULE_TYPE                    = DXE_DRIVER
+
+QcomPkg/SocPkg/AgattiPkg/Library/ButtonsLib/ButtonsLib.inf
+26:  MODULE_TYPE                    = DXE_DRIVER
+
+
+</pre></div>
+</div>
+</section>
+<section id="id6">
+<h1>BDS (启动设备选择)<a class="headerlink" href="#id6" title="Permalink to this headline"></a></h1>
+<p>代码位于:</p>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span>BOOT.XF.1.4\boot_images\QcomPkg\Drivers\BdsDxe\BdsEntry.c 的 BdsEntry 中
+</pre></div>
+</div>
+<p>其主要工作为：</p>
+<ol class="arabic simple">
+<li><p>注册按键事件，按下按键后会回调到HotkeyEvent() 函数，最终调用到HotkeyCallback()函数中，解析其中的key scancode</p></li>
+<li><p>平台BDS初始化</p></li>
+<li><p>在其中会打印显示版本号，平台版本信息等等</p></li>
+<li><p>调用LaunchDefaultBDSApps ()加载默认APP，重要</p></li>
+<li><p>调用SetupPlatformSecurity()初始化secureboot安全环境</p></li>
+<li><p>挂载efisp分区</p></li>
+<li><p>调用ReadAnyKey() 循环检测音量下键是否按下，从而更新对应的启动项</p></li>
+<li><p>初始化所有 DriverOptionList 上的 驱动协议。</p></li>
+<li><p>根据选择的启动方式，启动对应的的系统</p></li>
+</ol>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span>BOOT.XF.1.4\boot_images\QcomPkg\Drivers\BdsDxe\BdsEntry.c
+VOID EFIAPI BdsEntry(IN EFI_BDS_ARCH_PROTOCOL  *This)
+{
+  // 1. 注册按键事件，按下按键后会回调到HotkeyEvent() 函数，最终调用到HotkeyCallback()函数中，解析其中的key scancode
+  // Initialize hotkey service
+  InitializeHotkeyService ();
+  // 2. 平台BDS初始化，在其中会打印显示版本号，平台版本信息等等，调用LaunchDefaultBDSApps ()加载默认APP，调用SetupPlatformSecurity()初始化secureboot安全环境，挂载efisp分区，调用ReadAnyKey() 循环检测音量下键是否按下，从而更新对应的启动项
+  PlatformBdsInit ();
+
+  // 3. 初始化所有 DriverOptionList 上的 驱动协议。
+  // Set up the device list based on EFI 1.1 variables
+  // process Driver#### and Load the driver&#39;s in the driver option list
+  BdsLibLoadDrivers (&amp;DriverOptionList);
+  
+  // Check if we have the boot next option
+  mBootNext = BdsLibGetVariableAndSize ( L&quot;BootNext&quot;,&amp;gEfiGlobalVariableGuid,&amp;BootNextSize );
+
+  // Setup some platform policy here
+  PlatformBdsPolicyBehavior (&amp;DriverOptionList, &amp;BootOptionList, BdsProcessCapsules, BdsMemoryTest);
+  // 4. 根据选择的启动方式，启动对应的的系统，  启动sheLl app
+  // BDS select the boot device to load OS
+  BdsBootDeviceSelect ();
+
+  // Only assert here since this is the right behavior, we should never
+  // return back to DxeCore.
+  ASSERT (FALSE);
+  return ;
+}
+</pre></div>
+</div>
+</section>
+<section id="rt-run-time">
+<h1>RT(Run Time)<a class="headerlink" href="#rt-run-time" title="Permalink to this headline"></a></h1>
+<p>代码位于:</p>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span>amss\BOOT.XF.1.4\boot_images\MdeModulePkg\Core\RuntimeDxe\Runtime.c的 RuntimeDriverInitialize 中
+```C++
+</pre></div>
+</div>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, wugn.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+  
+
+<script charset="UTF-8" id="LA_COLLECT" src="//sdk.51.la/js-sdk-pro.min.js"></script>
+<script>LA.init({id: "JjOE14XScyd75b2C",ck: "JjOE14XScyd75b2C"})</script>
+
+<br/>
+<script id="LA-DATA-WIDGET" crossorigin="anonymous" charset="UTF-8" src="https://v6-widget.51.la/v6/JjOE14XScyd75b2C/quote.js?theme=0&f=12&display=1,0,0,0,0,0,1,1"></script>
+
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

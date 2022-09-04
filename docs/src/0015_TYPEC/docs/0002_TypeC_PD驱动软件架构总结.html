@@ -1,0 +1,1427 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>wugn</title>
+
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../index.html" class="icon icon-home"> wugn_note
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">概述</a></li>
+<li><a class="reference internal" href="#id2">参考</a></li>
+<li><a class="reference internal" href="#typec">typec状态解释</a></li>
+<li><a class="reference internal" href="#id3">硬件</a><ul>
+<li><a class="reference internal" href="#usb-pd">USB PD 架构示意图</a></li>
+<li><a class="reference internal" href="#tcpm">TCPM</a><ul>
+<li><a class="reference internal" href="#policy-engine">Policy Engine</a></li>
+<li><a class="reference internal" href="#protocol-layer">Protocol Layer</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#tcpc">TCPC</a><ul>
+<li><a class="reference internal" href="#phy-layer">PHY Layer</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id4">软件架构</a></li>
+<li><a class="reference internal" href="#id5">涉及文件</a></li>
+<li><a class="reference internal" href="#id6">软件分析</a><ul>
+<li><a class="reference internal" href="#mt6370">1.mt6370中断处理</a></li>
+<li><a class="reference internal" href="#mt6370cc">2.mt6370硬件CC原理</a></li>
+<li><a class="reference internal" href="#id7">3.主要处理函数分析</a><ul>
+<li><a class="reference internal" href="#cc">cc处理</a></li>
+<li><a class="reference internal" href="#vbus">vbus处理</a></li>
+<li><a class="reference internal" href="#id8">实例分析</a></li>
+<li><a class="reference internal" href="#typec-cc">普通Typec CC处理流程</a></li>
+<li><a class="reference internal" href="#pd-typec-cc">PD Typec CC处理流程</a><ul>
+<li><a class="reference internal" href="#pd-process">PD Process</a></li>
+<li><a class="reference internal" href="#pd-policy">PD Policy</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id9">软件配置分析</a><ul>
+<li><a class="reference internal" href="#config-usb-pd-wait-bc12bc1-2">1.CONFIG_USB_PD_WAIT_BC12等待bc1.2</a></li>
+</ul>
+</li>
+</ul>
+</div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">wugn_note</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs"> 
+<li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+<li>概述</li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.forward()">Forward</a></li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.back()">Go Back</a> | </li>
+<li style="float: right;margin-left: 10px;"><a href="/index.html">Home</a> | </li>
+
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="id1">
+<h1>概述<a class="headerlink" href="#id1" title="Permalink to this headline"></a></h1>
+<p>Android TypeC PD驱动如何接收及处理cc/vbus事件分析。</p>
+</section>
+<section id="id2">
+<h1>参考<a class="headerlink" href="#id2" title="Permalink to this headline"></a></h1>
+<ul class="simple">
+<li><p><a class="reference external" href="http://www.manongjc.com/detail/22-aiyvyekfjbujmin.html">Linux内核实现透视—kthread_work</a></p></li>
+<li><p><a class="reference external" href="https://zhuanlan.zhihu.com/p/148526944">细谈Type-C、PD原理（下）</a></p></li>
+<li><p>中英文翻译</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>toggle 切换
+DEBOUNCE 防抖
+TCPC： Type-C Port Controller 可以理解为mt6370芯片，负责PD控制
+TCPCI： Type-C Port Controller Interface  可以理解为TCPC和TCPM的通信接口，目前mt6370采用的是i2c通信(i2c slave)
+TCPM： Type-C Port Manager   可以理解为mt6762 typec驱动控制策略(i2c master)
+VDM (Vendor defined message) 供应商定义的消息
+</pre></div>
+</div>
+</section>
+<section id="typec">
+<h1>typec状态解释<a class="headerlink" href="#typec" title="Permalink to this headline"></a></h1>
+<p>状态：</p>
+<ul class="simple">
+<li><p>Disabled State：从CC引脚移除终端，如果不支持该状态，那么该端口在上电后直接是Unattached.SNK或Unattached.SRC，该状态端口不会驱动VBUS或VCONN，CC1和CC2会呈现高阻到地</p></li>
+<li><p>ErrorRecovery State：从CC1和CC2引脚移除终端，接下来会根据端口类型转化为Unattached.SNK或Unattached.SRC，这相当于强制断开连接事件，并寻找一个新的连接。如果该状态不支持，则转化为支持的disabled状态，如果disabled状态也不支持，则转化Unattached.SNK或Unattached.SRC。，该状态端口不会驱动VBUS或VCONN，CC1和CC2会呈现高阻到地</p></li>
+<li><p>Unattached.SNK State：端口等待检测到Source的出现，一个端口Dead Battery不供电时候进入这个状态，端口不能驱动VBUS和VCONN，CC1和CC2分别地通过Rd终止到地，当Source连接检测到会转化为AttachWait.SNK，意味着在一个CC引脚上有SNK.Rp。USB 2.0不支持USB PD可能在VBUS检测到直接转化到Attached.SNK</p></li>
+<li><p>AttachWait.SNK State：端口检测到SNK.Rp状态在一个CC引脚上，并等待VBUS。端口不驱动VBUS或VCONN</p></li>
+<li><p>Attached.SNK State：端口连接上了，并作为Sink操作，如果初始化进入这个状态同样作为UFP操作，Power和Data的状态改变可以通过USB PD Command。直接从Unattached.SNK转化过来是通过检测VBUS，不确定方向和可用的高于默认的USB Power</p></li>
+<li><p>Try.SRC State：端口查询决定伙伴端口是否支持Sink，不驱动VBUS和VCONN，端口要在CC1和CC2上分别Source电流</p></li>
+<li><p>TryWait.SNK State：端口成为Source失败，准备连接成Sink，不支持VBUS或VCONN，CC1和CC2分别通过Rd终止</p></li>
+<li><p>Try.SNK State：端口查询决定伙伴端口是否支持Source</p></li>
+<li><p>TryWait.SRC State：端口成为Sink失败，准备连接成Source</p></li>
+</ul>
+</section>
+<section id="id3">
+<h1>硬件<a class="headerlink" href="#id3" title="Permalink to this headline"></a></h1>
+<p>硬件主要是Type-C irq中断和cc/vbus硬件。</p>
+<ul class="simple">
+<li><p>typec irq引脚：
+<img alt="0002_0000.png" src="../../../_images/0002_00005.png" /></p></li>
+<li><p>mt6371对应IRQ：
+<img alt="0002_0001.png" src="../../../_images/0002_00013.png" /></p></li>
+<li><p>cc和vbus都在mt6370芯片上：
+<img alt="0002_0002.png" src="../../../_images/0002_00022.png" /></p></li>
+</ul>
+<section id="usb-pd">
+<h2>USB PD 架构示意图<a class="headerlink" href="#usb-pd" title="Permalink to this headline"></a></h2>
+<p><img alt="0002_0017.png" src="../../../_images/0002_0017.png" /></p>
+<p>The Type-C Port Controller Interface, TCPCI, is the interface between a Type-C Port Manager and a Type-C Port Controller.</p>
+<ul class="simple">
+<li><p>The Controller Interface uses the I2C protocol:</p></li>
+<li><p>The TCPM is the only master on this I2C bus.</p></li>
+<li><p>The TCPC is a slave device on this I2C bus.</p></li>
+<li><p>The TCPC supports Fast-Mode bus speed.</p></li>
+<li><p>The TCPC has an open-drain output, active-low PD_IRQB pin. This pin is used to indicate change of state, where the PD_IRQB pin is asserted when any Alert Bits are set.</p></li>
+<li><p>The TCPCI supports I/O nominal voltages of 1.8V and 3.3V.</p></li>
+<li><p>The TCPC supports auto-increment of the I2C internal register address for the last byte transferred during a read, independent of an ACK/NACK from the master</p></li>
+<li><p>TCPC： Type-C Port Controller 可以理解为mt6370芯片，负责PD控制</p></li>
+<li><p>TCPCI： Type-C Port Controller Interface  可以理解为TCPC和TCPM的通信接口，目前mt6370采用的是i2c通信(i2c slave)</p></li>
+<li><p>TCPM： Type-C Port Manager   可以理解为mt6762 typec驱动控制策略(i2c master)</p></li>
+</ul>
+<p><img alt="0002_0012.png" src="../../../_images/0002_0012.png" /></p>
+</section>
+<section id="tcpm">
+<h2>TCPM<a class="headerlink" href="#tcpm" title="Permalink to this headline"></a></h2>
+<section id="policy-engine">
+<h3>Policy Engine<a class="headerlink" href="#policy-engine" title="Permalink to this headline"></a></h3>
+<p>向上提供Device Policy Manager个别埠的状态，使Policy Manager可以实时整合与更新装置状态并重新调配资源予每个埠。 向下依据政策判断如何发送与响应收到的PD讯息，并指示Protocol Layer建构讯息。</p>
+</section>
+<section id="protocol-layer">
+<h3>Protocol Layer<a class="headerlink" href="#protocol-layer" title="Permalink to this headline"></a></h3>
+<p>传送讯息端：接收Policy Engine的指示建构所需讯息交给PHY Layer，并藉由对方回传GoodCRC确认讯息有正确送出，否则视为传送失败，适用重新发送(Retry)机制。</p>
+<p>接收讯息端：收到PHY Layer传来的讯息，解读该讯息并将信息向上呈报给Policy Engine，在做相对响应前，先建构GoodCRC讯息让PHY回送给对方，表示讯息已正确收到并解读。</p>
+<p>同时装置双方的Protocol Layer需各自计算对方是否在要求时间内有正确的响应 (Timer check)。 若以上确认内容有侦测到任何错误，任一方的Protocol Layer可发起Reset机制重整状态：
+<img alt="0002_0013.png" src="../../../_images/0002_0013.png" /></p>
+</section>
+</section>
+<section id="tcpc">
+<h2>TCPC<a class="headerlink" href="#tcpc" title="Permalink to this headline"></a></h2>
+<section id="phy-layer">
+<h3>PHY Layer<a class="headerlink" href="#phy-layer" title="Permalink to this headline"></a></h3>
+<p>把Protocol层送来的讯息再加工，加上以4b5b方式编码的SOP*、CRC、EOP以及Preamble，组成一完整的讯息，透过CC以BMC方式传送给对方。
+<img alt="0002_0014.png" src="../../../_images/0002_0014.png" /></p>
+<p>反之，收到讯息时，PHY要先验证收到的讯息CRC，若正确就将讯息向上回传给接收端的Protocol Layer。
+<img alt="0002_0015.png" src="../../../_images/0002_0015.png" /></p>
+<p>PHY Layer传送讯息流程示意图 (图四，取自PD3.0 Spec)</p>
+<p>下图以Source Capabilities讯息为例，简单表示上述内容中的传送端、接收端，以及讯息的传送流程：
+<img alt="0002_0016.png" src="../../../_images/0002_0016.png" /></p>
+</section>
+</section>
+</section>
+<section id="id4">
+<h1>软件架构<a class="headerlink" href="#id4" title="Permalink to this headline"></a></h1>
+<p><img alt="0002_0005.png" src="../../../_images/0002_00051.png" /></p>
+</section>
+<section id="id5">
+<h1>涉及文件<a class="headerlink" href="#id5" title="Permalink to this headline"></a></h1>
+<ul class="simple">
+<li><p>驱动文件如下：</p></li>
+</ul>
+<div class="highlight-log notranslate"><div class="highlight"><pre><span></span>kernel-4.19/drivers/misc/mediatek/typec:
+├── Kconfig
+├── Makefile
+├── switch
+│   ├── fusb304.c
+│   ├── Makefile
+│   ├── ptn36241g.c
+│   ├── typec_switch.c
+│   └── typec_switch.h
+└── tcpc
+    ├── inc
+    │   ├── mt6360.h
+    │   ├── mt6370.h
+    │   ├── mtk_direct_charge_vdm.h
+    │   ├── pd_core.h
+    │   ├── pd_dbg_info.h
+    │   ├── pd_dpm_core.h
+    │   ├── pd_dpm_pdo_select.h
+    │   ├── pd_policy_engine.h
+    │   ├── pd_process_evt.h
+    │   ├── rt1711h.h
+    │   ├── rt5081.h
+    │   ├── std_tcpci_v10.h
+    │   ├── tcpci_config.h
+    │   ├── tcpci_core.h
+    │   ├── tcpci_event.h
+    │   ├── tcpci.h
+    │   ├── tcpci_timer.h
+    │   ├── tcpci_typec.h
+    │   ├── tcpm.h
+    │   └── tcpm_pd.h
+    ├── Kconfig
+    ├── Makefile
+    ├── pd_core.c
+    ├── pd_dbg_info.c
+    ├── pd_dpm_alt_mode_dc.c
+    ├── pd_dpm_alt_mode_dp.c
+    ├── pd_dpm_core.c
+    ├── pd_dpm_pdo_select.c
+    ├── pd_dpm_prv.h
+    ├── pd_dpm_reaction.c
+    ├── pd_dpm_uvdm.c
+    ├── pd_policy_engine.c
+    ├── pd_policy_engine_com.c
+    ├── pd_policy_engine_dbg.c
+    ├── pd_policy_engine_dfp.c
+    ├── pd_policy_engine_dr.c
+    ├── pd_policy_engine_drs.c
+    ├── pd_policy_engine_prs.c
+    ├── pd_policy_engine_snk.c
+    ├── pd_policy_engine_src.c
+    ├── pd_policy_engine_ufp.c
+    ├── pd_policy_engine_vcs.c
+    ├── pd_process_evt.c
+    ├── pd_process_evt_com.c
+    ├── pd_process_evt_dbg.c
+    ├── pd_process_evt_drs.c
+    ├── pd_process_evt_prs.c
+    ├── pd_process_evt_snk.c
+    ├── pd_process_evt_src.c
+    ├── pd_process_evt_tcp.c
+    ├── pd_process_evt_vcs.c
+    ├── pd_process_evt_vdm.c
+    ├── rt_pd_manager.c
+    ├── tcpci_alert.c
+    ├── tcpci_alert_v20.c
+    ├── tcpci.c
+    ├── tcpci_core.c //提供核心函数，比如
+    ├── tcpci_dual_role.c
+    ├── tcpci_event.c
+    ├── tcpci_timer.c
+    ├── tcpci_typec.c
+    ├── tcpc_mt6360.c
+    ├── tcpc_mt6370.c  //typec probe处理，中断处理
+    ├── tcpc_rt1711h.c
+    ├── tcpc_rt5081.c
+    └── tcpm.c
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>dts如下:</p></li>
+</ul>
+<div class="highlight-log notranslate"><div class="highlight"><pre><span></span>M8.dts重定义:
+&amp;mt6370_typec {
+        mt6370pd,intr_gpio_num = &lt;9&gt;; /* direct defined GPIO num */
+        mt6370pd,intr_gpio = &lt;&amp;pio 9 0x0&gt;;
+};
+
+mt6370_pd.dtsi：
+        mt6370_typec: type_c_port0 {
+                /* 0: dfp/ufp, 1: dfp, 2: ufp */
+                tcpc-dual,supported_modes = &lt;0&gt;;
+                mt-tcpc,name = &quot;type_c_port0&quot;; /* tcpc_device&#39;s name */
+                /* 0: SNK Only, 1: SRC Only, 2: DRP, 3: Try.SRC, 4: Try.SNK */
+                mt-tcpc,role_def = &lt;4&gt;;
+                mt-tcpc,rp_level = &lt;1&gt;; /* 0: Default, 1: 1.5, 2: 3.0 */
+                /* 0: Never, 1: Always, 2: EMarkOnly, 3: StartOnly */
+                mt-tcpc,vconn_supply  = &lt;1&gt;;
+                /* the number of notifier supply */
+#if (CONFIG_MTK_GAUGE_VERSION == 30)
+                mt-tcpc,notifier_supply_num = &lt;3&gt;;
+#else
+                mt-tcpc,notifier_supply_num = &lt;2&gt;;
+#endif
+                mt6370pd,intr_gpio = &lt;&amp;pio 24 0x0&gt;;
+                mt6370pd,intr_gpio_num = &lt;24&gt;;
+
+                charger = &lt;&amp;mt6370_chg&gt;;
+
+        pd_data: pd-data {
+                        pd,vid = &lt;0x29cf&gt;;
+                        pd,pid = &lt;0x5081&gt;;
+                        pd,source-cap-ext = &lt;0x508129cf 0x00000000 0x00000000
+                                             0x00000000 0x00000000 0x07000000&gt;;
+                        pd,mfrs = &quot;RichtekTCPC&quot;;
+
+                        /*
+                         *      VSAFE5V = 0, MAX_POWER = 1, CUSTOM = 2,
+                         *      MAX_POWER_LV = 0x21, MAX_POWER_LVIC = 0x31
+                         *      MAX_POWER_HV = 0x41, MAX_POWER_HVIC = 0x51
+                         */
+                        pd,charging_policy= &lt;0x31&gt;;
+
+                        /*
+                         * Fixed 5V, 500 mA &lt;0x00019032&gt;
+                         * Fixed 5V, 1A &lt;0x00019064&gt;
+                         * Fixed 5V, 2A &lt;0x000190c8&gt;
+                         * Fixed 5V, 3A &lt;0x0001912c&gt;
+                         * Fixed 9V, 500 mA &lt;0x0002d032&gt;
+                         * Fixed 9V, 1A &lt;0x0002d064&gt;
+                         * Fixed 9V, 2A &lt;0x0002d0c8&gt;
+                         * Fixed 9V, 3A &lt;0x0002d12c&gt;
+                         * Variable 5-9V, 1A &lt;0x8642d064&gt;
+                         * Variable 5-9V, 2A &lt;0x8642d0c8&gt;
+                         * Variable 5-9V, 3A &lt;0x8642d12c&gt;
+                         * PPS 3V~5.9V, 3A &lt;0xC0761E3C&gt;
+                         */
+                        pd,source-pdo-size = &lt;1&gt;;
+                        pd,source-pdo-data = &lt;0x00019096&gt;; /* 5V, 1500 mA */
+                        pd,sink-pdo-size = &lt;1&gt;;
+                        pd,sink-pdo-data = &lt;0x000190c8&gt;;
+
+                        /*
+                         * No DP, host + device
+                         *      pd,id-vdo-size = &lt;3&gt;;
+                         *      pd,id-vdo-data = &lt;0xd10029cf 0x0 0x50810000&gt;;
+                         * With DP
+                         *      pd,id-vdo-size = &lt;3&gt;;
+                         *      pd,id-vdo-data = &lt;0xd60029cf 0x0 0x50810000&gt;;
+                         */
+
+                        pd,id-vdo-size = &lt;3&gt;;
+                        pd,id-vdo-data = &lt;0xd10029cf 0x0 0x50810000&gt;;
+
+                        bat,nr = &lt;1&gt;;
+                        pd,country_nr = &lt;0&gt;;
+
+                        bat-info0 {
+                                bat,vid = &lt;0x29cf&gt;;
+                                bat,pid = &lt;0x5081&gt;;
+                                bat,mfrs = &quot;bat1&quot;;
+                                bat,design_cap = &lt;3000&gt;;
+                        };
+
+                        //bat-info1 {
+                        //      bat,vid = &lt;0x8abc&gt;;
+                        //      bat,pid = &lt;0x5234&gt;;
+                        //      bat,mfrs = &quot;bat2&quot;;
+                        //      bat,design_cap = &lt;4000&gt;;
+                        //};
+
+                        //country0 {
+                        //      pd,country_code = &lt;0x5457&gt;;
+                        //      pd,country_len = &lt;2&gt;; /* max len = 26 */
+                        //      pd,country_data = &lt;0xff 0xff&gt;;
+                        //};
+
+                        //country1 {
+                        //      pd,country_code = &lt;0x5553&gt;;
+                        //      pd,country_len = &lt;3&gt;; /* max len = 26 */
+                        //      pd,country_data = &lt;0xf1 0xf2 0xf3&gt;;
+                        //};
+                };
+...省略...
+</pre></div>
+</div>
+</section>
+<section id="id6">
+<h1>软件分析<a class="headerlink" href="#id6" title="Permalink to this headline"></a></h1>
+<section id="mt6370">
+<h2>1.mt6370中断处理<a class="headerlink" href="#mt6370" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p>1.目前typec所有事件都是靠中断的方式通知ap端，当中断发生时，唤醒线程去读取中断类型，具体中断详细步骤如下：</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">tcpc_mt6370.c</span></code>:</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span>* mt6370_i2c_probe(struct i2c_client *client,
+  ├── mt_parse_dt(chip, &amp;client-&gt;dev);
+  │   ├── of_find_node_by_name(NULL, &quot;type_c_port0&quot;);
+  │   └── of_property_read_u32(np, &quot;mt6370pd,intr_gpio_num&quot;, &amp;chip-&gt;irq_gpio); //读取irq中断引脚
+  ├── mt6370_regmap_init(chip); //map所有typec相关的寄存器
+  ├── mt6370_tcpcdev_init(chip, &amp;client-&gt;dev);
+  │   ├── of_property_read_u32(np, &quot;mt-tcpc,role_def&quot;, &amp;val)  //读取默认typec role配置，目前默认配的是3: Try.SRC
+  │   ├── of_property_read_u32(np, &quot;mt-tcpc,rp_level&quot;, &amp;val)  //默认配置Rp，目前是1.5A供电能力
+  │   ├── of_property_read_u32(np, &quot;mt-tcpc,vconn_supply&quot;, &amp;val)
+  │   └── tcpc_device_register(dev,desc, &amp;mt6370_tcpc_ops, chip);
+  │       ├── INIT_DELAYED_WORK(&amp;tcpc-&gt;init_work, tcpc_init_work); //创建初始化工作队列
+  │       ├── INIT_DELAYED_WORK(&amp;tcpc-&gt;event_init_work, tcpc_event_init_work); //创建PD event处理队列
+  │       └── pd_core_init(tcpc); //PD相关dts初始化
+  │           ├── pd_parse_pdata(pd_port);
+  │           ├── pd_core_power_flags_init(pd_port);
+  │           └── pd_dpm_core_init(pd_port);
+  │               └── pd_port-&gt;pps_request_task = kthread_run(pps_request_thread_fn, tcpc,&quot;pps_request_%s&quot;,tcpc-&gt;desc.name); //pps request相关线程
+  ├── mt6370_init_alert(chip-&gt;tcpc); //重要
+  │   ├── gpio_to_irq(chip-&gt;irq_gpio); //申请PD gpio中断
+  │   ├── kthread_init_worker(&amp;chip-&gt;irq_worker); //初始化工作组
+  │   ├── chip-&gt;irq_worker_task = kthread_run(kthread_worker_fn,&amp;chip-&gt;irq_worker, &quot;%s&quot;, chip-&gt;tcpc_desc-&gt;name);/创建一个内核线程并运行kthread_worker_fn 参数是kworker 后面的参数是线程名称
+  │   ├── kthread_init_work(&amp;chip-&gt;irq_work, mt6370_irq_work_handler);//向工作组添加一个工作mt6370_irq_work_handler，这个接口可能唤醒内核线程，执行完成后这个工作就被删除了
+  │   └── request_irq(chip-&gt;irq, mt6370_intr_handler,IRQF_TRIGGER_FALLING | IRQF_NO_THREAD, name, chip); //gpio中断函数
+  │       └── mt6370_intr_handler -&gt; kthread_queue_work(&amp;chip-&gt;irq_worker, &amp;chip-&gt;irq_work); //有中断则调用irq_worker工作队列，运行mt6370_irq_work_handler
+  └── tcpc_schedule_init_work(chip-&gt;tcpc);
+      └── schedule_delayed_work(&amp;tcpc-&gt;init_work, msecs_to_jiffies(30*1000)); //执行tcpc_init_work工作队列
+          └── tcpc_init_work -&gt; tcpc_device_irq_enable(tcpc); //打开typec中断
+              ├── tcpc_typec_init(tcpc, tcpc-&gt;desc.role_def + 1); //初始化typec各种状态，如tcpc_dev-&gt;typec_attach_new = TYPEC_UNATTACHED;
+              └── schedule_delayed_work(&amp;tcpc-&gt;event_init_work, msecs_to_jiffies(10*1000)); //执行event_init_work工作队列
+                  └── tcpc_event_init_work -&gt; tcpc-&gt;pd_inited_flag = 1;
+                      ├── INIT_DELAYED_WORK(&amp;tcpc-&gt;bat_update_work, bat_update_work_func); //电池参数更新，下面可以看到主要获取电量和充电状态
+                      │   ├── power_supply_get_property(tcpc-&gt;bat_psy, POWER_SUPPLY_PROP_CAPACITY, &amp;value);
+                      │   │   └── tcpc-&gt;bat_soc = value.intval;
+                      │   └── power_supply_get_property(tcpc-&gt;bat_psy,POWER_SUPPLY_PROP_STATUS, &amp;value);
+                      │       └── tcpc-&gt;charging_status = BSDO_BAT_INFO_CHARGING;
+                      ├── tcpc-&gt;bat_nb.notifier_call = bat_nb_call_func; //
+                      │   └── if (val == PSY_EVENT_PROP_CHANGED &amp;&amp;strcmp(psy-&gt;desc-&gt;name, &quot;battery&quot;) == 0)
+                      │       └── schedule_delayed_work(&amp;tcpc-&gt;bat_update_work, 0); //只要battery psy更新，则启动bat_update_work_func工作队列
+                      └── retval = power_supply_reg_notifier(&amp;tcpc-&gt;bat_nb); //注册电池监听notify
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>2.可以看到中断产生后会运行<code class="docutils literal notranslate"><span class="pre">mt6370_irq_work_handler</span></code>函数，该函数主要是中断期间while循环读取typec中断状态，具体如下：</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="k">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">mt6370_irq_work_handler</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">kthread_work</span><span class="w"> </span><span class="o">*</span><span class="n">work</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="k">struct</span><span class="w"> </span><span class="nc">mt6370_chip</span><span class="w"> </span><span class="o">*</span><span class="n">chip</span><span class="w"> </span><span class="o">=</span><span class="w"></span>
+<span class="w">			</span><span class="n">container_of</span><span class="p">(</span><span class="n">work</span><span class="p">,</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">mt6370_chip</span><span class="p">,</span><span class="w"> </span><span class="n">irq_work</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="kt">int</span><span class="w"> </span><span class="n">regval</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="kt">int</span><span class="w"> </span><span class="n">gpio_val</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">mt6370_poll_ctrl</span><span class="p">(</span><span class="n">chip</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="cm">/* make sure I2C bus had resumed */</span><span class="w"></span>
+<span class="w">	</span><span class="n">tcpci_lock_typec</span><span class="p">(</span><span class="n">chip</span><span class="o">-&gt;</span><span class="n">tcpc</span><span class="p">);</span><span class="w"></span>
+
+<span class="cp">#ifdef DEBUG_GPIO</span>
+<span class="w">	</span><span class="n">gpio_set_value</span><span class="p">(</span><span class="n">DEBUG_GPIO</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span><span class="w"></span>
+<span class="cp">#endif</span>
+
+<span class="w">	</span><span class="k">do</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="n">regval</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tcpci_alert</span><span class="p">(</span><span class="n">chip</span><span class="o">-&gt;</span><span class="n">tcpc</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">regval</span><span class="p">)</span><span class="w"></span>
+<span class="w">			</span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+<span class="w">		</span><span class="n">gpio_val</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">gpio_get_value</span><span class="p">(</span><span class="n">chip</span><span class="o">-&gt;</span><span class="n">irq_gpio</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"> </span><span class="k">while</span><span class="w"> </span><span class="p">(</span><span class="n">gpio_val</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">tcpci_unlock_typec</span><span class="p">(</span><span class="n">chip</span><span class="o">-&gt;</span><span class="n">tcpc</span><span class="p">);</span><span class="w"></span>
+
+<span class="cp">#ifdef DEBUG_GPIO</span>
+<span class="w">	</span><span class="n">gpio_set_value</span><span class="p">(</span><span class="n">DEBUG_GPIO</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span><span class="w"></span>
+<span class="cp">#endif</span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>3.中断处理流程，可以看到读取typec状态是通过读取0x10和0x12寄存器判断的，当读取到中断类型后，判断是什么中断，将执行中断函数<code class="docutils literal notranslate"><span class="pre">tcpci_alert_handlers[i].handler(tcpc_dev)</span></code></p></li>
+</ul>
+<p><img alt="0002_0003.png" src="../../../_images/0002_00032.png" />
+<img alt="0002_0004.png" src="../../../_images/0002_00041.png" /></p>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="o">*</span><span class="w"> </span><span class="n">tcpci_alert</span><span class="p">(</span><span class="n">chip</span><span class="o">-&gt;</span><span class="n">tcpc</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="o">*</span><span class="w"> </span><span class="n">__tcpci_alert</span><span class="p">(</span><span class="n">tcpc_dev</span><span class="p">);</span><span class="w"> </span><span class="c1">//tcpci_alert.c</span>
+<span class="w">    </span><span class="o">*</span><span class="w"> </span><span class="n">tcpci_get_alert_status</span><span class="p">(</span><span class="n">tcpc_dev</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">alert_status</span><span class="p">);</span><span class="w"></span>
+<span class="w">      </span><span class="o">*</span><span class="w"> </span><span class="n">tcpc</span><span class="o">-&gt;</span><span class="n">ops</span><span class="o">-&gt;</span><span class="n">get_alert_status</span><span class="p">(</span><span class="n">tcpc</span><span class="p">,</span><span class="w"> </span><span class="n">alert</span><span class="p">);</span><span class="w"> </span><span class="c1">//tcpci.c</span>
+<span class="w">        </span><span class="o">*</span><span class="w"> </span><span class="n">mt6370_get_alert_status</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">tcpc_device</span><span class="w"> </span><span class="o">*</span><span class="n">tcpc</span><span class="p">,</span><span class="w"> </span><span class="kt">uint32_t</span><span class="w"> </span><span class="o">*</span><span class="n">alert</span><span class="p">)</span><span class="w"></span>
+<span class="w">          </span><span class="o">*</span><span class="w"> </span><span class="n">mt6370_i2c_read16</span><span class="p">(</span><span class="n">tcpc</span><span class="p">,</span><span class="w"> </span><span class="n">TCPC_V10_REG_ALERT</span><span class="p">);</span><span class="w"> </span><span class="c1">//#define TCPC_V10_REG_ALERT	(0x10) 重要，读取typec状态， 如cc和vbus状态变化</span>
+<span class="w">    </span><span class="o">*</span><span class="w"> </span><span class="n">cpci_get_alert_mask</span><span class="p">(</span><span class="n">tcpc_dev</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">alert_mask</span><span class="p">);</span><span class="w"></span>
+<span class="w">      </span><span class="o">*</span><span class="w"> </span><span class="n">tcpc</span><span class="o">-&gt;</span><span class="n">ops</span><span class="o">-&gt;</span><span class="n">get_alert_mask</span><span class="p">(</span><span class="n">tcpc</span><span class="p">,</span><span class="w"> </span><span class="n">alert</span><span class="p">);</span><span class="w"> </span><span class="c1">//tcpci.c</span>
+<span class="w">        </span><span class="o">*</span><span class="w"> </span><span class="n">mt6370_get_alert_mask</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">tcpc_device</span><span class="w"> </span><span class="o">*</span><span class="n">tcpc</span><span class="p">,</span><span class="w"> </span><span class="kt">uint32_t</span><span class="w"> </span><span class="o">*</span><span class="n">mask</span><span class="p">)</span><span class="w"></span>
+<span class="w">          </span><span class="o">*</span><span class="w"> </span><span class="n">mt6370_i2c_read16</span><span class="p">(</span><span class="n">tcpc</span><span class="p">,</span><span class="w"> </span><span class="n">TCPC_V10_REG_ALERT_MASK</span><span class="p">);</span><span class="w"> </span><span class="c1">//#define TCPC_V10_REG_ALERT_MASK	(0x12) 重要，读取中断mask状态</span>
+<span class="w">    </span><span class="o">*</span><span class="w"> </span><span class="n">tcpci_alert_status_clear</span><span class="p">(</span><span class="n">tcpc_dev</span><span class="p">,</span><span class="n">alert_status</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="p">(</span><span class="o">~</span><span class="n">TCPC_REG_ALERT_RX_MASK</span><span class="p">));</span><span class="w"> </span><span class="c1">//读取完后清中断</span>
+<span class="w">    </span><span class="o">*</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">ARRAY_SIZE</span><span class="p">(</span><span class="n">tcpci_alert_handlers</span><span class="p">);</span><span class="w"> </span><span class="n">i</span><span class="o">++</span><span class="p">)</span><span class="w"></span>
+<span class="w">      </span><span class="o">*</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">tcpci_alert_handlers</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">bit_mask</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="n">alert_status</span><span class="p">)</span><span class="w"></span>
+<span class="w">        </span><span class="o">*</span><span class="w"> </span><span class="n">tcpci_alert_handlers</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">handler</span><span class="p">(</span><span class="n">tcpc_dev</span><span class="p">);</span><span class="w"></span>
+</pre></div>
+</div>
+<p>目前支持的所有中断事件类型如下：</p>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="k">static</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">tcpci_alert_handler</span><span class="w"> </span><span class="n">tcpci_alert_handlers</span><span class="p">[]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="cp">#ifdef CONFIG_USB_POWER_DELIVERY</span>
+<span class="w">	</span><span class="n">DECL_TCPCI_ALERT_HANDLER</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span><span class="w"> </span><span class="n">tcpci_alert_tx_failed</span><span class="p">),</span><span class="w"></span>
+<span class="w">	</span><span class="n">DECL_TCPCI_ALERT_HANDLER</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span><span class="w"> </span><span class="n">tcpci_alert_tx_discard</span><span class="p">),</span><span class="w"></span>
+<span class="w">	</span><span class="n">DECL_TCPCI_ALERT_HANDLER</span><span class="p">(</span><span class="mi">6</span><span class="p">,</span><span class="w"> </span><span class="n">tcpci_alert_tx_success</span><span class="p">),</span><span class="w"></span>
+<span class="w">	</span><span class="n">DECL_TCPCI_ALERT_HANDLER</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="n">tcpci_alert_recv_msg</span><span class="p">),</span><span class="w"></span>
+<span class="w">	</span><span class="n">DECL_TCPCI_ALERT_HANDLER</span><span class="p">(</span><span class="mi">7</span><span class="p">,</span><span class="w"> </span><span class="nb">NULL</span><span class="p">),</span><span class="w"></span>
+<span class="w">	</span><span class="n">DECL_TCPCI_ALERT_HANDLER</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span><span class="w"> </span><span class="nb">NULL</span><span class="p">),</span><span class="w"></span>
+<span class="w">	</span><span class="n">DECL_TCPCI_ALERT_HANDLER</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="n">tcpci_alert_recv_hard_reset</span><span class="p">),</span><span class="w"> </span><span class="c1">//硬复位</span>
+<span class="w">	</span><span class="n">DECL_TCPCI_ALERT_HANDLER</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="w"> </span><span class="n">tcpci_alert_rx_overflow</span><span class="p">),</span><span class="w"></span>
+<span class="cp">#endif </span><span class="cm">/* CONFIG_USB_POWER_DELIVERY */</span><span class="cp"></span>
+
+<span class="cp">#ifdef CONFIG_TYPEC_CAP_LPM_WAKEUP_WATCHDOG</span>
+<span class="w">	</span><span class="n">DECL_TCPCI_ALERT_HANDLER</span><span class="p">(</span><span class="mi">16</span><span class="p">,</span><span class="w"> </span><span class="n">tcpci_alert_wakeup</span><span class="p">),</span><span class="w"> </span><span class="c1">//低功耗唤醒</span>
+<span class="cp">#endif </span><span class="cm">/* CONFIG_TYPEC_CAP_LPM_WAKEUP_WATCHDOG */</span><span class="cp"></span>
+
+<span class="cp">#ifdef CONFIG_TYPEC_CAP_RA_DETACH</span>
+<span class="w">	</span><span class="n">DECL_TCPCI_ALERT_HANDLER</span><span class="p">(</span><span class="mi">21</span><span class="p">,</span><span class="w"> </span><span class="n">tcpci_alert_ra_detach</span><span class="p">),</span><span class="w"> </span><span class="c1">//发现Ra下拉电阻，说明需要Vconn供电</span>
+<span class="cp">#endif </span><span class="cm">/* CONFIG_TYPEC_CAP_RA_DETACH */</span><span class="cp"></span>
+
+<span class="w">	</span><span class="n">DECL_TCPCI_ALERT_HANDLER</span><span class="p">(</span><span class="mi">9</span><span class="p">,</span><span class="w"> </span><span class="n">tcpci_alert_fault</span><span class="p">),</span><span class="w"></span>
+<span class="w">	</span><span class="n">DECL_TCPCI_ALERT_HANDLER</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">tcpci_alert_cc_changed</span><span class="p">),</span><span class="w">  </span><span class="c1">//CC状态变化</span>
+<span class="w">	</span><span class="n">DECL_TCPCI_ALERT_HANDLER</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">tcpci_alert_power_status_changed</span><span class="p">),</span><span class="w">  </span><span class="c1">//vbus状态变化</span>
+<span class="p">};</span><span class="w"></span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>CC的一些状态获取函数：</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="cp">#define typec_get_cc1()		\</span>
+<span class="cp">	tcpc_dev-&gt;typec_remote_cc[0]</span>
+<span class="cp">#define typec_get_cc2()		\</span>
+<span class="cp">	tcpc_dev-&gt;typec_remote_cc[1]</span>
+<span class="cp">#define typec_get_cc_res()	\ </span><span class="c1">//获取那根cc有效，作数据通信</span>
+<span class="w">	</span><span class="p">(</span><span class="n">tcpc_dev</span><span class="o">-&gt;</span><span class="n">typec_polarity</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="n">typec_get_cc2</span><span class="p">()</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">typec_get_cc1</span><span class="p">())</span><span class="w"></span>
+
+<span class="cp">#define typec_check_cc1(cc)	\</span>
+<span class="cp">	(typec_get_cc1() == cc)</span>
+
+<span class="cp">#define typec_check_cc2(cc)	\</span>
+<span class="cp">	(typec_get_cc2() == cc)</span>
+
+<span class="cp">#define typec_check_cc(cc1, cc2)	\</span>
+<span class="cp">	(typec_check_cc1(cc1) &amp;&amp; typec_check_cc2(cc2))</span>
+
+<span class="cp">#define typec_check_cc_both(res)	\</span>
+<span class="cp">	(typec_check_cc(res, res))</span>
+
+<span class="cp">#define typec_check_cc_any(res)		\</span>
+<span class="cp">	(typec_check_cc1(res) || typec_check_cc2(res))</span>
+
+<span class="cp">#define typec_is_drp_toggling() \</span>
+<span class="cp">	(typec_get_cc1() == TYPEC_CC_DRP_TOGGLING)</span>
+
+<span class="cp">#define typec_is_cc_open()	\</span>
+<span class="cp">	typec_check_cc_both(TYPEC_CC_VOLT_OPEN)</span>
+
+<span class="cp">#define typec_is_cable_only()	\</span>
+<span class="cp">	(typec_get_cc1() + typec_get_cc2() == TYPEC_CC_VOLT_RA)</span>
+
+<span class="cp">#define typec_is_sink_with_emark()	\</span>
+<span class="cp">	(typec_get_cc1() + typec_get_cc2() == \</span>
+<span class="cp">	TYPEC_CC_VOLT_RA+TYPEC_CC_VOLT_RD)</span>
+
+<span class="cp">#define typec_is_cc_no_res()	\</span>
+<span class="cp">	(typec_is_drp_toggling() || typec_is_cc_open())</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>4.一般typec主要处理CC/Vbus状态变化，当cc发送变化时，将运行<code class="docutils literal notranslate"><span class="pre">tcpci_alert_cc_changed</span></code>,下面我们分析CC状态处理流程：</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span>* tcpci_alert_cc_changed
+  ├── tcpci_get_cc(tcpc_dev);  //重要
+  │   ├── ret = tcpc-&gt;ops-&gt;get_cc(tcpc, &amp;cc1, &amp;cc2);
+  │   │   └── tcpc_ops mt6370_tcpc_ops = {.get_cc = mt6370_get_cc,}
+  │   │       └── mt6370_get_cc(struct tcpc_device *tcpc, int *cc1, int *cc2)
+  │   │           ├── status = mt6370_i2c_read8(tcpc, TCPC_V10_REG_CC_STATUS);
+  │   │           ├── role_ctrl = mt6370_i2c_read8(tcpc, TCPC_V10_REG_ROLE_CTRL);
+  │   │           ├── *cc1 = TCPC_V10_REG_CC_STATUS_CC1(status);
+  │   │           └── *cc2 = TCPC_V10_REG_CC_STATUS_CC2(status);
+  │   ├── tcpc-&gt;typec_remote_cc[0] = cc1;
+  │   └── tcpc-&gt;typec_remote_cc[1] = cc2;
+  └── tcpc_typec_handle_cc_change(tcpc_dev);
+      ├── rp_present = typec_get_rp_present_flag(tcpc_dev); //读取Rp状态，是否为Rp 1.5A或者Rp 3A
+      ├── TYPEC_INFO(&quot;[CC_Alert] %d/%d\r\n&quot;, typec_get_cc1(), typec_get_cc2()); //log打印CC状态
+      ├── if (typec_is_drp_toggling())
+      │   ├── TYPEC_DBG(&quot;[Warning] DRP Toggling\r\n&quot;);
+      │   └── return 0; //如果DRP正在切换，则不处理返回
+      ├── if (typec_try_exit_norp_src(tcpc_dev))
+      │   ├── if (tcpc_dev-&gt;typec_state == typec_attached_norp_src)
+      │   │   ├── TYPEC_INFO(&quot;norp_src=0\r\n&quot;);
+      │   │   └── return true;
+      │   └── return 0; //如果source端没有检测到Rp，直接返回，没检测到会打印norp_src=0
+      ├── typec_disable_low_power_mode(tcpc_dev); //关闭低功耗模式
+      ├── if (typec_is_cc_attach(tcpc_dev)) 
+      │   └── typec_check_water_status(tcpc_dev);
+      │       └── tcpci_is_water_detected(tcpc_dev);
+      │           └── tcpc-&gt;ops-&gt;is_water_detected(tcpc); //如果已经完成attach了，有防水检测，不过mt6371不支持
+      └── typec_detach_wait_entry(tcpc_dev); //重要处理cc各种状态
+</pre></div>
+</div>
+</section>
+<section id="mt6370cc">
+<h2>2.mt6370硬件CC原理<a class="headerlink" href="#mt6370cc" title="Permalink to this headline"></a></h2>
+<p>CC状态主要通过mt6370的<code class="docutils literal notranslate"><span class="pre">mt6370_get_cc</span></code>获取寄存器状态，其中包括role状态，CC线Rp电阻、DRP状态、CC状态(open Rp Rd)等，看下mt6370处理cc状态具体内容：</p>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span>CC状态bit位：
+bit 1:0 CC_STATUS
+bit 2 ROLE_STATUS
+
+CC状态定义：
+enum tcpc_cc_voltage_status {
+	TYPEC_CC_VOLT_OPEN = 0,
+	TYPEC_CC_VOLT_RA = 1,
+	TYPEC_CC_VOLT_RD = 2,
+
+	TYPEC_CC_VOLT_SNK_DFT = 5, // sink ra发现电子标签？
+	TYPEC_CC_VOLT_SNK_1_5 = 6, //sink 1.5a 这里是根据rp电阻判断source端供电能力
+	TYPEC_CC_VOLT_SNK_3_0 = 7, //sink 3a
+
+	TYPEC_CC_DRP_TOGGLING = 15,
+};
+
+
+#define TCPC_V10_REG_CC_STATUS				(0x1D)
+#define TCPC_V10_REG_ROLE_CTRL				(0x1A)
+static int mt6370_get_cc(struct tcpc_device *tcpc, int *cc1, int *cc2)
+{
+	int status, role_ctrl, cc_role;
+	bool act_as_sink, act_as_drp;
+
+	status = mt6370_i2c_read8(tcpc, TCPC_V10_REG_CC_STATUS); //获取cc状态
+	if (status &lt; 0)
+		return status;
+
+	role_ctrl = mt6370_i2c_read8(tcpc, TCPC_V10_REG_ROLE_CTRL); //获取role
+	if (role_ctrl &lt; 0)
+		return role_ctrl;
+
+	if (status &amp; TCPC_V10_REG_CC_STATUS_DRP_TOGGLING) { //DRP正在切换
+		*cc1 = TYPEC_CC_DRP_TOGGLING;
+		*cc2 = TYPEC_CC_DRP_TOGGLING;
+		return 0;
+	}
+
+	*cc1 = TCPC_V10_REG_CC_STATUS_CC1(status);
+	*cc2 = TCPC_V10_REG_CC_STATUS_CC2(status);
+  解释如下：
+  #define TCPC_V10_REG_CC_STATUS_CC2(reg)  (((reg) &amp; 0xc) &gt;&gt; 2)  读取0x1D寄存器bit3:2 CC2_STATUS
+   #define TCPC_V10_REG_CC_STATUS_CC1(reg)  ((reg) &amp; 0x3) 读取0x1D寄存器bit1:0 CC1_STATUS
+
+
+	act_as_drp = TCPC_V10_REG_ROLE_CTRL_DRP &amp; role_ctrl; // 读取0x1D寄存器bit5 DRP_STATUS 0b: the TCPC has stopped toggling or (ROLE_CONTROL.DRP =00)1b: the TCPC is toggling  判断是否为DRP模式
+
+定义：
+#define TCPC_V10_REG_CC_STATUS_DRP_RESULT(reg)	(((reg) &amp; 0x10) &gt;&gt; 4)
+
+	if (act_as_drp) {
+		act_as_sink = TCPC_V10_REG_CC_STATUS_DRP_RESULT(status);// 读取0x1D寄存器bit4 DRP_RESULT 0b: the TCPC is presenting Rp 1b: the TCPC is presenting Rd
+	} else {
+		cc_role =  TCPC_V10_REG_CC_STATUS_CC1(role_ctrl);
+		if (cc_role == TYPEC_CC_RP)
+			act_as_sink = false;
+		else
+			act_as_sink = true;
+	}
+
+	/*
+	 * If status is not open, then OR in termination to convert to
+	 * enum tcpc_cc_voltage_status.
+	 */
+
+	if (*cc1 != TYPEC_CC_VOLT_OPEN)
+		*cc1 |= (act_as_sink &lt;&lt; 2); //CC1 bit2为role
+
+	if (*cc2 != TYPEC_CC_VOLT_OPEN)
+		*cc2 |= (act_as_sink &lt;&lt; 2);
+
+	mt6370_init_cc_params(tcpc,
+		(uint8_t)tcpc-&gt;typec_polarity ? *cc2 : *cc1);
+
+	return 0;
+}
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>涉及寄存器：</p></li>
+<li><p>CC状态：</p></li>
+</ul>
+<p><img alt="0002_0008.png" src="../../../_images/0002_0008.png" />
+<img alt="0002_0009.png" src="../../../_images/0002_0009.png" />
+<img alt="0002_0010.png" src="../../../_images/0002_0010.png" /></p>
+<ul class="simple">
+<li><p>读取Rp电阻、DRP状态、CC状态(open Rp Rd):</p></li>
+</ul>
+<p><img alt="0002_0011.png" src="../../../_images/0002_0011.png" /></p>
+</section>
+<section id="id7">
+<h2>3.主要处理函数分析<a class="headerlink" href="#id7" title="Permalink to this headline"></a></h2>
+<section id="cc">
+<h3>cc处理<a class="headerlink" href="#cc" title="Permalink to this headline"></a></h3>
+<ul class="simple">
+<li><p>1.cc中断有很多种情况，详情请看<code class="docutils literal notranslate"><span class="pre">TYPEC_CONNECTION_STATE</span></code>,详细看一下cc处理函数<code class="docutils literal notranslate"><span class="pre">tcpci_typec.c</span></code>：</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="k">enum</span><span class="w"> </span><span class="nc">TYPEC_CONNECTION_STATE</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="n">typec_disabled</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="n">typec_errorrecovery</span><span class="p">,</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">typec_unattached_snk</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="n">typec_unattached_src</span><span class="p">,</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">typec_attachwait_snk</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="n">typec_attachwait_src</span><span class="p">,</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">typec_attached_snk</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="n">typec_attached_src</span><span class="p">,</span><span class="w"></span>
+
+<span class="cp">#ifdef CONFIG_TYPEC_CAP_TRY_SOURCE</span>
+<span class="w">	</span><span class="cm">/* Require : Assert Rp</span>
+<span class="cm">	 * Exit(-&gt; Attached.SRC) : Detect Rd (tPDDebounce).</span>
+<span class="cm">	 * Exit(-&gt; TryWait.SNK) : Not detect Rd after tDRPTry</span>
+<span class="cm">	 */</span><span class="w"></span>
+<span class="w">	</span><span class="n">typec_try_src</span><span class="p">,</span><span class="w"></span>
+
+<span class="w">	</span><span class="cm">/* Require : Assert Rd</span>
+<span class="cm">	 * Exit(-&gt; Attached.SNK) : Detect Rp (tCCDebounce) and Vbus present.</span>
+<span class="cm">	 * Exit(-&gt; Unattached.SNK) : Not detect Rp (tPDDebounce)</span>
+<span class="cm">	 */</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">typec_trywait_snk</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="n">typec_trywait_snk_pe</span><span class="p">,</span><span class="w"></span>
+<span class="cp">#endif</span>
+
+<span class="cp">#ifdef CONFIG_TYPEC_CAP_TRY_SINK</span>
+
+<span class="w">	</span><span class="cm">/* Require : Assert Rd</span>
+<span class="cm">	 * Wait for tDRPTry and only then begin monitoring CC.</span>
+<span class="cm">	 * Exit (-&gt; Attached.SNK) : Detect Rp (tPDDebounce) and Vbus present.</span>
+<span class="cm">	 * Exit (-&gt; TryWait.SRC) : Not detect Rp for tPDDebounce.</span>
+<span class="cm">	 */</span><span class="w"></span>
+<span class="w">	</span><span class="n">typec_try_snk</span><span class="p">,</span><span class="w"></span>
+
+<span class="w">	</span><span class="cm">/*</span>
+<span class="cm">	 * Require : Assert Rp</span>
+<span class="cm">	 * Exit (-&gt; Attached.SRC) : Detect Rd (tCCDebounce)</span>
+<span class="cm">	 * Exit (-&gt; Unattached.SNK) : Not detect Rd after tDRPTry</span>
+<span class="cm">	 */</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">typec_trywait_src</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="n">typec_trywait_src_pe</span><span class="p">,</span><span class="w"></span>
+<span class="cp">#endif	</span><span class="cm">/* CONFIG_TYPEC_CAP_TRY_SINK */</span><span class="cp"></span>
+
+<span class="w">	</span><span class="n">typec_audioaccessory</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="n">typec_debugaccessory</span><span class="p">,</span><span class="w"></span>
+
+<span class="cp">#ifdef CONFIG_TYPEC_CAP_DBGACC_SNK</span>
+<span class="w">	</span><span class="n">typec_attached_dbgacc_snk</span><span class="p">,</span><span class="w"></span>
+<span class="cp">#endif	</span><span class="cm">/* CONFIG_TYPEC_CAP_DBGACC_SNK */</span><span class="cp"></span>
+
+<span class="cp">#ifdef CONFIG_TYPEC_CAP_CUSTOM_SRC</span>
+<span class="w">	</span><span class="n">typec_attached_custom_src</span><span class="p">,</span><span class="w"></span>
+<span class="cp">#endif	</span><span class="cm">/* CONFIG_TYPEC_CAP_CUSTOM_SRC */</span><span class="cp"></span>
+
+<span class="cp">#ifdef CONFIG_TYPEC_CAP_NORP_SRC</span>
+<span class="w">	</span><span class="n">typec_attached_norp_src</span><span class="p">,</span><span class="w"></span>
+<span class="cp">#endif	</span><span class="cm">/* CONFIG_TYPEC_CAP_NORP_SRC */</span><span class="cp"></span>
+
+<span class="cp">#ifdef CONFIG_TYPEC_CAP_ROLE_SWAP</span>
+<span class="w">	</span><span class="n">typec_role_swap</span><span class="p">,</span><span class="w"></span>
+<span class="cp">#endif	</span><span class="cm">/* CONFIG_TYPEC_CAP_ROLE_SWAP */</span><span class="cp"></span>
+
+<span class="cp">#ifdef CONFIG_WATER_DETECTION</span>
+<span class="w">	</span><span class="n">typec_water_protection_wait</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="n">typec_water_protection</span><span class="p">,</span><span class="w"></span>
+<span class="cp">#endif </span><span class="cm">/* CONFIG_WATER_DETECTION */</span><span class="cp"></span>
+
+<span class="w">	</span><span class="n">typec_unattachwait_pe</span><span class="p">,</span><span class="w">	</span><span class="cm">/* Wait Policy Engine go to Idle */</span><span class="w"></span>
+<span class="p">};</span><span class="w"></span>
+
+
+<span class="k">static</span><span class="w"> </span><span class="kr">inline</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">typec_detach_wait_entry</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">tcpc_device</span><span class="w"> </span><span class="o">*</span><span class="n">tcpc_dev</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="cp">#ifdef CONFIG_TYPEC_CHECK_LEGACY_CABLE</span>
+<span class="w">	</span><span class="n">typec_legacy_handle_detach</span><span class="p">(</span><span class="n">tcpc_dev</span><span class="p">);</span><span class="w"></span>
+<span class="cp">#endif	</span><span class="cm">/* CONFIG_TYPEC_CHECK_LEGACY_CABLE */</span><span class="cp"></span>
+
+<span class="w">	</span><span class="k">switch</span><span class="w"> </span><span class="p">(</span><span class="n">tcpc_dev</span><span class="o">-&gt;</span><span class="n">typec_state</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="cp">#ifdef TYPEC_EXIT_ATTACHED_SNK_VIA_VBUS</span>
+<span class="w">	</span><span class="k">case</span><span class="w"> </span><span class="nl">typec_attached_snk</span><span class="p">:</span><span class="w"></span>
+<span class="w">		</span><span class="n">typec_attached_snk_cc_detach</span><span class="p">(</span><span class="n">tcpc_dev</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+<span class="cp">#endif </span><span class="cm">/* TYPEC_EXIT_ATTACHED_SNK_VIA_VBUS */</span><span class="cp"></span>
+
+<span class="w">	</span><span class="k">case</span><span class="w"> </span><span class="nl">typec_attached_src</span><span class="p">:</span><span class="w"></span>
+<span class="w">		</span><span class="n">tcpc_enable_timer</span><span class="p">(</span><span class="n">tcpc_dev</span><span class="p">,</span><span class="w"> </span><span class="n">TYPEC_TIMER_SRCDISCONNECT</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">	</span><span class="k">case</span><span class="w"> </span><span class="nl">typec_audioaccessory</span><span class="p">:</span><span class="w"></span>
+<span class="w">		</span><span class="n">tcpc_enable_timer</span><span class="p">(</span><span class="n">tcpc_dev</span><span class="p">,</span><span class="w"> </span><span class="n">TYPEC_TIMER_CCDEBOUNCE</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+
+<span class="cp">#ifdef TYPEC_EXIT_ATTACHED_SRC_NO_DEBOUNCE</span>
+<span class="w">	</span><span class="k">case</span><span class="w"> </span><span class="nl">typec_attached_src</span><span class="p">:</span><span class="w"></span>
+<span class="w">		</span><span class="n">TYPEC_INFO</span><span class="p">(</span><span class="s">&quot;Exit Attached.SRC immediately</span><span class="se">\r\n</span><span class="s">&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="n">tcpc_reset_typec_debounce_timer</span><span class="p">(</span><span class="n">tcpc_dev</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">		</span><span class="cm">/* force to terminate TX */</span><span class="w"></span>
+<span class="w">		</span><span class="n">tcpci_init</span><span class="p">(</span><span class="n">tcpc_dev</span><span class="p">,</span><span class="w"> </span><span class="nb">true</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">		</span><span class="n">typec_cc_src_remove_entry</span><span class="p">(</span><span class="n">tcpc_dev</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="n">typec_alert_attach_state_change</span><span class="p">(</span><span class="n">tcpc_dev</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+<span class="cp">#endif </span><span class="cm">/* TYPEC_EXIT_ATTACHED_SRC_NO_DEBOUNCE */</span><span class="cp"></span>
+
+<span class="cp">#ifdef CONFIG_TYPEC_CAP_TRY_SOURCE</span>
+<span class="w">	</span><span class="k">case</span><span class="w"> </span><span class="nl">typec_try_src</span><span class="p">:</span><span class="w"></span>
+<span class="w">		</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">tcpc_dev</span><span class="o">-&gt;</span><span class="n">typec_drp_try_timeout</span><span class="p">)</span><span class="w"></span>
+<span class="w">			</span><span class="n">tcpc_enable_timer</span><span class="p">(</span><span class="n">tcpc_dev</span><span class="p">,</span><span class="w"> </span><span class="n">TYPEC_TIMER_PDDEBOUNCE</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">			</span><span class="n">tcpc_reset_typec_debounce_timer</span><span class="p">(</span><span class="n">tcpc_dev</span><span class="p">);</span><span class="w"></span>
+<span class="w">			</span><span class="n">TYPEC_DBG</span><span class="p">(</span><span class="s">&quot;[Try] Ignore cc_detach</span><span class="se">\r\n</span><span class="s">&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="p">}</span><span class="w"></span>
+<span class="w">		</span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+<span class="cp">#endif	</span><span class="cm">/* CONFIG_TYPEC_CAP_TRY_SOURCE */</span><span class="cp"></span>
+
+<span class="cp">#ifdef CONFIG_TYPEC_CAP_TRY_SINK</span>
+<span class="w">	</span><span class="k">case</span><span class="w"> </span><span class="nl">typec_trywait_src</span><span class="p">:</span><span class="w"></span>
+<span class="w">		</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">tcpc_dev</span><span class="o">-&gt;</span><span class="n">typec_drp_try_timeout</span><span class="p">)</span><span class="w"></span>
+<span class="w">			</span><span class="n">tcpc_enable_timer</span><span class="p">(</span><span class="n">tcpc_dev</span><span class="p">,</span><span class="w"> </span><span class="n">TYPEC_TIMER_TRYCCDEBOUNCE</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">			</span><span class="n">tcpc_reset_typec_debounce_timer</span><span class="p">(</span><span class="n">tcpc_dev</span><span class="p">);</span><span class="w"></span>
+<span class="w">			</span><span class="n">TYPEC_DBG</span><span class="p">(</span><span class="s">&quot;[Try] Ignore cc_detach</span><span class="se">\r\n</span><span class="s">&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="p">}</span><span class="w"></span>
+<span class="w">		</span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+<span class="cp">#endif	</span><span class="cm">/* CONFIG_TYPEC_CAP_TRY_SINK */</span><span class="cp"></span>
+<span class="w">	</span><span class="k">default</span><span class="o">:</span><span class="w"></span>
+<span class="w">		</span><span class="n">tcpc_enable_timer</span><span class="p">(</span><span class="n">tcpc_dev</span><span class="p">,</span><span class="w"> </span><span class="n">TYPEC_TIMER_PDDEBOUNCE</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+</section>
+<section id="vbus">
+<h3>vbus处理<a class="headerlink" href="#vbus" title="Permalink to this headline"></a></h3>
+<ul class="simple">
+<li><p>2.vbus中断有三种电压情况，首先读取vbus状态并设置vbus_level，通过寄存器如下读取，详情请看<code class="docutils literal notranslate"><span class="pre">tcpm_vbus_level</span></code>,看一下vbus处理函数<code class="docutils literal notranslate"><span class="pre">tcpci_typec.c</span></code>：</p></li>
+</ul>
+<p><img alt="0002_0006.png" src="../../../_images/0002_00061.png" /></p>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="k">enum</span><span class="w"> </span><span class="nc">tcpm_vbus_level</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="cp">#ifdef CONFIG_TCPC_VSAFE0V_DETECT</span>
+<span class="w">	</span><span class="n">TCPC_VBUS_SAFE0V</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w">	</span><span class="cm">/* &lt; 0.8V */</span><span class="w"></span>
+<span class="w">	</span><span class="n">TCPC_VBUS_INVALID</span><span class="p">,</span><span class="w">		</span><span class="cm">/* &gt; 0.8V */</span><span class="w"></span>
+<span class="w">	</span><span class="n">TCPC_VBUS_VALID</span><span class="p">,</span><span class="w">		</span><span class="cm">/* &gt; 4.5V */</span><span class="w"></span>
+<span class="cp">#endif </span><span class="cm">/* CONFIG_TCPC_VSAFE0V_DETECT */</span><span class="cp"></span>
+<span class="p">};</span><span class="w"></span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>软件流程如下：</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span>* tcpci_alert_power_status_changed
+  ├── tcpci_get_power_status(tcpc_dev, &amp;power_status); //获取vbus状态
+  │   ├── tcpc-&gt;ops-&gt;get_power_status(tcpc, pw_status);
+  │   │   └── mt6370_tcpc_ops = { get_power_status = mt6370_get_power_status,}
+  │   │       ├── mt6370_i2c_read8(tcpc, TCPC_V10_REG_POWER_STATUS); //读取ox1E寄存器
+  │   │       └── *pwr_status |= TCPC_REG_POWER_STATUS_VBUS_PRES; //读取ox1E寄存器第二位，连接或者未连接
+  │   └── tcpci_vbus_level_init(tcpc, *pw_status); //根据power_status设置vbus_level
+  ├── TCPC_INFO(&quot;ps_change=%d\r\n&quot;, tcpc_dev-&gt;vbus_level); //打印vbus状态
+  └── tcpc_typec_handle_ps_change(tcpc_dev, tcpc_dev-&gt;vbus_level);
+</pre></div>
+</div>
+<p>以上重要函数<code class="docutils literal notranslate"><span class="pre">tcpc_typec_handle_ps_change</span></code>如下：</p>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="kt">int</span><span class="w"> </span><span class="nf">tcpc_typec_handle_ps_change</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">tcpc_device</span><span class="w"> </span><span class="o">*</span><span class="n">tcpc_dev</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">vbus_level</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="n">tcpc_dev</span><span class="o">-&gt;</span><span class="n">typec_reach_vsafe0v</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">false</span><span class="p">;</span><span class="w"></span>
+
+<span class="cp">#ifdef CONFIG_TYPEC_CHECK_LEGACY_CABLE</span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">tcpc_dev</span><span class="o">-&gt;</span><span class="n">typec_legacy_cable</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="n">typec_legacy_handle_ps_change</span><span class="p">(</span><span class="n">tcpc_dev</span><span class="p">,</span><span class="w"> </span><span class="n">vbus_level</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+<span class="cp">#endif </span><span class="cm">/* CONFIG_TYPEC_CHECK_LEGACY_CABLE */</span><span class="cp"></span>
+
+<span class="cp">#ifdef CONFIG_TYPEC_CAP_NORP_SRC</span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">typec_try_enter_norp_src</span><span class="p">(</span><span class="n">tcpc_dev</span><span class="p">))</span><span class="w"></span>
+<span class="w">		</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">typec_try_exit_norp_src</span><span class="p">(</span><span class="n">tcpc_dev</span><span class="p">))</span><span class="w"></span>
+<span class="w">			</span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="cp">#endif	</span><span class="cm">/* CONFIG_TYPEC_CAP_NORP_SRC */</span><span class="cp"></span>
+
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">typec_is_drp_toggling</span><span class="p">())</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="n">TYPEC_DBG</span><span class="p">(</span><span class="s">&quot;[Warning] DRP Toggling</span><span class="se">\r\n</span><span class="s">&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">tcpc_dev</span><span class="o">-&gt;</span><span class="n">typec_lpm</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="o">!</span><span class="n">tcpc_dev</span><span class="o">-&gt;</span><span class="n">typec_cable_only</span><span class="p">)</span><span class="w"></span>
+<span class="w">			</span><span class="n">typec_enter_low_power_mode</span><span class="p">(</span><span class="n">tcpc_dev</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+
+<span class="cp">#ifdef CONFIG_TYPEC_CAP_AUDIO_ACC_SINK_VBUS</span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">tcpc_dev</span><span class="o">-&gt;</span><span class="n">typec_state</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">typec_audioaccessory</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="k">return</span><span class="w"> </span><span class="n">typec_audio_acc_sink_vbus</span><span class="p">(</span><span class="w"></span>
+<span class="w">			</span><span class="n">tcpc_dev</span><span class="p">,</span><span class="w"> </span><span class="n">vbus_level</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="n">TCPC_VBUS_VALID</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+<span class="cp">#endif	</span><span class="cm">/* CONFIG_TYPEC_CAP_AUDIO_ACC_SINK_VBUS */</span><span class="cp"></span>
+
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">vbus_level</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="n">TCPC_VBUS_VALID</span><span class="p">)</span><span class="w"></span>
+<span class="w">		</span><span class="k">return</span><span class="w"> </span><span class="n">typec_handle_vbus_present</span><span class="p">(</span><span class="n">tcpc_dev</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">	</span><span class="k">return</span><span class="w"> </span><span class="n">typec_handle_vbus_absent</span><span class="p">(</span><span class="n">tcpc_dev</span><span class="p">);</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>根进代码发现，vbus打开关闭等操作还是在cc处理函数中操作的，比如source端打开vbus软件流程如下：</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span>* typec_handle_debounce_timeout(tcpc_dev); //typec timer线程处理函数
+  └── typec_handle_cc_changed_entry(tcpc_dev);
+      └── typec_cc_src_remove_entry(tcpc_dev);
+          └── else if (typec_check_cc_any(TYPEC_CC_VOLT_RD)) //检测到Rd
+              └── typec_cc_src_detect_entry(tcpc_dev);
+                  └── typec_cc_src_detect_vsafe0v_entry(tcpc_dev);
+                      └── typec_source_attached_entry(tcpc_dev);
+                          └── tcpci_source_vbus(tcpc_dev,TCP_VBUS_CTRL_TYPEC, TCPC_VBUS_SOURCE_5V, -1); //发送打开vbus通知
+                              └── tcpc_check_notify_time(tcpc, &amp;tcp_noti,TCP_NOTIFY_IDX_VBUS, TCP_NOTIFY_SOURCE_VBUS); //发送通知
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>vbus接收通知<code class="docutils literal notranslate"><span class="pre">usb20.c</span></code>：</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span>* .init = mt_usb_init,
+  └── mt_usb_otg_init(musb);
+      └── INIT_DELAYED_WORK(&amp;register_otg_work, do_register_otg_work);
+          ├── otg_nb.notifier_call = otg_tcp_notifier_call;
+          └── ret = register_tcp_dev_notifier(otg_tcpc_dev, &amp;otg_nb,TCP_NOTIFY_TYPE_VBUS | TCP_NOTIFY_TYPE_USB |TCP_NOTIFY_TYPE_MISC); //usb20_host.c
+              └── static int otg_tcp_notifier_call(struct notifier_block *nb,
+                  └── switch (event) {
+                      └── case TCP_NOTIFY_SOURCE_VBUS:
+                          ├── if (noti-&gt;vbus_state.mv) mt_usb_vbus_on(0); //实际控制vbus
+                          └── else mt_usb_vbus_off(0);
+</pre></div>
+</div>
+</section>
+<section id="id8">
+<h3>实例分析<a class="headerlink" href="#id8" title="Permalink to this headline"></a></h3>
+<ul class="simple">
+<li><p>M8插电脑，可以看到有CC两个中断信息，根据加的打印<code class="docutils literal notranslate"><span class="pre">wugn</span> <span class="pre">test</span> <span class="pre">typec_state</span></code>判断,是<code class="docutils literal notranslate"><span class="pre">typec_attached_snk</span></code>,unattached -&gt; SNK过程log如下：</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span>&lt;5&gt;[10102.195626] &lt;10102.183&gt;TCPC-TYPEC:Attached-&gt; NULL
+&lt;5&gt;[10102.195626] &lt;10102.183&gt;TCPC-TCPC:usb_port_
+&lt;5&gt;[10102.195644]  (5)[112:pd_dbg_info]detached
+&lt;5&gt;[10102.195644] &lt;10102.183&gt;TCPC-PE:PD -&gt; IDLE1 (PDY)
+&lt;5&gt;[10102.195644] &lt;10102.183&gt;TCPC-PE:bist_test_mode=0
+&lt;5&gt;[10102.195644] &lt;10102.183&gt;TCPC-PE:PD -&gt; IDLE2 (PDY)
+&lt;5&gt;[10102.195644] &lt;1010
+&lt;5&gt;[10102.195663]  (5)[112:pd_dbg_info]2.186&gt;TCPC-TYPEC:** TryWait.SNK
+&lt;5&gt;[10102.195663] &lt;10102.187&gt;TCPC-TYPEC:[CC_Alert] 5/0
+&lt;5&gt;[10102.227667]  (5)[112:pd_dbg_info]&lt;10102.198&gt;TCPC-TCPC:ps_change=1
+&lt;5&gt;[10102.308600]  (5)[112:pd_dbg_info]&lt;10102.308&gt;TCPC-TYPEC:[CC_Change] 5/0
+&lt;5&gt;[10102.308600] &lt;10102.308&gt;TCPC-TYPEC:wait_ps=SNK_VSafe5V
+&lt;5&gt;[10102.308600] &lt;10102.308&gt;TCPC-TYPEC:Attached-&gt; NULL(repeat)
+&lt;6&gt;[10102.852349]  (5)[112:pd_dbg_info]///PD dbg info 38d
+&lt;5&gt;[10102.852399]  (5)[112:pd_dbg_info]&lt;10102.852&gt;TCPC-TYPEC:[CC_Alert] 6/0
+通知notify处理：
+&lt;6&gt;[10102.858855]  (4)[5558:kworker/u16:2]tcpc_notifier_call: action:10// SINK_VBUS则关闭SNK端vbus
+&lt;6&gt;[10102.858890]  (4)[5558:kworker/u16:2]pd_tcp_notifier_call sink vbus 5000mV 1500mA type(0x01)
+&lt;6&gt;[10102.858928]  (4)[5558:kworker/u16:2]mt6370_pmu_charger mt6370_pmu_charger: mt6370_enable_power_path: en = 1, pp_en = 0
+
+&lt;6&gt;[10102.865264]  (4)[5558:kworker/u16:2]pd_tcp_notifier_call USB Plug in, pol = 0
+&lt;5&gt;[10102.865394]  (4)[261:attach_thread]typec_attach_thread bc12_sel:1
+&lt;5&gt;[10102.865417]  (4)[261:attach_thread]psy_chr_type_set_property: prop:4 1
+&lt;5&gt;[10102.865456]  (4)[5558:kworker/u16:2][MUSB]otg_tcp_notifier_call 404: TCP_NOTIFY_TYPEC_STATE, old_state=0, new_state=1 //状态变化TYPEC_UNATTACHED -&gt; TYPEC_ATTACHED_SNK
+&lt;5&gt;[10102.865478]  (4)[5558:kworker/u16:2][MUSB]mt_usb_host_disconnect 325: disconnect //关闭host
+&lt;5&gt;[10102.865502]  (4)[5558:kworker/u16:2][MUSB]issue_host_work 307: issue work, ops&lt;0&gt;, delay&lt;0&gt;, on_st&lt;1&gt;
+&lt;5&gt;[10102.865605]  (4)[5558:kworker/u16:2][MUSB]mt_usb_connect 715: [MUSB] USB connect //连接usb，函数mt_usb_connect();
+
+检测到vbus电压5v:
+&lt;5&gt;[10102.869997]  (4)[4042:kworker/4:2]get_pmic_vbus vbus:4995
+使能充电:
+&lt;5&gt;[10102.870676]  (4)[4042:kworker/4:2]PAX_CHG: _mtk_enable_charging en:1
+&lt;5&gt;[10102.870730]  (4)[4042:kworker/4:2]PAX_CHG: enable_charging 1
+
+完成Attached.SNK：
+&lt;6&gt;[10102.883531]  (5)[112:pd_dbg_info]///PD dbg info 319d
+&lt;5&gt;[10102.883546]  (5)[112:pd_dbg_info]&lt;10102.856&gt;TCPC-TCPC:ps_change=2 //检测到SRC端vbus 5v
+&lt;5&gt;[10102.883546] &lt;10102.857&gt;TCPC-TYPEC:wait_ps=Disable
+&lt;5&gt;[10102.883546] &lt;10102.857&gt;TCPC-TYPEC:** Attached.SNK
+&lt;5&gt;[10102.883554]  (5)[112:pd_dbg_info]TYPEC:Attached-&gt; SINK
+&lt;5&gt;[10102.883554] &lt;10102.858&gt;TCPC-TCPC:usb_port_attached
+</pre></div>
+</div>
+</section>
+<section id="typec-cc">
+<h3>普通Typec CC处理流程<a class="headerlink" href="#typec-cc" title="Permalink to this headline"></a></h3>
+<ul class="simple">
+<li><p>接着上面的实例分析log，主要看<code class="docutils literal notranslate"><span class="pre">typec_attached_snk</span></code>过程，整个软件过程如下：</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span>1.当有中断发生，读取到是cc中断则进入cc处理函数`tcpci_alert_cc_changed`。
+2.`typec_detach_wait_entry`判断是哪种cc状态，则走不同流程。
+3.打开timer并唤醒timer，根据timer_id匹配到timer实际运行函数，实际运行函数唤醒线程tcpc_timer_thread，tcpc_typec_handle_timeout为处理函数，该函数通过timer_id进行相应事件处理。
+4.通过tcpc_check_notify_time通知cc状态，usb驱动/usb_switch驱动控制vbus及切换host/device，或者mt6370_pmu_charger驱动使能充电线程进行充电，PD收到通知会进行PD协商，都通过register_tcp_dev_notifier注册通知。
+int tcpci_notify_typec_state(struct tcpc_device *tcpc)
+{
+	struct tcp_notify tcp_noti;
+	int ret;
+
+    //以下是状态赋值
+	tcp_noti.typec_state.polarity = tcpc-&gt;typec_polarity;
+	tcp_noti.typec_state.old_state = tcpc-&gt;typec_attach_old;
+	tcp_noti.typec_state.new_state = tcpc-&gt;typec_attach_new;
+	tcp_noti.typec_state.rp_level = tcpc-&gt;typec_remote_rp_level;
+
+    //状态上报
+	ret = tcpc_check_notify_time(tcpc, &amp;tcp_noti,
+		TCP_NOTIFY_IDX_USB, TCP_NOTIFY_TYPEC_STATE);
+	return ret;
+}
+5.通过 tcpci_report_usb_port_attached通知PD policy处理PD协议。
+6.SNK端关闭vbus，通知SRC打开vbus，SNK等待vbus 5v，SRC端会打印wait_ps=SNK_VSafe5V。
+enum {
+	/* TCP_NOTIFY_TYPE_MODE */
+	TCP_NOTIFY_ENTER_MODE,
+	TCP_NOTIFY_MODE_START = TCP_NOTIFY_ENTER_MODE, //0
+	TCP_NOTIFY_EXIT_MODE,
+	TCP_NOTIFY_AMA_DP_STATE,
+	TCP_NOTIFY_AMA_DP_ATTENTION,
+	TCP_NOTIFY_AMA_DP_HPD_STATE,
+	TCP_NOTIFY_DC_EN_UNLOCK,
+	TCP_NOTIFY_UVDM,
+	TCP_NOTIFY_MODE_END = TCP_NOTIFY_UVDM,
+
+	/* TCP_NOTIFY_TYPE_VBUS */
+	TCP_NOTIFY_DIS_VBUS_CTRL,
+	TCP_NOTIFY_VBUS_START = TCP_NOTIFY_DIS_VBUS_CTRL,
+	TCP_NOTIFY_SOURCE_VCONN,
+	TCP_NOTIFY_SOURCE_VBUS, //9
+	TCP_NOTIFY_SINK_VBUS, // 10
+	TCP_NOTIFY_EXT_DISCHARGE,
+	TCP_NOTIFY_ATTACHWAIT_SNK,
+	TCP_NOTIFY_ATTACHWAIT_SRC,
+	TCP_NOTIFY_VBUS_END = TCP_NOTIFY_ATTACHWAIT_SRC,
+
+	/* TCP_NOTIFY_TYPE_USB */
+	TCP_NOTIFY_TYPEC_STATE, // 14
+	TCP_NOTIFY_USB_START = TCP_NOTIFY_TYPEC_STATE,
+	TCP_NOTIFY_PD_STATE, // 15
+	TCP_NOTIFY_USB_END = TCP_NOTIFY_PD_STATE,
+
+7.usb驱动/usb_switch驱动关闭host并切换成device模式。
+8.检测到SRC端vbus 5v，完成CC协商。
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>以<code class="docutils literal notranslate"><span class="pre">tcpci_report_usb_port_attached</span></code>为分界，可以看到两个线程处理函数，分别是<code class="docutils literal notranslate"><span class="pre">tcpc_typec_handle_timeout</span></code>和<code class="docutils literal notranslate"><span class="pre">pd_policy_engine_run</span></code>。</p>
+<ul>
+<li><p>tcpc_typec_handle_timeout是普通typec功能处理，通过timer唤醒线程进行处理，具体功能可以看<code class="docutils literal notranslate"><span class="pre">timer_id</span></code>支持哪些。</p></li>
+<li><p>pd_policy_engine_run是PD协议处理函数，主要功能包括DR_SWAP、PR_SWAP、VCONN_SWAP、PD_ROLE_SINK、PD_ROLE_SOURCE等功能，在下面章节有讲。</p></li>
+</ul>
+</li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span>* tcpci_alert_cc_changed
+  └── tcpc_typec_handle_cc_change(tcpc_dev);
+      ├── rp_present = typec_get_rp_present_flag(tcpc_dev); //读取Rp状态，是否为Rp 1.5A或者Rp 3A
+      ├── TYPEC_INFO(&quot;[CC_Alert] %d/%d\r\n&quot;, typec_get_cc1(), typec_get_cc2()); //log打印CC状态
+      ├── if (typec_is_drp_toggling())
+      │   ├── TYPEC_DBG(&quot;[Warning] DRP Toggling\r\n&quot;);
+      │   └── return 0; //如果DRP正在切换，则不处理返回
+      ├── if (typec_try_exit_norp_src(tcpc_dev))
+      │   ├── if (tcpc_dev-&gt;typec_state == typec_attached_norp_src)
+      │   │   ├── TYPEC_INFO(&quot;norp_src=0\r\n&quot;);
+      │   │   └── return true;
+      │   └── return 0; //如果source端没有检测到Rp，直接返回，没检测到会打印norp_src=0
+      ├── typec_disable_low_power_mode(tcpc_dev); //关闭低功耗模式
+      ├── if (typec_is_cc_attach(tcpc_dev)) 
+      │   └── typec_check_water_status(tcpc_dev);
+      │       └── tcpci_is_water_detected(tcpc_dev);
+      │           └── tcpc-&gt;ops-&gt;is_water_detected(tcpc); //如果已经完成attach了，有防水检测，不过mt6371不支持
+      ├── typec_detach_wait_entry(struct tcpc_device *tcpc_dev)//重要,处理cc各种状态
+      └── case typec_attached_snk: //这里仅分析attached_snk这一种情况
+          ├── typec_attached_snk_cc_detach(tcpc_dev);
+          └── tcpc_enable_timer(tcpc_dev, TYPEC_TIMER_APPLE_CC_OPEN); //打开timer
+              └── hrtimer_start(&amp;tcpc-&gt;tcpc_timer[timer_id],ktime_set(r, mod*1000), HRTIMER_MODE_REL); //使能timer
+                  └── hrtimer_restart tcpc_timer_apple_cc_open(struct hrtimer *timer) //根据timer_id匹配到timer实际运行函数
+                      └── TCPC_TIMER_TRIGGER();
+                          └── wake_up_interruptible(&amp;tcpc_dev-&gt;timer_wait_que); //timer只负责唤醒处理线程tcpc_timer_thread
+                              └── tcpc_timer_thread(void *param) -&gt; tcpc_handle_timer_triggered(tcpc_dev); //线程处理函数
+                                  ├── on_pe_timer_timeout(tcpc_dev, i); //PD相关的event处理，包括vbus变化，硬复位等
+                                  ├── tcpc_typec_handle_timeout(struct tcpc_device *tcpc_dev, uint32_t timer_id) //typec timer线程处理函数
+                                  └── case TYPEC_TIMER_APPLE_CC_OPEN:
+                                      ├── typec_handle_debounce_timeout(tcpc_dev);
+                                      ├── typec_handle_cc_changed_entry(tcpc_dev); //处理CC事件 tcpci_typec.c
+                                      │   └── typec_alert_attach_state_change(tcpc_dev);
+                                      │       ├── ret = tcpci_report_usb_port_changed(tcpc_dev); //notify通知状态
+                                      │       │   ├── tcpci_notify_typec_state(tcpc);
+                                      │       │   │   └── tcpc_check_notify_time(tcpc, &amp;tcp_noti,TCP_NOTIFY_IDX_USB, TCP_NOTIFY_TYPEC_STATE); //重要，notify通知
+                                      │       │   └── if (tcpc-&gt;typec_attach_old == TYPEC_UNATTACHED)
+                                      │       │       └── tcpci_report_usb_port_attached(tcpc); //这里主要是通知PD policy处理PD协议。
+                                      │       │           ├── tcpc-&gt;dual_role_pr = DUAL_ROLE_PROP_PR_SNK; //赋值各种SNK状态
+                                      │       │           ├── tcpc-&gt;dual_role_dr = DUAL_ROLE_PROP_DR_DEVICE;
+                                      │       │           ├── tcpc-&gt;dual_role_mode = DUAL_ROLE_PROP_MODE_UFP;
+                                      │       │           └── __pd_put_cc_attached_event(tcpc_dev, type);
+                                      │       │               └── __pd_put_event(tcpc_dev, &amp;evt, false);
+                                      │       │                   └── wake_up_interruptible(&amp;tcpc_dev-&gt;event_loop_wait_que);
+                                      │       │                       └── tcpc_event_thread(void *param)
+                                      │       │                           └── while (pd_policy_engine_run(tcpc_dev)) //唤醒PD event时间处理线程
+                                      │       └── tcpc_dev-&gt;typec_attach_old = tcpc_dev-&gt;typec_attach_new; //赋值老状态typec_attach_old
+                                      ├── TYPEC_INFO(&quot;[CC_Change] %d/%d\r\n&quot;, typec_get_cc1(), typec_get_cc2()); //打印CC 如TCPC-TYPEC:[CC_Change] 5/0
+                                      └── if (typec_is_act_as_sink_role(tcpc_dev))
+                                          └── typec_cc_change_sink_entry(tcpc_dev); //处理sink入口
+                                              └── typec_cc_snk_detect_entry(tcpc_dev);
+                                                  ├── if (tcpci_check_vbus_valid(tcpc_dev)) /* If Port Partner act as Source without VBUS, wait vSafe5V 等待vbus 5v*/
+                                                  │   └── typec_cc_snk_detect_vsafe5v_entry(tcpc_dev); //检测vbus是否打开
+                                                  └── else typec_wait_ps_change(tcpc_dev, TYPEC_WAIT_PS_SNK_VSAFE5V);
+                                                      └── typec_wait_ps_change(tcpc_dev, TYPEC_WAIT_PS_DISABLE); //检测SNK端是否已经关闭vbus
+                                                          └── typec_sink_attached_entry(tcpc_dev);
+                                                              └── tcpc_dev-&gt;typec_attach_new = TYPEC_ATTACHED_SNK; //赋值新状态typec_attach_new
+</pre></div>
+</div>
+</section>
+<section id="pd-typec-cc">
+<h3>PD Typec CC处理流程<a class="headerlink" href="#pd-typec-cc" title="Permalink to this headline"></a></h3>
+<section id="pd-process">
+<h4>PD Process<a class="headerlink" href="#pd-process" title="Permalink to this headline"></a></h4>
+<p>比如CC、Vbus完成后，会通知PD policy处理PD协议，唤醒PD event时间处理线程，PD process包含如下文件：</p>
+<div class="highlight-log notranslate"><div class="highlight"><pre><span></span>wugn@jcrj-tf-compile:tcpc$ ls pd_process*
+pd_process_evt.c      pd_process_evt_dbg.c  pd_process_evt_prs.c  pd_process_evt_src.c  pd_process_evt_vcs.c
+pd_process_evt_com.c  pd_process_evt_drs.c  pd_process_evt_snk.c  pd_process_evt_tcp.c  pd_process_evt_vdm.c
+</pre></div>
+</div>
+<p>如下程序流程，可以看出pd会分出来很多事件，每种事件分别对应pd_process开头的函数处理，同时对应d_policy_engine开头的文件名，我们这里以SNK为例展开跟踪一下代码：</p>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span>* pd_policy_engine_run(struct tcpc_device *tcpc) //pd_policy_engine.c
+  └── pd_handle_event(pd_port, pd_event);
+      ├── pd_process_event(pd_port, pd_event)
+      │   ├── if (pd_curr_is_vdm_evt(pd_port))
+      │   │   └── pd_process_event_vdm(pd_port, pd_event);
+      │   ├── if (pd_event-&gt;event_type == PD_EVT_TCP_MSG)
+      │   │   └── pd_process_event_tcp(pd_port, pd_event);
+      │   ├── switch (pd_port-&gt;state_machine)
+      │   │   ├── case PE_STATE_MACHINE_DR_SWAP: ret = pd_process_event_drs(pd_port, pd_event);
+      │   │   ├── case PE_STATE_MACHINE_PR_SWAP: ret = pd_process_event_prs(pd_port, pd_event);
+      │   │   └── case PE_STATE_MACHINE_VCONN_SWAP: ret = pd_process_event_vcs(pd_port, pd_event);
+      │   ├── if (pd_port-&gt;power_role == PD_ROLE_SINK) ret = pd_process_event_snk(pd_port, pd_event);
+      │   │   └── case PD_EVT_CTRL_MSG: return pd_process_ctrl_msg(pd_port, pd_event); //pd_process_evt_snk.c 
+      │   │       └── switch (pd_port-&gt;pe_state_curr) {
+      │   │           └── case PD_CTRL_GET_SOURCE_CAP: pd_process_ctrl_msg_get_source_cap(pd_port, PE_DR_SNK_GIVE_SOURCE_CAP)//例子
+      │   └── else ret = pd_process_event_src(pd_port, pd_event);
+      └── pd_pe_state_change(pd_port, pd_event);
+</pre></div>
+</div>
+<p>以上可见PD支持DR_SWAP、PR_SWAP、VCONN_SWAP、PD_ROLE_SINK、PD_ROLE_SOURCE等功能，这些是普通typec所不支持的。</p>
+</section>
+<section id="pd-policy">
+<h4>PD Policy<a class="headerlink" href="#pd-policy" title="Permalink to this headline"></a></h4>
+<p>我们看到很多<code class="docutils literal notranslate"><span class="pre">pd_policy</span></code>开头的文件，但是只用到了<code class="docutils literal notranslate"><span class="pre">pd_policy_engine.c</span></code>，其他的貌似都是提供接口给用户开发的。</p>
+<div class="highlight-log notranslate"><div class="highlight"><pre><span></span>wugn@jcrj-tf-compile:tcpc$ ls pd_policy_engine*
+pd_policy_engine.c      pd_policy_engine_dfp.c  pd_policy_engine_prs.c  pd_policy_engine_ufp.c
+pd_policy_engine_com.c  pd_policy_engine_dr.c   pd_policy_engine_snk.c  pd_policy_engine_vcs.c
+pd_policy_engine_dbg.c  pd_policy_engine_drs.c  pd_policy_engine_src.c
+</pre></div>
+</div>
+<p>比如在<code class="docutils literal notranslate"><span class="pre">pd_policy_engine_src.c</span></code>中提供如下接口，应该都是给客户自己定制功能的，暂时还没想到怎么用。</p>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="cm">/******************* Source *******************/</span><span class="w"></span>
+<span class="cp">#ifdef CONFIG_USB_PD_PE_SOURCE</span>
+<span class="kt">void</span><span class="w"> </span><span class="nf">pe_src_startup_entry</span><span class="p">(</span><span class="w"></span>
+<span class="w">	</span><span class="k">struct</span><span class="w"> </span><span class="nc">pd_port</span><span class="w"> </span><span class="o">*</span><span class="n">pd_port</span><span class="p">);</span><span class="w"></span>
+<span class="kt">void</span><span class="w"> </span><span class="nf">pe_src_discovery_entry</span><span class="p">(</span><span class="w"></span>
+<span class="w">	</span><span class="k">struct</span><span class="w"> </span><span class="nc">pd_port</span><span class="w"> </span><span class="o">*</span><span class="n">pd_port</span><span class="p">);</span><span class="w"></span>
+<span class="kt">void</span><span class="w"> </span><span class="nf">pe_src_send_capabilities_entry</span><span class="p">(</span><span class="w"></span>
+<span class="w">	</span><span class="k">struct</span><span class="w"> </span><span class="nc">pd_port</span><span class="w"> </span><span class="o">*</span><span class="n">pd_port</span><span class="p">);</span><span class="w"></span>
+<span class="kt">void</span><span class="w"> </span><span class="nf">pe_src_negotiate_capabilities_entry</span><span class="p">(</span><span class="w"></span>
+<span class="w">	</span><span class="k">struct</span><span class="w"> </span><span class="nc">pd_port</span><span class="w"> </span><span class="o">*</span><span class="n">pd_port</span><span class="p">);</span><span class="w"></span>
+<span class="kt">void</span><span class="w"> </span><span class="nf">pe_src_transition_supply_entry</span><span class="p">(</span><span class="w"></span>
+<span class="w">	</span><span class="k">struct</span><span class="w"> </span><span class="nc">pd_port</span><span class="w"> </span><span class="o">*</span><span class="n">pd_port</span><span class="p">);</span><span class="w"></span>
+<span class="kt">void</span><span class="w"> </span><span class="nf">pe_src_transition_supply_exit</span><span class="p">(</span><span class="w"></span>
+<span class="w">	</span><span class="k">struct</span><span class="w"> </span><span class="nc">pd_port</span><span class="w"> </span><span class="o">*</span><span class="n">pd_port</span><span class="p">);</span><span class="w"></span>
+<span class="kt">void</span><span class="w"> </span><span class="nf">pe_src_transition_supply2_entry</span><span class="p">(</span><span class="w"></span>
+<span class="w">	</span><span class="k">struct</span><span class="w"> </span><span class="nc">pd_port</span><span class="w"> </span><span class="o">*</span><span class="n">pd_port</span><span class="p">);</span><span class="w"></span>
+<span class="kt">void</span><span class="w"> </span><span class="nf">pe_src_ready_entry</span><span class="p">(</span><span class="w"></span>
+<span class="w">	</span><span class="k">struct</span><span class="w"> </span><span class="nc">pd_port</span><span class="w"> </span><span class="o">*</span><span class="n">pd_port</span><span class="p">);</span><span class="w"></span>
+<span class="kt">void</span><span class="w"> </span><span class="nf">pe_src_disabled_entry</span><span class="p">(</span><span class="w"></span>
+<span class="w">	</span><span class="k">struct</span><span class="w"> </span><span class="nc">pd_port</span><span class="w"> </span><span class="o">*</span><span class="n">pd_port</span><span class="p">);</span><span class="w"></span>
+<span class="kt">void</span><span class="w"> </span><span class="nf">pe_src_capability_response_entry</span><span class="p">(</span><span class="w"></span>
+<span class="w">	</span><span class="k">struct</span><span class="w"> </span><span class="nc">pd_port</span><span class="w"> </span><span class="o">*</span><span class="n">pd_port</span><span class="p">);</span><span class="w"></span>
+<span class="kt">void</span><span class="w"> </span><span class="nf">pe_src_hard_reset_entry</span><span class="p">(</span><span class="w"></span>
+<span class="w">	</span><span class="k">struct</span><span class="w"> </span><span class="nc">pd_port</span><span class="w"> </span><span class="o">*</span><span class="n">pd_port</span><span class="p">);</span><span class="w"></span>
+<span class="kt">void</span><span class="w"> </span><span class="nf">pe_src_hard_reset_received_entry</span><span class="p">(</span><span class="w"></span>
+<span class="w">	</span><span class="k">struct</span><span class="w"> </span><span class="nc">pd_port</span><span class="w"> </span><span class="o">*</span><span class="n">pd_port</span><span class="p">);</span><span class="w"></span>
+<span class="kt">void</span><span class="w"> </span><span class="nf">pe_src_transition_to_default_entry</span><span class="p">(</span><span class="w"></span>
+<span class="w">	</span><span class="k">struct</span><span class="w"> </span><span class="nc">pd_port</span><span class="w"> </span><span class="o">*</span><span class="n">pd_port</span><span class="p">);</span><span class="w"></span>
+<span class="kt">void</span><span class="w"> </span><span class="nf">pe_src_transition_to_default_exit</span><span class="p">(</span><span class="w"></span>
+<span class="w">	</span><span class="k">struct</span><span class="w"> </span><span class="nc">pd_port</span><span class="w"> </span><span class="o">*</span><span class="n">pd_port</span><span class="p">);</span><span class="w"></span>
+<span class="kt">void</span><span class="w"> </span><span class="nf">pe_src_get_sink_cap_entry</span><span class="p">(</span><span class="w"></span>
+<span class="w">	</span><span class="k">struct</span><span class="w"> </span><span class="nc">pd_port</span><span class="w"> </span><span class="o">*</span><span class="n">pd_port</span><span class="p">);</span><span class="w"></span>
+<span class="kt">void</span><span class="w"> </span><span class="nf">pe_src_get_sink_cap_exit</span><span class="p">(</span><span class="w"></span>
+<span class="w">	</span><span class="k">struct</span><span class="w"> </span><span class="nc">pd_port</span><span class="w"> </span><span class="o">*</span><span class="n">pd_port</span><span class="p">);</span><span class="w"></span>
+<span class="kt">void</span><span class="w"> </span><span class="nf">pe_src_wait_new_capabilities_entry</span><span class="p">(</span><span class="w"></span>
+<span class="w">	</span><span class="k">struct</span><span class="w"> </span><span class="nc">pd_port</span><span class="w"> </span><span class="o">*</span><span class="n">pd_port</span><span class="p">);</span><span class="w"></span>
+<span class="kt">void</span><span class="w"> </span><span class="nf">pe_src_send_soft_reset_entry</span><span class="p">(</span><span class="w"></span>
+<span class="w">	</span><span class="k">struct</span><span class="w"> </span><span class="nc">pd_port</span><span class="w"> </span><span class="o">*</span><span class="n">pd_port</span><span class="p">);</span><span class="w"></span>
+<span class="kt">void</span><span class="w"> </span><span class="nf">pe_src_soft_reset_entry</span><span class="p">(</span><span class="w"></span>
+<span class="w">	</span><span class="k">struct</span><span class="w"> </span><span class="nc">pd_port</span><span class="w"> </span><span class="o">*</span><span class="n">pd_port</span><span class="p">);</span><span class="w"></span>
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+</section>
+<section id="id9">
+<h1>软件配置分析<a class="headerlink" href="#id9" title="Permalink to this headline"></a></h1>
+<section id="config-usb-pd-wait-bc12bc1-2">
+<h2>1.CONFIG_USB_PD_WAIT_BC12等待bc1.2<a class="headerlink" href="#config-usb-pd-wait-bc12bc1-2" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p>在中打开宏定义CONFIG_USB_PD_WAIT_BC12后，发现typec驱动里面会反复检测bc1.2状态，当然只有设备作为device才会等待bc1.2，具体看代码流程：</p>
+<ul>
+<li><p>1.初始化工作队列在typec驱动初始化后10s调用，这里定义bc1.2获取的哪个psy：</p></li>
+<li><p>pd_put_cc_attached_event函数是cc attch最后发送event的，这里会开启timer反复轮询，等待bc1.2，直到读到充电类型，才会开启线程跑pd_policy_engine_run PD策略。</p></li>
+<li><ol class="arabic simple" start="3">
+<li><p>timer处理函数，这里timer会轮询20次，timerout时间 100ms</p></li>
+</ol>
+</li>
+</ul>
+</li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span>tcpci_config.h:
+#define CONFIG_USB_PD_WAIT_BC12
+
+1.初始化工作队列在typec驱动初始化后10s调用，这里定义bc1.2获取的哪个psy：
+static void tcpc_event_init_work(struct work_struct *work)
+{
+#ifdef CONFIG_USB_PD_WAIT_BC12
+	tcpc-&gt;usb_psy = power_supply_get_by_name(&quot;usb&quot;);
+	if (!tcpc-&gt;usb_psy) {
+		tcpci_unlock_typec(tcpc);
+		TCPC_ERR(&quot;%s get usb psy fail\n&quot;, __func__);
+		return;
+	}
+#endif /* CONFIG_USB_PD_WAIT_BC12 */   
+}
+
+2.pd_put_cc_attached_event函数是cc attch最后发送event的，这里会开启timer反复轮询，等待bc1.2，直到读到充电类型，才会开启线程跑pd_policy_engine_run PD策略。
+bool pd_put_cc_attached_event(
+		struct tcpc_device *tcpc, uint8_t type)
+{
+	bool ret = false;
+#ifdef CONFIG_USB_POWER_DELIVERY
+#ifdef CONFIG_USB_PD_WAIT_BC12
+	int rv = 0;
+	union power_supply_propval val = {.intval = 0};
+#endif /* CONFIG_USB_PD_WAIT_BC12 */
+#endif /* CONFIG_USB_POWER_DELIVERY */
+
+	mutex_lock(&amp;tcpc-&gt;access_lock);
+
+#ifdef CONFIG_USB_POWER_DELIVERY
+#ifdef CONFIG_USB_PD_WAIT_BC12
+	rv = power_supply_get_property(tcpc-&gt;usb_psy,
+		POWER_SUPPLY_PROP_REAL_TYPE, &amp;val);
+	if ((type == TYPEC_ATTACHED_SNK || type == TYPEC_ATTACHED_DBGACC_SNK) &amp;&amp;
+		(rv &lt; 0 || val.intval == POWER_SUPPLY_TYPE_UNKNOWN)) {
+		tcpc-&gt;pd_wait_bc12_count = 1;
+		tcpc_enable_timer(tcpc, TYPEC_RT_TIMER_PD_WAIT_BC12);
+		mutex_unlock(&amp;tcpc-&gt;access_lock);
+		return ret;
+	}
+	tcpc-&gt;pd_wait_bc12_count = 0;
+	tcpc_disable_timer(tcpc, TYPEC_RT_TIMER_PD_WAIT_BC12);
+#endif /* CONFIG_USB_PD_WAIT_BC12 */
+#endif /* CONFIG_USB_POWER_DELIVERY */
+
+	ret = __pd_put_cc_attached_event(tcpc, type);
+
+	mutex_unlock(&amp;tcpc-&gt;access_lock);
+
+	return ret;
+}
+
+3. timer处理函数，这里timer会轮询20次，timerout时间 100ms
+DECL_TCPC_TIMEOUT(TYPEC_RT_TIMER_PD_WAIT_BC12, 100),
+#ifdef CONFIG_USB_PD_WAIT_BC12
+static inline void typec_handle_pd_wait_bc12(struct tcpc_device *tcpc)
+{
+	int ret = 0;
+	uint8_t type = TYPEC_UNATTACHED;
+	union power_supply_propval val = {.intval = 0};
+
+	mutex_lock(&amp;tcpc-&gt;access_lock);
+
+	type = tcpc-&gt;typec_attach_new;
+	ret = power_supply_get_property(tcpc-&gt;usb_psy,
+		POWER_SUPPLY_PROP_REAL_TYPE, &amp;val);
+	TYPEC_INFO(&quot;type=%d, ret,chg_type=%d,%d, count=%d\n&quot;, type,
+		ret, val.intval, tcpc-&gt;pd_wait_bc12_count);
+
+	if (type != TYPEC_ATTACHED_SNK &amp;&amp; type != TYPEC_ATTACHED_DBGACC_SNK)
+		goto out;
+
+	if ((ret &gt;= 0 &amp;&amp; val.intval != POWER_SUPPLY_TYPE_UNKNOWN) ||
+		tcpc-&gt;pd_wait_bc12_count &gt;= 20) {
+		__pd_put_cc_attached_event(tcpc, type);
+	} else {
+		tcpc-&gt;pd_wait_bc12_count++;
+		tcpc_enable_timer(tcpc, TYPEC_RT_TIMER_PD_WAIT_BC12);
+	}
+out:
+	mutex_unlock(&amp;tcpc-&gt;access_lock);
+}
+#endif /* CONFIG_USB_PD_WAIT_BC12 */
+</pre></div>
+</div>
+<p>qcom qcm2290识别过程：</p>
+<div class="highlight-log notranslate"><div class="highlight"><pre><span></span>
+[Wed Dec 31 19:02:02 1969] rt-pd-manager soc:rt_pd_manager: usb_dwork_handler Device[   84.457442] msm-dwc3 4e00000.ssusb: DWC3_CONTROLLER_SET_CURRENT_DRAW_EVENT received
+
+[Wed Dec [   84.478388] msm-dwc3 4e00000.ssusb: DWC3_CONTROLLER_SET_CURRENT_DRAW_EVENT received
+31 19:02:02 1969] extcon extcon2: extcon_set_state_sync id = 2 state = 0
+[Wed Dec 31 19:02:02 1969] extcon extcon2: extcon_set_state_sync state 1
+[Wed Dec 31 19:02:02 1969] extcon extcon2: extcon_set_state_sync id = 1 state = 1
+[Wed Dec 31 19:02:02 1969] extcon extcon2: extcon_set_state_sync state 1
+[Wed Dec 31 19:02:02 1969] ///PD dbg info 149d
+[Wed Dec 31 19:02:02 1969] extcon extcon2: extcon_sync state 1
+[Wed Dec 31 19:02:02 1969] &lt;   82.385&gt;Trigger TYPEC_RT_TIMER_PD_WAIT_BC12\x0a&lt;   82.385&gt;TCPC-TYPEC:type=1, ret,chg_type=0,0, count=1\x0a&lt;   82.385&gt;Enable TYPEC_R
+[Wed Dec 31 19:02:02 1969] T_TIMER_PD_WAIT_BC12
+[Wed Dec 31 19:02:02 1969] extcon extcon2: extcon_sync state 2 index = 0
+[Wed Dec 31 19:02:02 1969] extcon extcon2: extcon_sync state 3
+[Wed Dec 31 19:02:02 1969] CPU: 0 PID: 7 Comm: kworker/0:1 Tainted: G        W         4.19.157 #1
+[Wed Dec 31 19:02:02 1969] Hardware name: Qualcomm Technologies, Inc. Scuba IOT IDP (DT)
+[Wed Dec 31 19:02:02 1969] Workqueue: events usb_dwork_handler
+[Wed Dec 31 19:02:02 1969] Call trace:
+[Wed Dec 31 19:02:02 1969] dump_backtrace+0x0/0x250
+[Wed Dec 31 19:02:02 1969] show_stack+0x14/0x20
+[Wed Dec 31 19:02:02 1969] dump_stack+0xc8/0x104
+[Wed Dec 31 19:02:02 1969] qusb_phy_vbus_notifier+0x20/0x78
+[Wed Dec 31 19:02:02 1969] raw_notifier_call_chain+0x78/0xb8
+[Wed Dec 31 19:02:02 1969] extcon_sync+0x120/0x330
+[Wed Dec 31 19:02:02 1969] extcon_set_state_sync+0xd4/0xf8
+[Wed Dec 31 19:02:02 1969] usb_dwork_handler+0x100/0x110
+[Wed Dec 31 19:02:02 1969] process_one_work+0x278/0x468
+[Wed Dec 31 19:02:02 1969] worker_thread+0x238/0x4c8
+[Wed Dec 31 19:02:02 1969] kthread+0x148/0x158
+[Wed Dec 31 19:02:02 1969] ret_from_fork+0x10/0x1c
+[Wed Dec 31 19:02:02 1969] msm-qusb-phy 1613000.qusb: Got VBUS notification: 1
+[Wed Dec 31 19:02:02 1969] extcon extcon2: name_show = NAME=soc:rt_pd_manager
+[Wed Dec 31 19:02:02 1969] ///PD dbg info 149d
+[Wed Dec 31 19:02:02 1969] extcon extcon2: state_show = STATE=USB=1\x0aUSB-HOST=0
+[Wed Dec 31 19:02:02 1969] &lt;   82.485&gt;Trigger TYPEC_RT_TIMER_PD_WAIT_BC12\x0a&lt;   82.485&gt;TCPC-TYPEC:type=1, ret,chg_type=0,0, count=2\x0a&lt;   82.485&gt;Enable TYPEC_R
+[Wed Dec 31 19:02:02 1969] T_TIMER_PD_WAIT_BC12
+[Wed Dec 31 19:02:02 1969] msm-qusb-phy 1613000.qusb: state: 0
+[Wed Dec 31 19:02:02 1969] healthd: battery none chg=
+[Wed Dec 31 19:02:02 1969] msm-qusb-phy 1613000.qusb: qusb_phy_enable_power turn on regulators
+[Wed Dec 31 19:02:02 1969] msm-qusb-phy 1613000.qusb: min_vol:925000 max_vol:970000
+[Wed Dec 31 19:02:02 1969] msm-qusb-phy 1613000.qusb: qusb_phy_enable_clocks(): on:1
+[Wed Dec 31 19:02:02 1969] ///PD dbg info 149d
+[Wed Dec 31 19:02:02 1969] &lt;   82.585&gt;Trigger TYPEC_RT_TIMER_PD_WAIT_BC12\x0a&lt;   82.585&gt;TCPC-TYPEC:type=1, ret,chg_type=0,0, count=3\x0a&lt;   82.585&gt;Enable TYPEC_R
+[Wed Dec 31 19:02:02 1969] T_TIMER_PD_WAIT_BC12
+[Wed Dec 31 19:02:02 1969] msm-qusb-phy 1613000.qusb: state: 1
+[Wed Dec 31 19:02:02 1969] msm-qusb-phy 1613000.qusb: state: 2
+[Wed Dec 31 19:02:02 1969] msm-qusb-phy 1613000.qusb: state: 1 reg: 0x0
+[Wed Dec 31 19:02:02 1969] ///PD dbg info 149d
+[Wed Dec 31 19:02:02 1969] &lt;   82.686&gt;Trigger TYPEC_RT_TIMER_PD_WAIT_BC12\x0a&lt;   82.686&gt;TCPC-TYPEC:type=1, ret,chg_type=0,0, count=4\x0a&lt;   82.686&gt;Enable TYPEC_R
+[Wed Dec 31 19:02:02 1969] T_TIMER_PD_WAIT_BC12
+[Wed Dec 31 19:02:02 1969] msm-qusb-phy 1613000.qusb: state: 2
+[Wed Dec 31 19:02:02 1969] ///PD dbg info 149d
+[Wed Dec 31 19:02:02 1969] &lt;   82.786&gt;Trigger TYPEC_RT_TIMER_PD_WAIT_BC12\x0a&lt;   82.786&gt;TCPC-TYPEC:type=1, ret,chg_type=0,0, count=5\x0a&lt;   82.786&gt;Enable TYPEC_R
+[Wed Dec 31 19:02:02 1969] T_TIMER_PD_WAIT_BC12
+[Wed Dec 31 19:02:02 1969] msm-qusb-phy 1613000.qusb: state: 3
+[Wed Dec 31 19:02:02 1969] msm-qusb-phy 1613000.qusb: state: 2 reg: 0x0
+[Wed Dec 31 19:02:02 1969] msm-qusb-phy 1613000.qusb: qusb_phy_enable_clocks(): on:0
+[Wed Dec 31 19:02:02 1969] msm-qusb-phy 1613000.qusb: qusb_phy_enable_power turn off regulators
+[Wed Dec 31 19:02:02 1969] ///PD dbg info 149d
+[Wed Dec 31 19:02:02 1969] &lt;   82.886&gt;Trigger TYPEC_RT_TIMER_PD_WAIT_BC12\x0a&lt;   82.886&gt;TCPC-TYPEC:type=1, ret,chg_type=0,0, count=6\x0a&lt;   82.886&gt;Enable TYPEC_R
+[Wed Dec 31 19:02:02 1969] T_TIMER_PD_WAIT_BC12
+[Wed Dec 31 19:02:02 1969] msm-qusb-phy 1613000.qusb: min_vol:0 max_vol:970000
+[Wed Dec 31 19:02:02 1969] msm-qusb-phy 1613000.qusb: QUSB PHY&#39;s regulators are turned OFF.
+[Wed Dec 31 19:02:02 1969] msm-qusb-phy 1613000.qusb: Notify charger type: 4
+[Wed Dec 31 19:02:02 1969] mp2721 0-003f: mp2721_set_property() set charge_type:4, ret:0
+[Wed Dec 31 19:02:02 1969] msm-qusb-phy 1613000.qusb: Notify event: 1 for extcon_id: 1
+[Wed Dec 31 19:02:02 1969] msm-qusb-phy 1613000.qusb: Failed to get TYPEC POLARITY
+[Wed Dec 31 19:02:02 1969] ///PD dbg info 103d
+[Wed Dec 31 19:02:02 1969] &lt;   82.986&gt;Trigger TYPEC_RT_TIMER_PD_WAIT_BC12\x0a&lt;   82.986&gt;TCPC-TYPEC:type=1, ret,chg_type=0,4, count=7
+[Wed Dec 31 19:02:02 1969] i2c_geni 4a80000.i2c: i2c error :-107
+[Wed Dec 31 19:02:03 1969] extcon extcon3: extcon_set_state_sync id = 1 state = 1
+[Wed Dec 31 19:02:03 1969] extcon extcon3: extcon_set_state_sync state 1
+[Wed Dec 31 19:02:03 1969] ///PD dbg info 73d
+[Wed Dec 31 19:02:03 1969] &lt;   83.035&gt;TCPC-DC&gt; dc_dfp_none\x0a&lt;   83.035&gt;TCPC-PE:PD -&gt; SNK_START (CUN)
+[Wed Dec 31 19:02:03 1969] extcon extcon3: extcon_sync state 1
+[Wed Dec 31 19:02:03 1969] extcon extcon3: extcon_sync state 2 index = 0
+[Wed Dec 31 19:02:03 1969] ///PD dbg info 226d
+</pre></div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, wugn.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+  
+
+<script charset="UTF-8" id="LA_COLLECT" src="//sdk.51.la/js-sdk-pro.min.js"></script>
+<script>LA.init({id: "JjOE14XScyd75b2C",ck: "JjOE14XScyd75b2C"})</script>
+
+<br/>
+<script id="LA-DATA-WIDGET" crossorigin="anonymous" charset="UTF-8" src="https://v6-widget.51.la/v6/JjOE14XScyd75b2C/quote.js?theme=0&f=12&display=1,0,0,0,0,0,1,1"></script>
+
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

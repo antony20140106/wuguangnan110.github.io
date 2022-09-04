@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>wugn</title>
+
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../index.html" class="icon icon-home"> wugn_note
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">概述</a></li>
+<li><a class="reference internal" href="#id2">参考</a></li>
+<li><a class="reference internal" href="#id3">摘要</a></li>
+<li><a class="reference internal" href="#kernel">kernel软件流程</a><ul>
+<li><a class="reference internal" href="#dts">dts</a></li>
+<li><a class="reference internal" href="#id4">中断申请及初始化流程</a></li>
+<li><a class="reference internal" href="#type-c">Type-C中断函数介绍</a><ul>
+<li><a class="reference internal" href="#smblite-default-irq-handler">smblite_default_irq_handler</a></li>
+<li><a class="reference internal" href="#smblite-typec-or-rid-detection-change-irq-handler">smblite_typec_or_rid_detection_change_irq_handler</a></li>
+<li><a class="reference internal" href="#smblite-typec-state-change-irq-handler">smblite_typec_state_change_irq_handler</a></li>
+<li><a class="reference internal" href="#smblite-typec-attach-detach-irq-handler">smblite_typec_attach_detach_irq_handler</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#typec">typec插入电脑实例分析</a></li>
+</ul>
+</li>
+</ul>
+</div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">wugn_note</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs"> 
+<li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+<li>概述</li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.forward()">Forward</a></li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.back()">Go Back</a> | </li>
+<li style="float: right;margin-left: 10px;"><a href="/index.html">Home</a> | </li>
+
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="id1">
+<h1>概述<a class="headerlink" href="#id1" title="Permalink to this headline"></a></h1>
+<p>高通qcm2290 typec架构理解。</p>
+</section>
+<section id="id2">
+<h1>参考<a class="headerlink" href="#id2" title="Permalink to this headline"></a></h1>
+<ul class="simple">
+<li><p><a class="reference external" href="https://www.elecfans.com/d/1826488.html">USB Type-C连接器和电缆组件简介</a></p></li>
+</ul>
+<p>USB标准对以下五种Type-C互连类型分别做了详细的要求：</p>
+<ul class="simple">
+<li><p>Type-C to Type-C 电缆组件(Type-C to Type-C Cable Assemblies)</p></li>
+<li><p>Type-C to传统电缆组件(Type-C to Legacy Cable Assemblies)</p></li>
+<li><p>Type-C to 传统适配器(Type-C to Legacy Adapters)</p></li>
+<li><p>Type-C 插座连接器（Receptacle Connector）</p></li>
+<li><p>裸电缆(Raw Cable)</p></li>
+</ul>
+</section>
+<section id="id3">
+<h1>摘要<a class="headerlink" href="#id3" title="Permalink to this headline"></a></h1>
+<ul class="simple">
+<li><p>XBL路径：</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>boot_images/QcomPkg/SocPkg/AgattiPkg/Library/UsbConfigLib/
+.
+├── UsbConfigLib.c
+├── UsbConfigLib.inf
+├── UsbConfigLibPrivate.h
+├── UsbConfigLibPublic.h
+├── UsbConfigUsbCores.c
+├── UsbConfigUsbCoresPrivate.h
+├── UsbConfigUsbCoresPublic.h
+├── UsbConfigUsbPorts.c
+├── UsbConfigUsbPortsPrivate.h
+└── UsbConfigUsbPortsPublic.h
+</pre></div>
+</div>
+<p>qpnp:qcom plug n play</p>
+</section>
+<section id="kernel">
+<h1>kernel软件流程<a class="headerlink" href="#kernel" title="Permalink to this headline"></a></h1>
+<section id="dts">
+<h2>dts<a class="headerlink" href="#dts" title="Permalink to this headline"></a></h2>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span>pm2250_charger: qcom,qpnp-smblite {
+        compatible = &quot;qcom,qpnp-smblite&quot;;
+        #address-cells = &lt;1&gt;;
+        #size-cells = &lt;1&gt;;
+        #cooling-cells = &lt;2&gt;;
+
+        qcom,typec@1500 {
+                reg = &lt;0x1500 0x100&gt;;
+                interrupts =
+                        &lt;0x0 0x15 0x0 IRQ_TYPE_EDGE_BOTH&gt;,
+                        &lt;0x0 0x15 0x1 IRQ_TYPE_EDGE_BOTH&gt;,
+                        &lt;0x0 0x15 0x2 IRQ_TYPE_EDGE_RISING&gt;,
+                        &lt;0x0 0x15 0x4 IRQ_TYPE_EDGE_BOTH&gt;,
+                        &lt;0x0 0x15 0x5 IRQ_TYPE_EDGE_RISING&gt;,
+                        &lt;0x0 0x15 0x6 IRQ_TYPE_EDGE_RISING&gt;,
+                        &lt;0x0 0x15 0x7 IRQ_TYPE_EDGE_RISING&gt;;
+
+                interrupt-names = &quot;typec-or-rid-detect-change&quot;,  //这里是所有中断
+                                  &quot;typec-vpd-detect&quot;,
+                                  &quot;typec-cc-state-change&quot;,
+                                  &quot;typec-vbus-change&quot;,
+                                  &quot;typec-attach-detach&quot;,
+                                  &quot;typec-legacy-cable-detect&quot;,
+                                  &quot;typec-try-snk-src-detect&quot;;
+        };
+};
+</pre></div>
+</div>
+</section>
+<section id="id4">
+<h2>中断申请及初始化流程<a class="headerlink" href="#id4" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">qpnp_smblite.c</span></code>:</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span>* static int smblite_probe(struct platform_device *pdev)
+  * rc = smblite_init_hw(chip);
+    * rc = smblite_init_connector_type(chg);
+      * rc = smblite_lib_read(chg, TYPEC_U_USB_CFG_REG, &amp;val); //读取usb状态，是typec还是usb20
+        * type = !!(val &amp; EN_MICRO_USB_MODE_BIT);
+        * if (！type) chg-&gt;connector_type = POWER_SUPPLY_CONNECTOR_TYPEC;
+          * rc = smblite_configure_typec(chg);
+            * rc = smblite_lib_read(chg, LEGACY_CABLE_STATUS_REG, &amp;val);
+            * smblite_lib_write(chg, TYPE_C_INTERRUPT_EN_CFG_1_REG, 0);
+            *  smblite_lib_masked_write(chg, TYPE_C_MODE_CFG_REG, //这些都是配置pm2250寄存器，没什么好看的
+    * rc = smblite_init_otg(chip); //usb20 id脚判断主从
+  * rc = smblite_request_interrupts(chip);
+    * for_each_available_child_of_node(node, child) {
+      * of_property_for_each_string(child, &quot;interrupt-names&quot;, //读取dts
+      * smblite_request_interrupt(chip, child, name);
+        * smblite_irqs[irq_index].handler //中断处理函数，目前typec-vbus-change没有处理函数
+          * .name		= &quot;typec-attach-detach&quot;, .handler	= smblite_typec_attach_detach_irq_handler,
+          * .name		= &quot;typec-legacy-cable-detect&quot;, .handler	= smblite_default_irq_handler,
+          * .name		= &quot;typec-cc-state-change&quot;, .handler	= smblite_typec_state_change_irq_handler,
+          * .name		= &quot;typec-or-rid-detect-change&quot;, .handler	= smblite_typec_or_rid_detection_change_irq_handler,
+</pre></div>
+</div>
+</section>
+<section id="type-c">
+<h2>Type-C中断函数介绍<a class="headerlink" href="#type-c" title="Permalink to this headline"></a></h2>
+<section id="smblite-default-irq-handler">
+<h3>smblite_default_irq_handler<a class="headerlink" href="#smblite-default-irq-handler" title="Permalink to this headline"></a></h3>
+<ul class="simple">
+<li><p>首先就是检测到usb插入了，中断发生，第一个中断，只是一个打印</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="n">irqreturn_t</span><span class="w"> </span><span class="nf">smblite_default_irq_handler</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">irq</span><span class="p">,</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="o">*</span><span class="n">data</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="k">struct</span><span class="w"> </span><span class="nc">smb_irq_data</span><span class="w"> </span><span class="o">*</span><span class="n">irq_data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">data</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="k">struct</span><span class="w"> </span><span class="nc">smb_charger</span><span class="w"> </span><span class="o">*</span><span class="n">chg</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">irq_data</span><span class="o">-&gt;</span><span class="n">parent_data</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">smblite_lib_dbg</span><span class="p">(</span><span class="n">chg</span><span class="p">,</span><span class="w"> </span><span class="n">PR_INTERRUPT</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;IRQ: %s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">irq_data</span><span class="o">-&gt;</span><span class="n">name</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="k">return</span><span class="w"> </span><span class="n">IRQ_HANDLED</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+</section>
+<section id="smblite-typec-or-rid-detection-change-irq-handler">
+<h3>smblite_typec_or_rid_detection_change_irq_handler<a class="headerlink" href="#smblite-typec-or-rid-detection-change-irq-handler" title="Permalink to this headline"></a></h3>
+<ul class="simple">
+<li><p>这个中断也是啥也没干。</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="n">irqreturn_t</span><span class="w"> </span><span class="nf">smblite_typec_or_rid_detection_change_irq_handler</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">irq</span><span class="p">,</span><span class="w"></span>
+<span class="w">								</span><span class="kt">void</span><span class="w"> </span><span class="o">*</span><span class="n">data</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="k">struct</span><span class="w"> </span><span class="nc">smb_irq_data</span><span class="w"> </span><span class="o">*</span><span class="n">irq_data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">data</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="k">struct</span><span class="w"> </span><span class="nc">smb_charger</span><span class="w"> </span><span class="o">*</span><span class="n">chg</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">irq_data</span><span class="o">-&gt;</span><span class="n">parent_data</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">smblite_lib_dbg</span><span class="p">(</span><span class="n">chg</span><span class="p">,</span><span class="w"> </span><span class="n">PR_INTERRUPT</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;IRQ: %s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">irq_data</span><span class="o">-&gt;</span><span class="n">name</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">chg</span><span class="o">-&gt;</span><span class="n">usb_psy</span><span class="p">)</span><span class="w"></span>
+<span class="w">		</span><span class="n">power_supply_changed</span><span class="p">(</span><span class="n">chg</span><span class="o">-&gt;</span><span class="n">usb_psy</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">	</span><span class="k">return</span><span class="w"> </span><span class="n">IRQ_HANDLED</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+</section>
+<section id="smblite-typec-state-change-irq-handler">
+<h3>smblite_typec_state_change_irq_handler<a class="headerlink" href="#smblite-typec-state-change-irq-handler" title="Permalink to this headline"></a></h3>
+<ul class="simple">
+<li><p>CC状态变化的中断如下，主要获取CC状态：</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span>所有状态如下：
+static const char * const smblite_lib_typec_mode_name[] = {
+	[POWER_SUPPLY_TYPEC_NONE]		  = &quot;NONE&quot;,
+	[POWER_SUPPLY_TYPEC_SOURCE_DEFAULT]	  = &quot;SOURCE_DEFAULT&quot;,
+	[POWER_SUPPLY_TYPEC_SOURCE_MEDIUM]	  = &quot;SOURCE_MEDIUM&quot;,
+	[POWER_SUPPLY_TYPEC_SOURCE_HIGH]	  = &quot;SOURCE_HIGH&quot;,
+	[POWER_SUPPLY_TYPEC_NON_COMPLIANT]	  = &quot;NON_COMPLIANT&quot;,
+	[POWER_SUPPLY_TYPEC_SINK]		  = &quot;SINK&quot;,
+	[POWER_SUPPLY_TYPEC_SINK_POWERED_CABLE]   = &quot;SINK_POWERED_CABLE&quot;,
+	[POWER_SUPPLY_TYPEC_SINK_DEBUG_ACCESSORY] = &quot;SINK_DEBUG_ACCESSORY&quot;,
+	[POWER_SUPPLY_TYPEC_SINK_AUDIO_ADAPTER]   = &quot;SINK_AUDIO_ADAPTER&quot;,
+	[POWER_SUPPLY_TYPEC_POWERED_CABLE_ONLY]   = &quot;POWERED_CABLE_ONLY&quot;,
+};
+
+中断如下：
+irqreturn_t smblite_typec_state_change_irq_handler(int irq, void *data)
+{
+	struct smb_irq_data *irq_data = data;
+	struct smb_charger *chg = irq_data-&gt;parent_data;
+	int typec_mode;
+
+	if (chg-&gt;connector_type == POWER_SUPPLY_CONNECTOR_MICRO_USB) {
+		smblite_lib_dbg(chg, PR_INTERRUPT,
+				&quot;Ignoring for micro USB\n&quot;);
+		return IRQ_HANDLED;
+	}
+
+	typec_mode = smblite_lib_get_prop_typec_mode(chg); //获取CC状态
+	if (chg-&gt;sink_src_mode != UNATTACHED_MODE
+			&amp;&amp; (typec_mode != chg-&gt;typec_mode))
+		smblite_lib_handle_rp_change(chg, typec_mode);
+	chg-&gt;typec_mode = typec_mode;
+
+//smblite_typec_state_change_irq_handler: IRQ: cc-state-change; Type-C SOURCE_DEFAULT detected 打印表示SOURCE插入
+	smblite_lib_dbg(chg, PR_INTERRUPT, &quot;IRQ: cc-state-change; Type-C %s detected\n&quot;,
+				smblite_lib_typec_mode_name[chg-&gt;typec_mode]);
+
+	power_supply_changed(chg-&gt;usb_psy);
+
+	return IRQ_HANDLED;
+}
+
+static int smblite_lib_get_prop_typec_mode(struct smb_charger *chg)
+{
+	int rc;
+	u8 stat;
+
+	if (chg-&gt;connector_type == POWER_SUPPLY_CONNECTOR_MICRO_USB) //micro usb直接返回
+		return POWER_SUPPLY_TYPEC_NONE;
+
+	rc = smblite_lib_read(chg, TYPE_C_MISC_STATUS_REG, &amp;stat);
+	if (rc &lt; 0) {
+		smblite_lib_err(chg, &quot;Couldn&#39;t read TYPE_C_MISC_STATUS_REG rc=%d\n&quot;,
+				rc);
+		return 0;
+	}
+	smblite_lib_dbg(chg, PR_REGISTER, &quot;TYPE_C_MISC_STATUS_REG = 0x%02x\n&quot;,
+				stat);
+
+	if (stat &amp; SNK_SRC_MODE_BIT)
+		return smblite_lib_get_prop_dfp_mode(chg); //获取dfp(host)状态,音频插入或者sink插入
+	else
+		return smblite_lib_get_prop_ufp_mode(chg);
+}
+
+static int smblite_lib_get_prop_dfp_mode(struct smb_charger *chg)
+{
+	int rc;
+	u8 stat;
+
+	rc = smblite_lib_read(chg, TYPE_C_SRC_STATUS_REG, &amp;stat);
+	if (rc &lt; 0) {
+		smblite_lib_err(chg, &quot;Couldn&#39;t read TYPE_C_SRC_STATUS_REG rc=%d\n&quot;,
+				rc);
+		return POWER_SUPPLY_TYPEC_NONE;
+	}
+	smblite_lib_dbg(chg, PR_REGISTER, &quot;TYPE_C_SRC_STATUS_REG = 0x%02x\n&quot;,
+				stat);
+
+	switch (stat &amp; DETECTED_SNK_TYPE_MASK) {
+	case AUDIO_ACCESS_RA_RA_BIT:
+		return POWER_SUPPLY_TYPEC_SINK_AUDIO_ADAPTER;
+	case SRC_DEBUG_ACCESS_BIT:
+		return POWER_SUPPLY_TYPEC_SINK_DEBUG_ACCESSORY;
+	case SRC_RD_OPEN_BIT:
+		return POWER_SUPPLY_TYPEC_SINK;
+	default:
+		break;
+	}
+
+	return POWER_SUPPLY_TYPEC_NONE;
+}
+
+static int smblite_lib_get_prop_ufp_mode(struct smb_charger *chg)
+{
+	int rc;
+	u8 stat;
+
+	rc = smblite_lib_read(chg, TYPE_C_SNK_STATUS_REG, &amp;stat);
+	if (rc &lt; 0) {
+		smblite_lib_err(chg, &quot;Couldn&#39;t read TYPE_C_STATUS_1 rc=%d\n&quot;,
+					rc);
+		return POWER_SUPPLY_TYPEC_NONE;
+	}
+	smblite_lib_dbg(chg, PR_REGISTER, &quot;TYPE_C_STATUS_1 = 0x%02x\n&quot;, stat);
+
+	switch (stat &amp; DETECTED_SRC_TYPE_MASK) {
+	case SNK_RP_STD_BIT:
+		return POWER_SUPPLY_TYPEC_SOURCE_DEFAULT;
+	case SNK_RP_1P5_BIT:
+		return POWER_SUPPLY_TYPEC_SOURCE_MEDIUM;
+	case SNK_RP_3P0_BIT:
+		return POWER_SUPPLY_TYPEC_SOURCE_HIGH;
+	case SNK_RP_SHORT_BIT:
+		return POWER_SUPPLY_TYPEC_NON_COMPLIANT;
+	case SNK_DAM_500MA_BIT:
+	case SNK_DAM_1500MA_BIT:
+	case SNK_DAM_3000MA_BIT:
+		return POWER_SUPPLY_TYPEC_SINK_DEBUG_ACCESSORY;
+	default:
+		break;
+	}
+
+	return POWER_SUPPLY_TYPEC_NONE;
+}
+</pre></div>
+</div>
+</section>
+<section id="smblite-typec-attach-detach-irq-handler">
+<h3>smblite_typec_attach_detach_irq_handler<a class="headerlink" href="#smblite-typec-attach-detach-irq-handler" title="Permalink to this headline"></a></h3>
+<ul class="simple">
+<li><p>smblite_typec_attach_detach_irq_handler中断比较重要，会进行usb主从切换。</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="n">irqreturn_t</span><span class="w"> </span><span class="nf">smblite_typec_attach_detach_irq_handler</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">irq</span><span class="p">,</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="o">*</span><span class="n">data</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="k">struct</span><span class="w"> </span><span class="nc">smb_irq_data</span><span class="w"> </span><span class="o">*</span><span class="n">irq_data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">data</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="k">struct</span><span class="w"> </span><span class="nc">smb_charger</span><span class="w"> </span><span class="o">*</span><span class="n">chg</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">irq_data</span><span class="o">-&gt;</span><span class="n">parent_data</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="n">u8</span><span class="w"> </span><span class="n">stat</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="kt">bool</span><span class="w"> </span><span class="n">attached</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">false</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="kt">int</span><span class="w"> </span><span class="n">rc</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">	</span><span class="cm">/* IRQ not expected to be executed for uUSB, return */</span><span class="w"></span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">chg</span><span class="o">-&gt;</span><span class="n">connector_type</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">POWER_SUPPLY_CONNECTOR_MICRO_USB</span><span class="p">)</span><span class="w"></span>
+<span class="w">		</span><span class="k">return</span><span class="w"> </span><span class="n">IRQ_HANDLED</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">smblite_lib_dbg</span><span class="p">(</span><span class="n">chg</span><span class="p">,</span><span class="w"> </span><span class="n">PR_INTERRUPT</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;IRQ: %s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">irq_data</span><span class="o">-&gt;</span><span class="n">name</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">rc</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">smblite_lib_read</span><span class="p">(</span><span class="n">chg</span><span class="p">,</span><span class="w"> </span><span class="n">TYPE_C_STATE_MACHINE_STATUS_REG</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">stat</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">rc</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="n">smblite_lib_err</span><span class="p">(</span><span class="n">chg</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Couldn&#39;t read TYPE_C_STATE_MACHINE_STATUS_REG rc=%d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"></span>
+<span class="w">			</span><span class="n">rc</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="k">return</span><span class="w"> </span><span class="n">IRQ_HANDLED</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">attached</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">!!</span><span class="p">(</span><span class="n">stat</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="n">TYPEC_ATTACH_DETACH_STATE_BIT</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">attached</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="n">rc</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">smblite_lib_read</span><span class="p">(</span><span class="n">chg</span><span class="p">,</span><span class="w"> </span><span class="n">TYPE_C_MISC_STATUS_REG</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">stat</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">rc</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">			</span><span class="n">smblite_lib_err</span><span class="p">(</span><span class="n">chg</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Couldn&#39;t read TYPE_C_MISC_STATUS_REG rc=%d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"></span>
+<span class="w">				</span><span class="n">rc</span><span class="p">);</span><span class="w"></span>
+<span class="w">			</span><span class="k">return</span><span class="w"> </span><span class="n">IRQ_HANDLED</span><span class="p">;</span><span class="w"></span>
+<span class="w">		</span><span class="p">}</span><span class="w"></span>
+
+<span class="w">		</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">smblite_lib_get_prop_dfp_mode</span><span class="p">(</span><span class="n">chg</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w">  </span><span class="c1">//音频设备</span>
+<span class="w">				</span><span class="n">POWER_SUPPLY_TYPEC_SINK_AUDIO_ADAPTER</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">			</span><span class="n">chg</span><span class="o">-&gt;</span><span class="n">sink_src_mode</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">AUDIO_ACCESS_MODE</span><span class="p">;</span><span class="w"></span>
+<span class="w">			</span><span class="n">typec_ra_ra_insertion</span><span class="p">(</span><span class="n">chg</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">stat</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="n">SNK_SRC_MODE_BIT</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">			</span><span class="n">chg</span><span class="o">-&gt;</span><span class="n">sink_src_mode</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">SRC_MODE</span><span class="p">;</span><span class="w"></span>
+<span class="w">			</span><span class="n">typec_sink_insertion</span><span class="p">(</span><span class="n">chg</span><span class="p">);</span><span class="w"> </span><span class="c1">//sink插入</span>
+<span class="w">		</span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">			</span><span class="n">chg</span><span class="o">-&gt;</span><span class="n">sink_src_mode</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">SINK_MODE</span><span class="p">;</span><span class="w"></span>
+<span class="w">			</span><span class="n">typec_src_insertion</span><span class="p">(</span><span class="n">chg</span><span class="p">);</span><span class="w"> </span><span class="c1">//source插入</span>
+<span class="w">		</span><span class="p">}</span><span class="w"></span>
+
+<span class="w">		</span><span class="n">rc</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">typec_partner_register</span><span class="p">(</span><span class="n">chg</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">rc</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"></span>
+<span class="w">			</span><span class="n">smblite_lib_err</span><span class="p">(</span><span class="n">chg</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Couldn&#39;t to register partner rc =%d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"></span>
+<span class="w">					</span><span class="n">rc</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="k">switch</span><span class="w"> </span><span class="p">(</span><span class="n">chg</span><span class="o">-&gt;</span><span class="n">sink_src_mode</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="k">case</span><span class="w"> </span><span class="nl">SRC_MODE</span><span class="p">:</span><span class="w"></span>
+<span class="w">			</span><span class="n">typec_sink_removal</span><span class="p">(</span><span class="n">chg</span><span class="p">);</span><span class="w"> </span><span class="c1">//sink移除</span>
+<span class="w">			</span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+<span class="w">		</span><span class="k">case</span><span class="w"> </span><span class="nl">SINK_MODE</span><span class="p">:</span><span class="w"></span>
+<span class="w">		</span><span class="k">case</span><span class="w"> </span><span class="nl">AUDIO_ACCESS_MODE</span><span class="p">:</span><span class="w"></span>
+<span class="w">			</span><span class="n">typec_src_removal</span><span class="p">(</span><span class="n">chg</span><span class="p">);</span><span class="w"> </span><span class="c1">//SINK、音频设备移除</span>
+<span class="w">			</span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+<span class="w">		</span><span class="k">case</span><span class="w"> </span><span class="nl">UNATTACHED_MODE</span><span class="p">:</span><span class="w"></span>
+<span class="w">		</span><span class="k">default</span><span class="o">:</span><span class="w"></span>
+<span class="w">			</span><span class="n">typec_mode_unattached</span><span class="p">(</span><span class="n">chg</span><span class="p">);</span><span class="w">  </span><span class="c1">//默认移除</span>
+<span class="w">			</span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+<span class="w">		</span><span class="p">}</span><span class="w"></span>
+
+<span class="w">		</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">chg</span><span class="o">-&gt;</span><span class="n">pr_swap_in_progress</span><span class="p">)</span><span class="w"></span>
+<span class="w">			</span><span class="n">chg</span><span class="o">-&gt;</span><span class="n">sink_src_mode</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">UNATTACHED_MODE</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">		</span><span class="cm">/*</span>
+<span class="cm">		 * Restore DRP mode on type-C cable disconnect if role</span>
+<span class="cm">		 * swap is not in progress, to ensure forced sink or src</span>
+<span class="cm">		 * mode configuration is reset properly.</span>
+<span class="cm">		 */</span><span class="w"></span>
+
+<span class="w">		</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">chg</span><span class="o">-&gt;</span><span class="n">typec_port</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="o">!</span><span class="n">chg</span><span class="o">-&gt;</span><span class="n">pr_swap_in_progress</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">			</span><span class="cm">/*</span>
+<span class="cm">			 * Schedule the work to differentiate actual removal</span>
+<span class="cm">			 * of cable and detach interrupt during role swap,</span>
+<span class="cm">			 * unregister the partner only during actual cable</span>
+<span class="cm">			 * removal.</span>
+<span class="cm">			 */</span><span class="w"></span>
+<span class="w">			</span><span class="n">cancel_delayed_work</span><span class="p">(</span><span class="o">&amp;</span><span class="n">chg</span><span class="o">-&gt;</span><span class="n">pr_swap_detach_work</span><span class="p">);</span><span class="w"></span>
+<span class="w">			</span><span class="n">vote</span><span class="p">(</span><span class="n">chg</span><span class="o">-&gt;</span><span class="n">awake_votable</span><span class="p">,</span><span class="w"> </span><span class="n">DETACH_DETECT_VOTER</span><span class="p">,</span><span class="w"> </span><span class="nb">true</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span><span class="w"></span>
+<span class="w">			</span><span class="n">schedule_delayed_work</span><span class="p">(</span><span class="o">&amp;</span><span class="n">chg</span><span class="o">-&gt;</span><span class="n">pr_swap_detach_work</span><span class="p">,</span><span class="w">  </span><span class="c1">//dettach工作队列</span>
+<span class="w">				</span><span class="n">msecs_to_jiffies</span><span class="p">(</span><span class="n">TYPEC_DETACH_DETECT_DELAY_MS</span><span class="p">));</span><span class="w"></span>
+<span class="w">			</span><span class="n">smblite_lib_force_dr_mode</span><span class="p">(</span><span class="n">chg</span><span class="p">,</span><span class="w"> </span><span class="n">TYPEC_PORT_DRP</span><span class="p">);</span><span class="w"> </span><span class="c1">//强制进入DRP模式</span>
+
+<span class="w">			</span><span class="cm">/*</span>
+<span class="cm">			 * To handle cable removal during role</span>
+<span class="cm">			 * swap failure.</span>
+<span class="cm">			 */</span><span class="w"></span>
+<span class="w">			</span><span class="n">chg</span><span class="o">-&gt;</span><span class="n">typec_role_swap_failed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">false</span><span class="p">;</span><span class="w"></span>
+<span class="w">		</span><span class="p">}</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">rc</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">smblite_lib_masked_write</span><span class="p">(</span><span class="n">chg</span><span class="p">,</span><span class="w"> </span><span class="n">USB_CMD_PULLDOWN_REG</span><span class="p">,</span><span class="w"></span>
+<span class="w">			</span><span class="n">EN_PULLDOWN_USB_IN_BIT</span><span class="p">,</span><span class="w"></span>
+<span class="w">			</span><span class="n">attached</span><span class="w"> </span><span class="o">?</span><span class="w">  </span><span class="mi">0</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">EN_PULLDOWN_USB_IN_BIT</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">rc</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"></span>
+<span class="w">		</span><span class="n">smblite_lib_err</span><span class="p">(</span><span class="n">chg</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Couldn&#39;t configure pulldown on USB_IN rc=%d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"></span>
+<span class="w">				</span><span class="n">rc</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">power_supply_changed</span><span class="p">(</span><span class="n">chg</span><span class="o">-&gt;</span><span class="n">usb_psy</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">	</span><span class="k">return</span><span class="w"> </span><span class="n">IRQ_HANDLED</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<p>看一下source接入流程,走的是<code class="docutils literal notranslate"><span class="pre">typec_src_insertion(chg)</span></code>，从下面可以看到主要是调用extcon驱动去切换usb状态的:</p>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="o">*</span><span class="w"> </span><span class="n">typec_src_insertion</span><span class="w"></span>
+<span class="w">  </span><span class="o">*</span><span class="w"> </span><span class="n">smblite_lib_notify_device_mode</span><span class="p">(</span><span class="n">chg</span><span class="p">,</span><span class="w"> </span><span class="nb">true</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="o">*</span><span class="w"> </span><span class="n">smblite_lib_notify_extcon_props</span><span class="p">(</span><span class="n">chg</span><span class="p">,</span><span class="w"> </span><span class="n">EXTCON_USB</span><span class="p">);</span><span class="w"></span>
+<span class="w">      </span><span class="o">*</span><span class="w"> </span><span class="n">extcon_set_property</span><span class="p">(</span><span class="n">chg</span><span class="o">-&gt;</span><span class="n">extcon</span><span class="p">,</span><span class="w"> </span><span class="n">id</span><span class="p">,</span><span class="n">EXTCON_PROP_USB_TYPEC_POLARITY</span><span class="p">,</span><span class="w"> </span><span class="n">val</span><span class="p">);</span><span class="w"></span>
+<span class="w">      </span><span class="o">*</span><span class="w"> </span><span class="n">extcon_set_property</span><span class="p">(</span><span class="n">chg</span><span class="o">-&gt;</span><span class="n">extcon</span><span class="p">,</span><span class="w"> </span><span class="n">id</span><span class="p">,</span><span class="n">EXTCON_PROP_USB_SS</span><span class="p">,</span><span class="w"> </span><span class="n">val</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="o">*</span><span class="w"> </span><span class="n">extcon_set_state_sync</span><span class="p">(</span><span class="n">chg</span><span class="o">-&gt;</span><span class="n">extcon</span><span class="p">,</span><span class="w"> </span><span class="n">EXTCON_USB</span><span class="p">,</span><span class="w"> </span><span class="n">enable</span><span class="p">);</span><span class="w"></span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">typec_src_insertion</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">smb_charger</span><span class="w"> </span><span class="o">*</span><span class="n">chg</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="kt">int</span><span class="w"> </span><span class="n">rc</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="n">u8</span><span class="w"> </span><span class="n">stat</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">smblite_lib_err</span><span class="p">(</span><span class="n">chg</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;wugn test %s &quot;</span><span class="p">,</span><span class="w"> </span><span class="n">__func__</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="n">smblite_lib_notify_device_mode</span><span class="p">(</span><span class="n">chg</span><span class="p">,</span><span class="w"> </span><span class="nb">true</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">chg</span><span class="o">-&gt;</span><span class="n">pr_swap_in_progress</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="n">vote</span><span class="p">(</span><span class="n">chg</span><span class="o">-&gt;</span><span class="n">usb_icl_votable</span><span class="p">,</span><span class="w"> </span><span class="n">SW_ICL_MAX_VOTER</span><span class="p">,</span><span class="w"> </span><span class="nb">false</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="k">return</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">rc</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">smblite_lib_read</span><span class="p">(</span><span class="n">chg</span><span class="p">,</span><span class="w"> </span><span class="n">LEGACY_CABLE_STATUS_REG</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">stat</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">rc</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="n">smblite_lib_err</span><span class="p">(</span><span class="n">chg</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Couldn&#39;t read TYPE_C_STATE_MACHINE_STATUS_REG rc=%d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"></span>
+<span class="w">					</span><span class="n">rc</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="k">return</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">chg</span><span class="o">-&gt;</span><span class="n">typec_legacy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">stat</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="n">TYPEC_LEGACY_CABLE_STATUS_BIT</span><span class="p">;</span><span class="w"></span>
+
+<span class="p">}</span><span class="w"></span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">smblite_lib_notify_device_mode</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">smb_charger</span><span class="w"> </span><span class="o">*</span><span class="n">chg</span><span class="p">,</span><span class="w"> </span><span class="kt">bool</span><span class="w"> </span><span class="n">enable</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="n">smblite_lib_err</span><span class="p">(</span><span class="n">chg</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;wugn test %s enable = %d&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">__func__</span><span class="p">,</span><span class="w"> </span><span class="n">enable</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">enable</span><span class="p">)</span><span class="w"></span>
+<span class="w">		</span><span class="n">smblite_lib_notify_extcon_props</span><span class="p">(</span><span class="n">chg</span><span class="p">,</span><span class="w"> </span><span class="n">EXTCON_USB</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">extcon_set_state_sync</span><span class="p">(</span><span class="n">chg</span><span class="o">-&gt;</span><span class="n">extcon</span><span class="p">,</span><span class="w"> </span><span class="n">EXTCON_USB</span><span class="p">,</span><span class="w"> </span><span class="n">enable</span><span class="p">);</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">smblite_lib_notify_extcon_props</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">smb_charger</span><span class="w"> </span><span class="o">*</span><span class="n">chg</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">id</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="k">union</span><span class="w"> </span><span class="nc">extcon_property_value</span><span class="w"> </span><span class="n">val</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="k">union</span><span class="w"> </span><span class="nc">power_supply_propval</span><span class="w"> </span><span class="n">prop_val</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">chg</span><span class="o">-&gt;</span><span class="n">connector_type</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">POWER_SUPPLY_CONNECTOR_TYPEC</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="n">smblite_lib_get_prop_typec_cc_orientation</span><span class="p">(</span><span class="n">chg</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">prop_val</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="n">val</span><span class="p">.</span><span class="n">intval</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">((</span><span class="n">prop_val</span><span class="p">.</span><span class="n">intval</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="n">smblite_lib_err</span><span class="p">(</span><span class="n">chg</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;wugn test %s val.intval = %d&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">__func__</span><span class="p">,</span><span class="w"> </span><span class="n">val</span><span class="p">.</span><span class="n">intval</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="n">extcon_set_property</span><span class="p">(</span><span class="n">chg</span><span class="o">-&gt;</span><span class="n">extcon</span><span class="p">,</span><span class="w"> </span><span class="n">id</span><span class="p">,</span><span class="w"></span>
+<span class="w">				</span><span class="n">EXTCON_PROP_USB_TYPEC_POLARITY</span><span class="p">,</span><span class="w"> </span><span class="n">val</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="n">val</span><span class="p">.</span><span class="n">intval</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">true</span><span class="p">;</span><span class="w"></span>
+<span class="w">		</span><span class="n">extcon_set_property</span><span class="p">(</span><span class="n">chg</span><span class="o">-&gt;</span><span class="n">extcon</span><span class="p">,</span><span class="w"> </span><span class="n">id</span><span class="p">,</span><span class="w"></span>
+<span class="w">				</span><span class="n">EXTCON_PROP_USB_SS</span><span class="p">,</span><span class="w"> </span><span class="n">val</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">chg</span><span class="o">-&gt;</span><span class="n">connector_type</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">POWER_SUPPLY_CONNECTOR_MICRO_USB</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="n">val</span><span class="p">.</span><span class="n">intval</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">false</span><span class="p">;</span><span class="w"></span>
+<span class="w">		</span><span class="n">extcon_set_property</span><span class="p">(</span><span class="n">chg</span><span class="o">-&gt;</span><span class="n">extcon</span><span class="p">,</span><span class="w"> </span><span class="n">id</span><span class="p">,</span><span class="w"></span>
+<span class="w">				</span><span class="n">EXTCON_PROP_USB_SS</span><span class="p">,</span><span class="w"> </span><span class="n">val</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="typec">
+<h2>typec插入电脑实例分析<a class="headerlink" href="#typec" title="Permalink to this headline"></a></h2>
+<p>以下是开发板typec接入电脑，所有打印：</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span> <span class="mf">6639.687020</span><span class="p">]</span> <span class="n">PM2250_charger</span><span class="p">:</span> <span class="n">smblite_lib_usb_plugin_locked</span><span class="p">:</span> <span class="n">IRQ</span><span class="p">:</span> <span class="n">usbin</span><span class="o">-</span><span class="n">plugin</span> <span class="n">attached</span>
+<span class="p">[</span> <span class="mf">6639.687083</span><span class="p">]</span> <span class="n">PM2250_charger</span><span class="p">:</span> <span class="n">smblite_usbin_uv_irq_handler</span><span class="p">:</span> <span class="n">IRQ</span><span class="p">:</span> <span class="n">usbin</span><span class="o">-</span><span class="n">uv</span>
+<span class="p">[</span> <span class="mf">6639.687272</span><span class="p">]</span> <span class="n">PM2250_charger</span><span class="p">:</span> <span class="n">smblite_temp_change_irq_handler</span><span class="p">:</span> <span class="n">IRQ</span><span class="p">:</span> <span class="n">temp</span><span class="o">-</span><span class="n">change</span>
+<span class="p">[</span> <span class="mf">6639.687739</span><span class="p">]</span> <span class="n">PM2250_charger</span><span class="p">:</span> <span class="n">smblite_lib_get_prop_usb_online</span><span class="p">:</span> <span class="n">POWER_PATH_STATUS</span> <span class="o">=</span> <span class="mh">0x29</span>
+<span class="p">[</span> <span class="mf">6639.688225</span><span class="p">]</span> <span class="n">PM2250_charger</span><span class="p">:</span> <span class="n">smblite_lib_get_prop_typec_power_role</span><span class="p">:</span> <span class="n">TYPE_C_MODE_CFG_REG</span> <span class="o">=</span> <span class="mh">0x10</span>
+<span class="p">[</span> <span class="mf">6639.688246</span><span class="p">]</span> <span class="n">PM2250_charger</span><span class="p">:</span> <span class="n">smblite_lib_get_prop_typec_cc_orientation</span><span class="p">:</span> <span class="n">TYPE_C_STATUS_4</span> <span class="o">=</span> <span class="mh">0xa0</span>
+<span class="p">[</span> <span class="mf">6639.688267</span><span class="p">]</span> <span class="n">PM2250_charger</span><span class="p">:</span> <span class="n">smblite_lib_get_charge_param</span><span class="p">:</span> <span class="nb">input</span> <span class="n">current</span> <span class="n">limit</span> <span class="n">status</span> <span class="o">=</span> <span class="mi">0</span> <span class="p">(</span><span class="mh">0x00</span><span class="p">)</span>
+<span class="p">[</span> <span class="mf">6639.688305</span><span class="p">]</span> <span class="n">PM2250_charger</span><span class="p">:</span> <span class="n">smblite_lib_get_charge_param</span><span class="p">:</span> <span class="nb">input</span> <span class="n">current</span> <span class="n">limit</span> <span class="n">status</span> <span class="o">=</span> <span class="mi">0</span> <span class="p">(</span><span class="mh">0x00</span><span class="p">)</span>
+<span class="p">[</span> <span class="mf">6639.688324</span><span class="p">]</span> <span class="n">PM2250_charger</span><span class="p">:</span> <span class="n">smblite_lib_get_prop_ufp_mode</span><span class="p">:</span> <span class="n">TYPE_C_STATUS_1</span> <span class="o">=</span> <span class="mh">0x00</span>
+<span class="p">[</span> <span class="mf">6639.689325</span><span class="p">]</span> <span class="n">PM2250_charger</span><span class="p">:</span> <span class="n">smblite_lib_get_prop_typec_mode</span><span class="p">:</span> <span class="n">TYPE_C_MISC_STATUS_REG</span> <span class="o">=</span> <span class="mh">0xa9</span>
+<span class="p">[</span> <span class="mf">6639.689343</span><span class="p">]</span> <span class="n">PM2250_charger</span><span class="p">:</span> <span class="n">smblite_lib_get_prop_ufp_mode</span><span class="p">:</span> <span class="n">TYPE_C_STATUS_1</span> <span class="o">=</span> <span class="mh">0x08</span>
+<span class="p">[</span> <span class="mf">6639.689348</span><span class="p">]</span> <span class="n">PM2250_charger</span><span class="p">:</span> <span class="n">smblite_typec_state_change_irq_handler</span><span class="p">:</span> <span class="n">IRQ</span><span class="p">:</span> <span class="n">cc</span><span class="o">-</span><span class="n">state</span><span class="o">-</span><span class="n">change</span><span class="p">;</span> <span class="n">Type</span><span class="o">-</span><span class="n">C</span> <span class="n">SOURCE_DEFAULT</span> <span class="n">detected</span>
+<span class="p">[</span> <span class="mf">6639.689816</span><span class="p">]</span> <span class="n">PM2250_charger</span><span class="p">:</span> <span class="n">smblite_typec_attach_detach_irq_handler</span><span class="p">:</span> <span class="n">IRQ</span><span class="p">:</span> <span class="n">typec</span><span class="o">-</span><span class="n">attach</span><span class="o">-</span><span class="n">detach</span>
+<span class="p">[</span> <span class="mf">6639.689864</span><span class="p">]</span> <span class="n">PM2250_charger</span><span class="p">:</span> <span class="n">smblite_lib_get_prop_dfp_mode</span><span class="p">:</span> <span class="n">TYPE_C_SRC_STATUS_REG</span> <span class="o">=</span> <span class="mh">0x00</span>
+<span class="p">[</span> <span class="mf">6639.689890</span><span class="p">]</span> <span class="n">PM2250_charger</span><span class="p">:</span> <span class="n">smblite_lib_get_prop_typec_cc_orientation</span><span class="p">:</span> <span class="n">TYPE_C_STATUS_4</span> <span class="o">=</span> <span class="mh">0xa9</span>
+<span class="p">[</span> <span class="mf">6639.689987</span><span class="p">]</span> <span class="n">PM2250_charger</span><span class="p">:</span> <span class="n">smblite_lib_get_prop_batt_health</span><span class="p">:</span> <span class="n">CHARGER_VBAT_STATUS_REG</span> <span class="o">=</span> <span class="mh">0x00</span>
+<span class="p">[</span> <span class="mf">6639.690084</span><span class="p">]</span> <span class="n">PM2250_charger</span><span class="p">:</span> <span class="n">smblite_lib_get_prop_usb_online</span><span class="p">:</span> <span class="n">POWER_PATH_STATUS</span> <span class="o">=</span> <span class="mh">0x29</span>
+<span class="p">[</span> <span class="mf">6639.690469</span><span class="p">]</span> <span class="n">PM2250_charger</span><span class="p">:</span> <span class="n">smblite_lib_get_prop_typec_mode</span><span class="p">:</span> <span class="n">TYPE_C_MISC_STATUS_REG</span> <span class="o">=</span> <span class="mh">0xa9</span>
+<span class="p">[</span> <span class="mf">6639.690485</span><span class="p">]</span> <span class="n">PM2250_charger</span><span class="p">:</span> <span class="n">smblite_lib_get_prop_ufp_mode</span><span class="p">:</span> <span class="n">TYPE_C_STATUS_1</span> <span class="o">=</span> <span class="mh">0x08</span>
+<span class="p">[</span> <span class="mf">6639.691473</span><span class="p">]</span> <span class="n">PM2250_charger</span><span class="p">:</span> <span class="n">smblite_lib_get_prop_batt_health</span><span class="p">:</span> <span class="n">CHARGER_VBAT_STATUS_REG</span> <span class="o">=</span> <span class="mh">0x00</span>
+<span class="p">[</span> <span class="mf">6639.693269</span><span class="p">]</span> <span class="n">PM2250_charger</span><span class="p">:</span> <span class="n">smblite_lib_get_prop_typec_power_role</span><span class="p">:</span> <span class="n">TYPE_C_MODE_CFG_REG</span> <span class="o">=</span> <span class="mh">0x10</span>
+<span class="p">[</span> <span class="mf">6639.693291</span><span class="p">]</span> <span class="n">PM2250_charger</span><span class="p">:</span> <span class="n">smblite_lib_get_prop_typec_cc_orientation</span><span class="p">:</span> <span class="n">TYPE_C_STATUS_4</span> <span class="o">=</span> <span class="mh">0xa9</span>
+<span class="p">[</span> <span class="mf">6639.693314</span><span class="p">]</span> <span class="n">PM2250_charger</span><span class="p">:</span> <span class="n">smblite_lib_get_charge_param</span><span class="p">:</span> <span class="nb">input</span> <span class="n">current</span> <span class="n">limit</span> <span class="n">status</span> <span class="o">=</span> <span class="mi">0</span> <span class="p">(</span><span class="mh">0x00</span><span class="p">)</span>
+<span class="p">[</span> <span class="mf">6639.693345</span><span class="p">]</span> <span class="n">PM2250_charger</span><span class="p">:</span> <span class="n">smblite_lib_get_charge_param</span><span class="p">:</span> <span class="nb">input</span> <span class="n">current</span> <span class="n">limit</span> <span class="n">status</span> <span class="o">=</span> <span class="mi">0</span> <span class="p">(</span><span class="mh">0x00</span><span class="p">)</span>
+<span class="p">[</span> <span class="mf">6639.693361</span><span class="p">]</span> <span class="n">PM2250_charger</span><span class="p">:</span> <span class="n">smblite_lib_get_prop_ufp_mode</span><span class="p">:</span> <span class="n">TYPE_C_STATUS_1</span> <span class="o">=</span> <span class="mh">0x08</span>
+<span class="p">[</span> <span class="mf">6639.693827</span><span class="p">]</span> <span class="n">PM2250_charger</span><span class="p">:</span> <span class="n">smblite_lib_get_prop_usb_online</span><span class="p">:</span> <span class="n">POWER_PATH_STATUS</span> <span class="o">=</span> <span class="mh">0x29</span>
+<span class="p">[</span> <span class="mf">6639.694631</span><span class="p">]</span> <span class="n">PM2250_charger</span><span class="p">:</span> <span class="n">smblite_lib_get_prop_typec_power_role</span><span class="p">:</span> <span class="n">TYPE_C_MODE_CFG_REG</span> <span class="o">=</span> <span class="mh">0x10</span>
+<span class="p">[</span> <span class="mf">6639.694653</span><span class="p">]</span> <span class="n">PM2250_charger</span><span class="p">:</span> <span class="n">smblite_lib_get_prop_typec_cc_orientation</span><span class="p">:</span> <span class="n">TYPE_C_STATUS_4</span> <span class="o">=</span> <span class="mh">0xa9</span>
+<span class="p">[</span> <span class="mf">6639.694676</span><span class="p">]</span> <span class="n">PM2250_charger</span><span class="p">:</span> <span class="n">smblite_lib_get_charge_param</span><span class="p">:</span> <span class="nb">input</span> <span class="n">current</span> <span class="n">limit</span> <span class="n">status</span> <span class="o">=</span> <span class="mi">0</span> <span class="p">(</span><span class="mh">0x00</span><span class="p">)</span>
+<span class="p">[</span> <span class="mf">6639.694709</span><span class="p">]</span> <span class="n">PM2250_charger</span><span class="p">:</span> <span class="n">smblite_lib_get_charge_param</span><span class="p">:</span> <span class="nb">input</span> <span class="n">current</span> <span class="n">limit</span> <span class="n">status</span> <span class="o">=</span> <span class="mi">0</span> <span class="p">(</span><span class="mh">0x00</span><span class="p">)</span>
+<span class="p">[</span> <span class="mf">6639.694726</span><span class="p">]</span> <span class="n">PM2250_charger</span><span class="p">:</span> <span class="n">smblite_lib_get_prop_ufp_mode</span><span class="p">:</span> <span class="n">TYPE_C_STATUS_1</span> <span class="o">=</span> <span class="mh">0x08</span>
+<span class="p">[</span> <span class="mf">6639.696035</span><span class="p">]</span> <span class="n">PM2250_charger</span><span class="p">:</span> <span class="n">smblite_lib_get_prop_batt_health</span><span class="p">:</span> <span class="n">CHARGER_VBAT_STATUS_REG</span> <span class="o">=</span> <span class="mh">0x00</span>
+<span class="p">[</span> <span class="mf">6639.980128</span><span class="p">]</span> <span class="n">smcinvoke</span><span class="p">:</span> <span class="n">process_accept_req</span><span class="p">:</span> <span class="n">process_accept_req</span> <span class="n">txn</span> <span class="mi">1</span> <span class="n">either</span> <span class="n">invalid</span> <span class="ow">or</span> <span class="n">removed</span> <span class="kn">from</span> <span class="nn">Q</span>
+<span class="p">[</span> <span class="mf">6639.980279</span><span class="p">]</span> <span class="n">smcinvoke</span><span class="p">:</span> <span class="n">process_accept_req</span><span class="p">:</span> <span class="n">process_accept_req</span> <span class="n">txn</span> <span class="mi">2</span> <span class="n">either</span> <span class="n">invalid</span> <span class="ow">or</span> <span class="n">removed</span> <span class="kn">from</span> <span class="nn">Q</span>
+<span class="p">[</span> <span class="mf">6639.981490</span><span class="p">]</span> <span class="n">smcinvoke</span><span class="p">:</span> <span class="n">process_accept_req</span><span class="p">:</span> <span class="n">process_accept_req</span> <span class="n">txn</span> <span class="mi">2</span> <span class="n">either</span> <span class="n">invalid</span> <span class="ow">or</span> <span class="n">removed</span> <span class="kn">from</span> <span class="nn">Q</span>
+<span class="p">[</span> <span class="mf">6639.981495</span><span class="p">]</span> <span class="n">smcinvoke</span><span class="p">:</span> <span class="n">process_accept_req</span><span class="p">:</span> <span class="n">accept</span> <span class="n">thread</span> <span class="n">returning</span> <span class="k">with</span> <span class="n">ret</span><span class="p">:</span> <span class="o">-</span><span class="mi">11</span>
+<span class="p">[</span> <span class="mf">6639.998940</span><span class="p">]</span> <span class="n">smcinvoke</span><span class="p">:</span> <span class="n">process_accept_req</span><span class="p">:</span> <span class="n">process_accept_req</span> <span class="n">txn</span> <span class="mi">1</span> <span class="n">either</span> <span class="n">invalid</span> <span class="ow">or</span> <span class="n">removed</span> <span class="kn">from</span> <span class="nn">Q</span>
+<span class="p">[</span> <span class="mf">6640.004458</span><span class="p">]</span> <span class="n">PM2250_charger</span><span class="p">:</span> <span class="n">smblite_lib_get_prop_batt_health</span><span class="p">:</span> <span class="n">CHARGER_VBAT_STATUS_REG</span> <span class="o">=</span> <span class="mh">0x00</span>
+<span class="p">[</span> <span class="mf">6640.009813</span><span class="p">]</span> <span class="n">smcinvoke</span><span class="p">:</span> <span class="n">process_accept_req</span><span class="p">:</span> <span class="n">accept</span> <span class="n">thread</span> <span class="n">returning</span> <span class="k">with</span> <span class="n">ret</span><span class="p">:</span> <span class="o">-</span><span class="mi">11</span>
+<span class="p">[</span> <span class="mf">6640.012532</span><span class="p">]</span> <span class="n">smcinvoke</span><span class="p">:</span> <span class="n">process_accept_req</span><span class="p">:</span> <span class="n">accept</span> <span class="n">thread</span> <span class="n">returning</span> <span class="k">with</span> <span class="n">ret</span><span class="p">:</span> <span class="o">-</span><span class="mi">11</span>
+<span class="p">[</span> <span class="mf">6640.017664</span><span class="p">]</span> <span class="n">PM2250_charger</span><span class="p">:</span> <span class="n">smblite_lib_get_charge_param</span><span class="p">:</span> <span class="nb">input</span> <span class="n">current</span> <span class="n">limit</span> <span class="n">status</span> <span class="o">=</span> <span class="mi">0</span> <span class="p">(</span><span class="mh">0x00</span><span class="p">)</span>
+<span class="p">[</span> <span class="mf">6640.019914</span><span class="p">]</span> <span class="n">smcinvoke</span><span class="p">:</span> <span class="n">process_accept_req</span><span class="p">:</span> <span class="n">accept</span> <span class="n">thread</span> <span class="n">returning</span> <span class="k">with</span> <span class="n">ret</span><span class="p">:</span> <span class="o">-</span><span class="mi">11</span>
+<span class="p">[</span> <span class="mf">6640.048726</span><span class="p">]</span> <span class="n">PM2250_charger</span><span class="p">:</span> <span class="n">smblite_lib_get_prop_usb_online</span><span class="p">:</span> <span class="n">POWER_PATH_STATUS</span> <span class="o">=</span> <span class="mh">0x29</span>
+<span class="p">[</span> <span class="mf">6640.048857</span><span class="p">]</span> <span class="n">PM2250_charger</span><span class="p">:</span> <span class="n">smblite_lib_get_prop_batt_health</span><span class="p">:</span> <span class="n">CHARGER_VBAT_STATUS_REG</span> <span class="o">=</span> <span class="mh">0x00</span>
+<span class="p">[</span> <span class="mf">6640.074229</span><span class="p">]</span> <span class="n">PM2250_charger</span><span class="p">:</span> <span class="n">smblite_lib_get_prop_batt_health</span><span class="p">:</span> <span class="n">CHARGER_VBAT_STATUS_REG</span> <span class="o">=</span> <span class="mh">0x00</span>
+<span class="p">[</span> <span class="mf">6640.085110</span><span class="p">]</span> <span class="n">PM2250_charger</span><span class="p">:</span> <span class="n">smblite_lib_get_prop_usb_online</span><span class="p">:</span> <span class="n">POWER_PATH_STATUS</span> <span class="o">=</span> <span class="mh">0x29</span>
+<span class="p">[</span> <span class="mf">6640.099793</span><span class="p">]</span> <span class="n">PM2250_charger</span><span class="p">:</span> <span class="n">smblite_lib_get_prop_batt_health</span><span class="p">:</span> <span class="n">CHARGER_VBAT_STATUS_REG</span> <span class="o">=</span> <span class="mh">0x00</span>
+<span class="p">[</span> <span class="mf">6640.109845</span><span class="p">]</span> <span class="n">PM2250_charger</span><span class="p">:</span> <span class="n">smblite_lib_get_charge_param</span><span class="p">:</span> <span class="nb">input</span> <span class="n">current</span> <span class="n">limit</span> <span class="n">status</span> <span class="o">=</span> <span class="mi">0</span> <span class="p">(</span><span class="mh">0x00</span><span class="p">)</span>
+<span class="p">[</span> <span class="mf">6640.123542</span><span class="p">]</span> <span class="n">PM2250_charger</span><span class="p">:</span> <span class="n">smblite_lib_get_prop_usb_online</span><span class="p">:</span> <span class="n">POWER_PATH_STATUS</span> <span class="o">=</span> <span class="mh">0x29</span>
+<span class="p">[</span> <span class="mf">6640.124596</span><span class="p">]</span> <span class="n">PM2250_charger</span><span class="p">:</span> <span class="n">smblite_lib_get_charge_param</span><span class="p">:</span> <span class="nb">input</span> <span class="n">current</span> <span class="n">limit</span> <span class="n">status</span> <span class="o">=</span> <span class="mi">0</span> <span class="p">(</span><span class="mh">0x00</span><span class="p">)</span>
+<span class="p">[</span> <span class="mf">6640.132131</span><span class="p">]</span> <span class="n">PM2250_charger</span><span class="p">:</span> <span class="n">smblite_lib_get_prop_batt_health</span><span class="p">:</span> <span class="n">CHARGER_VBAT_STATUS_REG</span> <span class="o">=</span> <span class="mh">0x00</span>
+<span class="p">[</span> <span class="mf">6640.140665</span><span class="p">]</span> <span class="n">PM2250_charger</span><span class="p">:</span> <span class="n">smblite_lib_get_prop_batt_health</span><span class="p">:</span> <span class="n">CHARGER_VBAT_STATUS_REG</span> <span class="o">=</span> <span class="mh">0x00</span>
+<span class="p">[</span> <span class="mf">6640.158574</span><span class="p">]</span> <span class="n">PM2250_charger</span><span class="p">:</span> <span class="n">smblite_lib_get_charge_param</span><span class="p">:</span> <span class="nb">input</span> <span class="n">current</span> <span class="n">limit</span> <span class="n">status</span> <span class="o">=</span> <span class="mi">0</span> <span class="p">(</span><span class="mh">0x00</span><span class="p">)</span>
+<span class="p">[</span> <span class="mf">6640.160237</span><span class="p">]</span> <span class="n">PM2250_charger</span><span class="p">:</span> <span class="n">smblite_lib_get_prop_usb_online</span><span class="p">:</span> <span class="n">POWER_PATH_STATUS</span> <span class="o">=</span> <span class="mh">0x29</span>
+<span class="p">[</span> <span class="mf">6640.167752</span><span class="p">]</span> <span class="n">PM2250_charger</span><span class="p">:</span> <span class="n">smblite_lib_get_prop_batt_health</span><span class="p">:</span> <span class="n">CHARGER_VBAT_STATUS_REG</span> <span class="o">=</span> <span class="mh">0x00</span>
+<span class="p">[</span> <span class="mf">6640.175480</span><span class="p">]</span> <span class="n">PM2250_charger</span><span class="p">:</span> <span class="n">smblite_lib_get_prop_batt_health</span><span class="p">:</span> <span class="n">CHARGER_VBAT_STATUS_REG</span> <span class="o">=</span> <span class="mh">0x00</span>
+<span class="p">[</span> <span class="mf">6640.202475</span><span class="p">]</span> <span class="n">PM2250_charger</span><span class="p">:</span> <span class="n">smblite_lib_set_prop_usb_type</span><span class="p">:</span> <span class="n">Charger</span> <span class="nb">type</span> <span class="n">request</span> <span class="n">form</span> <span class="n">USB</span> <span class="n">driver</span> <span class="nb">type</span><span class="o">=</span><span class="mi">4</span>
+<span class="p">[</span> <span class="mf">6640.221359</span><span class="p">]</span> <span class="n">PM2250_charger</span><span class="p">:</span> <span class="n">smblite_lib_get_prop_usb_online</span><span class="p">:</span> <span class="n">POWER_PATH_STATUS</span> <span class="o">=</span> <span class="mh">0x29</span>
+<span class="p">[</span> <span class="mf">6640.230087</span><span class="p">]</span> <span class="n">PM2250_charger</span><span class="p">:</span> <span class="n">smblite_lib_get_prop_batt_health</span><span class="p">:</span> <span class="n">CHARGER_VBAT_STATUS_REG</span> <span class="o">=</span> <span class="mh">0x00</span>
+<span class="p">[</span> <span class="mf">6640.239609</span><span class="p">]</span> <span class="n">PM2250_charger</span><span class="p">:</span> <span class="n">smblite_lib_get_prop_usb_online</span><span class="p">:</span> <span class="n">POWER_PATH_STATUS</span> <span class="o">=</span> <span class="mh">0x29</span>
+<span class="p">[</span> <span class="mf">6640.249315</span><span class="p">]</span> <span class="n">msm</span><span class="o">-</span><span class="n">usb</span><span class="o">-</span><span class="n">ssphy</span><span class="o">-</span><span class="n">qmp</span> <span class="mf">1615000.</span><span class="n">ssphy</span><span class="p">:</span> <span class="n">USB</span> <span class="n">QMP</span> <span class="n">PHY</span><span class="p">:</span> <span class="n">Update</span> <span class="n">TYPEC</span> <span class="n">CTRL</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+<span class="p">[</span> <span class="mf">6640.257137</span><span class="p">]</span> <span class="n">PM2250_charger</span><span class="p">:</span> <span class="n">smblite_lib_get_prop_usb_online</span><span class="p">:</span> <span class="n">POWER_PATH_STATUS</span> <span class="o">=</span> <span class="mh">0x29</span>
+<span class="p">[</span> <span class="mf">6640.265199</span><span class="p">]</span> <span class="n">PM2250_charger</span><span class="p">:</span> <span class="n">smblite_lib_get_prop_batt_health</span><span class="p">:</span> <span class="n">CHARGER_VBAT_STATUS_REG</span> <span class="o">=</span> <span class="mh">0x00</span>
+<span class="p">[</span> <span class="mf">6640.274088</span><span class="p">]</span> <span class="n">PM2250_charger</span><span class="p">:</span> <span class="n">smblite_lib_get_prop_usb_online</span><span class="p">:</span> <span class="n">POWER_PATH_STATUS</span> <span class="o">=</span> <span class="mh">0x29</span>
+<span class="p">[</span> <span class="mf">6640.473092</span><span class="p">]</span> <span class="n">audit</span><span class="p">:</span> <span class="n">rate</span> <span class="n">limit</span> <span class="n">exceeded</span>
+<span class="p">[</span> <span class="mf">6640.477369</span><span class="p">]</span> <span class="n">PM2250_charger</span><span class="p">:</span> <span class="n">smblite_lib_set_prop_current_max</span><span class="p">:</span> <span class="n">Current</span> <span class="n">request</span> <span class="kn">from</span> <span class="nn">USB</span> <span class="n">driver</span> <span class="n">current</span><span class="o">=</span><span class="mi">100000</span><span class="n">mA</span>
+<span class="p">[</span> <span class="mf">6640.487732</span><span class="p">]</span> <span class="n">PM2250_charger</span><span class="p">:</span> <span class="n">smblite_lib_get_prop_typec_mode</span><span class="p">:</span> <span class="n">TYPE_C_MISC_STATUS_REG</span> <span class="o">=</span> <span class="mh">0xa9</span>
+<span class="p">[</span> <span class="mf">6640.497358</span><span class="p">]</span> <span class="n">PM2250_charger</span><span class="p">:</span> <span class="n">smblite_lib_get_prop_ufp_mode</span><span class="p">:</span> <span class="n">TYPE_C_STATUS_1</span> <span class="o">=</span> <span class="mh">0x08</span>
+<span class="p">[</span> <span class="mf">6640.577853</span><span class="p">]</span> <span class="n">PM2250_charger</span><span class="p">:</span> <span class="n">smblite_lib_set_prop_current_max</span><span class="p">:</span> <span class="n">Current</span> <span class="n">request</span> <span class="kn">from</span> <span class="nn">USB</span> <span class="n">driver</span> <span class="n">current</span><span class="o">=</span><span class="mi">2000</span><span class="n">mA</span>
+<span class="p">[</span> <span class="mf">6640.588293</span><span class="p">]</span> <span class="n">PM2250_charger</span><span class="p">:</span> <span class="n">smblite_lib_get_prop_typec_mode</span><span class="p">:</span> <span class="n">TYPE_C_MISC_STATUS_REG</span> <span class="o">=</span> <span class="mh">0xa9</span>
+<span class="p">[</span> <span class="mf">6640.601368</span><span class="p">]</span> <span class="n">PM2250_charger</span><span class="p">:</span> <span class="n">smblite_lib_get_prop_ufp_mode</span><span class="p">:</span> <span class="n">TYPE_C_STATUS_1</span> <span class="o">=</span> <span class="mh">0x08</span>
+<span class="p">[</span> <span class="mf">6640.615778</span><span class="p">]</span> <span class="n">PM2250_charger</span><span class="p">:</span> <span class="n">smblite_lib_set_prop_current_max</span><span class="p">:</span> <span class="n">Current</span> <span class="n">request</span> <span class="kn">from</span> <span class="nn">USB</span> <span class="n">driver</span> <span class="n">current</span><span class="o">=</span><span class="mi">500000</span><span class="n">mA</span>
+<span class="p">[</span> <span class="mf">6640.626115</span><span class="p">]</span> <span class="n">PM2250_charger</span><span class="p">:</span> <span class="n">smblite_lib_get_prop_typec_mode</span><span class="p">:</span> <span class="n">TYPE_C_MISC_STATUS_REG</span> <span class="o">=</span> <span class="mh">0xa9</span>
+<span class="p">[</span> <span class="mf">6640.634749</span><span class="p">]</span> <span class="n">PM2250_charger</span><span class="p">:</span> <span class="n">smblite_lib_get_prop_ufp_mode</span><span class="p">:</span> <span class="n">TYPE_C_STATUS_1</span> <span class="o">=</span> <span class="mh">0x08</span>
+<span class="p">[</span> <span class="mf">6640.712161</span><span class="p">]</span> <span class="n">PM2250_charger</span><span class="p">:</span> <span class="n">smblite_lib_thermal_regulation_work</span><span class="p">:</span> <span class="n">exiting</span> <span class="n">DIE_TEMP</span> <span class="n">regulation</span> <span class="n">work</span> <span class="n">DIE_TEMP_STATUS</span><span class="o">=</span><span class="mi">0</span> <span class="n">icl</span><span class="o">=</span><span class="mi">0</span><span class="n">uA</span>
+<span class="p">[</span> <span class="mf">6641.061951</span><span class="p">]</span> <span class="n">PM2250_charger</span><span class="p">:</span> <span class="n">smblite_lib_get_prop_usb_online</span><span class="p">:</span> <span class="n">POWER_PATH_STATUS</span> <span class="o">=</span> <span class="mh">0x29</span>
+<span class="p">[</span> <span class="mf">6641.073296</span><span class="p">]</span> <span class="n">PM2250_charger</span><span class="p">:</span> <span class="n">smblite_lib_get_prop_batt_health</span><span class="p">:</span> <span class="n">CHARGER_VBAT_STATUS_REG</span> <span class="o">=</span> <span class="mh">0x00</span>
+<span class="p">[</span> <span class="mf">6641.082930</span><span class="p">]</span> <span class="n">PM2250_charger</span><span class="p">:</span> <span class="n">smblite_lib_get_prop_usb_online</span><span class="p">:</span> <span class="n">POWER_PATH_STATUS</span> <span class="o">=</span> <span class="mh">0x29</span>
+<span class="p">[</span> <span class="mf">6641.106458</span><span class="p">]</span> <span class="n">PM2250_charger</span><span class="p">:</span> <span class="n">smblite_lib_get_prop_usb_online</span><span class="p">:</span> <span class="n">POWER_PATH_STATUS</span> <span class="o">=</span> <span class="mh">0x29</span>
+<span class="p">[</span> <span class="mf">6641.115249</span><span class="p">]</span> <span class="n">PM2250_charger</span><span class="p">:</span> <span class="n">smblite_lib_get_prop_batt_health</span><span class="p">:</span> <span class="n">CHARGER_VBAT_STATUS_REG</span> <span class="o">=</span> <span class="mh">0x00</span>
+<span class="p">[</span> <span class="mf">6641.124539</span><span class="p">]</span> <span class="n">PM2250_charger</span><span class="p">:</span> <span class="n">smblite_lib_get_prop_usb_online</span><span class="p">:</span> <span class="n">POWER_PATH_STATUS</span> <span class="o">=</span> <span class="mh">0x29</span>
+<span class="p">[</span> <span class="mf">6641.717537</span><span class="p">]</span> <span class="n">audit</span><span class="p">:</span> <span class="n">rate</span> <span class="n">limit</span> <span class="n">exceeded</span>
+<span class="p">[</span> <span class="mf">6646.773812</span><span class="p">]</span> <span class="n">audit</span><span class="p">:</span> <span class="n">rate</span> <span class="n">limit</span> <span class="n">exceeded</span>
+<span class="p">[</span> <span class="mf">6646.806686</span><span class="p">]</span> <span class="n">PM2250_charger</span><span class="p">:</span> <span class="n">smblite_lib_get_prop_usb_online</span><span class="p">:</span> <span class="n">POWER_PATH_STATUS</span> <span class="o">=</span> <span class="mh">0x29</span>
+<span class="p">[</span> <span class="mf">6646.815168</span><span class="p">]</span> <span class="n">PM2250_charger</span><span class="p">:</span> <span class="n">smblite_lib_get_prop_batt_health</span><span class="p">:</span> <span class="n">CHARGER_VBAT_STATUS_REG</span> <span class="o">=</span> <span class="mh">0x00</span>
+<span class="p">[</span> <span class="mf">6646.827090</span><span class="p">]</span> <span class="n">PM2250_charger</span><span class="p">:</span> <span class="n">smblite_lib_get_prop_usb_online</span><span class="p">:</span> <span class="n">POWER_PATH_STATUS</span> <span class="o">=</span> <span class="mh">0x29</span>
+<span class="p">[</span> <span class="mf">6646.851361</span><span class="p">]</span> <span class="n">PM2250_charger</span><span class="p">:</span> <span class="n">smblite_lib_get_prop_usb_online</span><span class="p">:</span> <span class="n">POWER_PATH_STATUS</span> <span class="o">=</span> <span class="mh">0x29</span>
+<span class="p">[</span> <span class="mf">6646.860324</span><span class="p">]</span> <span class="n">PM2250_charger</span><span class="p">:</span> <span class="n">smblite_lib_get_prop_batt_health</span><span class="p">:</span> <span class="n">CHARGER_VBAT_STATUS_REG</span> <span class="o">=</span> <span class="mh">0x00</span>
+<span class="p">[</span> <span class="mf">6646.869781</span><span class="p">]</span> <span class="n">PM2250_charger</span><span class="p">:</span> <span class="n">smblite_lib_get_prop_usb_online</span><span class="p">:</span> <span class="n">POWER_PATH_STATUS</span> <span class="o">=</span> <span class="mh">0x29</span>
+<span class="p">[</span> <span class="mf">6646.929746</span><span class="p">]</span> <span class="n">PM2250_charger</span><span class="p">:</span> <span class="n">smblite_lib_get_prop_usb_online</span><span class="p">:</span> <span class="n">POWER_PATH_STATUS</span> <span class="o">=</span> <span class="mh">0x29</span>
+<span class="p">[</span> <span class="mf">6655.736955</span><span class="p">]</span> <span class="n">audit</span><span class="p">:</span> <span class="n">rate</span> <span class="n">limit</span> <span class="n">exceeded</span>
+<span class="p">[</span> <span class="mf">6660.746479</span><span class="p">]</span> <span class="n">audit</span><span class="p">:</span> <span class="n">rate</span> <span class="n">limit</span> <span class="n">exceeded</span>
+<span class="p">[</span> <span class="mf">6665.755519</span><span class="p">]</span> <span class="n">audit</span><span class="p">:</span> <span class="n">rate</span> <span class="n">limit</span> <span class="n">exceeded</span>
+</pre></div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, wugn.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+  
+
+<script charset="UTF-8" id="LA_COLLECT" src="//sdk.51.la/js-sdk-pro.min.js"></script>
+<script>LA.init({id: "JjOE14XScyd75b2C",ck: "JjOE14XScyd75b2C"})</script>
+
+<br/>
+<script id="LA-DATA-WIDGET" crossorigin="anonymous" charset="UTF-8" src="https://v6-widget.51.la/v6/JjOE14XScyd75b2C/quote.js?theme=0&f=12&display=1,0,0,0,0,0,1,1"></script>
+
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

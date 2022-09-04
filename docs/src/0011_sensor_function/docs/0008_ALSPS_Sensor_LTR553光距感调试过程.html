@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>wugn</title>
+
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../index.html" class="icon icon-home"> wugn_note
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">概述</a><ul>
+<li><a class="reference internal" href="#id2">硬件</a></li>
+<li><a class="reference internal" href="#sensorlist">1.sensorlist无法获取</a></li>
+<li><a class="reference internal" href="#psals">PS及ALS优化(包括动态校准及数据算法）</a><ul>
+<li><a class="reference internal" href="#ps">1.PS动态校准移植</a></li>
+<li><a class="reference internal" href="#als">2.ALS数据算法分析</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id3">数据上报</a><ul>
+<li><a class="reference internal" href="#id4">1.PS数据上报</a></li>
+<li><a class="reference internal" href="#id5">2.ALS数据上报</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id6">问题点</a><ul>
+<li><a class="reference internal" href="#id7">1.重启或者久休眠唤醒经常误报成靠近</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">wugn_note</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs"> 
+<li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+<li>概述</li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.forward()">Forward</a></li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.back()">Go Back</a> | </li>
+<li style="float: right;margin-left: 10px;"><a href="/index.html">Home</a> | </li>
+
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="id1">
+<h1>概述<a class="headerlink" href="#id1" title="Permalink to this headline"></a></h1>
+<p>光距感sensor ltr553 sensorhub调试记录</p>
+<section id="id2">
+<h2>硬件<a class="headerlink" href="#id2" title="Permalink to this headline"></a></h2>
+<p>目前kernel端是通的，sensorhub一直不支持。</p>
+<table class="colwidths-auto docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>ITEM</p></th>
+<th class="head"><p>LTR-553ALS</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>I2C总线及地址</p></td>
+<td><p>i2c1 0x23</p></td>
+</tr>
+<tr class="row-odd"><td><p>eint_num中断号</p></td>
+<td><p>EINT6</p></td>
+</tr>
+<tr class="row-even"><td><p>供电</p></td>
+<td><p>VIO18_PUM</p></td>
+</tr>
+</tbody>
+</table>
+<p><img alt="0005_光距感原理图.png" src="src/0011_sensor_function/docs/images/0005_%E5%85%89%E8%B7%9D%E6%84%9F%E5%8E%9F%E7%90%86%E5%9B%BE.png" /></p>
+</section>
+<section id="sensorlist">
+<h2>1.sensorlist无法获取<a class="headerlink" href="#sensorlist" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p>1.首先按照移植步骤，将ltr553驱动移植到sensorhub中，发现sensorlist中并没有支持，先看一下getsensorlist接口流程：</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">vendor/mediatek/proprietary/hardware/sensor/hidl/1.0/Sensors.cpp</span></code>:</p></li>
+</ul>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="c1">//由上面HIDL层工作流程分析中的sensors_open_1()可知，会调用Hal层sensors.cpp  .open = open_sensors, 由此入口正式进入到Hal层</span>
+<span class="o">*</span><span class="w"> </span><span class="n">open</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">open_sensors</span><span class="w"></span>
+<span class="w">    </span><span class="o">*</span><span class="w"> </span><span class="n">open_sensors</span><span class="p">()</span><span class="w"></span>
+<span class="w">        </span><span class="o">*</span><span class="w"> </span><span class="n">init_sensors</span><span class="p">()</span><span class="w"></span>
+<span class="w">            </span><span class="o">*</span><span class="w"> </span><span class="n">mSensorList</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">SensorList</span><span class="o">::</span><span class="n">getInstance</span><span class="p">();</span><span class="w"></span>
+<span class="w">                </span><span class="o">*</span><span class="w"> </span><span class="n">SensorList</span><span class="w"> </span><span class="o">*</span><span class="n">mInterface</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">SensorList</span><span class="w"></span>
+<span class="w">                    </span><span class="o">*</span><span class="w"> </span><span class="n">SensorList</span><span class="o">::</span><span class="n">SensorList</span><span class="p">()</span><span class="w"></span>
+<span class="w">                        </span><span class="o">*</span><span class="w"> </span><span class="n">SensorList</span><span class="o">::</span><span class="n">initSensorList</span><span class="p">()</span><span class="w">         </span><span class="c1">//初始化sensor列表，这里通过Projectconfig.mk相关宏配置来实现是否需要添加对应传感器到SensorList</span>
+<span class="w">                            </span><span class="o">*</span><span class="w">  </span><span class="n">ALOGI</span><span class="p">(</span><span class="s">&quot;defaultSensorListCount=%u</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">int</span><span class="o">&gt;</span><span class="p">(</span><span class="n">mSensorList</span><span class="p">.</span><span class="n">size</span><span class="p">()));</span><span class="w">  </span><span class="c1">//打印系统所有支持</span>
+<span class="w">                        </span><span class="o">*</span><span class="w"> </span><span class="n">TEMP_FAILURE_RETRY</span><span class="p">(</span><span class="n">open</span><span class="p">(</span><span class="s">&quot;/dev/sensorlist&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">O_RDWR</span><span class="p">));</span><span class="w">  </span><span class="c1">//sensorlist驱动open函数</span>
+<span class="w">                        </span><span class="o">*</span><span class="w">  </span><span class="n">TEMP_FAILURE_RETRY</span><span class="p">(</span><span class="n">read</span><span class="p">(</span><span class="n">fd</span><span class="p">,</span><span class="w"> </span><span class="n">sensorlist_info</span><span class="p">,</span><span class="w"> </span><span class="k">sizeof</span><span class="p">(</span><span class="n">sensorlist_info</span><span class="p">)));</span><span class="w"> </span><span class="c1">//从驱动中读取sensorlist name，并将读取成功的支持列表放入sensorlist_info数组</span>
+<span class="w">                        </span><span class="o">*</span><span class="w"> </span><span class="n">ALOGI</span><span class="p">(</span><span class="s">&quot;sensor=%d, name=%s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">handle_to_sensor</span><span class="p">(</span><span class="n">handle</span><span class="p">),</span><span class="n">sensorlist_info</span><span class="p">[</span><span class="n">handle</span><span class="p">].</span><span class="n">name</span><span class="p">);</span><span class="w">  </span><span class="c1">//打印所有支持的sensorlist</span>
+<span class="w">            </span><span class="o">*</span><span class="w"> </span><span class="n">mSensorList</span><span class="o">-&gt;</span><span class="n">getSensorList</span><span class="p">(</span><span class="o">&amp;</span><span class="n">list</span><span class="p">)</span><span class="w"> </span><span class="c1">//返回支持列表</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>实际打开了11个sensor，却只支持9个，打印如下：</p></li>
+</ul>
+<div class="highlight-log notranslate"><div class="highlight"><pre><span></span>行 1413: 02-15 10:32:48.258333   728   728 D SensorList: initSensorList  terminal_type: 1
+行 1414: 02-15 10:32:48.258591   728   728 I SensorList: defaultSensorListCount=11
+行 1414: 02-15 10:32:48.258591   728   728 I SensorList: defaultSensorListCount=11
+行 1427: 02-15 10:32:48.270765   728   728 I SensorList: sensor=0, name=sc7a20
+行 1429: 02-15 10:32:48.270813   728   728 I SensorList: sensor=3, name=NULL
+行 1430: 02-15 10:32:48.270839   728   728 I SensorList: removeSensor=3
+行 1431: 02-15 10:32:48.270874   728   728 I SensorList: sensor=1, name=memsic
+行 1432: 02-15 10:32:48.270935   728   728 I SensorList: sensor=4, name=NULL
+行 1433: 02-15 10:32:48.270957   728   728 I SensorList: removeSensor=4
+行 1435: 02-15 10:32:48.270976   728   728 I SensorList: sensor=7, name=NULL
+行 1436: 02-15 10:32:48.271001   728   728 I SensorList: removeSensor=7
+行 1438: 02-15 10:32:48.271024   728   728 I SensorList: sensor=5, name=NULL
+行 1440: 02-15 10:32:48.271062   728   728 I SensorList: removeSensor=5
+行 1441: 02-15 10:32:48.271086   728   728 I SensorList: sensor=71, name=NULL
+行 1442: 02-15 10:32:48.271110   728   728 I SensorList: removeSensor=71
+行 1443: 02-15 10:32:48.271226   728   728 I SensorList: newSensorListCount=9
+行 1443: 02-15 10:32:48.271226   728   728 I SensorList: newSensorListCount=9
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>2.继续看看sensorlist驱动read函数到底是读取了什么：</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">drivers/misc/mediatek/sensors-1.0/hwmon/sensor_list/sensor_list.c</span></code>：</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="k">static</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">file_operations</span><span class="w"> </span><span class="n">sensorlist_fops</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">owner</span><span class="w">		</span><span class="o">=</span><span class="w"> </span><span class="n">THIS_MODULE</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">open</span><span class="w">		</span><span class="o">=</span><span class="w"> </span><span class="n">sensorlist_open</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">read</span><span class="w">		</span><span class="o">=</span><span class="w"> </span><span class="n">sensorlist_read</span><span class="p">,</span><span class="w"></span>
+<span class="p">};</span><span class="w"></span>
+
+<span class="k">static</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">miscdevice</span><span class="w"> </span><span class="n">sensorlist_miscdev</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">minor</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">MISC_DYNAMIC_MINOR</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;sensorlist&quot;</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">fops</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">&amp;</span><span class="n">sensorlist_fops</span><span class="p">,</span><span class="w"></span>
+<span class="p">};</span><span class="w"></span>
+
+<span class="o">*</span><span class="w"> </span><span class="n">sensorlist_init</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="o">*</span><span class="w"> </span><span class="n">misc_register</span><span class="p">(</span><span class="o">&amp;</span><span class="n">sensorlist_miscdev</span><span class="p">);</span><span class="w">  </span><span class="c1">//生成/dev/sensorlist misc驱动节点</span>
+<span class="w">    </span><span class="o">*</span><span class="w"> </span><span class="n">sensorlist_read</span><span class="p">()</span><span class="w"></span>
+<span class="w">      </span><span class="o">*</span><span class="w"> </span><span class="n">copy_to_user</span><span class="p">(</span><span class="n">buf</span><span class="p">,</span><span class="w"> </span><span class="n">sensorlist_info</span><span class="p">,</span><span class="w"> </span><span class="n">count</span><span class="p">)</span><span class="w"> </span><span class="c1">//拷贝只用户空间</span>
+<span class="w">  </span><span class="o">*</span><span class="w"> </span><span class="n">INIT_WORK</span><span class="p">(</span><span class="o">&amp;</span><span class="n">sensorlist_work</span><span class="p">,</span><span class="w"> </span><span class="n">sensorlist_get_deviceinfo</span><span class="p">);</span><span class="w">  </span><span class="c1">//创建sensorlist_work工作队列</span>
+<span class="w">    </span><span class="o">*</span><span class="w"> </span><span class="n">sensorlist_get_deviceinfo</span><span class="p">()</span><span class="w"></span>
+<span class="w">      </span><span class="o">*</span><span class="w"> </span><span class="n">sensor_set_cmd_to_hub</span><span class="p">(</span><span class="n">sensor</span><span class="p">,</span><span class="n">CUST_ACTION_GET_SENSOR_INFO</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">devinfo</span><span class="p">);</span><span class="w"> </span><span class="c1">//重要，通过IPI获取scp信息，IPI通信请参考0002_Android_SCP_IPI.md</span>
+<span class="w">        </span><span class="o">*</span><span class="w"> </span><span class="n">strlcpy</span><span class="p">(</span><span class="n">sensorlist_info</span><span class="p">[</span><span class="n">handle</span><span class="p">].</span><span class="n">name</span><span class="p">,</span><span class="n">devinfo</span><span class="p">.</span><span class="n">name</span><span class="p">,</span><span class="k">sizeof</span><span class="p">(</span><span class="n">sensorlist_info</span><span class="p">[</span><span class="n">handle</span><span class="p">].</span><span class="n">name</span><span class="p">));</span><span class="w"> </span><span class="c1">// 赋值填充sensorlist_info列表</span>
+<span class="w">  </span><span class="o">*</span><span class="w"> </span><span class="n">scp_power_monitor_register</span><span class="p">(</span><span class="o">&amp;</span><span class="n">scp_ready_notifier</span><span class="p">);</span><span class="w"> </span><span class="c1">//注册scp启动通知链</span>
+<span class="w">    </span><span class="o">*</span><span class="w"> </span><span class="n">scp_ready_event</span><span class="p">(</span><span class="kt">uint8_t</span><span class="w"> </span><span class="n">event</span><span class="p">,</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="o">*</span><span class="n">ptr</span><span class="p">)</span><span class="w">  </span><span class="c1">//通知链函数</span>
+<span class="w">      </span><span class="o">*</span><span class="w"> </span><span class="k">case</span><span class="w"> </span><span class="n">SENSOR_POWER_UP</span><span class="o">:</span><span class="w"></span>
+<span class="w">      </span><span class="o">*</span><span class="w"> </span><span class="n">schedule_work</span><span class="p">(</span><span class="o">&amp;</span><span class="n">sensorlist_work</span><span class="p">);</span><span class="w"> </span><span class="c1">//scp启动后开启sensorlist_work工作队列</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>3.也就是说kernel通过<code class="docutils literal notranslate"><span class="pre">sensor_set_cmd_to_hub</span></code>接口发送IPI请求从scp获取<code class="docutils literal notranslate"><span class="pre">sensorlist_info[handle].name</span></code>，继续看看scp到底是处理IPI的：</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span>* vendor/mediatek/proprietary/tinysys/freertos/source/middleware/contexthub/contexthub_fw.c
+  * INTERNAL_APP_INIT(APP_ID_MAKE(APP_ID_VENDOR_MTK, MTK_APP_ID_WRAP(SENS_TYPE_INVALID, 0, 0)), 0, contextHubFwStart, contextHubFwEnd, contextHubFwHandleEvent);
+    * static bool contextHubFwStart(uint32_t tid)
+      * ipi_ret = scp_ipi_registration(IPI_SENSOR, contextHubIpiHandler, &quot;chre_fw_ipi&quot;);
+        * static void contextHubIpiHandler(int id, void *data, unsigned int len)
+          * osEnqueuePrivateEvt(EVT_IPI_RX, NULL, NULL, mTask.id);
+            * 进入OS系统消息处理，最终传到下面这个函数
+              * static void contextHubFwHandleEvent(uint32_t evtType, const void* evtData)
+                * case EVT_IPI_RX:
+                  * contextHubHandleIpiRxEvent();
+                    * cmd = contextHubFindCmd(mTask.ipi_req.action);
+                      * const static struct ContextHubCmd mContextHubCmds[]
+                        * CONTEXTHUB_CMD(SENSOR_HUB_SET_CUST, contextHubFwSetCust, contextHubFwSetCustAck),
+                          * static int contextHubFwSetCust(SCP_SENSOR_HUB_REQ *req, struct data_unit_t *data)
+                            * set_cust_req = (SCP_SENSOR_HUB_SET_CUST_REQ *)req;
+                            * mtkType = apIdToMtkType(set_cust_req-&gt;sensorType);
+                            * ret = contextHubDispatchCust(mtkTypeToChreType(mtkType), set_cust_req);
+                              * case CUST_ACTION_GET_SENSOR_INFO: //重要，承接kernel发下来的指令
+                              * sensorCoreGetSensorInfo(sensType, &amp;cust_req-&gt;getInfo.sensorInfo);
+                                * int8_t handle = mSensorCoreList[sensType]; //上层传下来的sensor类型
+                                * mCoreInfo = &amp;mInfoCoreList[handle];
+                                * CoreInfo-&gt;getSensorInfo(data); //重要，调用具体sensor的getSensorInfo
+
+* middleware/contexthub/MEMS_Driver/alsps/ltr553.c
+  * static int ltr553_register_core(I2cCallbackF i2cCallBack, SpiCbkF spiCallBack, void *next_state,
+    * #ifdef SUPPORT_GET_SENSOR_INFO   //重要 ltr553.h中定义
+      * mInfo.getSensorInfo = alsGetSensorInfo;
+      * mInfo.getSensorInfo = psGetSensorInfo;
+
+#ifdef SUPPORT_GET_SENSOR_INFO
+static void psGetSensorInfo(struct sensorInfo_t *data)
+{
+	osLog(LOG_ERROR, &quot;%s =====&gt;&quot;, __func__);
+    strncpy(data-&gt;name, &quot;ltr553_p&quot;, sizeof(data-&gt;name)); //赋值sensorlist ps name
+}
+
+static void alsGetSensorInfo(struct sensorInfo_t *data)
+{
+	osLog(LOG_ERROR, &quot;%s =====&gt;&quot;, __func__);
+    strncpy(data-&gt;name, &quot;ltr553_l&quot;, sizeof(data-&gt;name)); //赋值sensorlist als name
+}
+#endif
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>4.问题找到了，<code class="docutils literal notranslate"> <span class="pre">ltr553.h</span></code>中fae给的代码并没有定义宏<code class="docutils literal notranslate"><span class="pre">SUPPORT_GET_SENSOR_INFO</span></code>，打开宏定义后，sensorlist支持了，打印如下：</p></li>
+</ul>
+<div class="highlight-log notranslate"><div class="highlight"><pre><span></span>02-17 13:03:49.247690   724   724 I SensorList: sensor=0, name=sc7a20
+02-17 13:03:49.247954   724   724 I SensorList: sensor=3, name=NULL
+02-17 13:03:49.248055   724   724 I SensorList: removeSensor=3
+02-17 13:03:49.248118   724   724 I SensorList: sensor=1, name=memsic
+02-17 13:03:49.248191   724   724 I SensorList: sensor=4, name=ltr553_l  刚好是sensorhub中定义的
+02-17 13:03:49.248249   724   724 I SensorList: sensor=7, name=ltr553_p
+02-17 13:03:49.248308   724   724 I SensorList: sensor=5, name=NULL
+02-17 13:03:49.248363   724   724 I SensorList: removeSensor=5
+02-17 13:03:49.248468   724   724 I SensorList: sensor=71, name=NULL
+02-17 13:03:49.248525   724   724 I SensorList: removeSensor=71
+02-17 13:03:49.248769   724   724 I SensorList: newSensorListCount=11
+02-17 13:03:49.249218   724   724 E SensorContext: sensors_poll_context_t constructor.
+02-17 13:03:49.249645   724   724 E SensorSaved: (/mnt/vendor/nvcfg) exist
+</pre></div>
+</div>
+</section>
+<section id="psals">
+<h2>PS及ALS优化(包括动态校准及数据算法）<a class="headerlink" href="#psals" title="Permalink to this headline"></a></h2>
+<section id="ps">
+<h3>1.PS动态校准移植<a class="headerlink" href="#ps" title="Permalink to this headline"></a></h3>
+<p>PS传感器一般都是靠近3cm，远离5cm。每次开启监听都会获取一个noise值，相当于一个初始值，如果旁边有遮挡，这个noise值会很大。所以PS传感器每次会根据开启监听后的noise值进行动态阈值校准：</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">middleware/contexthub/MEMS_Driver/alsps/ltr553.c</span></code>:</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">sensorFsmCmd</span><span class="p">(</span><span class="n">STATE_GET_PS_RAW_DATA</span><span class="p">,</span><span class="w"> </span><span class="n">STATE_SAMPLE_PS_DONE</span><span class="p">,</span><span class="w"> </span><span class="n">ltr553_get_ps_raw_data</span><span class="p">),</span><span class="w"></span>
+<span class="w">   </span><span class="o">*</span><span class="w"> </span><span class="n">ltr553_ps_calibration</span><span class="p">();</span><span class="w"></span>
+<span class="w">     </span><span class="o">*</span><span class="w"> </span><span class="n">ltr553_ps_get_thres</span><span class="p">(</span><span class="n">mTask</span><span class="p">.</span><span class="n">ps_xt_val</span><span class="p">);</span><span class="w"> </span><span class="c1">//动态阈值算法</span>
+<span class="w">     </span><span class="o">*</span><span class="w"> </span><span class="n">ltr553_ps_set_threshold</span><span class="p">(</span><span class="n">mTask</span><span class="p">.</span><span class="n">ps_threshold_high</span><span class="p">,</span><span class="w"> </span><span class="n">mTask</span><span class="p">.</span><span class="n">ps_threshold_low</span><span class="p">);</span><span class="w"> </span><span class="c1">//i2c设置</span>
+
+<span class="cp">#ifdef PS_DYNAMIC_CALI</span>
+<span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">ltr553_ps_get_thres</span><span class="p">(</span><span class="kt">uint16_t</span><span class="w"> </span><span class="n">noise</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="kt">int</span><span class="w"> </span><span class="n">ps_thd_val_low</span><span class="p">,</span><span class="w"> </span><span class="n">ps_thd_val_high</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="kt">int</span><span class="w"> </span><span class="n">default_noise</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">180</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">osLog</span><span class="p">(</span><span class="n">LOG_ERROR</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;%s =====&gt;&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">__func__</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">noise</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">100</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="n">ps_thd_val_high</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">noise</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">48</span><span class="p">;</span><span class="w"></span>
+<span class="w">		</span><span class="n">ps_thd_val_low</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">noise</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">31</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+<span class="w">	</span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">noise</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">200</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="n">ps_thd_val_high</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">noise</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">48</span><span class="p">;</span><span class="w"></span>
+<span class="w">		</span><span class="n">ps_thd_val_low</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">noise</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">31</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+<span class="w">	</span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">noise</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">300</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="n">ps_thd_val_high</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">noise</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">48</span><span class="p">;</span><span class="w"></span>
+<span class="w">		</span><span class="n">ps_thd_val_low</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">noise</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">31</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+<span class="w">	</span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">noise</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">400</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="n">ps_thd_val_high</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">noise</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">48</span><span class="p">;</span><span class="w"></span>
+<span class="w">		</span><span class="n">ps_thd_val_low</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">noise</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">31</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+<span class="w">	</span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">noise</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">600</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="n">ps_thd_val_high</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">noise</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">90</span><span class="p">;</span><span class="w"></span>
+<span class="w">		</span><span class="n">ps_thd_val_low</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">noise</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">70</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+<span class="w">	</span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">noise</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">1000</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="n">ps_thd_val_high</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">noise</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">280</span><span class="p">;</span><span class="w"></span>
+<span class="w">		</span><span class="n">ps_thd_val_low</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">noise</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">140</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+<span class="w">	</span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">noise</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">1250</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="n">ps_thd_val_high</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">noise</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">400</span><span class="p">;</span><span class="w"></span>
+<span class="w">		</span><span class="n">ps_thd_val_low</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">noise</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">240</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+<span class="w">	</span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="k">if</span><span class="p">(</span><span class="n">default_noise</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">			</span><span class="n">ps_thd_val_high</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">default_noise</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">48</span><span class="p">;</span><span class="w"></span>
+<span class="w">			</span><span class="n">ps_thd_val_low</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">default_noise</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">31</span><span class="p">;</span><span class="w"></span>
+<span class="w">		</span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">			</span><span class="n">ps_thd_val_high</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mTask</span><span class="p">.</span><span class="n">ps_threshold_high</span><span class="p">;</span><span class="w"></span>
+<span class="w">			</span><span class="n">ps_thd_val_low</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mTask</span><span class="p">.</span><span class="n">ps_threshold_low</span><span class="p">;</span><span class="w"></span>
+<span class="w">		</span><span class="p">}</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">osLog</span><span class="p">(</span><span class="n">LOG_INFO</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;%s:noise = %d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">__func__</span><span class="p">,</span><span class="w"> </span><span class="n">noise</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="n">osLog</span><span class="p">(</span><span class="n">LOG_INFO</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;%s:ps_thd_val_high = %d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">__func__</span><span class="p">,</span><span class="w"> </span><span class="n">ps_thd_val_high</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="n">osLog</span><span class="p">(</span><span class="n">LOG_INFO</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;%s:ps_thd_val_low = %d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">__func__</span><span class="p">,</span><span class="w"> </span><span class="n">ps_thd_val_low</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">mTask</span><span class="p">.</span><span class="n">ps_threshold_low</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ps_thd_val_low</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="n">mTask</span><span class="p">.</span><span class="n">ps_threshold_high</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ps_thd_val_high</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">	</span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>每次注册监听都会计算一次阈值，可以看到<code class="docutils literal notranslate"><span class="pre">ltr553_ps_calibration</span></code>采样8次，算出来一个平均noise值299，再传入<code class="docutils literal notranslate"><span class="pre">ltr553_ps_get_thres</span></code>函数计算出来<code class="docutils literal notranslate"><span class="pre">ps_thd_val_high</span></code>和<code class="docutils literal notranslate"><span class="pre">ps_thd_val_low</span></code>分别是347和330，含义就是当ps值大于347时，系统上报0此时是靠近，当值小于330时，远离且上报1，另外framework里面对应的是1和2。</p></li>
+</ul>
+<div class="highlight-log notranslate"><div class="highlight"><pre><span></span>[330.645]sensorPowerPs on:1, nowOn:0
+[330.645]ps: enable done
+[330.646]sensorRatePs rate:15360, latency:66670592
+[330.646]ps: ratechg done, timerdelay = 0
+[330.659]hostintf: 330659688249, chreType:1, rate:15359, latency:100000000, cmd:0!
+[330.662]hostintf: 330662581480, chreType:1, rate:15359, latency:100000000, cmd:1!
+[330.662]on or upload, type:1, rate:fffffff0, latency:ffffffffffffffff
+[330.846][fsm]alsps error: don&#39;t support state:0x3
+[330.865]prox ===========================&gt; intr occur, is new data
+[330.865]ltr553_get_ps_raw_data =====&gt; ps_raw_data:297
+[330.865]ltr553_ps_calibration: raw_data_unsigned: 297, i : 1, sum : 297
+[330.865]ps: data update:1
+[331.157]hostintf: 331157313943, chreType:13, rate:51200, latency:0, cmd:1!
+[331.157]sensorRatePs rate:51200, latency:19999744
+[331.157]ps: ratechg done, timerdelay = 0
+[331.184]prox ===========================&gt; intr occur, is new data
+[331.184]ltr553_get_ps_raw_data =====&gt; ps_raw_data:300
+[331.184]ltr553_ps_calibration: raw_data_unsigned: 300, i : 2, sum : 597
+[331.357][fsm]alsps error: don&#39;t support state:0x3
+[331.503]prox ===========================&gt; intr occur, is new data
+[331.503]ltr553_get_ps_raw_data =====&gt; ps_raw_data:301
+[331.503]ltr553_ps_calibration: raw_data_unsigned: 301, i : 3, sum : 898
+[331.821]prox ===========================&gt; intr occur, is new data
+[331.822]ltr553_get_ps_raw_data =====&gt; ps_raw_data:300
+[331.822]ltr553_ps_calibration: raw_data_unsigned: 300, i : 4, sum : 1198
+[332.140]prox ===========================&gt; intr occur, is new data
+[332.140]ltr553_get_ps_raw_data =====&gt; ps_raw_data:298
+[332.140]ltr553_ps_calibration: raw_data_unsigned: 298, i : 5, sum : 1496
+[332.459]prox ===========================&gt; intr occur, is new data
+[332.459]ltr553_get_ps_raw_data =====&gt; ps_raw_data:299
+[332.459]ltr553_ps_calibration: raw_data_unsigned: 299, i : 6, sum : 1795
+[332.778]prox ===========================&gt; intr occur, is new data
+[332.778]ltr553_get_ps_raw_data =====&gt; ps_raw_data:299
+[332.778]ltr553_ps_calibration: raw_data_unsigned: 299, i : 7, sum : 2094
+[333.097]prox ===========================&gt; intr occur, is new data
+[333.097]ltr553_get_ps_raw_data =====&gt; ps_raw_data:300
+[333.097]ltr553_ps_calibration: raw_data_unsigned: 300, i : 8, sum : 2394
+[333.097]ltr553_ps_calibration: ps_xt_val: 299
+[333.097]ltr553_ps_get_thres:noise = 299
+[333.097]ltr553_ps_get_thres:ps_thd_val_high = 347
+[333.097]ltr553_ps_get_thres:ps_thd_val_low = 330
+
+framework打印：
+03-24 15:28:58.601   803   894 I Proximity: distance = 1  //靠近
+03-24 15:28:59.875   803   894 I Proximity: distance = 2  //远离
+</pre></div>
+</div>
+</section>
+<section id="als">
+<h3>2.ALS数据算法分析<a class="headerlink" href="#als" title="Permalink to this headline"></a></h3>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span>cust_alsps.c
+#ifdef CFG_LTR553_SUPPORT
+    {
+        .name = &quot;ltr553&quot;,
+        .i2c_num    = 0,
+        .i2c_addr = {0x23, 0},
+        .polling_mode_ps = 0,
+        .polling_mode_als = 1,
+        .als_level  = {1, 9, 36, 59, 82, 132, 205, 273, 500, 845, 1136, 1545, 2364, 4655, 6982},
+        .als_value  = {0, 10, 40, 115, 145, 180, 222, 360, 460, 550, 930, 1250, 1700, 2600, 5120, 7680},
+        .ps_threshold_high = 70,
+        .ps_threshold_low = 40,
+        .eint_num = 6,
+    },
+#endif
+
+* sensorFsmCmd(STATE_GET_ALS_DATA, STATE_SAMPLE_ALS_DONE, ltr553_get_als_value),
+  * mTask.als_raw_data = ltr553_als_read(); 获取原始数据
+  * mTask.data[0].als_data = getLuxFromAlsData();  将原始数据转换成value值
+  * txTransferDataInfo(&amp;mTask.dataInfo, 1, &amp;mTask.data[0]);
+
+原始数据算法如下，看了fae内部datasheet也是这个算法：
+static int ltr553_als_read(void)
+{
+	int alsval_ch0;
+	int alsval_ch1;
+	int luxdata_int;
+	int ratio;
+
+	osLog(LOG_ERROR, &quot;%s =====&gt;&quot;, __func__);
+	alsval_ch1 = ((mTask.rxBuf[1] &lt;&lt; 8) | mTask.rxBuf[0]);
+	alsval_ch0 = ((mTask.rxBuf[3] &lt;&lt; 8) | mTask.rxBuf[2]);
+
+	if ((alsval_ch1 == 0) || (alsval_ch0 == 0))
+	{
+		luxdata_int = 0;
+		return luxdata_int;
+	}
+
+	ratio = (alsval_ch1 * 100) / (alsval_ch0 + alsval_ch1);
+	osLog(LOG_INFO, &quot;ratio = %d  gainrange = %d\n&quot;, ratio, mTask.als_gain_fac);
+	if (ratio &lt; 45) {
+		luxdata_int = (((17743 * alsval_ch0) + (11059 * alsval_ch1)) / mTask.als_gain_fac) / 1000;  //本来这个分母是10000的，但是发现kernel里面是1000，改成一样
+	}
+	else if ((ratio &lt; 64) &amp;&amp; (ratio &gt;= 45)) {
+		luxdata_int = (((42785 * alsval_ch0) - (19548 * alsval_ch1)) / mTask.als_gain_fac) / 1000;
+	}
+	else if ((ratio &lt; 85) &amp;&amp; (ratio &gt;= 64)) {
+		luxdata_int = (((5926 * alsval_ch0) + (1185 * alsval_ch1)) / mTask.als_gain_fac) / 1000;
+	}
+	else {
+		luxdata_int = 0;
+	}
+
+	osLog(LOG_INFO, &quot;ltr553_als_read: als_value_lux = %d\n&quot;, luxdata_int);
+	return luxdata_int;
+}
+
+</pre></div>
+</div>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">getLuxFromAlsData</span></code>函数是将原始数据<code class="docutils literal notranslate"><span class="pre">als_level</span></code>按照一定比例转换为<code class="docutils literal notranslate"><span class="pre">als_value</span></code>，也就是说<code class="docutils literal notranslate"><span class="pre">als_value</span></code>就是实际app获取的LUX值，经过一次具体算法如下：</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">getLuxFromAlsData</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">idx</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">invalid</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">als_level_num</span><span class="p">,</span><span class="w"> </span><span class="n">als_value_num</span><span class="p">,</span><span class="w"> </span><span class="n">als_diff</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">osLog</span><span class="p">(</span><span class="n">LOG_ERROR</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;%s =====&gt;&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">__func__</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="n">als_level_num</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">sizeof</span><span class="p">(</span><span class="n">mTask</span><span class="p">.</span><span class="n">hw</span><span class="o">-&gt;</span><span class="n">als_level</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="k">sizeof</span><span class="p">(</span><span class="n">mTask</span><span class="p">.</span><span class="n">hw</span><span class="o">-&gt;</span><span class="n">als_level</span><span class="p">[</span><span class="mi">0</span><span class="p">]);</span><span class="w"></span>
+<span class="w">    </span><span class="n">als_value_num</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">sizeof</span><span class="p">(</span><span class="n">mTask</span><span class="p">.</span><span class="n">hw</span><span class="o">-&gt;</span><span class="n">als_value</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="k">sizeof</span><span class="p">(</span><span class="n">mTask</span><span class="p">.</span><span class="n">hw</span><span class="o">-&gt;</span><span class="n">als_value</span><span class="p">[</span><span class="mi">0</span><span class="p">]);</span><span class="w"></span>
+<span class="w">    </span><span class="n">als_diff</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">als_value_num</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">als_level_num</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="n">idx</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">idx</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">als_level_num</span><span class="p">;</span><span class="w"> </span><span class="n">idx</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mTask</span><span class="p">.</span><span class="n">als_raw_data</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">mTask</span><span class="p">.</span><span class="n">hw</span><span class="o">-&gt;</span><span class="n">als_level</span><span class="p">[</span><span class="n">idx</span><span class="p">])</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">            </span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">idx</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="n">als_value_num</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="n">idx</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">als_value_num</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="mi">1</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">mTask</span><span class="p">.</span><span class="n">als_debounce_on</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">check_timeout</span><span class="p">(</span><span class="o">&amp;</span><span class="n">mTask</span><span class="p">.</span><span class="n">als_debounce_end</span><span class="p">))</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">            </span><span class="n">mTask</span><span class="p">.</span><span class="n">als_debounce_on</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="mi">1</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">mTask</span><span class="p">.</span><span class="n">als_debounce_on</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">            </span><span class="n">invalid</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">invalid</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="n">level_high</span><span class="p">,</span><span class="w"> </span><span class="n">level_low</span><span class="p">,</span><span class="w"> </span><span class="n">level_diff</span><span class="p">,</span><span class="w"> </span><span class="n">value_high</span><span class="p">,</span><span class="w"> </span><span class="n">value_low</span><span class="p">,</span><span class="w"> </span><span class="n">value_diff</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">idx</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="n">als_level_num</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">            </span><span class="n">level_high</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mTask</span><span class="p">.</span><span class="n">hw</span><span class="o">-&gt;</span><span class="n">als_level</span><span class="p">[</span><span class="n">idx</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">als_diff</span><span class="p">];</span><span class="w"></span>
+<span class="w">            </span><span class="n">level_low</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">idx</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="n">mTask</span><span class="p">.</span><span class="n">hw</span><span class="o">-&gt;</span><span class="n">als_level</span><span class="p">[</span><span class="n">idx</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">als_diff</span><span class="p">]</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">            </span><span class="n">level_high</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mTask</span><span class="p">.</span><span class="n">hw</span><span class="o">-&gt;</span><span class="n">als_level</span><span class="p">[</span><span class="n">idx</span><span class="p">];</span><span class="w"> </span>
+<span class="w">            </span><span class="n">level_low</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">idx</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="n">mTask</span><span class="p">.</span><span class="n">hw</span><span class="o">-&gt;</span><span class="n">als_level</span><span class="p">[</span><span class="n">idx</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">]</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="n">level_diff</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">level_high</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">level_low</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="n">value_high</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mTask</span><span class="p">.</span><span class="n">hw</span><span class="o">-&gt;</span><span class="n">als_value</span><span class="p">[</span><span class="n">idx</span><span class="p">];</span><span class="w"> </span>
+<span class="w">        </span><span class="n">value_low</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">idx</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="n">mTask</span><span class="p">.</span><span class="n">hw</span><span class="o">-&gt;</span><span class="n">als_value</span><span class="p">[</span><span class="n">idx</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">]</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span>
+<span class="w">        </span><span class="n">value_diff</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">value_high</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">value_low</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">((</span><span class="n">level_low</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="n">level_high</span><span class="p">)</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="p">(</span><span class="n">value_low</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="n">value_high</span><span class="p">))</span><span class="w"></span>
+<span class="w">            </span><span class="n">value</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">value_low</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="k">else</span><span class="w"></span>
+<span class="w">            </span><span class="n">value</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">level_diff</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">value_low</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="p">(</span><span class="n">mTask</span><span class="p">.</span><span class="n">als_raw_data</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">level_low</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">value_diff</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="p">((</span><span class="w"></span>
+<span class="w">                         </span><span class="n">level_diff</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;&gt;</span><span class="w"> </span><span class="mi">1</span><span class="p">))</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">level_diff</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">value</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="mi">-1</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>kernel中原始数据转换算法还不一样，直接是判断为某个区间取得固定值，不圆滑，如下：</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span>* static int ltr559_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id)
+  * als_data.get_data = als_get_data;
+    * ltr559_obj-&gt;als = ltr559_als_read(ltr559_obj-&gt;client, &amp;ltr559_obj-&gt;als);  获取原始数据
+    * *value = ltr559_get_als_value(ltr559_obj, ltr559_obj-&gt;als);   原始数据转换
+
+static int ltr559_get_als_value(struct ltr559_priv *obj, u16 als)
+{
+	int idx;
+	int invalid = 0;
+	// APS_DBG(&quot;als  = %d\n&quot;,als); 
+    1.先算出原始数据是level值的哪个区间idx。
+	for(idx = 0; idx &lt; obj-&gt;als_level_num; idx++)
+	{
+		if(als &lt; obj-&gt;hw-&gt;als_level[idx])
+		{
+			break;  
+		}
+	}
+	
+	if(idx &gt;= obj-&gt;als_value_num)
+	{
+		APS_ERR(&quot;exceed range\n&quot;); 
+		idx = obj-&gt;als_value_num - 1;
+	}
+	
+	if(1 == atomic_read(&amp;obj-&gt;als_deb_on))
+	{
+		unsigned long endt = atomic_read(&amp;obj-&gt;als_deb_end);
+		if(time_after(jiffies, endt))
+		{
+			atomic_set(&amp;obj-&gt;als_deb_on, 0);
+		}
+		
+		if(1 == atomic_read(&amp;obj-&gt;als_deb_on))
+		{
+			invalid = 1;
+		}
+	}
+
+    2.直接返回value[idx]，太简单了吧
+	if(!invalid)
+	{
+		// APS_DBG(&quot;ALS: %05d =&gt; %05d\n&quot;, als, obj-&gt;hw-&gt;als_value[idx]);	
+		return obj-&gt;hw-&gt;als_value[idx];	
+	}
+	else
+	{
+		// APS_ERR(&quot;ALS: %05d =&gt; %05d (-1)\n&quot;, als, obj-&gt;hw-&gt;als_value[idx]);    
+		return -1;
+	}
+}
+</pre></div>
+</div>
+</section>
+</section>
+<section id="id3">
+<h2>数据上报<a class="headerlink" href="#id3" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p>这里PS采用的是中断的方式上报数据，ALS采用的是轮询，首先介绍PS中断上报：</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="cp">#ifdef CFG_LTR553_SUPPORT</span>
+<span class="w">    </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="p">.</span><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;ltr553&quot;</span><span class="p">,</span><span class="w"></span>
+<span class="w">        </span><span class="p">.</span><span class="n">i2c_num</span><span class="w">    </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"></span>
+<span class="w">        </span><span class="p">.</span><span class="n">i2c_addr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="mh">0x23</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">},</span><span class="w"></span>
+<span class="w">        </span><span class="p">.</span><span class="n">polling_mode_ps</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"></span>
+<span class="w">        </span><span class="p">.</span><span class="n">polling_mode_als</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"></span>
+<span class="w">        </span><span class="p">.</span><span class="n">als_level</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">9</span><span class="p">,</span><span class="w"> </span><span class="mi">36</span><span class="p">,</span><span class="w"> </span><span class="mi">59</span><span class="p">,</span><span class="w"> </span><span class="mi">82</span><span class="p">,</span><span class="w"> </span><span class="mi">132</span><span class="p">,</span><span class="w"> </span><span class="mi">205</span><span class="p">,</span><span class="w"> </span><span class="mi">273</span><span class="p">,</span><span class="w"> </span><span class="mi">500</span><span class="p">,</span><span class="w"> </span><span class="mi">845</span><span class="p">,</span><span class="w"> </span><span class="mi">1136</span><span class="p">,</span><span class="w"> </span><span class="mi">1545</span><span class="p">,</span><span class="w"> </span><span class="mi">2364</span><span class="p">,</span><span class="w"> </span><span class="mi">4655</span><span class="p">,</span><span class="w"> </span><span class="mi">6982</span><span class="p">},</span><span class="w"></span>
+<span class="w">        </span><span class="p">.</span><span class="n">als_value</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span><span class="w"> </span><span class="mi">40</span><span class="p">,</span><span class="w"> </span><span class="mi">115</span><span class="p">,</span><span class="w"> </span><span class="mi">145</span><span class="p">,</span><span class="w"> </span><span class="mi">180</span><span class="p">,</span><span class="w"> </span><span class="mi">222</span><span class="p">,</span><span class="w"> </span><span class="mi">360</span><span class="p">,</span><span class="w"> </span><span class="mi">460</span><span class="p">,</span><span class="w"> </span><span class="mi">550</span><span class="p">,</span><span class="w"> </span><span class="mi">930</span><span class="p">,</span><span class="w"> </span><span class="mi">1250</span><span class="p">,</span><span class="w"> </span><span class="mi">1700</span><span class="p">,</span><span class="w"> </span><span class="mi">2600</span><span class="p">,</span><span class="w"> </span><span class="mi">5120</span><span class="p">,</span><span class="w"> </span><span class="mi">7680</span><span class="p">},</span><span class="w"></span>
+<span class="w">        </span><span class="p">.</span><span class="n">ps_threshold_high</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">70</span><span class="p">,</span><span class="w"></span>
+<span class="w">        </span><span class="p">.</span><span class="n">ps_threshold_low</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">40</span><span class="p">,</span><span class="w"></span>
+<span class="w">        </span><span class="p">.</span><span class="n">eint_num</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">6</span><span class="p">,</span><span class="w"></span>
+<span class="w">    </span><span class="p">},</span><span class="w"></span>
+<span class="cp">#endif</span>
+</pre></div>
+</div>
+<section id="id4">
+<h3>1.PS数据上报<a class="headerlink" href="#id4" title="Permalink to this headline"></a></h3>
+<ul class="simple">
+<li><p>中断打印如下：</p></li>
+</ul>
+<div class="highlight-log notranslate"><div class="highlight"><pre><span></span>[499.932]prox ===========================&gt; intr occur, is new data  //中断标志
+[499.932]ltr553_get_ps_raw_data =====&gt; ps_raw_data:80   ltr553_get_ps_raw_data函数获取数据
+[499.932]ps: data update:0eshold =====&gt;  
+[499.932]processPendingEvt  44444
+[499.932]processPendingEvt  44444
+[499.932]processPendingEvt  44444
+[499.932]processPendingEvt 55555555
+[499.932]processPendingEvt 55555555
+[499.932]processPendingEvt 55555555
+[499.932]processPendingEvt 666666666
+[499.932]processPendingEvt 666666666
+[499.932]processPendingEvt 666666666
+</pre></div>
+</div>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span>1.中断注册发送
+sensorFsmCmd(STATE_GET_PS_FLG, STATE_GET_PS_RAW_DATA, ltr553_get_ps_status), //这里是中断标志位，当有中断来会打印intr occur
+* ltr553_get_ps_status()
+   * mTask.txBuf[0] = LTR553_ALS_PS_STATUS;
+   * i2cMasterTxRx(mTask.hw-&gt;i2c_num, mTask.i2c_addr, mTask.txBuf, 1, //i2c读取0x8C寄存器,中断状态
+
+/* init state */
+sensorFsmCmd(STATE_SET_PS_THDL, STATE_SETUP_EINT, ltr553_set_ps_thdl),
+  * mt_eint_registration(mTask.hw-&gt;eint_num, LEVEL_SENSITIVE, LOW_LEVEL_TRIGGER, ltr553_eint_handler, EINT_INT_UNMASK,
+    * ltr553_eint_handler(int arg) //中断上半部分
+      * alsPsInterruptOccur(void)
+        * osEnqueuePrivateEvt(EVT_SENSOR_INTR, NULL, NULL, mTask.id);  //发送EVT_SENSOR_INTR EVENT
+
+2.EVT_SENSOR_INTR EVENT中断事件处理：
+static void handleEvent(uint32_t evtType, const void* evtData)
+  * case EVT_SENSOR_INTR: {
+  * sensorFsmRunState(&amp;dataInfo, &amp;mTask.fsm, (const void *)CHIP_SAMPLING_PS, &amp;i2cCallback, &amp;spiCallback); //执行CHIP_SAMPLING_ALS FSM函数
+    * ltr553_get_ps_raw_data()
+      * ltr553_ps_calibration(); //动态阈值校准
+      * ltr553_ps_set_threshold(mTask.ps_threshold_high, 0); //设置ps_threshold_high阈值
+      * ltr553_ps_set_threshold(2047, mTask.ps_threshold_low); //设置ps_threshold_low阈值
+
+3.执行STATE_SAMPLE_PS_DONE EVENT事件，调用osEnqueueEvt上报数据：
+* handleEvent(uint32_t evtType, const void* evtData)
+  * case EVT_SENSOR_EVENT: {
+  * handleSensorEvent(evtData);
+    * case CHIP_SAMPLING_PS_DONE: {
+    * osLog(LOG_INFO, &quot;ps: data update:%&quot;PRIu32&quot;\n&quot;, mTask.mSensorPerUnit[PS].last_sample.prox_data);  //打印ps: data update:
+    * osEnqueueEvt(sensorGetMyEventType(SENS_TYPE_PROX), sample.vptr, NULL); //重要，发送Event Queue，Event Queue 的处理是先来先服务，这里就是上报数据
+    * processPendingEvt(); //处理挂起sensor，只是开机做一次校准，后续都不做了。
+      * configEvent(&amp;mTask.mSensorPerUnit[handle], &amp;mTask.mSensorPerUnit[handle].pendConfig); //这里处理电源和设置rate
+      * if (mTask.pendingCali[handle]) {
+        * mSensorOps[handle].sensorCalibrate((void *)handle); //这里只在开机的时候跑一次
+      &amp; if (mTask.pendingCaliCfg[handle]) {
+        * mSensorOps[handle].sensorCfgData(mTask.mSensorPerUnit[handle].pendCaliCfg,//这里只在开机的时候跑一次
+</pre></div>
+</div>
+</section>
+<section id="id5">
+<h3>2.ALS数据上报<a class="headerlink" href="#id5" title="Permalink to this headline"></a></h3>
+<ul class="simple">
+<li><p>打印如下：</p></li>
+</ul>
+<div class="highlight-log notranslate"><div class="highlight"><pre><span></span>[3275.847]sensorPowerAls on:1, nowOn:0
+[3275.847]als: enable doneebounce_on =====&gt;
+[3275.847]processPendingEvt  44444
+[3275.847]processPendingEvt  44444
+[3275.847]processPendingEvt  44444
+[3275.847]processPendingEvt 55555555
+[3275.847]processPendingEvt 55555555
+[3275.847]processPendingEvt 55555555
+[3275.847]processPendingEvt 666666666
+[3275.847]processPendingEvt 666666666
+[3275.847]processPendingEvt 666666666
+[3275.847]sensorRateAls rate:15360, latency:66670592
+[3275.847]als: ratechg done timerDelay:66666666ns
+[3275.848]processPendingEvt  44444
+[3275.848]processPendingEvt  44444
+[3275.848]processPendingEvt  44444
+[3275.848]processPendingEvt 55555555
+[3275.848]processPendingEvt 55555555
+[3275.848]processPendingEvt 55555555
+[3275.848]processPendingEvt 666666666
+[3275.848]processPendingEvt 666666666
+[3275.848]processPendingEvt 666666666
+
+[3275.915]processPendingEvt  44444==&gt;
+[3275.915]processPendingEvt  44444
+[3275.915]processPendingEvt  44444
+[3275.915]processPendingEvt 55555555
+[3275.915]processPendingEvt 55555555
+[3275.915]processPendingEvt 55555555
+[3275.915]processPendingEvt 666666666
+[3275.915]processPendingEvt 666666666
+[3275.915]processPendingEvt 666666666
+[3275.982]ratio = 33  gainrange = 4=&gt;
+[3275.982]ltr553_als_read: als_value_lux = 23
+</pre></div>
+</div>
+<p>这里是用的轮询的方式：</p>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span>1.首先上层注册监听，将打开ALS传感器电源，这里在初始化函数alsSensorRegister就已经赋值了上电函数ops，相当于sensorhub中的CHIP_ALS_ENABLE_DONE事件：
+* sensorPowerAls() //先上电，打印sensorPowerAls on:1, nowOn:0
+* handleSensorEvent(evtData);
+  * case CHIP_ALS_ENABLE_DONE: {
+    * osLog(LOG_INFO, &quot;als: enable done\n&quot;); //打印als: enable done
+    * processPendingEvt(); //处理挂起的sensor，这里就是打印的44444这些，没什么用
+
+2.设置rate上报速率
+* sensorRateAls(uint32_t rate, uint64_t latency, void *cookie)  //打印sensorRateAls rate:
+  * setAlsHwRate(rate);
+    * sensorFsmRunState(&amp;dataInfo, &amp;mTask.fsm, (const void *)CHIP_ALS_RATECHG, &amp;i2cCallback, &amp;spiCallback);
+      * ltr553_als_ratechg(I2cCallbackF i2cCallBack, SpiCbkF spiCallBack, void *next_state, 
+        * sensorFsmEnqueueFakeI2cEvt(i2cCallBack, next_state, SUCCESS_EVT); //啥也没干，直接执行下个state
+
+3.读取数据,方式不过多解释了。
+* ltr553_get_als_value
+  * mTask.als_raw_data = ltr553_als_read();
+  * mTask.data[0].als_data = getLuxFromAlsData();
+  * sensorFsmEnqueueFakeI2cEvt(i2cCallBack, next_state, SUCCESS_EVT);
+</pre></div>
+</div>
+</section>
+</section>
+<section id="id6">
+<h2>问题点<a class="headerlink" href="#id6" title="Permalink to this headline"></a></h2>
+<section id="id7">
+<h3>1.重启或者久休眠唤醒经常误报成靠近<a class="headerlink" href="#id7" title="Permalink to this headline"></a></h3>
+<ul class="simple">
+<li><p>查看打印，发现如下：</p></li>
+</ul>
+<div class="highlight-log notranslate"><div class="highlight"><pre><span></span>
+开机第一次打开并没有算好靠近远离的阈值就直接断电了：
+	行 732: [40.469]ltr553_ps_calibration: raw_data_unsigned: 106, i : 1, sum : 106
+	行 748: [40.762]ltr553_ps_calibration: raw_data_unsigned: 107, i : 2, sum : 213
+	行 762: [41.056]ltr553_ps_calibration: raw_data_unsigned: 105, i : 3, sum : 318
+	行 778: [41.349]ltr553_ps_calibration: raw_data_unsigned: 106, i : 4, sum : 424
+	行 792: [41.642]ltr553_ps_calibration: raw_data_unsigned: 105, i : 5, sum : 529
+	行 808: [41.935]ltr553_ps_calibration: raw_data_unsigned: 111, i : 6, sum : 640
+
+  [41.960]hostintf: 41960463561, chreType:13, rate:51200, latency:0, cmd:0!
+
+[41.960]sensorPowerPs on:0, nowOn:1
+
+[41.960]ps: disable done
+
+[42.160]sensorPowerPs on:1, nowOn:0
+
+[42.160]ps: enable done
+
+[42.160]sensorRatePs rate:51200, latency:19999744
+
+[42.160]ps: ratechg done, timerdelay = 0
+
+[42.176]hostintf: 42176225715, chreType:13, rate:51200, latency:0, cmd:0!
+
+[42.176]sensorPowerPs on:0, nowOn:1
+
+[42.176]ps: disable done
+
+第二次打开，但没有继续计算阈值：
+[51.283]ps: enable done
+
+[51.283]sensorRatePs rate:15360, latency:66670592
+
+[51.283]ps: ratechg done, timerdelay = 0
+
+直接上报靠近：
+[51.485]prox ===========================&gt; intr occur, is new data
+
+[51.485]ltr553_get_ps_raw_data =====&gt; ps_raw_data:112
+
+[51.485]ltr553_ps_calibration: raw_data_unsigned: 112, i : 1, sum : 112
+
+[51.485]ps: data update:0
+
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>如果8次时间太长，那就改为采样五次，内核里面也是五次，代码修改：</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span>#define PS_CALIBRATION_COUNT	8
+改为：
+#define PS_CALIBRATION_COUNT	5
+
+static void ltr553_ps_calibration(void)
+{
+	if (mTask.prox_raw_data == 0)
+	{
+		return;
+	}
+
+	mTask.ps_sum += mTask.prox_raw_data;
+	mTask.ps_counter++;
+
+	osLog(LOG_INFO, &quot;%s: raw_data_unsigned: %d, i : %d, sum : %d\n&quot;, __func__, mTask.prox_raw_data, mTask.ps_counter, mTask.ps_sum);
+
+	if (mTask.ps_counter &gt;= PS_CALIBRATION_COUNT)
+	{
+		mTask.ps_cali_start = 0;
+		mTask.ps_xt_val = mTask.ps_sum / PS_CALIBRATION_COUNT;
+		osLog(LOG_INFO, &quot;%s: ps_xt_val: %d\n&quot;, __func__, mTask.ps_xt_val);
+
+		ltr553_ps_get_thres(mTask.ps_xt_val);
+		ltr553_ps_set_threshold(mTask.ps_threshold_high, mTask.ps_threshold_low);
+	}
+
+	return;
+}
+
+内核定义5次：
+#ifdef GN_MTK_BSP_PS_DYNAMIC_CALI
+static int ltr559_dynamic_calibrate(void)
+{
+	//int ret = 0;
+	int i = 0;
+	int data;
+	int data_total = 0;
+	//ssize_t len = 0;
+	int noise = 0;
+	int count = 5;
+  ...省略...
+  }
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, wugn.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+  
+
+<script charset="UTF-8" id="LA_COLLECT" src="//sdk.51.la/js-sdk-pro.min.js"></script>
+<script>LA.init({id: "JjOE14XScyd75b2C",ck: "JjOE14XScyd75b2C"})</script>
+
+<br/>
+<script id="LA-DATA-WIDGET" crossorigin="anonymous" charset="UTF-8" src="https://v6-widget.51.la/v6/JjOE14XScyd75b2C/quote.js?theme=0&f=12&display=1,0,0,0,0,0,1,1"></script>
+
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

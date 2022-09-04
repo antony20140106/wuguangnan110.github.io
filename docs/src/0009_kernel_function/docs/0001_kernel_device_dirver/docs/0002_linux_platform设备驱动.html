@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>wugn</title>
+
+      <link rel="stylesheet" href="../../../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../_static/default.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../../../" id="documentation_options" src="../../../../../_static/documentation_options.js"></script>
+        <script src="../../../../../_static/jquery.js"></script>
+        <script src="../../../../../_static/underscore.js"></script>
+        <script src="../../../../../_static/doctools.js"></script>
+    <script src="../../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../../../index.html" class="icon icon-home"> wugn_note
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">README</a></li>
+<li><a class="reference internal" href="#refers">refers</a></li>
+<li><a class="reference internal" href="#id1">驱动分离简介</a><ul>
+<li><a class="reference internal" href="#id2">一套标准的驱动框架</a></li>
+<li><a class="reference internal" href="#id3">详细匹配框图</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#platform">platform驱动</a></li>
+<li><a class="reference internal" href="#id4">platform设备</a><ul>
+<li><a class="reference internal" href="#id5">实例</a></li>
+<li><a class="reference internal" href="#id6">platform设备结构体</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id7">platform总线</a></li>
+<li><a class="reference internal" href="#id8">设备树下的 platform 驱动</a><ul>
+<li><a class="reference internal" href="#id9">1、在设备树中创建设备节点</a></li>
+<li><a class="reference internal" href="#id10">2、编写 platform 驱动的时候要注意兼容属性</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id11">驱动程序</a></li>
+</ul>
+</div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../../index.html">wugn_note</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs"> 
+<li><a href="../../../../../index.html" class="icon icon-home"></a> &raquo;</li>
+<li>README</li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.forward()">Forward</a></li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.back()">Go Back</a> | </li>
+<li style="float: right;margin-left: 10px;"><a href="/index.html">Home</a> | </li>
+
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="readme">
+<h1>README<a class="headerlink" href="#readme" title="Permalink to this headline"></a></h1>
+<p>linux platform设备驱动介绍。</p>
+</section>
+<section id="refers">
+<h1>refers<a class="headerlink" href="#refers" title="Permalink to this headline"></a></h1>
+<ul class="simple">
+<li><p><a class="reference external" href="https://blog.csdn.net/WANGYONGZIXUE/article/details/116231342">linux platform设备驱动</a></p></li>
+</ul>
+</section>
+<section id="id1">
+<h1>驱动分离简介<a class="headerlink" href="#id1" title="Permalink to this headline"></a></h1>
+<section id="id2">
+<h2>一套标准的驱动框架<a class="headerlink" href="#id2" title="Permalink to this headline"></a></h2>
+<p>Linux 中的总线(bus)、驱动(driver)和设备(device)模型，也就是常说的驱动分离。</p>
+<p>Linux 内核中大量的驱动程序都采用总线、驱动和设备模式。如 I2C、 SPI、 USB 等总线。但是在 SOC 中有些外设是没有总线这个概念的，但是又要使用总线，为了解决此问题， Linux 提出了 platform 这个虚拟总线，相应的就有 platform_driver 和 platform_device。</p>
+<p>驱动设备匹配过程：设备和驱动通过总线双向查找
+<img alt="0002_0000.png" src="../../../../../_images/0002_00002.png" /></p>
+<p>当我们向系统注册一个驱动的时候，总线就会在右侧的设备中查找，看看有没有与之匹配的设备，如果有的话就将两者联系起来。同样的，当向系统中注册一个设备的时候，总线就会在左侧的驱动中查找看有没有与之匹配的设备，有的话也联系起来。</p>
+</section>
+<section id="id3">
+<h2>详细匹配框图<a class="headerlink" href="#id3" title="Permalink to this headline"></a></h2>
+<p>分为两种：1、有设备树情况下，使用compatible属性；2、无设备树情况 使用.name属性
+<img alt="0002_0001.png" src="../../../../../_images/0002_00011.png" /></p>
+</section>
+</section>
+<section id="platform">
+<h1>platform驱动<a class="headerlink" href="#platform" title="Permalink to this headline"></a></h1>
+<p>驱动结构体</p>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="k">struct</span><span class="w"> </span><span class="nc">platform_driver</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="kt">int</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="n">probe</span><span class="p">)(</span><span class="k">struct</span><span class="w"> </span><span class="nc">platform_device</span><span class="w"> </span><span class="o">*</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="kt">int</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="n">remove</span><span class="p">)(</span><span class="k">struct</span><span class="w"> </span><span class="nc">platform_device</span><span class="w"> </span><span class="o">*</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="kt">void</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="n">shutdown</span><span class="p">)(</span><span class="k">struct</span><span class="w"> </span><span class="nc">platform_device</span><span class="w"> </span><span class="o">*</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="kt">int</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="n">suspend</span><span class="p">)(</span><span class="k">struct</span><span class="w"> </span><span class="nc">platform_device</span><span class="w"> </span><span class="o">*</span><span class="p">,</span><span class="w"> </span><span class="n">pm_message_t</span><span class="w"> </span><span class="n">state</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="kt">int</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="n">resume</span><span class="p">)(</span><span class="k">struct</span><span class="w"> </span><span class="nc">platform_device</span><span class="w"> </span><span class="o">*</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="k">struct</span><span class="w"> </span><span class="nc">device_driver</span><span class="w"> </span><span class="n">driver</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="k">const</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">platform_device_id</span><span class="w"> </span><span class="o">*</span><span class="n">id_table</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="kt">bool</span><span class="w"> </span><span class="n">prevent_deferred_probe</span><span class="p">;</span><span class="w"></span>
+<span class="w"> </span><span class="p">};</span><span class="w"></span>
+</pre></div>
+</div>
+<p>解析</p>
+<ul class="simple">
+<li><p>1）包含结构体device_driver，相当于是platform_driver 的基类</p></li>
+<li><p>2）platform_device_id 一种匹配方式</p></li>
+<li><p>3）驱动主要实现probe函数，此函数在匹配后执行，非常重要！！！</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="k">struct</span><span class="w"> </span><span class="nc">device_driver</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="k">const</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">of_device_id</span><span class="w"> </span><span class="o">*</span><span class="n">of_match_table</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="k">struct</span><span class="w"> </span><span class="nc">of_device_id</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="kt">char</span><span class="w"> </span><span class="n">name</span><span class="p">[</span><span class="mi">32</span><span class="p">];</span><span class="w"></span>
+<span class="w">	 </span><span class="kt">char</span><span class="w"> </span><span class="n">type</span><span class="p">[</span><span class="mi">32</span><span class="p">];</span><span class="w"></span>
+<span class="w">	</span><span class="kt">char</span><span class="w"> </span><span class="n">compatible</span><span class="p">[</span><span class="mi">128</span><span class="p">];</span><span class="w"></span>
+<span class="w">	</span><span class="k">const</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="o">*</span><span class="n">data</span><span class="p">;</span><span class="w"></span>
+<span class="p">};</span><span class="w"></span>
+</pre></div>
+</div>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="k">static</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">of_device_id</span><span class="w"> </span><span class="n">xxx_of_match</span><span class="p">[]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	 </span><span class="p">.</span><span class="n">compatible</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;imx6ul-led&quot;</span><span class="w"> </span><span class="p">},</span><span class="w"></span>
+<span class="w">	 </span><span class="p">{</span><span class="w"> </span><span class="cm">/* Sentinel */</span><span class="w"> </span><span class="p">}</span><span class="w"></span>
+<span class="p">};</span><span class="w"></span>
+
+<span class="cm">/* platform驱动结构体 */</span><span class="w"></span>
+<span class="k">static</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">platform_driver</span><span class="w"> </span><span class="n">led_driver</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">driver</span><span class="w">		</span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="p">.</span><span class="n">name</span><span class="w">	</span><span class="o">=</span><span class="w"> </span><span class="s">&quot;imx6ul-led&quot;</span><span class="p">,</span><span class="w">			</span><span class="cm">/* 驱动名字，用于和设备匹配 */</span><span class="w"></span>
+<span class="w">		</span><span class="p">.</span><span class="n">of_match_table</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">xxx_of_match</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="p">},</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">probe</span><span class="w">		</span><span class="o">=</span><span class="w"> </span><span class="n">led_probe</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">remove</span><span class="w">		</span><span class="o">=</span><span class="w"> </span><span class="n">led_remove</span><span class="p">,</span><span class="w"></span>
+<span class="p">};</span><span class="w"></span>
+</pre></div>
+</div>
+</section>
+<section id="id4">
+<h1>platform设备<a class="headerlink" href="#id4" title="Permalink to this headline"></a></h1>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="k">struct</span><span class="w"> </span><span class="nc">platform_device</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">name</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="kt">int</span><span class="w"> </span><span class="n">id</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="kt">bool</span><span class="w"> </span><span class="n">id_auto</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w"> </span><span class="n">dev</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="n">u32</span><span class="w"> </span><span class="n">num_resources</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="k">struct</span><span class="w"> </span><span class="nc">resource</span><span class="w"> </span><span class="o">*</span><span class="n">resource</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="p">...</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<p>解析：</p>
+<ul class="simple">
+<li><p>1）name与驱动的 name 字段相同，才能匹配</p></li>
+<li><p>2）resource 表示资源，也就是设备信息，比如外设寄存器等</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="k">struct</span><span class="w"> </span><span class="nc">resource</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="n">resource_size_t</span><span class="w"> </span><span class="n">start</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="n">resource_size_t</span><span class="w"> </span><span class="n">end</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">name</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">long</span><span class="w"> </span><span class="n">flags</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="k">struct</span><span class="w"> </span><span class="nc">resource</span><span class="w"> </span><span class="o">*</span><span class="n">parent</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="n">sibling</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="n">child</span><span class="p">;</span><span class="w"></span>
+<span class="p">};</span><span class="w"></span>
+</pre></div>
+</div>
+<p>说明：start 和 end 分别表示资源的起始和终止信息，对于内存类的资源，就表示内存起始和终止地址， name 表示资源名字， flags 表示资源类型。</p>
+<section id="id5">
+<h2>实例<a class="headerlink" href="#id5" title="Permalink to this headline"></a></h2>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="cp">#define CCM_CCGR1_BASE				(0X020C406C)	</span>
+<span class="cp">#define REGISTER_LENGTH				4</span>
+
+<span class="k">static</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">resource</span><span class="w"> </span><span class="n">led_resources</span><span class="p">[]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="p">.</span><span class="n">start</span><span class="w"> 	</span><span class="o">=</span><span class="w"> </span><span class="n">CCM_CCGR1_BASE</span><span class="p">,</span><span class="w"></span>
+<span class="w">		</span><span class="p">.</span><span class="n">end</span><span class="w"> 	</span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">CCM_CCGR1_BASE</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">REGISTER_LENGTH</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">),</span><span class="w"></span>
+<span class="w">		</span><span class="p">.</span><span class="n">flags</span><span class="w"> 	</span><span class="o">=</span><span class="w"> </span><span class="n">IORESOURCE_MEM</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="p">},</span><span class="w">	</span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+</section>
+<section id="id6">
+<h2>platform设备结构体<a class="headerlink" href="#id6" title="Permalink to this headline"></a></h2>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="cm">/*platform设备结构体 */</span><span class="w"></span>
+<span class="k">static</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">platform_device</span><span class="w"> </span><span class="n">leddevice</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">   </span><span class="p">.</span><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;imx6ul-led&quot;</span><span class="p">,</span><span class="w"></span>
+<span class="w">   </span><span class="p">.</span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">-1</span><span class="p">,</span><span class="w"></span>
+<span class="w">   </span><span class="p">.</span><span class="n">dev</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">   	</span><span class="p">.</span><span class="n">release</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">&amp;</span><span class="n">led_release</span><span class="p">,</span><span class="w"></span>
+<span class="w">   </span><span class="p">},</span><span class="w"></span>
+<span class="w">   </span><span class="p">.</span><span class="n">num_resources</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ARRAY_SIZE</span><span class="p">(</span><span class="n">led_resources</span><span class="p">),</span><span class="w"></span>
+<span class="w">   </span><span class="p">.</span><span class="n">resource</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">led_resources</span><span class="p">,</span><span class="w"></span>
+<span class="p">};</span><span class="w"></span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="id7">
+<h1>platform总线<a class="headerlink" href="#id7" title="Permalink to this headline"></a></h1>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="cm">/*总线结构体*/</span><span class="w"></span>
+<span class="k">struct</span><span class="w"> </span><span class="nc">bus_type</span><span class="w"> </span><span class="n">platform_bus_type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;platform&quot;</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">dev_groups</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">platform_dev_groups</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">match</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">platform_match</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">uevent</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">platform_uevent</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">pm</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">&amp;</span><span class="n">platform_dev_pm_ops</span><span class="p">,</span><span class="w"></span>
+<span class="p">};</span><span class="w"></span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>platform_match</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">platform_match</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w"> </span><span class="o">*</span><span class="n">dev</span><span class="p">,</span><span class="k">struct</span><span class="w"> </span><span class="nc">device_driver</span><span class="w"> </span><span class="o">*</span><span class="n">drv</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="k">struct</span><span class="w"> </span><span class="nc">platform_device</span><span class="w"> </span><span class="o">*</span><span class="n">pdev</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">to_platform_device</span><span class="p">(</span><span class="n">dev</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="k">struct</span><span class="w"> </span><span class="nc">platform_driver</span><span class="w"> </span><span class="o">*</span><span class="n">pdrv</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">to_platform_driver</span><span class="p">(</span><span class="n">drv</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span>
+<span class="w">	</span><span class="cm">/*When driver_override is set,only bind to the matching driver*/</span><span class="w"></span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">pdev</span><span class="o">-&gt;</span><span class="n">driver_override</span><span class="p">)</span><span class="w"></span>
+<span class="w">		</span><span class="k">return</span><span class="w"> </span><span class="o">!</span><span class="n">strcmp</span><span class="p">(</span><span class="n">pdev</span><span class="o">-&gt;</span><span class="n">driver_override</span><span class="p">,</span><span class="w"> </span><span class="n">drv</span><span class="o">-&gt;</span><span class="n">name</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span>
+<span class="w">	 </span><span class="cm">/* 1、设备树采用的匹配方式，device_driver 结构体中有个名为of_match_table的成员变量，此成员变量保存着驱动的compatible匹配表 与 设备树中的每个设备节点的 compatible 属性匹配*/</span><span class="w"></span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">of_driver_match_device</span><span class="p">(</span><span class="n">dev</span><span class="p">,</span><span class="w"> </span><span class="n">drv</span><span class="p">))</span><span class="w"></span>
+<span class="w">		</span><span class="k">return</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span>
+<span class="w">	 </span><span class="cm">/* 2、ACPI 匹配方式 */</span><span class="w"></span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">acpi_driver_match_device</span><span class="p">(</span><span class="n">dev</span><span class="p">,</span><span class="w"> </span><span class="n">drv</span><span class="p">))</span><span class="w"></span>
+<span class="w">		 </span><span class="k">return</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span><span class="w"></span>
+<span class="w">	 </span><span class="cm">/*3、id_table 匹配 */</span><span class="w"></span>
+<span class="w">	 </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">pdrv</span><span class="o">-&gt;</span><span class="n">id_table</span><span class="p">)</span><span class="w"></span>
+<span class="w">	 	</span><span class="k">return</span><span class="w"> </span><span class="n">platform_match_id</span><span class="p">(</span><span class="n">pdrv</span><span class="o">-&gt;</span><span class="n">id_table</span><span class="p">,</span><span class="w"> </span><span class="n">pdev</span><span class="p">)</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="nb">NULL</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span>
+<span class="w">	</span><span class="cm">/* 4、直接匹配驱动和设备的name */</span><span class="w"></span>
+<span class="w">	</span><span class="k">return</span><span class="w"> </span><span class="p">(</span><span class="n">strcmp</span><span class="p">(</span><span class="n">pdev</span><span class="o">-&gt;</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="n">drv</span><span class="o">-&gt;</span><span class="n">name</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<p>驱动和设备的匹配有四种方法,已经在程序中注释。</p>
+<ul class="simple">
+<li><p>加载platform驱动</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="kt">int</span><span class="w"> </span><span class="n">platform_driver_register</span><span class="w"> </span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">platform_driver</span><span class="w"> </span><span class="o">*</span><span class="n">driver</span><span class="p">)</span><span class="w"></span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>卸载platform驱动</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span><span class="w"> </span><span class="n">platform_driver_unregister</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">platform_driver</span><span class="w"> </span><span class="o">*</span><span class="n">drv</span><span class="p">)</span><span class="w"></span>
+</pre></div>
+</div>
+</section>
+<section id="id8">
+<h1>设备树下的 platform 驱动<a class="headerlink" href="#id8" title="Permalink to this headline"></a></h1>
+<p>platform 驱动框架分为总线、设备和驱动，其中总线不需要我们这些驱动程序员去管理，这个是 Linux 内核提供的，我们在编写驱动的时候只要关注于设备和驱动的具体实现即可。在没有设备树的 Linux 内核下，我们需要分别编写并注册 platform_device 和 platform_driver，分别代表设备和驱动。在使用设备树的时候，设备的描述被放到了设备树中，因此 platform_device 就不需要我们去编写了，我们只需要实现 platform_driver 即可。</p>
+<section id="id9">
+<h2>1、在设备树中创建设备节点<a class="headerlink" href="#id9" title="Permalink to this headline"></a></h2>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="n">gpioled</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="cp">#address-cells = &lt;1&gt;;</span>
+<span class="w">	</span><span class="cp">#size-cells = &lt;1&gt;;</span>
+<span class="w">	</span><span class="n">compatible</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;atkalpha-gpioled&quot;</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="n">pinctrl</span><span class="o">-</span><span class="n">names</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;default&quot;</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="n">pinctrl</span><span class="mi">-0</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">&lt;&amp;</span><span class="n">pinctrl_led</span><span class="o">&gt;</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="n">led</span><span class="o">-</span><span class="n">gpio</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">&lt;&amp;</span><span class="n">gpio1</span><span class="w"> </span><span class="mi">3</span><span class="w"> </span><span class="n">GPIO_ACTIVE_LOW</span><span class="o">&gt;</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;okay&quot;</span><span class="p">;</span><span class="w"></span>
+<span class="p">};</span><span class="w"></span>
+</pre></div>
+</div>
+<p>compatible 属性值为“atkalpha-gpioled”</p>
+</section>
+<section id="id10">
+<h2>2、编写 platform 驱动的时候要注意兼容属性<a class="headerlink" href="#id10" title="Permalink to this headline"></a></h2>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="k">static</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">of_device_id</span><span class="w"> </span><span class="n">leds_of_match</span><span class="p">[]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="p">{</span><span class="w"> </span><span class="p">.</span><span class="n">compatible</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;atkalpha-gpioled&quot;</span><span class="w"> </span><span class="p">},</span><span class="w"> </span><span class="cm">/* 兼容属性 */</span><span class="w"></span>
+<span class="w">	</span><span class="p">{</span><span class="w"> </span><span class="cm">/* Sentinel */</span><span class="w"> </span><span class="p">}</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+<span class="n">MODULE_DEVICE_TABLE</span><span class="p">(</span><span class="n">of</span><span class="p">,</span><span class="w"> </span><span class="n">leds_of_match</span><span class="p">);</span><span class="w"></span>
+
+<span class="cm">/* platform驱动结构体 */</span><span class="w"></span>
+<span class="k">static</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">platform_driver</span><span class="w"> </span><span class="n">led_driver</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">driver</span><span class="w">		</span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="p">.</span><span class="n">name</span><span class="w">	</span><span class="o">=</span><span class="w"> </span><span class="s">&quot;imx6ul-led&quot;</span><span class="p">,</span><span class="w">			</span><span class="cm">/* 驱动名字，用于和设备匹配 */</span><span class="w"></span>
+<span class="w">		</span><span class="p">.</span><span class="n">of_match_table</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">leds_of_match</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="p">},</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">probe</span><span class="w">		</span><span class="o">=</span><span class="w"> </span><span class="n">led_probe</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">remove</span><span class="w">		</span><span class="o">=</span><span class="w"> </span><span class="n">led_remove</span><span class="p">,</span><span class="w"></span>
+<span class="p">};</span><span class="w"></span>
+</pre></div>
+</div>
+<p>.compatible 与设备树中的兼容性一致。</p>
+</section>
+</section>
+<section id="id11">
+<h1>驱动程序<a class="headerlink" href="#id11" title="Permalink to this headline"></a></h1>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;linux/types.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;linux/kernel.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;linux/delay.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;linux/ide.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;linux/init.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;linux/module.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;linux/errno.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;linux/gpio.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;linux/cdev.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;linux/device.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;linux/of_gpio.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;linux/semaphore.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;linux/timer.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;linux/irq.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;linux/wait.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;linux/poll.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;linux/fs.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;linux/fcntl.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;linux/platform_device.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;asm/mach/map.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;asm/uaccess.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;asm/io.h&gt;</span><span class="cp"></span>
+
+<span class="cp">#define LEDDEV_CNT		1				</span><span class="cm">/* 设备号长度 	*/</span><span class="cp"></span>
+<span class="cp">#define LEDDEV_NAME		&quot;dtsplatled&quot;	</span><span class="cm">/* 设备名字 	*/</span><span class="cp"></span>
+<span class="cp">#define LEDOFF 			0</span>
+<span class="cp">#define LEDON 			1</span>
+
+<span class="cm">/* leddev设备结构体 */</span><span class="w"></span>
+<span class="k">struct</span><span class="w"> </span><span class="nc">leddev_dev</span><span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="kt">dev_t</span><span class="w"> </span><span class="n">devid</span><span class="p">;</span><span class="w">				</span><span class="cm">/* 设备号	*/</span><span class="w"></span>
+<span class="w">	</span><span class="k">struct</span><span class="w"> </span><span class="nc">cdev</span><span class="w"> </span><span class="n">cdev</span><span class="p">;</span><span class="w">			</span><span class="cm">/* cdev		*/</span><span class="w"></span>
+<span class="w">	</span><span class="k">struct</span><span class="w"> </span><span class="nc">class</span><span class="w"> </span><span class="o">*</span><span class="k">class</span><span class="p">;</span><span class="w">		</span><span class="cm">/* 类 		*/</span><span class="w"></span>
+<span class="w">	</span><span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w"> </span><span class="o">*</span><span class="n">device</span><span class="p">;</span><span class="w">		</span><span class="cm">/* 设备		*/</span><span class="w"></span>
+<span class="w">	</span><span class="kt">int</span><span class="w"> </span><span class="n">major</span><span class="p">;</span><span class="w">					</span><span class="cm">/* 主设备号	*/</span><span class="w">	</span>
+<span class="w">	</span><span class="k">struct</span><span class="w"> </span><span class="nc">device_node</span><span class="w"> </span><span class="o">*</span><span class="n">node</span><span class="p">;</span><span class="w">	</span><span class="cm">/* LED设备节点 */</span><span class="w"></span>
+<span class="w">	</span><span class="kt">int</span><span class="w"> </span><span class="n">led0</span><span class="p">;</span><span class="w">					</span><span class="cm">/* LED灯GPIO标号 */</span><span class="w"></span>
+<span class="p">};</span><span class="w"></span>
+
+<span class="k">struct</span><span class="w"> </span><span class="nc">leddev_dev</span><span class="w"> </span><span class="n">leddev</span><span class="p">;</span><span class="w"> 		</span><span class="cm">/* led设备 */</span><span class="w"></span>
+
+<span class="kt">void</span><span class="w"> </span><span class="nf">led0_switch</span><span class="p">(</span><span class="n">u8</span><span class="w"> </span><span class="n">sta</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">sta</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">LEDON</span><span class="w"> </span><span class="p">)</span><span class="w"></span>
+<span class="w">		</span><span class="n">gpio_set_value</span><span class="p">(</span><span class="n">leddev</span><span class="p">.</span><span class="n">led0</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">sta</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">LEDOFF</span><span class="p">)</span><span class="w"></span>
+<span class="w">		</span><span class="n">gpio_set_value</span><span class="p">(</span><span class="n">leddev</span><span class="p">.</span><span class="n">led0</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span><span class="w">	</span>
+<span class="p">}</span><span class="w"></span>
+
+
+<span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">led_open</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">inode</span><span class="w"> </span><span class="o">*</span><span class="n">inode</span><span class="p">,</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">file</span><span class="w"> </span><span class="o">*</span><span class="n">filp</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="n">filp</span><span class="o">-&gt;</span><span class="n">private_data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">&amp;</span><span class="n">leddev</span><span class="p">;</span><span class="w"> </span>
+<span class="w">	</span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">ssize_t</span><span class="w"> </span><span class="nf">led_write</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">file</span><span class="w"> </span><span class="o">*</span><span class="n">filp</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="n">__user</span><span class="w"> </span><span class="o">*</span><span class="n">buf</span><span class="p">,</span><span class="w"> </span><span class="kt">size_t</span><span class="w"> </span><span class="n">cnt</span><span class="p">,</span><span class="w"> </span><span class="n">loff_t</span><span class="w"> </span><span class="o">*</span><span class="n">offt</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="kt">int</span><span class="w"> </span><span class="n">retvalue</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="n">databuf</span><span class="p">[</span><span class="mi">2</span><span class="p">];</span><span class="w"></span>
+<span class="w">	</span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="n">ledstat</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">retvalue</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">copy_from_user</span><span class="p">(</span><span class="n">databuf</span><span class="p">,</span><span class="w"> </span><span class="n">buf</span><span class="p">,</span><span class="w"> </span><span class="n">cnt</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="k">if</span><span class="p">(</span><span class="n">retvalue</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+
+<span class="w">		</span><span class="n">printk</span><span class="p">(</span><span class="s">&quot;kernel write failed!</span><span class="se">\r\n</span><span class="s">&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="k">return</span><span class="w"> </span><span class="o">-</span><span class="n">EFAULT</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+<span class="w">	</span>
+<span class="w">	</span><span class="n">ledstat</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">databuf</span><span class="p">[</span><span class="mi">0</span><span class="p">];</span><span class="w"></span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ledstat</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">LEDON</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="n">led0_switch</span><span class="p">(</span><span class="n">LEDON</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ledstat</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">LEDOFF</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="n">led0_switch</span><span class="p">(</span><span class="n">LEDOFF</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+<span class="w">	</span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="cm">/* 设备操作函数 */</span><span class="w"></span>
+<span class="k">static</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">file_operations</span><span class="w"> </span><span class="n">led_fops</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">owner</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">THIS_MODULE</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">open</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">led_open</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">write</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">led_write</span><span class="p">,</span><span class="w"></span>
+<span class="p">};</span><span class="w"></span>
+
+
+<span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">led_probe</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">platform_device</span><span class="w"> </span><span class="o">*</span><span class="n">dev</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w">	</span>
+<span class="w">	</span><span class="n">printk</span><span class="p">(</span><span class="s">&quot;led driver and device was matched!</span><span class="se">\r\n</span><span class="s">&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="cm">/* 1、设置设备号 */</span><span class="w"></span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">leddev</span><span class="p">.</span><span class="n">major</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="n">leddev</span><span class="p">.</span><span class="n">devid</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">MKDEV</span><span class="p">(</span><span class="n">leddev</span><span class="p">.</span><span class="n">major</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="n">register_chrdev_region</span><span class="p">(</span><span class="n">leddev</span><span class="p">.</span><span class="n">devid</span><span class="p">,</span><span class="w"> </span><span class="n">LEDDEV_CNT</span><span class="p">,</span><span class="w"> </span><span class="n">LEDDEV_NAME</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="n">alloc_chrdev_region</span><span class="p">(</span><span class="o">&amp;</span><span class="n">leddev</span><span class="p">.</span><span class="n">devid</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">LEDDEV_CNT</span><span class="p">,</span><span class="w"> </span><span class="n">LEDDEV_NAME</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="n">leddev</span><span class="p">.</span><span class="n">major</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">MAJOR</span><span class="p">(</span><span class="n">leddev</span><span class="p">.</span><span class="n">devid</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+
+<span class="w">	</span><span class="cm">/* 2、注册设备      */</span><span class="w"></span>
+<span class="w">	</span><span class="n">cdev_init</span><span class="p">(</span><span class="o">&amp;</span><span class="n">leddev</span><span class="p">.</span><span class="n">cdev</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">led_fops</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="n">cdev_add</span><span class="p">(</span><span class="o">&amp;</span><span class="n">leddev</span><span class="p">.</span><span class="n">cdev</span><span class="p">,</span><span class="w"> </span><span class="n">leddev</span><span class="p">.</span><span class="n">devid</span><span class="p">,</span><span class="w"> </span><span class="n">LEDDEV_CNT</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">	</span><span class="cm">/* 3、创建类      */</span><span class="w"></span>
+<span class="w">	</span><span class="n">leddev</span><span class="p">.</span><span class="k">class</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">class_create</span><span class="p">(</span><span class="n">THIS_MODULE</span><span class="p">,</span><span class="w"> </span><span class="n">LEDDEV_NAME</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">IS_ERR</span><span class="p">(</span><span class="n">leddev</span><span class="p">.</span><span class="k">class</span><span class="p">))</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="k">return</span><span class="w"> </span><span class="n">PTR_ERR</span><span class="p">(</span><span class="n">leddev</span><span class="p">.</span><span class="k">class</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+
+<span class="w">	</span><span class="cm">/* 4、创建设备 */</span><span class="w"></span>
+<span class="w">	</span><span class="n">leddev</span><span class="p">.</span><span class="n">device</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">device_create</span><span class="p">(</span><span class="n">leddev</span><span class="p">.</span><span class="k">class</span><span class="p">,</span><span class="w"> </span><span class="nb">NULL</span><span class="p">,</span><span class="w"> </span><span class="n">leddev</span><span class="p">.</span><span class="n">devid</span><span class="p">,</span><span class="w"> </span><span class="nb">NULL</span><span class="p">,</span><span class="w"> </span><span class="n">LEDDEV_NAME</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">IS_ERR</span><span class="p">(</span><span class="n">leddev</span><span class="p">.</span><span class="n">device</span><span class="p">))</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="k">return</span><span class="w"> </span><span class="n">PTR_ERR</span><span class="p">(</span><span class="n">leddev</span><span class="p">.</span><span class="n">device</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+
+<span class="w">	</span><span class="cm">/* 5、初始化IO */</span><span class="w">	</span>
+<span class="w">	</span><span class="n">leddev</span><span class="p">.</span><span class="n">node</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">of_find_node_by_path</span><span class="p">(</span><span class="s">&quot;/gpioled&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">leddev</span><span class="p">.</span><span class="n">node</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="nb">NULL</span><span class="p">){</span><span class="w"></span>
+<span class="w">		</span><span class="n">printk</span><span class="p">(</span><span class="s">&quot;gpioled node nost find!</span><span class="se">\r\n</span><span class="s">&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="k">return</span><span class="w"> </span><span class="o">-</span><span class="n">EINVAL</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"> </span>
+<span class="w">	</span>
+<span class="w">	</span><span class="n">leddev</span><span class="p">.</span><span class="n">led0</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">of_get_named_gpio</span><span class="p">(</span><span class="n">leddev</span><span class="p">.</span><span class="n">node</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;led-gpio&quot;</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">leddev</span><span class="p">.</span><span class="n">led0</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="n">printk</span><span class="p">(</span><span class="s">&quot;can&#39;t get led-gpio</span><span class="se">\r\n</span><span class="s">&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="k">return</span><span class="w"> </span><span class="o">-</span><span class="n">EINVAL</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">gpio_request</span><span class="p">(</span><span class="n">leddev</span><span class="p">.</span><span class="n">led0</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;led0&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="n">gpio_direction_output</span><span class="p">(</span><span class="n">leddev</span><span class="p">.</span><span class="n">led0</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span><span class="w"> </span><span class="cm">/* 输出，高电平	*/</span><span class="w"></span>
+<span class="w">	</span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">led_remove</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">platform_device</span><span class="w"> </span><span class="o">*</span><span class="n">dev</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="n">gpio_set_value</span><span class="p">(</span><span class="n">leddev</span><span class="p">.</span><span class="n">led0</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span><span class="w"> 	</span><span class="cm">/* 卸载驱动的时候关闭LED */</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">cdev_del</span><span class="p">(</span><span class="o">&amp;</span><span class="n">leddev</span><span class="p">.</span><span class="n">cdev</span><span class="p">);</span><span class="w">	</span>
+<span class="w">	</span><span class="n">unregister_chrdev_region</span><span class="p">(</span><span class="n">leddev</span><span class="p">.</span><span class="n">devid</span><span class="p">,</span><span class="w"> </span><span class="n">LEDDEV_CNT</span><span class="p">);</span><span class="w"> </span><span class="cm">/* 注销设备号 */</span><span class="w"></span>
+<span class="w">	</span><span class="n">device_destroy</span><span class="p">(</span><span class="n">leddev</span><span class="p">.</span><span class="k">class</span><span class="p">,</span><span class="w"> </span><span class="n">leddev</span><span class="p">.</span><span class="n">devid</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="n">class_destroy</span><span class="p">(</span><span class="n">leddev</span><span class="p">.</span><span class="k">class</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="cm">/* 匹配列表 */</span><span class="w"></span>
+<span class="k">static</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">of_device_id</span><span class="w"> </span><span class="n">led_of_match</span><span class="p">[]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="p">{</span><span class="w"> </span><span class="p">.</span><span class="n">compatible</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;atkalpha-gpioled&quot;</span><span class="w"> </span><span class="p">},</span><span class="w"></span>
+<span class="w">	</span><span class="p">{</span><span class="w"> </span><span class="cm">/* Sentinel */</span><span class="w"> </span><span class="p">}</span><span class="w"></span>
+<span class="p">};</span><span class="w"></span>
+
+<span class="cm">/* platform驱动结构体 */</span><span class="w"></span>
+<span class="k">static</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">platform_driver</span><span class="w"> </span><span class="n">led_driver</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">driver</span><span class="w">		</span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="p">.</span><span class="n">name</span><span class="w">	</span><span class="o">=</span><span class="w"> </span><span class="s">&quot;imx6ul-led&quot;</span><span class="p">,</span><span class="w">			</span><span class="cm">/* 驱动名字，用于和设备匹配 */</span><span class="w"></span>
+<span class="w">		</span><span class="p">.</span><span class="n">of_match_table</span><span class="w">	</span><span class="o">=</span><span class="w"> </span><span class="n">led_of_match</span><span class="p">,</span><span class="w"> </span><span class="cm">/* 设备树匹配表 		 */</span><span class="w"></span>
+<span class="w">	</span><span class="p">},</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">probe</span><span class="w">		</span><span class="o">=</span><span class="w"> </span><span class="n">led_probe</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">remove</span><span class="w">		</span><span class="o">=</span><span class="w"> </span><span class="n">led_remove</span><span class="p">,</span><span class="w"></span>
+<span class="p">};</span><span class="w"></span>
+<span class="w">		</span>
+<span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">__init</span><span class="w"> </span><span class="nf">leddriver_init</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="k">return</span><span class="w"> </span><span class="n">platform_driver_register</span><span class="p">(</span><span class="o">&amp;</span><span class="n">led_driver</span><span class="p">);</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+
+<span class="k">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">__exit</span><span class="w"> </span><span class="nf">leddriver_exit</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="n">platform_driver_unregister</span><span class="p">(</span><span class="o">&amp;</span><span class="n">led_driver</span><span class="p">);</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="n">module_init</span><span class="p">(</span><span class="n">leddriver_init</span><span class="p">);</span><span class="w"></span>
+<span class="n">module_exit</span><span class="p">(</span><span class="n">leddriver_exit</span><span class="p">);</span><span class="w"></span>
+<span class="n">MODULE_LICENSE</span><span class="p">(</span><span class="s">&quot;GPL&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="n">MODULE_AUTHOR</span><span class="p">(</span><span class="s">&quot;wyong&quot;</span><span class="p">);</span><span class="w"></span>
+</pre></div>
+</div>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, wugn.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+  
+
+<script charset="UTF-8" id="LA_COLLECT" src="//sdk.51.la/js-sdk-pro.min.js"></script>
+<script>LA.init({id: "JjOE14XScyd75b2C",ck: "JjOE14XScyd75b2C"})</script>
+
+<br/>
+<script id="LA-DATA-WIDGET" crossorigin="anonymous" charset="UTF-8" src="https://v6-widget.51.la/v6/JjOE14XScyd75b2C/quote.js?theme=0&f=12&display=1,0,0,0,0,0,1,1"></script>
+
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

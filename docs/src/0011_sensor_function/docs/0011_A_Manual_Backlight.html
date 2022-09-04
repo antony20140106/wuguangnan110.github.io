@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>wugn</title>
+
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../index.html" class="icon icon-home"> wugn_note
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">Android Manual Backlight</a><ul>
+<li><a class="reference internal" href="#id1">参考文档</a></li>
+<li><a class="reference internal" href="#shell">shell</a></li>
+<li><a class="reference internal" href="#dts">dts</a></li>
+<li><a class="reference internal" href="#driver">driver</a></li>
+<li><a class="reference internal" href="#hidl">HIDL</a></li>
+<li><a class="reference internal" href="#lightsmanager">LightsManager</a></li>
+<li><a class="reference internal" href="#lightsservice">LightsService</a></li>
+<li><a class="reference internal" href="#display-updatepowerstate">display updatePowerState</a></li>
+</ul>
+</li>
+</ul>
+</div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">wugn_note</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs"> 
+<li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+<li>Android Manual Backlight</li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.forward()">Forward</a></li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.back()">Go Back</a> | </li>
+<li style="float: right;margin-left: 10px;"><a href="/index.html">Home</a> | </li>
+
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="android-manual-backlight">
+<h1>Android Manual Backlight<a class="headerlink" href="#android-manual-backlight" title="Permalink to this headline"></a></h1>
+<p>手动背光控制APP、Service、HIDL、Driver工作流程</p>
+<section id="id1">
+<h2>参考文档<a class="headerlink" href="#id1" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p><span class="xref myst">0184_Kernel_dump_stack.md</span></p></li>
+<li><p><span class="xref myst">0278_Android_Java_CallStack.md</span></p></li>
+<li><p><span class="xref myst">0368_Android_Auto_Brightness.md</span></p></li>
+</ul>
+</section>
+<section id="shell">
+<h2>shell<a class="headerlink" href="#shell" title="Permalink to this headline"></a></h2>
+<ul>
+<li><p>/sys/class/leds/lcd-backlight/</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">brightness</span>  <span class="n">device</span>  <span class="n">max_brightness</span>  <span class="n">power</span>  <span class="n">subsystem</span>  <span class="n">trigger</span>  <span class="n">uevent</span>
+</pre></div>
+</div>
+</li>
+<li><p>cat brightness</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="mi">36</span>
+</pre></div>
+</div>
+</li>
+<li><p>echo 50 &gt; brightness</p>
+<ul>
+<li><p>kernel log</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span>  <span class="mf">217.021963</span><span class="p">]</span> <span class="p">(</span><span class="mi">5</span><span class="p">)[</span><span class="mi">5713</span><span class="p">:</span><span class="n">sh</span><span class="p">]</span><span class="n">mt_mt65xx_led_set</span>
+<span class="p">[</span>  <span class="mf">217.022041</span><span class="p">]</span> <span class="o">-</span><span class="p">(</span><span class="mi">5</span><span class="p">)[</span><span class="mi">5713</span><span class="p">:</span><span class="n">sh</span><span class="p">]</span><span class="n">CPU</span><span class="p">:</span> <span class="mi">5</span> <span class="n">PID</span><span class="p">:</span> <span class="mi">5713</span> <span class="n">Comm</span><span class="p">:</span> <span class="n">sh</span> <span class="n">Tainted</span><span class="p">:</span> <span class="n">P</span>        <span class="n">W</span>  <span class="n">O</span>      <span class="mf">4.19.127</span> <span class="c1">#3</span>
+<span class="p">[</span>  <span class="mf">217.022077</span><span class="p">]</span> <span class="o">-</span><span class="p">(</span><span class="mi">5</span><span class="p">)[</span><span class="mi">5713</span><span class="p">:</span><span class="n">sh</span><span class="p">]</span><span class="n">Hardware</span> <span class="n">name</span><span class="p">:</span> <span class="n">MT6762V</span><span class="o">/</span><span class="n">WD</span> <span class="p">(</span><span class="n">DT</span><span class="p">)</span>
+<span class="p">[</span>  <span class="mf">217.022109</span><span class="p">]</span> <span class="o">-</span><span class="p">(</span><span class="mi">5</span><span class="p">)[</span><span class="mi">5713</span><span class="p">:</span><span class="n">sh</span><span class="p">]</span><span class="n">Call</span> <span class="n">trace</span><span class="p">:</span>
+<span class="p">[</span>  <span class="mf">217.022171</span><span class="p">]</span> <span class="o">-</span><span class="p">(</span><span class="mi">5</span><span class="p">)[</span><span class="mi">5713</span><span class="p">:</span><span class="n">sh</span><span class="p">]</span> <span class="n">dump_backtrace</span><span class="o">+</span><span class="mh">0x0</span><span class="o">/</span><span class="mh">0x164</span>
+<span class="p">[</span>  <span class="mf">217.022217</span><span class="p">]</span> <span class="o">-</span><span class="p">(</span><span class="mi">5</span><span class="p">)[</span><span class="mi">5713</span><span class="p">:</span><span class="n">sh</span><span class="p">]</span> <span class="n">show_stack</span><span class="o">+</span><span class="mh">0x20</span><span class="o">/</span><span class="mh">0x2c</span>
+<span class="p">[</span>  <span class="mf">217.022264</span><span class="p">]</span> <span class="o">-</span><span class="p">(</span><span class="mi">5</span><span class="p">)[</span><span class="mi">5713</span><span class="p">:</span><span class="n">sh</span><span class="p">]</span> <span class="n">dump_stack</span><span class="o">+</span><span class="mh">0xb8</span><span class="o">/</span><span class="mh">0xf0</span>
+<span class="p">[</span>  <span class="mf">217.022312</span><span class="p">]</span> <span class="o">-</span><span class="p">(</span><span class="mi">5</span><span class="p">)[</span><span class="mi">5713</span><span class="p">:</span><span class="n">sh</span><span class="p">]</span> <span class="n">mt_mt65xx_led_set</span><span class="o">+</span><span class="mh">0x38</span><span class="o">/</span><span class="mh">0x24c</span>
+<span class="p">[</span>  <span class="mf">217.022352</span><span class="p">]</span> <span class="o">-</span><span class="p">(</span><span class="mi">5</span><span class="p">)[</span><span class="mi">5713</span><span class="p">:</span><span class="n">sh</span><span class="p">]</span> <span class="n">mt65xx_led_set</span><span class="o">+</span><span class="mh">0x54</span><span class="o">/</span><span class="mh">0x64</span>
+<span class="p">[</span>  <span class="mf">217.022396</span><span class="p">]</span> <span class="o">-</span><span class="p">(</span><span class="mi">5</span><span class="p">)[</span><span class="mi">5713</span><span class="p">:</span><span class="n">sh</span><span class="p">]</span> <span class="n">led_set_brightness_nosleep</span><span class="o">+</span><span class="mh">0x40</span><span class="o">/</span><span class="mh">0x68</span>
+<span class="p">[</span>  <span class="mf">217.022434</span><span class="p">]</span> <span class="o">-</span><span class="p">(</span><span class="mi">5</span><span class="p">)[</span><span class="mi">5713</span><span class="p">:</span><span class="n">sh</span><span class="p">]</span> <span class="n">led_set_brightness</span><span class="o">+</span><span class="mh">0x30</span><span class="o">/</span><span class="mh">0x74</span>
+<span class="p">[</span>  <span class="mf">217.022472</span><span class="p">]</span> <span class="o">-</span><span class="p">(</span><span class="mi">5</span><span class="p">)[</span><span class="mi">5713</span><span class="p">:</span><span class="n">sh</span><span class="p">]</span> <span class="n">brightness_store</span><span class="o">+</span><span class="mh">0x88</span><span class="o">/</span><span class="mh">0xc0</span>
+<span class="p">[</span>  <span class="mf">217.022516</span><span class="p">]</span> <span class="o">-</span><span class="p">(</span><span class="mi">5</span><span class="p">)[</span><span class="mi">5713</span><span class="p">:</span><span class="n">sh</span><span class="p">]</span> <span class="n">dev_attr_store</span><span class="o">+</span><span class="mh">0x40</span><span class="o">/</span><span class="mh">0x58</span>
+<span class="p">[</span>  <span class="mf">217.022563</span><span class="p">]</span> <span class="o">-</span><span class="p">(</span><span class="mi">5</span><span class="p">)[</span><span class="mi">5713</span><span class="p">:</span><span class="n">sh</span><span class="p">]</span> <span class="n">sysfs_kf_write</span><span class="o">+</span><span class="mh">0x50</span><span class="o">/</span><span class="mh">0x68</span>
+<span class="p">[</span>  <span class="mf">217.022606</span><span class="p">]</span> <span class="o">-</span><span class="p">(</span><span class="mi">5</span><span class="p">)[</span><span class="mi">5713</span><span class="p">:</span><span class="n">sh</span><span class="p">]</span> <span class="n">kernfs_fop_write</span><span class="o">+</span><span class="mh">0x138</span><span class="o">/</span><span class="mh">0x1d4</span>
+<span class="p">[</span>  <span class="mf">217.022650</span><span class="p">]</span> <span class="o">-</span><span class="p">(</span><span class="mi">5</span><span class="p">)[</span><span class="mi">5713</span><span class="p">:</span><span class="n">sh</span><span class="p">]</span> <span class="n">__vfs_write</span><span class="o">+</span><span class="mh">0x54</span><span class="o">/</span><span class="mh">0x15c</span>
+<span class="p">[</span>  <span class="mf">217.022692</span><span class="p">]</span> <span class="o">-</span><span class="p">(</span><span class="mi">5</span><span class="p">)[</span><span class="mi">5713</span><span class="p">:</span><span class="n">sh</span><span class="p">]</span> <span class="n">vfs_write</span><span class="o">+</span><span class="mh">0xe4</span><span class="o">/</span><span class="mh">0x1a0</span>
+<span class="p">[</span>  <span class="mf">217.022732</span><span class="p">]</span> <span class="o">-</span><span class="p">(</span><span class="mi">5</span><span class="p">)[</span><span class="mi">5713</span><span class="p">:</span><span class="n">sh</span><span class="p">]</span> <span class="n">ksys_write</span><span class="o">+</span><span class="mh">0x78</span><span class="o">/</span><span class="mh">0xd8</span>
+<span class="p">[</span>  <span class="mf">217.022772</span><span class="p">]</span> <span class="o">-</span><span class="p">(</span><span class="mi">5</span><span class="p">)[</span><span class="mi">5713</span><span class="p">:</span><span class="n">sh</span><span class="p">]</span> <span class="n">__arm64_sys_write</span><span class="o">+</span><span class="mh">0x20</span><span class="o">/</span><span class="mh">0x2c</span>
+<span class="p">[</span>  <span class="mf">217.022816</span><span class="p">]</span> <span class="o">-</span><span class="p">(</span><span class="mi">5</span><span class="p">)[</span><span class="mi">5713</span><span class="p">:</span><span class="n">sh</span><span class="p">]</span> <span class="n">el0_svc_common</span><span class="o">+</span><span class="mh">0x9c</span><span class="o">/</span><span class="mh">0x14c</span>
+<span class="p">[</span>  <span class="mf">217.022856</span><span class="p">]</span> <span class="o">-</span><span class="p">(</span><span class="mi">5</span><span class="p">)[</span><span class="mi">5713</span><span class="p">:</span><span class="n">sh</span><span class="p">]</span> <span class="n">el0_svc_handler</span><span class="o">+</span><span class="mh">0x68</span><span class="o">/</span><span class="mh">0x84</span>
+<span class="p">[</span>  <span class="mf">217.022895</span><span class="p">]</span> <span class="o">-</span><span class="p">(</span><span class="mi">5</span><span class="p">)[</span><span class="mi">5713</span><span class="p">:</span><span class="n">sh</span><span class="p">]</span> <span class="n">el0_svc</span><span class="o">+</span><span class="mh">0x8</span><span class="o">/</span><span class="mh">0xc</span>
+<span class="p">[</span>  <span class="mf">217.025055</span><span class="p">]</span> <span class="p">(</span><span class="mi">6</span><span class="p">)[</span><span class="mi">5713</span><span class="p">:</span><span class="n">sh</span><span class="p">]</span><span class="n">mt_mt65xx_led_set</span> <span class="n">before</span> <span class="n">backlight_debug_log</span>
+<span class="p">[</span>  <span class="mf">217.025118</span><span class="p">]</span> <span class="p">(</span><span class="mi">3</span><span class="p">)[</span><span class="mi">54</span><span class="p">:</span><span class="n">kworker</span><span class="o">/</span><span class="mi">3</span><span class="p">:</span><span class="mi">1</span><span class="p">]</span><span class="n">mtk_leds</span> <span class="n">backlight_debug_log</span><span class="p">(</span><span class="mi">120</span><span class="p">)</span> <span class="p">:[</span><span class="n">BL</span><span class="p">]</span> <span class="n">Set</span> <span class="n">Backlight</span> <span class="n">directly</span> <span class="n">T</span><span class="p">:</span><span class="mf">217.25</span><span class="p">,</span><span class="n">L</span><span class="p">:</span><span class="mi">50</span> <span class="nb">map</span><span class="p">:</span><span class="mi">50</span>
+</pre></div>
+</div>
+</li>
+<li><p>logcat log</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="mi">10</span><span class="o">-</span><span class="mi">25</span> <span class="mi">17</span><span class="p">:</span><span class="mi">08</span><span class="p">:</span><span class="mf">20.183</span>  <span class="mi">1173</span>  <span class="mi">1253</span> <span class="n">V</span> <span class="n">DisplayPowerController</span><span class="p">:</span> <span class="n">Brightness</span> <span class="p">[</span><span class="mf">0.39998955</span><span class="p">]</span> <span class="n">reason</span> <span class="n">changing</span> <span class="n">to</span><span class="p">:</span> <span class="s1">&#39;temporary&#39;</span><span class="p">,</span> <span class="n">previous</span> <span class="n">reason</span><span class="p">:</span> <span class="s1">&#39;manual&#39;</span><span class="o">.</span>
+<span class="mi">10</span><span class="o">-</span><span class="mi">25</span> <span class="mi">17</span><span class="p">:</span><span class="mi">08</span><span class="p">:</span><span class="mf">20.190</span>   <span class="mi">548</span>   <span class="mi">548</span> <span class="n">D</span> <span class="n">android</span><span class="o">.</span><span class="n">hardware</span><span class="o">.</span><span class="n">lights</span><span class="o">-</span><span class="n">service</span><span class="o">.</span><span class="n">mediatek</span><span class="p">:</span> <span class="n">write</span> <span class="mi">84</span> <span class="n">to</span> <span class="o">/</span><span class="n">sys</span><span class="o">/</span><span class="n">class</span><span class="o">/</span><span class="n">leds</span><span class="o">/</span><span class="n">lcd</span><span class="o">-</span><span class="n">backlight</span><span class="o">/</span><span class="n">brightness</span><span class="p">,</span> <span class="n">result</span><span class="p">:</span> <span class="mi">0</span>
+<span class="mi">10</span><span class="o">-</span><span class="mi">25</span> <span class="mi">17</span><span class="p">:</span><span class="mi">08</span><span class="p">:</span><span class="mf">20.190</span>   <span class="mi">790</span>   <span class="mi">877</span> <span class="n">D</span> <span class="n">AAL</span>     <span class="p">:</span> <span class="n">onBacklightChanged</span><span class="p">:</span> <span class="mi">413</span><span class="o">/</span><span class="mi">1023</span> <span class="o">-&gt;</span> <span class="mi">337</span><span class="o">/</span><span class="mi">1023</span><span class="p">(</span><span class="n">phy</span><span class="p">:</span><span class="mi">1349</span><span class="o">/</span><span class="mi">4095</span><span class="p">)</span>
+<span class="mi">10</span><span class="o">-</span><span class="mi">25</span> <span class="mi">17</span><span class="p">:</span><span class="mi">08</span><span class="p">:</span><span class="mf">20.190</span>   <span class="mi">790</span>   <span class="mi">877</span> <span class="n">D</span> <span class="n">AAL</span>     <span class="p">:</span> <span class="n">LABC</span><span class="p">:</span> <span class="n">LABC</span> <span class="n">after</span> <span class="n">setTarget</span> <span class="n">isSmoothBacklight</span><span class="o">=</span><span class="mi">1</span>
+<span class="mi">10</span><span class="o">-</span><span class="mi">25</span> <span class="mi">17</span><span class="p">:</span><span class="mi">08</span><span class="p">:</span><span class="mf">20.205</span>   <span class="mi">548</span>   <span class="mi">548</span> <span class="n">D</span> <span class="n">android</span><span class="o">.</span><span class="n">hardware</span><span class="o">.</span><span class="n">lights</span><span class="o">-</span><span class="n">service</span><span class="o">.</span><span class="n">mediatek</span><span class="p">:</span> <span class="n">write</span> <span class="mi">67</span> <span class="n">to</span> <span class="o">/</span><span class="n">sys</span><span class="o">/</span><span class="n">class</span><span class="o">/</span><span class="n">leds</span><span class="o">/</span><span class="n">lcd</span><span class="o">-</span><span class="n">backlight</span><span class="o">/</span><span class="n">brightness</span><span class="p">,</span> <span class="n">result</span><span class="p">:</span> <span class="mi">0</span>
+<span class="mi">10</span><span class="o">-</span><span class="mi">25</span> <span class="mi">17</span><span class="p">:</span><span class="mi">08</span><span class="p">:</span><span class="mf">20.207</span>   <span class="mi">790</span>   <span class="mi">877</span> <span class="n">D</span> <span class="n">AAL</span>     <span class="p">:</span> <span class="n">onBacklightChanged</span><span class="p">:</span> <span class="mi">337</span><span class="o">/</span><span class="mi">1023</span> <span class="o">-&gt;</span> <span class="mi">269</span><span class="o">/</span><span class="mi">1023</span><span class="p">(</span><span class="n">phy</span><span class="p">:</span><span class="mi">1077</span><span class="o">/</span><span class="mi">4095</span><span class="p">)</span>
+<span class="mi">10</span><span class="o">-</span><span class="mi">25</span> <span class="mi">17</span><span class="p">:</span><span class="mi">08</span><span class="p">:</span><span class="mf">20.208</span>   <span class="mi">790</span>   <span class="mi">877</span> <span class="n">D</span> <span class="n">AAL</span>     <span class="p">:</span> <span class="n">LABC</span><span class="p">:</span> <span class="n">LABC</span> <span class="n">after</span> <span class="n">setTarget</span> <span class="n">isSmoothBacklight</span><span class="o">=</span><span class="mi">1</span>
+</pre></div>
+</div>
+</li>
+</ul>
+</li>
+</ul>
+</section>
+<section id="dts">
+<h2>dts<a class="headerlink" href="#dts" title="Permalink to this headline"></a></h2>
+<ul>
+<li><p>kernel-4.19/arch/arm64/boot/dts/mediatek/M8.dts</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">&amp;</span><span class="n">odm</span> <span class="p">{</span>
+     <span class="o">//</span> <span class="o">...</span><span class="n">省略</span>
+     <span class="n">led6</span><span class="p">:</span><span class="n">led</span><span class="o">@</span><span class="mi">6</span> <span class="p">{</span>
+          <span class="n">compatible</span> <span class="o">=</span> <span class="s2">&quot;mediatek,lcd-backlight&quot;</span><span class="p">;</span>
+          <span class="n">led_mode</span> <span class="o">=</span> <span class="o">&lt;</span><span class="mi">5</span><span class="o">&gt;</span><span class="p">;</span>
+          <span class="n">data</span> <span class="o">=</span> <span class="o">&lt;</span><span class="mi">1</span><span class="o">&gt;</span><span class="p">;</span>
+          <span class="n">pwm_config</span> <span class="o">=</span> <span class="o">&lt;</span><span class="mi">0</span> <span class="mi">3</span> <span class="mi">0</span> <span class="mi">0</span> <span class="mi">0</span><span class="o">&gt;</span><span class="p">;</span>
+     <span class="p">};</span>
+     <span class="o">//</span> <span class="o">...</span><span class="n">省略</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>led_mode: 5</p>
+<ul>
+<li><p>MT65XX_LED_MODE_CUST_BLS_PWM</p></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</section>
+<section id="driver">
+<h2>driver<a class="headerlink" href="#driver" title="Permalink to this headline"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">echo</span> <span class="pre">50</span> <span class="pre">&gt;</span> <span class="pre">brightness</span></code>由mt65xx_led_set()进行处理，驱动注册及处理流程如下</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>* kernel-4.19/drivers/misc/mediatek/leds/mtk_leds_drv.c
+  * static int __init mt65xx_leds_init(void)
+    * ret = platform_device_register(&amp;mt65xx_leds_device);
+      * static struct platform_device mt65xx_leds_device
+      * .name = &quot;leds-mt65xx&quot;,
+    * ret = platform_driver_register(&amp;mt65xx_leds_driver);
+      * static struct platform_driver mt65xx_leds_driver
+        * .driver
+          * .name = &quot;leds-mt65xx&quot;,
+        * .probe = mt65xx_leds_probe,
+          * static int mt65xx_leds_probe(struct platform_device *pdev)
+            * for (i = 0; i &lt; MT65XX_LED_TYPE_TOTAL; i++)
+              * g_leds_data[i]-&gt;cdev.brightness_set = mt65xx_led_set;
+                * static void mt65xx_led_set(struct led_classdev *led_cdev, enum led_brightness level)
+                  * mt_mt65xx_led_set(led_cdev, level);
+                    * kernel-4.19/drivers/misc/mediatek/leds/mt6765/mtk_leds.c
+                      * void mt_mt65xx_led_set(struct led_classdev *led_cdev, enum led_brightness level)
+                        * #ifdef CONFIG_MTK_AAL_SUPPORT
+                          * if (led_data-&gt;level != level)
+                            * led_data-&gt;level = level;
+                            * backlight_debug_log(led_data-&gt;level, level);
+                              * ret = snprintf(buffer + strlen(buffer), 4095 - strlen(buffer), &quot;T:%lld.%ld,L:%d map:%d &quot;, cur_time_display, cur_time_mod, level, mappingLevel);
+                              * pr_info(&quot;%s&quot;, buffer);
+                            * disp_aal_notify_backlight_changed((((1 &lt;&lt; MT_LED_INTERNAL_LEVEL_BIT_CNT) - 1) * level + 127) / 255);
+                              * kernel-4.19/drivers/misc/mediatek/video/common/aal30/ddp_aal.c
+                                * void disp_aal_notify_backlight_changed(int bl_1024)
+                                  * backlight_brightness_set(bl_1024);
+                                    * kernel-4.19/drivers/misc/mediatek/leds/mtk_leds_drv.c
+                                      * int backlight_brightness_set(int level)
+                                        * struct cust_mt65xx_led *cust_led_list = mt_get_cust_led_list();
+                                          * struct cust_mt65xx_led *cust_led_list = get_cust_led_dtsi();
+                                            * for (i = 0; i &lt; MT65XX_LED_TYPE_TOTAL; i++)
+                                              * switch (pled_dtsi[i].mode)
+                                                * case MT65XX_LED_MODE_CUST_BLS_PWM:
+                                                  * pled_dtsi[i].data = (long)disp_bls_set_backlight;
+                                                    * kernel-4.19/drivers/misc/mediatek/video/common/pwm10/ddp_pwm.c
+                                                      * int disp_bls_set_backlight(int level_1024)
+                                                        * return disp_pwm_set_backlight(disp_pwm_get_main(), level_1024);
+                                                          * ret = disp_pwm_set_backlight_cmdq(id, level_1024, NULL);
+                                                            * index = index_of_pwm(id);
+                                                            * level_1024 = disp_pwm_level_remap(id, level_1024);
+                                                            * DISP_REG_MASK(cmdq, reg_base + DISP_PWM_CON_1_OFF, 1 &lt;&lt; 16, 0x1fff &lt;&lt; 16);
+                                                            * disp_pwm_set_enabled(cmdq, id, 0);
+                                                            * 到这里差不多了，不继续跟了
+                                        * mt_mt65xx_led_set_cust(&amp;cust_led_list[MT65XX_LED_TYPE_LCD], level);
+                                          * int mt_mt65xx_led_set_cust(struct cust_mt65xx_led *cust, int level)
+                                            * case MT65XX_LED_MODE_CUST_BLS_PWM:
+                                              * case MT65XX_LED_MODE_CUST_BLS_PWM:
+                                                * return ((cust_set_brightness) (cust-&gt;data)) (level);
+                                                  * kernel-4.19/drivers/misc/mediatek/video/common/pwm10/ddp_pwm.c
+                                                    * int disp_bls_set_backlight(int level_1024)
+                                                      * 调用这个函数，上面mt_get_cust_led_list()中初始化的，这里不重复分析
+              * ret = led_classdev_register(&amp;pdev-&gt;dev, &amp;g_leds_data[i]-&gt;cdev);
+</pre></div>
+</div>
+<p>驱动调试diff</p>
+<div class="highlight-diff notranslate"><div class="highlight"><pre><span></span><span class="gh">diff --git a/kernel-4.19/drivers/misc/mediatek/leds/mt6765/mtk_leds.c b/kernel-4.19/drivers/misc/mediatek/leds/mt6765/mtk_leds.c</span><span class="w"></span>
+<span class="gh">index 01a701fab72..d778b1d0729 100644</span><span class="w"></span>
+<span class="gd">--- a/kernel-4.19/drivers/misc/mediatek/leds/mt6765/mtk_leds.c</span><span class="w"></span>
+<span class="gi">+++ b/kernel-4.19/drivers/misc/mediatek/leds/mt6765/mtk_leds.c</span><span class="w"></span>
+<span class="gu">@@ -1,3 +1,4 @@</span><span class="w"></span>
+<span class="gi">+#define DEBUG</span><span class="w"></span>
+<span class="w"> </span>// SPDX-License-Identifier: GPL-2.0<span class="w"></span>
+<span class="w"> </span>/*<span class="w"></span>
+<span class="w"> </span> * Copyright (C) 2018 MediaTek Inc.<span class="w"></span>
+<span class="gu">@@ -654,6 +655,7 @@ int mt_mt65xx_led_set_cust(struct cust_mt65xx_led *cust, int level)</span><span class="w"></span>
+<span class="w"> </span>               if (enable_met_backlight_tag())<span class="w"></span>
+<span class="w"> </span>                       output_met_backlight_tag(level);<span class="w"></span>
+<span class="w"> </span>#endif<span class="w"></span>
+<span class="gi">+               printk(&quot;MT65XX_LED_MODE_CUST_BLS_PWM\n&quot;);</span><span class="w"></span>
+<span class="w"> </span>               return ((cust_set_brightness) (cust-&gt;data)) (level);<span class="w"></span>
+
+<span class="w"> </span>       case MT65XX_LED_MODE_NONE:<span class="w"></span>
+<span class="gu">@@ -668,6 +670,7 @@ void mt_mt65xx_led_work(struct work_struct *work)</span><span class="w"></span>
+<span class="w"> </span>       struct mt65xx_led_data *led_data =<span class="w"></span>
+<span class="w"> </span>           container_of(work, struct mt65xx_led_data, work);<span class="w"></span>
+
+<span class="gi">+       printk(&quot;%s\n&quot;, __func__);</span><span class="w"></span>
+<span class="w"> </span>       pr_debug(&quot;%s:%d\n&quot;, led_data-&gt;cust.name, led_data-&gt;level);<span class="w"></span>
+<span class="w"> </span>       mutex_lock(&amp;leds_mutex);<span class="w"></span>
+<span class="w"> </span>       mt_mt65xx_led_set_cust(&amp;led_data-&gt;cust, led_data-&gt;level);<span class="w"></span>
+<span class="gu">@@ -681,6 +684,8 @@ void mt_mt65xx_led_set(struct led_classdev *led_cdev, enum led_brightness level)</span><span class="w"></span>
+<span class="w"> </span>       /* unsigned long flags; */<span class="w"></span>
+<span class="w"> </span>       /* spin_lock_irqsave(&amp;leds_lock, flags); */<span class="w"></span>
+
+<span class="gi">+       printk(&quot;%s\n&quot;, __func__);</span><span class="w"></span>
+<span class="gi">+       dump_stack();</span><span class="w"></span>
+<span class="w"> </span>#ifdef CONFIG_MTK_AAL_SUPPORT<span class="w"></span>
+<span class="w"> </span>       if (led_data-&gt;level != level) {<span class="w"></span>
+<span class="w"> </span>               led_data-&gt;level = level;<span class="w"></span>
+<span class="gu">@@ -697,6 +702,7 @@ void mt_mt65xx_led_set(struct led_classdev *led_cdev, enum led_brightness level)</span><span class="w"></span>
+<span class="w"> </span>                                   (level * CONFIG_LIGHTNESS_MAPPING_VALUE) /<span class="w"></span>
+<span class="w"> </span>                                   255;<span class="w"></span>
+<span class="w"> </span>                       }<span class="w"></span>
+<span class="gi">+                       printk(&quot;%s before backlight_debug_log\n&quot;, __func__);</span><span class="w"></span>
+<span class="w"> </span>                       backlight_debug_log(led_data-&gt;level, level);<span class="w"></span>
+<span class="w"> </span>                       disp_pq_notify_backlight_changed((((1 &lt;&lt;<span class="w"></span>
+<span class="w"> </span>                                       MT_LED_INTERNAL_LEVEL_BIT_CNT)<span class="w"></span>
+</pre></div>
+</div>
+<p>kernel log</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span>  <span class="mf">217.021963</span><span class="p">]</span> <span class="p">(</span><span class="mi">5</span><span class="p">)[</span><span class="mi">5713</span><span class="p">:</span><span class="n">sh</span><span class="p">]</span><span class="n">mt_mt65xx_led_set</span>
+<span class="p">[</span>  <span class="mf">217.022041</span><span class="p">]</span> <span class="o">-</span><span class="p">(</span><span class="mi">5</span><span class="p">)[</span><span class="mi">5713</span><span class="p">:</span><span class="n">sh</span><span class="p">]</span><span class="n">CPU</span><span class="p">:</span> <span class="mi">5</span> <span class="n">PID</span><span class="p">:</span> <span class="mi">5713</span> <span class="n">Comm</span><span class="p">:</span> <span class="n">sh</span> <span class="n">Tainted</span><span class="p">:</span> <span class="n">P</span>        <span class="n">W</span>  <span class="n">O</span>      <span class="mf">4.19.127</span> <span class="c1">#3</span>
+<span class="p">[</span>  <span class="mf">217.022077</span><span class="p">]</span> <span class="o">-</span><span class="p">(</span><span class="mi">5</span><span class="p">)[</span><span class="mi">5713</span><span class="p">:</span><span class="n">sh</span><span class="p">]</span><span class="n">Hardware</span> <span class="n">name</span><span class="p">:</span> <span class="n">MT6762V</span><span class="o">/</span><span class="n">WD</span> <span class="p">(</span><span class="n">DT</span><span class="p">)</span>
+<span class="p">[</span>  <span class="mf">217.022109</span><span class="p">]</span> <span class="o">-</span><span class="p">(</span><span class="mi">5</span><span class="p">)[</span><span class="mi">5713</span><span class="p">:</span><span class="n">sh</span><span class="p">]</span><span class="n">Call</span> <span class="n">trace</span><span class="p">:</span>
+<span class="p">[</span>  <span class="mf">217.022171</span><span class="p">]</span> <span class="o">-</span><span class="p">(</span><span class="mi">5</span><span class="p">)[</span><span class="mi">5713</span><span class="p">:</span><span class="n">sh</span><span class="p">]</span> <span class="n">dump_backtrace</span><span class="o">+</span><span class="mh">0x0</span><span class="o">/</span><span class="mh">0x164</span>
+<span class="p">[</span>  <span class="mf">217.022217</span><span class="p">]</span> <span class="o">-</span><span class="p">(</span><span class="mi">5</span><span class="p">)[</span><span class="mi">5713</span><span class="p">:</span><span class="n">sh</span><span class="p">]</span> <span class="n">show_stack</span><span class="o">+</span><span class="mh">0x20</span><span class="o">/</span><span class="mh">0x2c</span>
+<span class="p">[</span>  <span class="mf">217.022264</span><span class="p">]</span> <span class="o">-</span><span class="p">(</span><span class="mi">5</span><span class="p">)[</span><span class="mi">5713</span><span class="p">:</span><span class="n">sh</span><span class="p">]</span> <span class="n">dump_stack</span><span class="o">+</span><span class="mh">0xb8</span><span class="o">/</span><span class="mh">0xf0</span>
+<span class="p">[</span>  <span class="mf">217.022312</span><span class="p">]</span> <span class="o">-</span><span class="p">(</span><span class="mi">5</span><span class="p">)[</span><span class="mi">5713</span><span class="p">:</span><span class="n">sh</span><span class="p">]</span> <span class="n">mt_mt65xx_led_set</span><span class="o">+</span><span class="mh">0x38</span><span class="o">/</span><span class="mh">0x24c</span>
+<span class="p">[</span>  <span class="mf">217.022352</span><span class="p">]</span> <span class="o">-</span><span class="p">(</span><span class="mi">5</span><span class="p">)[</span><span class="mi">5713</span><span class="p">:</span><span class="n">sh</span><span class="p">]</span> <span class="n">mt65xx_led_set</span><span class="o">+</span><span class="mh">0x54</span><span class="o">/</span><span class="mh">0x64</span>
+<span class="p">[</span>  <span class="mf">217.022396</span><span class="p">]</span> <span class="o">-</span><span class="p">(</span><span class="mi">5</span><span class="p">)[</span><span class="mi">5713</span><span class="p">:</span><span class="n">sh</span><span class="p">]</span> <span class="n">led_set_brightness_nosleep</span><span class="o">+</span><span class="mh">0x40</span><span class="o">/</span><span class="mh">0x68</span>
+<span class="p">[</span>  <span class="mf">217.022434</span><span class="p">]</span> <span class="o">-</span><span class="p">(</span><span class="mi">5</span><span class="p">)[</span><span class="mi">5713</span><span class="p">:</span><span class="n">sh</span><span class="p">]</span> <span class="n">led_set_brightness</span><span class="o">+</span><span class="mh">0x30</span><span class="o">/</span><span class="mh">0x74</span>
+<span class="p">[</span>  <span class="mf">217.022472</span><span class="p">]</span> <span class="o">-</span><span class="p">(</span><span class="mi">5</span><span class="p">)[</span><span class="mi">5713</span><span class="p">:</span><span class="n">sh</span><span class="p">]</span> <span class="n">brightness_store</span><span class="o">+</span><span class="mh">0x88</span><span class="o">/</span><span class="mh">0xc0</span>
+<span class="p">[</span>  <span class="mf">217.022516</span><span class="p">]</span> <span class="o">-</span><span class="p">(</span><span class="mi">5</span><span class="p">)[</span><span class="mi">5713</span><span class="p">:</span><span class="n">sh</span><span class="p">]</span> <span class="n">dev_attr_store</span><span class="o">+</span><span class="mh">0x40</span><span class="o">/</span><span class="mh">0x58</span>
+<span class="p">[</span>  <span class="mf">217.022563</span><span class="p">]</span> <span class="o">-</span><span class="p">(</span><span class="mi">5</span><span class="p">)[</span><span class="mi">5713</span><span class="p">:</span><span class="n">sh</span><span class="p">]</span> <span class="n">sysfs_kf_write</span><span class="o">+</span><span class="mh">0x50</span><span class="o">/</span><span class="mh">0x68</span>
+<span class="p">[</span>  <span class="mf">217.022606</span><span class="p">]</span> <span class="o">-</span><span class="p">(</span><span class="mi">5</span><span class="p">)[</span><span class="mi">5713</span><span class="p">:</span><span class="n">sh</span><span class="p">]</span> <span class="n">kernfs_fop_write</span><span class="o">+</span><span class="mh">0x138</span><span class="o">/</span><span class="mh">0x1d4</span>
+<span class="p">[</span>  <span class="mf">217.022650</span><span class="p">]</span> <span class="o">-</span><span class="p">(</span><span class="mi">5</span><span class="p">)[</span><span class="mi">5713</span><span class="p">:</span><span class="n">sh</span><span class="p">]</span> <span class="n">__vfs_write</span><span class="o">+</span><span class="mh">0x54</span><span class="o">/</span><span class="mh">0x15c</span>
+<span class="p">[</span>  <span class="mf">217.022692</span><span class="p">]</span> <span class="o">-</span><span class="p">(</span><span class="mi">5</span><span class="p">)[</span><span class="mi">5713</span><span class="p">:</span><span class="n">sh</span><span class="p">]</span> <span class="n">vfs_write</span><span class="o">+</span><span class="mh">0xe4</span><span class="o">/</span><span class="mh">0x1a0</span>
+<span class="p">[</span>  <span class="mf">217.022732</span><span class="p">]</span> <span class="o">-</span><span class="p">(</span><span class="mi">5</span><span class="p">)[</span><span class="mi">5713</span><span class="p">:</span><span class="n">sh</span><span class="p">]</span> <span class="n">ksys_write</span><span class="o">+</span><span class="mh">0x78</span><span class="o">/</span><span class="mh">0xd8</span>
+<span class="p">[</span>  <span class="mf">217.022772</span><span class="p">]</span> <span class="o">-</span><span class="p">(</span><span class="mi">5</span><span class="p">)[</span><span class="mi">5713</span><span class="p">:</span><span class="n">sh</span><span class="p">]</span> <span class="n">__arm64_sys_write</span><span class="o">+</span><span class="mh">0x20</span><span class="o">/</span><span class="mh">0x2c</span>
+<span class="p">[</span>  <span class="mf">217.022816</span><span class="p">]</span> <span class="o">-</span><span class="p">(</span><span class="mi">5</span><span class="p">)[</span><span class="mi">5713</span><span class="p">:</span><span class="n">sh</span><span class="p">]</span> <span class="n">el0_svc_common</span><span class="o">+</span><span class="mh">0x9c</span><span class="o">/</span><span class="mh">0x14c</span>
+<span class="p">[</span>  <span class="mf">217.022856</span><span class="p">]</span> <span class="o">-</span><span class="p">(</span><span class="mi">5</span><span class="p">)[</span><span class="mi">5713</span><span class="p">:</span><span class="n">sh</span><span class="p">]</span> <span class="n">el0_svc_handler</span><span class="o">+</span><span class="mh">0x68</span><span class="o">/</span><span class="mh">0x84</span>
+<span class="p">[</span>  <span class="mf">217.022895</span><span class="p">]</span> <span class="o">-</span><span class="p">(</span><span class="mi">5</span><span class="p">)[</span><span class="mi">5713</span><span class="p">:</span><span class="n">sh</span><span class="p">]</span> <span class="n">el0_svc</span><span class="o">+</span><span class="mh">0x8</span><span class="o">/</span><span class="mh">0xc</span>
+<span class="p">[</span>  <span class="mf">217.025055</span><span class="p">]</span> <span class="p">(</span><span class="mi">6</span><span class="p">)[</span><span class="mi">5713</span><span class="p">:</span><span class="n">sh</span><span class="p">]</span><span class="n">mt_mt65xx_led_set</span> <span class="n">before</span> <span class="n">backlight_debug_log</span>
+<span class="p">[</span>  <span class="mf">217.025118</span><span class="p">]</span> <span class="p">(</span><span class="mi">3</span><span class="p">)[</span><span class="mi">54</span><span class="p">:</span><span class="n">kworker</span><span class="o">/</span><span class="mi">3</span><span class="p">:</span><span class="mi">1</span><span class="p">]</span><span class="n">mtk_leds</span> <span class="n">backlight_debug_log</span><span class="p">(</span><span class="mi">120</span><span class="p">)</span> <span class="p">:[</span><span class="n">BL</span><span class="p">]</span> <span class="n">Set</span> <span class="n">Backlight</span> <span class="n">directly</span> <span class="n">T</span><span class="p">:</span><span class="mf">217.25</span><span class="p">,</span><span class="n">L</span><span class="p">:</span><span class="mi">50</span> <span class="nb">map</span><span class="p">:</span><span class="mi">50</span>
+</pre></div>
+</div>
+</section>
+<section id="hidl">
+<h2>HIDL<a class="headerlink" href="#hidl" title="Permalink to this headline"></a></h2>
+<p>Lights的HIDL接口分析</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">*</span> <span class="n">vendor</span><span class="o">/</span><span class="n">mediatek</span><span class="o">/</span><span class="n">proprietary</span><span class="o">/</span><span class="n">hardware</span><span class="o">/</span><span class="n">liblights</span>
+  <span class="o">*</span> <span class="n">aidl</span><span class="o">/</span><span class="n">default</span>
+    <span class="o">*</span> <span class="n">Lights</span><span class="o">.</span><span class="n">h</span>
+      <span class="o">*</span> <span class="n">char</span> <span class="n">const</span><span class="o">*</span><span class="n">const</span> <span class="n">LCD_FILE</span> <span class="o">=</span> <span class="s2">&quot;/sys/class/leds/lcd-backlight/brightness&quot;</span><span class="p">;</span>
+      <span class="o">*</span> <span class="k">class</span> <span class="nc">Lights</span> <span class="p">:</span> <span class="n">public</span> <span class="n">BnLights</span>
+        <span class="o">*</span> <span class="c1">#include &lt;aidl/android/hardware/light/BnLights.h&gt;</span>
+</pre></div>
+</div>
+<p>HIDL aidl定义</p>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="c1">// hardware/interfaces/light/aidl/android/hardware/light/ILights.aidl</span>
+
+<span class="nd">@VintfStability</span>
+<span class="kd">interface</span> <span class="nc">ILights</span> <span class="p">{</span>
+    <span class="cm">/**</span>
+<span class="cm">     * Set light identified by id to the provided state.</span>
+<span class="cm">     *</span>
+<span class="cm">     * If control over an invalid light is requested, this method exists with</span>
+<span class="cm">     * EX_UNSUPPORTED_OPERATION. Control over supported lights is done on a</span>
+<span class="cm">     * device-specific best-effort basis and unsupported sub-features will not</span>
+<span class="cm">     * be reported.</span>
+<span class="cm">     *</span>
+<span class="cm">     * @param id ID of logical light to set as returned by getLights()</span>
+<span class="cm">     * @param state describes what the light should look like.</span>
+<span class="cm">     */</span>
+    <span class="kt">void</span> <span class="nf">setLightState</span><span class="p">(</span><span class="n">in</span> <span class="kt">int</span> <span class="n">id</span><span class="p">,</span> <span class="n">in</span> <span class="n">HwLightState</span> <span class="n">state</span><span class="p">);</span>
+
+    <span class="cm">/**</span>
+<span class="cm">     * Discover what lights are supported by the HAL implementation.</span>
+<span class="cm">     *</span>
+<span class="cm">     * @return List of available lights</span>
+<span class="cm">     */</span>
+    <span class="n">HwLight</span><span class="o">[]</span> <span class="nf">getLights</span><span class="p">();</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>查看HIDL目录还是有什么aidl：hardware/interfaces/light/aidl/android/hardware/light</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>.
+├── BrightnessMode.aidl
+├── FlashMode.aidl
+├── HwLight.aidl
+├── HwLightState.aidl
+├── ILights.aidl
+└── LightType.aidl
+
+0 directories, 6 files
+</pre></div>
+</div>
+<p>aidl输出目录：out/soong/.intermediates/hardware/interfaces/light/aidl/android.hardware.light-cpp-source/gen/</p>
+<ul>
+<li><p>include/android/hardware/light</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>.
+├── BnBrightnessMode.h
+├── BnFlashMode.h
+├── BnHwLight.h
+├── BnHwLightState.h
+├── BnLightType.h
+├── BnLights.h
+├── BpBrightnessMode.h
+├── BpFlashMode.h
+├── BpHwLight.h
+├── BpHwLightState.h
+├── BpLightType.h
+├── BpLights.h
+├── BrightnessMode.h
+├── FlashMode.h
+├── HwLight.h
+├── HwLightState.h
+├── ILights.h
+└── LightType.h
+
+0 directories, 18 files
+</pre></div>
+</div>
+</li>
+<li><p>android/hardware/light/</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>.
+├── BrightnessMode.cpp
+├── BrightnessMode.cpp.d
+├── FlashMode.cpp
+├── FlashMode.cpp.d
+├── HwLight.cpp
+├── HwLight.cpp.d
+├── HwLightState.cpp
+├── HwLightState.cpp.d
+├── ILights.cpp
+├── ILights.cpp.d
+├── LightType.cpp
+└── LightType.cpp.d
+
+0 directories, 12 files
+</pre></div>
+</div>
+</li>
+</ul>
+<p>HIDL Service叫什么名字？</p>
+<ul>
+<li><p>先看注册的方法</p>
+<div class="highlight-CPP notranslate"><div class="highlight"><pre><span></span><span class="c1">// vendor/mediatek/proprietary/hardware/liblights/aidl/default</span>
+
+<span class="kt">int</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">ABinderProcess_setThreadPoolMaxThreadCount</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">Lights</span><span class="o">&gt;</span><span class="w"> </span><span class="n">lights</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ndk</span><span class="o">::</span><span class="n">SharedRefBase</span><span class="o">::</span><span class="n">make</span><span class="o">&lt;</span><span class="n">Lights</span><span class="o">&gt;</span><span class="p">();</span><span class="w"></span>
+
+<span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="n">instance</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">Lights</span><span class="o">::</span><span class="n">descriptor</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s">&quot;/default&quot;</span><span class="p">;</span><span class="w">  </span><span class="c1">// &lt;--</span>
+<span class="w">    </span><span class="n">binder_status_t</span><span class="w"> </span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">AServiceManager_addService</span><span class="p">(</span><span class="n">lights</span><span class="o">-&gt;</span><span class="n">asBinder</span><span class="p">().</span><span class="n">get</span><span class="p">(),</span><span class="w"> </span><span class="n">instance</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span><span class="w"></span>
+<span class="w">    </span><span class="n">CHECK</span><span class="p">(</span><span class="n">status</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">STATUS_OK</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">    </span><span class="n">ABinderProcess_joinThreadPool</span><span class="p">();</span><span class="w"></span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">EXIT_FAILURE</span><span class="p">;</span><span class="w">  </span><span class="c1">// should not reached</span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+</li>
+<li><p>service list | grep light</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="mi">14</span>      <span class="n">android</span><span class="o">.</span><span class="n">hardware</span><span class="o">.</span><span class="n">light</span><span class="o">.</span><span class="n">ILights</span><span class="o">/</span><span class="n">default</span><span class="p">:</span> <span class="p">[</span><span class="n">android</span><span class="o">.</span><span class="n">hardware</span><span class="o">.</span><span class="n">light</span><span class="o">.</span><span class="n">ILights</span><span class="p">]</span>
+<span class="mi">95</span>      <span class="n">lights</span><span class="p">:</span> <span class="p">[</span><span class="n">android</span><span class="o">.</span><span class="n">hardware</span><span class="o">.</span><span class="n">lights</span><span class="o">.</span><span class="n">ILightsManager</span><span class="p">]</span>
+</pre></div>
+</div>
+<ul>
+<li><p>这里发现了一个新的aidl接口：ILightsManager</p>
+<ul>
+<li><p>frameworks/base/core/java/android/hardware/lights/ILightsManager.aidl</p></li>
+<li><p>frameworks/base/core/java/android/hardware/lights</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>.
+├── ILightsManager.aidl
+├── Light.aidl
+├── Light.java
+├── LightState.aidl
+├── LightState.java
+├── LightsManager.java
+└── LightsRequest.java
+
+0 directories, 7 files
+</pre></div>
+</div>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</section>
+<section id="lightsmanager">
+<h2>LightsManager<a class="headerlink" href="#lightsmanager" title="Permalink to this headline"></a></h2>
+<p>LightsManager获取SystemLightsManager中的Context.LIGHTS_SERVICE服务实现如下</p>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="c1">// frameworks/base/core/java/android/hardware/lights/SystemLightsManager.java</span>
+
+<span class="kd">public</span> <span class="nf">LightsManager</span><span class="p">(</span><span class="nd">@NonNull</span> <span class="n">Context</span> <span class="n">context</span><span class="p">)</span> <span class="kd">throws</span> <span class="n">ServiceNotFoundException</span> <span class="p">{</span>
+    <span class="k">this</span><span class="p">(</span><span class="n">context</span><span class="p">,</span> <span class="n">ILightsManager</span><span class="p">.</span><span class="na">Stub</span><span class="p">.</span><span class="na">asInterface</span><span class="p">(</span>
+        <span class="n">ServiceManager</span><span class="p">.</span><span class="na">getServiceOrThrow</span><span class="p">(</span><span class="n">Context</span><span class="p">.</span><span class="na">LIGHTS_SERVICE</span><span class="p">)));</span>
+<span class="p">}</span>
+
+<span class="cm">/**</span>
+<span class="cm"> * Creates a LightsManager with a provided service implementation.</span>
+<span class="cm"> *</span>
+<span class="cm"> * @hide</span>
+<span class="cm"> */</span>
+<span class="nd">@VisibleForTesting</span>
+<span class="kd">public</span> <span class="nf">LightsManager</span><span class="p">(</span><span class="nd">@NonNull</span> <span class="n">Context</span> <span class="n">context</span><span class="p">,</span> <span class="nd">@NonNull</span> <span class="n">ILightsManager</span> <span class="n">service</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">mContext</span> <span class="o">=</span> <span class="n">Preconditions</span><span class="p">.</span><span class="na">checkNotNull</span><span class="p">(</span><span class="n">context</span><span class="p">);</span>
+    <span class="n">mService</span> <span class="o">=</span> <span class="n">Preconditions</span><span class="p">.</span><span class="na">checkNotNull</span><span class="p">(</span><span class="n">service</span><span class="p">);</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>向Context注册Context.LIGHTS_SERVICE实现如下</p>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="c1">// frameworks/base/core/java/android/app/SystemServiceRegistry.java</span>
+
+<span class="n">registerService</span><span class="p">(</span><span class="n">Context</span><span class="p">.</span><span class="na">LIGHTS_SERVICE</span><span class="p">,</span> <span class="n">LightsManager</span><span class="p">.</span><span class="na">class</span><span class="p">,</span>
+    <span class="k">new</span> <span class="n">CachedServiceFetcher</span><span class="o">&lt;</span><span class="n">LightsManager</span><span class="o">&gt;</span><span class="p">()</span> <span class="p">{</span>
+        <span class="nd">@Override</span>
+        <span class="kd">public</span> <span class="n">LightsManager</span> <span class="nf">createService</span><span class="p">(</span><span class="n">ContextImpl</span> <span class="n">ctx</span><span class="p">)</span>
+            <span class="kd">throws</span> <span class="n">ServiceNotFoundException</span> <span class="p">{</span>
+            <span class="k">return</span> <span class="k">new</span> <span class="n">SystemLightsManager</span><span class="p">(</span><span class="n">ctx</span><span class="p">);</span>
+        <span class="p">}});</span>
+</pre></div>
+</div>
+<p>亮度控制接口</p>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="c1">// frameworks/base/core/java/android/hardware/lights/SystemLightsManager.java</span>
+
+<span class="nd">@RequiresPermission</span><span class="p">(</span><span class="n">Manifest</span><span class="p">.</span><span class="na">permission</span><span class="p">.</span><span class="na">CONTROL_DEVICE_LIGHTS</span><span class="p">)</span>
+<span class="nd">@Override</span>
+<span class="kd">public</span> <span class="kt">void</span> <span class="nf">requestLights</span><span class="p">(</span><span class="nd">@NonNull</span> <span class="n">LightsRequest</span> <span class="n">request</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">Preconditions</span><span class="p">.</span><span class="na">checkNotNull</span><span class="p">(</span><span class="n">request</span><span class="p">);</span>
+    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">mClosed</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">try</span> <span class="p">{</span>
+            <span class="n">List</span><span class="o">&lt;</span><span class="n">Integer</span><span class="o">&gt;</span> <span class="n">idList</span> <span class="o">=</span> <span class="n">request</span><span class="p">.</span><span class="na">getLights</span><span class="p">();</span>
+            <span class="n">List</span><span class="o">&lt;</span><span class="n">LightState</span><span class="o">&gt;</span> <span class="n">stateList</span> <span class="o">=</span> <span class="n">request</span><span class="p">.</span><span class="na">getLightStates</span><span class="p">();</span>
+            <span class="kt">int</span><span class="o">[]</span> <span class="n">ids</span> <span class="o">=</span> <span class="k">new</span> <span class="kt">int</span><span class="o">[</span><span class="n">idList</span><span class="p">.</span><span class="na">size</span><span class="p">()</span><span class="o">]</span><span class="p">;</span>
+            <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">idList</span><span class="p">.</span><span class="na">size</span><span class="p">();</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+                <span class="n">ids</span><span class="o">[</span><span class="n">i</span><span class="o">]</span> <span class="o">=</span> <span class="n">idList</span><span class="p">.</span><span class="na">get</span><span class="p">(</span><span class="n">i</span><span class="p">);</span>
+            <span class="p">}</span>
+            <span class="n">LightState</span><span class="o">[]</span> <span class="n">states</span> <span class="o">=</span> <span class="k">new</span> <span class="n">LightState</span><span class="o">[</span><span class="n">stateList</span><span class="p">.</span><span class="na">size</span><span class="p">()</span><span class="o">]</span><span class="p">;</span>
+            <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">stateList</span><span class="p">.</span><span class="na">size</span><span class="p">();</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+                <span class="n">states</span><span class="o">[</span><span class="n">i</span><span class="o">]</span> <span class="o">=</span> <span class="n">stateList</span><span class="p">.</span><span class="na">get</span><span class="p">(</span><span class="n">i</span><span class="p">);</span>
+            <span class="p">}</span>
+            <span class="n">mService</span><span class="p">.</span><span class="na">setLightStates</span><span class="p">(</span><span class="n">getToken</span><span class="p">(),</span> <span class="n">ids</span><span class="p">,</span> <span class="n">states</span><span class="p">);</span>
+        <span class="p">}</span> <span class="k">catch</span> <span class="p">(</span><span class="n">RemoteException</span> <span class="n">e</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">throw</span> <span class="n">e</span><span class="p">.</span><span class="na">rethrowFromSystemServer</span><span class="p">();</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>应用APP无法访问此接口，被系统隐藏</p>
+</section>
+<section id="lightsservice">
+<h2>LightsService<a class="headerlink" href="#lightsservice" title="Permalink to this headline"></a></h2>
+<p>LightsService注册如下</p>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="c1">// frameworks/base/services/core/java/com/android/server/lights/LightsService.java</span>
+
+<span class="nd">@Override</span>
+<span class="kd">public</span> <span class="kt">void</span> <span class="nf">onStart</span><span class="p">()</span> <span class="p">{</span>
+    <span class="n">publishLocalService</span><span class="p">(</span><span class="n">LightsManager</span><span class="p">.</span><span class="na">class</span><span class="p">,</span> <span class="n">mService</span><span class="p">);</span>
+    <span class="n">publishBinderService</span><span class="p">(</span><span class="n">Context</span><span class="p">.</span><span class="na">LIGHTS_SERVICE</span><span class="p">,</span> <span class="n">mManagerService</span><span class="p">);</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>查看lights服务</p>
+<ul>
+<li><p>dumpsys -l | grep light</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>  <span class="n">android</span><span class="o">.</span><span class="n">hardware</span><span class="o">.</span><span class="n">light</span><span class="o">.</span><span class="n">ILights</span><span class="o">/</span><span class="n">default</span>
+  <span class="n">lights</span>
+</pre></div>
+</div>
+</li>
+<li><p>dumpsys lights</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>Service: aidl (android.hardware.light.ILights$Stub$Proxy@767a300)
+Lights:
+  Light id=0 ordinal=0 color=ff1f1f1f
+  Light id=1 ordinal=0 color=00000000
+  Light id=2 ordinal=0 color=00000000
+  Light id=3 ordinal=0 color=ff00ff00
+  Light id=4 ordinal=0 color=00000000
+  Light id=5 ordinal=0 color=00000000
+Session clients:
+</pre></div>
+</div>
+</li>
+<li><p>dump</p>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="c1">// frameworks/base/services/core/java/com/android/server/lights/LightsService.java</span>
+
+<span class="nd">@Override</span>
+<span class="kd">protected</span> <span class="kt">void</span> <span class="nf">dump</span><span class="p">(</span><span class="n">FileDescriptor</span> <span class="n">fd</span><span class="p">,</span> <span class="n">PrintWriter</span> <span class="n">pw</span><span class="p">,</span> <span class="n">String</span><span class="o">[]</span> <span class="n">args</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">DumpUtils</span><span class="p">.</span><span class="na">checkDumpPermission</span><span class="p">(</span><span class="n">getContext</span><span class="p">(),</span> <span class="n">TAG</span><span class="p">,</span> <span class="n">pw</span><span class="p">))</span> <span class="k">return</span><span class="p">;</span>
+
+    <span class="kd">synchronized</span> <span class="p">(</span><span class="n">LightsService</span><span class="p">.</span><span class="na">this</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">mVintfLights</span> <span class="o">!=</span> <span class="kc">null</span><span class="p">)</span> <span class="p">{</span>
+            <span class="n">pw</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">&quot;Service: aidl (&quot;</span> <span class="o">+</span> <span class="n">mVintfLights</span><span class="p">.</span><span class="na">get</span><span class="p">()</span> <span class="o">+</span> <span class="s">&quot;)&quot;</span><span class="p">);</span>
+        <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+            <span class="n">pw</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">&quot;Service: hidl&quot;</span><span class="p">);</span>
+        <span class="p">}</span>
+
+        <span class="n">pw</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">&quot;Lights:&quot;</span><span class="p">);</span>
+        <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">mLightsById</span><span class="p">.</span><span class="na">size</span><span class="p">();</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+            <span class="kd">final</span> <span class="n">LightImpl</span> <span class="n">light</span> <span class="o">=</span> <span class="n">mLightsById</span><span class="p">.</span><span class="na">valueAt</span><span class="p">(</span><span class="n">i</span><span class="p">);</span>
+            <span class="n">pw</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">String</span><span class="p">.</span><span class="na">format</span><span class="p">(</span><span class="s">&quot;  Light id=%d ordinal=%d color=%08x&quot;</span><span class="p">,</span>
+                    <span class="n">light</span><span class="p">.</span><span class="na">mHwLight</span><span class="p">.</span><span class="na">id</span><span class="p">,</span> <span class="n">light</span><span class="p">.</span><span class="na">mHwLight</span><span class="p">.</span><span class="na">ordinal</span><span class="p">,</span> <span class="n">light</span><span class="p">.</span><span class="na">getColor</span><span class="p">()));</span>
+        <span class="p">}</span>
+
+        <span class="n">pw</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">&quot;Session clients:&quot;</span><span class="p">);</span>
+        <span class="k">for</span> <span class="p">(</span><span class="n">Session</span> <span class="n">session</span> <span class="p">:</span> <span class="n">mSessions</span><span class="p">)</span> <span class="p">{</span>
+            <span class="n">pw</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">&quot;  Session token=&quot;</span> <span class="o">+</span> <span class="n">session</span><span class="p">.</span><span class="na">mToken</span><span class="p">);</span>
+            <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">session</span><span class="p">.</span><span class="na">mRequests</span><span class="p">.</span><span class="na">size</span><span class="p">();</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+                <span class="n">pw</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">String</span><span class="p">.</span><span class="na">format</span><span class="p">(</span><span class="s">&quot;    Request id=%d color=%08x&quot;</span><span class="p">,</span>
+                        <span class="n">session</span><span class="p">.</span><span class="na">mRequests</span><span class="p">.</span><span class="na">keyAt</span><span class="p">(</span><span class="n">i</span><span class="p">),</span>
+                        <span class="n">session</span><span class="p">.</span><span class="na">mRequests</span><span class="p">.</span><span class="na">valueAt</span><span class="p">(</span><span class="n">i</span><span class="p">).</span><span class="na">getColor</span><span class="p">()));</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</li>
+</ul>
+<p>LightsService获取HIDL接口，以及控制亮度原理</p>
+<ul class="simple">
+<li><p>在构造函数中初始化HIDL接口；</p></li>
+<li><p>应用层调用setLightStates()来和LightsService通信；</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>* frameworks/base/services/core/java/com/android/server/lights/LightsService.java
+  * public LightsService(Context context)
+    * this(context, new VintfHalCache(), Looper.myLooper());
+      * private static class VintfHalCache implements Supplier&lt;ILights&gt;, IBinder.DeathRecipient
+        * public synchronized ILights get()
+          * if (mInstance == null)
+            * IBinder binder = Binder.allowBlocking(ServiceManager.waitForDeclaredService(ILights.DESCRIPTOR + &quot;/default&quot;));
+            * if (binder != null)
+              * mInstance = ILights.Stub.asInterface(binder);
+          * return mInstance;
+            * LightsServer跟Light HIDL通信的Binder接口就获取到了
+      * LightsService(Context context, Supplier&lt;ILights&gt; service, Looper looper)
+        * mVintfLights = service.get() != null ? service : null;
+          * LightsServer跟Light HIDL通信的Binder接口
+        * populateAvailableLights(context);
+          * if (mVintfLights != null)
+            * populateAvailableLightsFromAidl(context);
+              * for (HwLight hwLight : mVintfLights.get().getLights())
+                * mLightsById.put(hwLight.id, new LightImpl(context, hwLight));
+                  * private final class LightImpl extends LogicalLight
+                    * private LightImpl(Context context, HwLight hwLight)
+                      * mHwLight = hwLight;
+                    * public void setBrightness(float brightness)  // 没有走这条线路
+                      * setBrightness(brightness, BRIGHTNESS_MODE_USER);
+                        * setLightLocked(color, LIGHT_FLASH_NONE, 0, 0, brightnessMode);
+                          * setLightUnchecked(color, mode, onMS, offMS, brightnessMode);
+                            * if (mVintfLights != null)
+                              * mVintfLights.get().setLightState(mHwLight.id, lightState);
+  * public void setLightStates(IBinder token, int[] lightIds, LightState[] lightStates)
+    * session.setRequest(lightIds[i], lightStates[i]);
+      * mRequests.put(lightId, state);
+    * invalidateLightStatesLocked();
+      * for (int i = 0; i &lt; mLightsById.size(); i++)
+        * light.setColor(state.getColor());
+          * private final class LightImpl extends LogicalLight 
+            * public void setColor(int color)
+              * setLightLocked(color, LIGHT_FLASH_NONE, 0, 0, 0);
+                * setLightUnchecked(color, mode, onMS, offMS, brightnessMode);
+                  * if (mVintfLights != null)
+                    * mVintfLights.get().setLightState(mHwLight.id, lightState);
+                      * 接下来这里就到了HIDL层去了
+</pre></div>
+</div>
+</section>
+<section id="display-updatepowerstate">
+<h2>display updatePowerState<a class="headerlink" href="#display-updatepowerstate" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p>BacklightAdapter是内部类</p></li>
+<li><p>在BacklightAdapter构造函数中获取LightsManager，相当于也就获取了LightsService的Binder Client；</p></li>
+<li><p>获取背光控制的Session；</p></li>
+</ul>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="c1">// frameworks/base/services/core/java/com/android/server/display/LocalDisplayAdapter.java</span>
+
+<span class="kd">private</span> <span class="kd">final</span> <span class="kd">class</span> <span class="nc">LocalDisplayDevice</span> <span class="kd">extends</span> <span class="n">DisplayDevice</span> <span class="p">{</span>
+     <span class="c1">// ...省略</span>
+     <span class="n">LocalDisplayDevice</span><span class="p">(</span><span class="n">IBinder</span> <span class="n">displayToken</span><span class="p">,</span> <span class="kt">long</span> <span class="n">physicalDisplayId</span><span class="p">,</span>
+          <span class="n">SurfaceControl</span><span class="p">.</span><span class="na">StaticDisplayInfo</span> <span class="n">staticDisplayInfo</span><span class="p">,</span>
+          <span class="n">SurfaceControl</span><span class="p">.</span><span class="na">DynamicDisplayInfo</span> <span class="n">dynamicInfo</span><span class="p">,</span>
+          <span class="n">SurfaceControl</span><span class="p">.</span><span class="na">DesiredDisplayModeSpecs</span> <span class="n">modeSpecs</span><span class="p">,</span> <span class="kt">boolean</span> <span class="n">isDefaultDisplay</span><span class="p">)</span> <span class="p">{</span>
+     <span class="kd">super</span><span class="p">(</span><span class="n">LocalDisplayAdapter</span><span class="p">.</span><span class="na">this</span><span class="p">,</span> <span class="n">displayToken</span><span class="p">,</span> <span class="n">UNIQUE_ID_PREFIX</span> <span class="o">+</span> <span class="n">physicalDisplayId</span><span class="p">,</span>
+               <span class="n">getContext</span><span class="p">());</span>
+     <span class="n">mPhysicalDisplayId</span> <span class="o">=</span> <span class="n">physicalDisplayId</span><span class="p">;</span>
+     <span class="n">mIsDefaultDisplay</span> <span class="o">=</span> <span class="n">isDefaultDisplay</span><span class="p">;</span>
+     <span class="n">updateDisplayPropertiesLocked</span><span class="p">(</span><span class="n">staticDisplayInfo</span><span class="p">,</span> <span class="n">dynamicInfo</span><span class="p">,</span> <span class="n">modeSpecs</span><span class="p">);</span>
+     <span class="n">mSidekickInternal</span> <span class="o">=</span> <span class="n">LocalServices</span><span class="p">.</span><span class="na">getService</span><span class="p">(</span><span class="n">SidekickInternal</span><span class="p">.</span><span class="na">class</span><span class="p">);</span>
+     <span class="n">mBacklightAdapter</span> <span class="o">=</span> <span class="k">new</span> <span class="n">BacklightAdapter</span><span class="p">(</span><span class="n">displayToken</span><span class="p">,</span> <span class="n">isDefaultDisplay</span><span class="p">,</span>             <span class="c1">// &lt;----</span>
+               <span class="n">mSurfaceControlProxy</span><span class="p">);</span>
+     <span class="n">mDisplayDeviceConfig</span> <span class="o">=</span> <span class="kc">null</span><span class="p">;</span>
+     <span class="p">}</span>
+     <span class="c1">// ...省略</span>
+<span class="p">}</span>
+
+<span class="kd">static</span> <span class="kd">class</span> <span class="nc">BacklightAdapter</span> <span class="p">{</span>
+    <span class="kd">private</span> <span class="kd">final</span> <span class="n">IBinder</span> <span class="n">mDisplayToken</span><span class="p">;</span>
+    <span class="kd">private</span> <span class="kd">final</span> <span class="n">LogicalLight</span> <span class="n">mBacklight</span><span class="p">;</span>
+    <span class="kd">private</span> <span class="kd">final</span> <span class="kt">boolean</span> <span class="n">mUseSurfaceControlBrightness</span><span class="p">;</span>
+    <span class="kd">private</span> <span class="kd">final</span> <span class="n">SurfaceControlProxy</span> <span class="n">mSurfaceControlProxy</span><span class="p">;</span>
+
+    <span class="kd">private</span> <span class="kt">boolean</span> <span class="n">mForceSurfaceControl</span> <span class="o">=</span> <span class="kc">false</span><span class="p">;</span>
+
+    <span class="cm">/**</span>
+<span class="cm">     * @param displayToken Token for display associated with this backlight.</span>
+<span class="cm">     * @param isDefaultDisplay {@code true} if it is the default display.</span>
+<span class="cm">     */</span>
+    <span class="n">BacklightAdapter</span><span class="p">(</span><span class="n">IBinder</span> <span class="n">displayToken</span><span class="p">,</span> <span class="kt">boolean</span> <span class="n">isDefaultDisplay</span><span class="p">,</span>
+            <span class="n">SurfaceControlProxy</span> <span class="n">surfaceControlProxy</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">mDisplayToken</span> <span class="o">=</span> <span class="n">displayToken</span><span class="p">;</span>
+        <span class="n">mSurfaceControlProxy</span> <span class="o">=</span> <span class="n">surfaceControlProxy</span><span class="p">;</span>
+
+        <span class="n">mUseSurfaceControlBrightness</span> <span class="o">=</span> <span class="n">mSurfaceControlProxy</span>
+                <span class="p">.</span><span class="na">getDisplayBrightnessSupport</span><span class="p">(</span><span class="n">mDisplayToken</span><span class="p">);</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">mUseSurfaceControlBrightness</span> <span class="o">&amp;&amp;</span> <span class="n">isDefaultDisplay</span><span class="p">)</span> <span class="p">{</span>
+            <span class="n">LightsManager</span> <span class="n">lights</span> <span class="o">=</span> <span class="n">LocalServices</span><span class="p">.</span><span class="na">getService</span><span class="p">(</span><span class="n">LightsManager</span><span class="p">.</span><span class="na">class</span><span class="p">);</span>
+            <span class="n">mBacklight</span> <span class="o">=</span> <span class="n">lights</span><span class="p">.</span><span class="na">getLight</span><span class="p">(</span><span class="n">LightsManager</span><span class="p">.</span><span class="na">LIGHT_ID_BACKLIGHT</span><span class="p">);</span>
+        <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+            <span class="n">mBacklight</span> <span class="o">=</span> <span class="kc">null</span><span class="p">;</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="c1">// Set backlight within min and max backlight values</span>
+    <span class="kt">void</span> <span class="nf">setBacklight</span><span class="p">(</span><span class="kt">float</span> <span class="n">sdrBacklight</span><span class="p">,</span> <span class="kt">float</span> <span class="n">sdrNits</span><span class="p">,</span> <span class="kt">float</span> <span class="n">backlight</span><span class="p">,</span> <span class="kt">float</span> <span class="n">nits</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">mUseSurfaceControlBrightness</span> <span class="o">||</span> <span class="n">mForceSurfaceControl</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">BrightnessSynchronizer</span><span class="p">.</span><span class="na">floatEquals</span><span class="p">(</span>
+                    <span class="n">sdrBacklight</span><span class="p">,</span> <span class="n">PowerManager</span><span class="p">.</span><span class="na">BRIGHTNESS_INVALID_FLOAT</span><span class="p">))</span> <span class="p">{</span>
+                <span class="n">mSurfaceControlProxy</span><span class="p">.</span><span class="na">setDisplayBrightness</span><span class="p">(</span><span class="n">mDisplayToken</span><span class="p">,</span> <span class="n">backlight</span><span class="p">);</span>
+            <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+                <span class="n">mSurfaceControlProxy</span><span class="p">.</span><span class="na">setDisplayBrightness</span><span class="p">(</span><span class="n">mDisplayToken</span><span class="p">,</span> <span class="n">sdrBacklight</span><span class="p">,</span> <span class="n">sdrNits</span><span class="p">,</span>
+                        <span class="n">backlight</span><span class="p">,</span> <span class="n">nits</span><span class="p">);</span>
+            <span class="p">}</span>
+        <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="n">mBacklight</span> <span class="o">!=</span> <span class="kc">null</span><span class="p">)</span> <span class="p">{</span>
+            <span class="n">mBacklight</span><span class="p">.</span><span class="na">setBrightness</span><span class="p">(</span><span class="n">backlight</span><span class="p">);</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="kt">void</span> <span class="nf">setVrMode</span><span class="p">(</span><span class="kt">boolean</span> <span class="n">isVrModeEnabled</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">mBacklight</span> <span class="o">!=</span> <span class="kc">null</span><span class="p">)</span> <span class="p">{</span>
+            <span class="n">mBacklight</span><span class="p">.</span><span class="na">setVrMode</span><span class="p">(</span><span class="n">isVrModeEnabled</span><span class="p">);</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="kt">void</span> <span class="nf">setForceSurfaceControl</span><span class="p">(</span><span class="kt">boolean</span> <span class="n">forceSurfaceControl</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">mForceSurfaceControl</span> <span class="o">=</span> <span class="n">forceSurfaceControl</span><span class="p">;</span>
+    <span class="p">}</span>
+
+    <span class="nd">@Override</span>
+    <span class="kd">public</span> <span class="n">String</span> <span class="nf">toString</span><span class="p">()</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="s">&quot;BacklightAdapter [useSurfaceControl=&quot;</span> <span class="o">+</span> <span class="n">mUseSurfaceControlBrightness</span>
+                <span class="o">+</span> <span class="s">&quot; (force_anyway? &quot;</span> <span class="o">+</span> <span class="n">mForceSurfaceControl</span> <span class="o">+</span> <span class="s">&quot;)&quot;</span>
+                <span class="o">+</span> <span class="s">&quot;, backlight=&quot;</span> <span class="o">+</span> <span class="n">mBacklight</span> <span class="o">+</span> <span class="s">&quot;]&quot;</span><span class="p">;</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>使用如下diff快速跟踪调用关系</p>
+<div class="highlight-diff notranslate"><div class="highlight"><pre><span></span><span class="gh">diff --git a/frameworks/base/services/core/java/com/android/server/display/DisplayPowerState.java b/frameworks/base/services/core/java/com/android/server/display/DisplayPowerState.java</span><span class="w"></span>
+<span class="gh">index 68ae8ecae86..f0c77ca43d5 100644</span><span class="w"></span>
+<span class="gd">--- a/frameworks/base/services/core/java/com/android/server/display/DisplayPowerState.java</span><span class="w"></span>
+<span class="gi">+++ b/frameworks/base/services/core/java/com/android/server/display/DisplayPowerState.java</span><span class="w"></span>
+<span class="gu">@@ -51,7 +51,7 @@ import java.io.PrintWriter;</span><span class="w"></span>
+<span class="w"> </span>final class DisplayPowerState {<span class="w"></span>
+<span class="w"> </span>    private static final String TAG = &quot;DisplayPowerState&quot;;<span class="w"></span>
+
+<span class="gd">-    private static boolean DEBUG = SystemProperties.getBoolean(&quot;dbg.dms.dps&quot;, false);</span><span class="w"></span>
+<span class="gi">+    private static boolean DEBUG = true;</span><span class="w"></span>
+<span class="w"> </span>    private static String COUNTER_COLOR_FADE = &quot;ColorFadeLevel&quot;;<span class="w"></span>
+
+<span class="w"> </span>    private final Handler mHandler;<span class="w"></span>
+<span class="gu">@@ -151,6 +151,10 @@ final class DisplayPowerState {</span><span class="w"></span>
+<span class="w"> </span>     */<span class="w"></span>
+<span class="w"> </span>    public void setScreenBrightness(float brightness) {<span class="w"></span>
+<span class="w"> </span>        if (mScreenBrightness != brightness) {<span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+            Exception e = new Exception(&quot;this is a log&quot;);</span><span class="w"></span>
+<span class="gi">+            e.printStackTrace();</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="w"> </span>            if (DEBUG) {<span class="w"></span>
+<span class="w"> </span>                Slog.d(TAG, &quot;setScreenBrightness: brightness=&quot; + brightness);<span class="w"></span>
+<span class="w"> </span>            }<span class="w"></span>
+<span class="gh">diff --git a/frameworks/base/services/core/java/com/android/server/display/LocalDisplayAdapter.java b/frameworks/base/services/core/java/com/android/server/display/LocalDisplayAdapter.java</span><span class="w"></span>
+<span class="gh">index fdf8a441fbd..c293f19cd39 100644</span><span class="w"></span>
+<span class="gd">--- a/frameworks/base/services/core/java/com/android/server/display/LocalDisplayAdapter.java</span><span class="w"></span>
+<span class="gi">+++ b/frameworks/base/services/core/java/com/android/server/display/LocalDisplayAdapter.java</span><span class="w"></span>
+<span class="gu">@@ -59,7 +59,7 @@ import java.util.Objects;</span><span class="w"></span>
+<span class="w"> </span> */<span class="w"></span>
+<span class="w"> </span>final class LocalDisplayAdapter extends DisplayAdapter {<span class="w"></span>
+<span class="w"> </span>    private static final String TAG = &quot;LocalDisplayAdapter&quot;;<span class="w"></span>
+<span class="gd">-    private static final boolean DEBUG = SystemProperties.getBoolean(&quot;dbg.dms.lda&quot;, false);</span><span class="w"></span>
+<span class="gi">+    private static final boolean DEBUG = true;</span><span class="w"></span>
+<span class="w"> </span>    private static final boolean MTK_DEBUG = &quot;eng&quot;.equals(Build.TYPE);<span class="w"></span>
+
+<span class="w"> </span>    private static final String UNIQUE_ID_PREFIX = &quot;local:&quot;;<span class="w"></span>
+<span class="gu">@@ -715,6 +715,9 @@ final class LocalDisplayAdapter extends DisplayAdapter {</span><span class="w"></span>
+<span class="w"> </span>                                    + &quot;, brightness=&quot; + brightness + &quot;)&quot;);<span class="w"></span>
+<span class="w"> </span>                        }<span class="w"></span>
+
+<span class="gi">+                        Exception e = new Exception(&quot;this is a log&quot;);</span><span class="w"></span>
+<span class="gi">+                        e.printStackTrace();</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="w"> </span>                        Trace.traceBegin(Trace.TRACE_TAG_POWER, &quot;setDisplayBrightness(&quot;<span class="w"></span>
+<span class="w"> </span>                                + &quot;id=&quot; + physicalDisplayId + &quot;, brightness=&quot; + brightness + &quot;)&quot;);<span class="w"></span>
+<span class="w"> </span>                        try {<span class="w"></span>
+</pre></div>
+</div>
+<p>diff对应的log输出如下</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>10-26 07:00:50.281  1151  1235 V DisplayPowerController: Brightness [0.39998955] reason changing to: &#39;temporary&#39;, previous reason: &#39;manual&#39;.
+10-26 07:00:50.281  1151  1235 D DisplayPowerState: Screen ready
+10-26 07:00:50.284  1151  1235 W System.err: java.lang.Exception: this is a log
+10-26 07:00:50.284  1151  1235 W System.err:    at com.android.server.display.DisplayPowerState.setScreenBrightness(DisplayPowerState.java:155)
+10-26 07:00:50.284  1151  1235 W System.err:    at com.android.server.display.DisplayPowerState$2.setValue(DisplayPowerState.java:116)
+10-26 07:00:50.284  1151  1235 W System.err:    at com.android.server.display.DisplayPowerState$2.setValue(DisplayPowerState.java:113)
+10-26 07:00:50.284  1151  1235 W System.err:    at com.android.server.display.RampAnimator.animateTo(RampAnimator.java:71)
+10-26 07:00:50.284  1151  1235 W System.err:    at com.android.server.display.DisplayPowerController.animateScreenBrightness(DisplayPowerController.java:1356)
+10-26 07:00:50.285  1151  1235 W System.err:    at com.android.server.display.DisplayPowerController.updatePowerState(DisplayPowerController.java:1092)
+10-26 07:00:50.285  1151  1235 W System.err:    at com.android.server.display.DisplayPowerController.access$600(DisplayPowerController.java:92)
+10-26 07:00:50.285  1151  1235 W System.err:    at com.android.server.display.DisplayPowerController$DisplayControllerHandler.handleMessage(DisplayPowerController.java:1976)
+10-26 07:00:50.285  1151  1235 W System.err:    at android.os.Handler.dispatchMessage(Handler.java:106)
+10-26 07:00:50.285  1151  1235 W System.err:    at android.os.Looper.loop(Looper.java:223)
+10-26 07:00:50.285  1151  1235 W System.err:    at android.os.HandlerThread.run(HandlerThread.java:67)
+10-26 07:00:50.285  1151  1235 W System.err:    at com.android.server.ServiceThread.run(ServiceThread.java:44)
+10-26 07:00:50.285  1151  1235 D DisplayPowerState: setScreenBrightness: brightness=0.33660948
+10-26 07:00:50.287  1151  1235 D DisplayPowerState: Requesting new screen state: state=ON, backlight=0.33660948
+10-26 07:00:50.287  1151  1235 D DisplayPowerState: Screen ready
+10-26 07:00:50.287  1151  3438 D DisplayPowerState: Updating screen state: state=ON, backlight=0.33660948
+10-26 07:00:50.287  1151  1235 D DisplayPowerState: Screen ready
+10-26 07:00:50.287  1151  3438 D LocalDisplayAdapter: setDisplayBrightness(id=0, brightness=0.33660948)
+10-26 07:00:50.287  1151  3438 W System.err: java.lang.Exception: this is a log
+10-26 07:00:50.288  1151  3438 W System.err:    at com.android.server.display.LocalDisplayAdapter$LocalDisplayDevice$1.setDisplayBrightness(LocalDisplayAdapter.java:718)
+10-26 07:00:50.288  1151  3438 W System.err:    at com.android.server.display.LocalDisplayAdapter$LocalDisplayDevice$1.run(LocalDisplayAdapter.java:648)
+10-26 07:00:50.288  1151  3438 W System.err:    at com.android.server.display.DisplayManagerService.requestGlobalDisplayStateInternal(DisplayManagerService.java:592)
+10-26 07:00:50.288  1151  3438 W System.err:    at com.android.server.display.DisplayManagerService.access$4700(DisplayManagerService.java:163)
+10-26 07:00:50.288  1151  3438 W System.err:    at com.android.server.display.DisplayManagerService$LocalService$1.requestDisplayState(DisplayManagerService.java:2543)
+10-26 07:00:50.288  1151  3438 W System.err:    at com.android.server.display.DisplayPowerState$PhotonicModulator.run(DisplayPowerState.java:445)
+10-26 07:00:50.290   792   866 D AAL     : onBacklightChanged: 413/1023 -&gt; 345/1023(phy:1381/4095)
+10-26 07:00:50.290   526   526 D android.hardware.lights-service.mediatek: write 86 to /sys/class/leds/lcd-backlight/brightness, result: 0
+10-26 07:00:50.291  1151  1235 D DisplayPowerState: Screen ready
+</pre></div>
+</div>
+<p>updatePowerState()是怎么处理到背光的</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>* frameworks/base/services/core/java/com/android/server/display/DisplayManagerService.java
+  * private void addDisplayPowerControllerLocked(LogicalDisplay display)
+    * final DisplayPowerController displayPowerController = new DisplayPowerController(mContext, mDisplayPowerCallbacks, mPowerHandler, mSensorManager, mDisplayBlanker, display, mBrightnessTracker, brightnessSetting, () -&gt; handleBrightnessChange(display));
+      * frameworks/base/services/core/java/com/android/server/display/DisplayPowerController.java
+        * public DisplayPowerController(Context context, DisplayPowerCallbacks callbacks, Handler handler, SensorManager sensorManager, DisplayBlanker blanker, LogicalDisplay logicalDisplay, BrightnessTracker brightnessTracker, BrightnessSetting brightnessSetting, Runnable onBrightnessChangeRunnable)
+        * private void initialize(int displayState)
+          * mPowerState = new DisplayPowerState(mBlanker, mColorFadeEnabled ? new ColorFade(mDisplayId) : null, mDisplayId, displayState);
+            * frameworks/base/services/core/java/com/android/server/display/DisplayPowerState.java
+              * public void setScreenBrightness(float brightness)
+          * mScreenBrightnessRampAnimator = new DualRampAnimator&lt;&gt;(mPowerState, DisplayPowerState.SCREEN_BRIGHTNESS_FLOAT, DisplayPowerState.SCREEN_SDR_BRIGHTNESS_FLOAT);
+            * DisplayPowerState.SCREEN_BRIGHTNESS_FLOAT
+              * frameworks/base/services/core/java/com/android/server/display/DisplayPowerState.java
+                * public static final FloatProperty&lt;DisplayPowerState&gt; SCREEN_BRIGHTNESS_FLOAT = new FloatProperty&lt;DisplayPowerState&gt;(&quot;screenBrightnessFloat&quot;)
+                  * public void setValue(DisplayPowerState object, float value)
+                    * object.setScreenBrightness(value);
+                      * 下面详细跟，这里不继续往下跟了
+          * mScreenBrightnessRampAnimator.setListener(mRampAnimatorListener);
+        * private void updatePowerState()
+          * animateScreenBrightness(animateValue, sdrAnimateValue, rampSpeed);
+            * mScreenBrightnessRampAnimator.animateTo(target, sdrTarget, rate)
+              * frameworks/base/services/core/java/com/android/server/display/RampAnimator.java
+                * public boolean animateTo(float firstTarget, float secondTarget, float rate)
+                  * final boolean firstRetval = mFirst.animateTo(firstTarget, rate);
+                    * mProperty.setValue(mObject, target);
+                      * DisplayPowerState.SCREEN_BRIGHTNESS_FLOAT
+                        * frameworks/base/services/core/java/com/android/server/display/DisplayPowerState.java
+                          * public static final FloatProperty&lt;DisplayPowerState&gt; SCREEN_BRIGHTNESS_FLOAT = new FloatProperty&lt;DisplayPowerState&gt;(&quot;screenBrightnessFloat&quot;)
+                            * public void setValue(DisplayPowerState object, float value)
+                              * object.setScreenBrightness(value);
+                                * public void setScreenBrightness(float brightness)
+                                  * mScreenBrightness = brightness;
+                                  * scheduleScreenUpdate();
+                                    * postScreenUpdateThreadSafe();
+                                      * mHandler.post(mScreenUpdateRunnable);
+                                        * private final Runnable mScreenUpdateRunnable = new Runnable()
+                                          * float brightnessState = mScreenState != Display.STATE_OFF &amp;&amp; mColorFadeLevel &gt; 0f ? mScreenBrightness : PowerManager.BRIGHTNESS_OFF_FLOAT;
+                                          * mPhotonicModulator.setState(mScreenState, brightnessState, sdrBrightnessState)
+                                            * mLock.notifyAll();
+                                              * 肯定有一个地方在等待这个notify释放
+                                                * frameworks/base/services/core/java/com/android/server/display/DisplayPowerState.java
+                                                  * public void run()
+                                                    * mLock.wait();
+                                                    * mBlanker.requestDisplayState(mDisplayId, state, brightnessState, sdrBrightnessState);
+                                                      * frameworks/base/services/core/java/com/android/server/display/DisplayManagerService.java
+                                                        * private final DisplayBlanker mDisplayBlanker = new DisplayBlanker()
+                                                          * public synchronized void requestDisplayState(int displayId, int state, float brightness, float sdrBrightness)
+                                                            * if (state != Display.STATE_OFF)
+                                                              * requestDisplayStateInternal(displayId, state, brightness, sdrBrightness);
+                                                                * runnable = updateDisplayStateLocked(mLogicalDisplayMapper.getDisplayLocked(displayId).getPrimaryDisplayDeviceLocked());
+                                                                  * return device.requestDisplayStateLocked(state, brightnessPair.brightness, brightnessPair.sdrBrightness);
+                                                                    * frameworks/base/services/core/java/com/android/server/display/LocalDisplayAdapter.java
+                                                                      * public Runnable requestDisplayStateLocked(final int state, final float brightnessState, final float sdrBrightnessState)
+                                                                        * return new Runnable() { }
+                                                                          * public void run()
+                                                                            * setDisplayBrightness(brightnessState, sdrBrightnessState);
+                                                                              * mBacklightAdapter.setBacklight(sdrBacklight, sdrNits, backlight, nits);
+                                                                                * mBacklight.setBrightness(backlight);
+                                                                * runnable.run();
+                  * final boolean secondRetval = mSecond.animateTo(secondTarget, rate);
+          * Slog.v(TAG, &quot;Brightness [&quot; + brightnessState + &quot;] reason changing to: &#39;&quot; + mBrightnessReasonTemp.toString(brightnessAdjustmentFlags) + &quot;&#39;, previous reason: &#39;&quot; + mBrightnessReason + &quot;&#39;.&quot;);
+</pre></div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, wugn.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+  
+
+<script charset="UTF-8" id="LA_COLLECT" src="//sdk.51.la/js-sdk-pro.min.js"></script>
+<script>LA.init({id: "JjOE14XScyd75b2C",ck: "JjOE14XScyd75b2C"})</script>
+
+<br/>
+<script id="LA-DATA-WIDGET" crossorigin="anonymous" charset="UTF-8" src="https://v6-widget.51.la/v6/JjOE14XScyd75b2C/quote.js?theme=0&f=12&display=1,0,0,0,0,0,1,1"></script>
+
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

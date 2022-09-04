@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>wugn</title>
+
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../index.html" class="icon icon-home"> wugn_note
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">概述</a><ul>
+<li><a class="reference internal" href="#id2">软件方案</a></li>
+<li><a class="reference internal" href="#scp">scp驱动功能实现</a></li>
+</ul>
+</li>
+</ul>
+</div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">wugn_note</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs"> 
+<li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+<li>概述</li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.forward()">Forward</a></li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.back()">Go Back</a> | </li>
+<li style="float: right;margin-left: 10px;"><a href="/index.html">Home</a> | </li>
+
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="id1">
+<h1>概述<a class="headerlink" href="#id1" title="Permalink to this headline"></a></h1>
+<p>SensorHub兼容M50、M8功能开发。</p>
+<section id="id2">
+<h2>软件方案<a class="headerlink" href="#id2" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p>1.因为scp里面无法通过boardid判断是哪种机型，需要kernel往下发。kernel hub驱动检测到scp起来后会发送一段DRAM CFG数据给scp，通过这次发送可以将产品型号数据发下去，具体代码如下：</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">kernel-4.19/drivers/misc/mediatek/sensors-1.0/sensorHub/SCP_nanoHub/SCP_nanoHub.c</span></code>:</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="o">*</span><span class="w"> </span><span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">sensorHub_probe</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">platform_device</span><span class="w"> </span><span class="o">*</span><span class="n">pdev</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="o">*</span><span class="w"> </span><span class="n">scp_ipi_registration</span><span class="p">(</span><span class="n">IPI_SENSOR</span><span class="p">,</span><span class="n">SCP_sensorHub_IPI_handler</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;SCP_sensorHub&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="o">*</span><span class="w"> </span><span class="n">SCP_sensorHub_IPI_handler</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="c1">//ipi中断处理函数</span>
+<span class="w">      </span><span class="o">*</span><span class="w"> </span><span class="n">SCP_sensorHub_find_cmd</span><span class="p">(</span><span class="n">rsp</span><span class="o">-&gt;</span><span class="n">rsp</span><span class="p">.</span><span class="n">action</span><span class="p">);</span><span class="w"> </span><span class="c1">//寻找指令类型</span>
+<span class="w">        </span><span class="o">*</span><span class="w"> </span><span class="n">SCP_sensorHub_notify_cmd</span><span class="w"> </span><span class="c1">//scp通知中断处理函数</span>
+<span class="w">          </span><span class="o">*</span><span class="w"> </span><span class="k">case</span><span class="w"> </span><span class="n">SCP_INIT_DONE</span><span class="o">:</span><span class="w"></span>
+<span class="w">          </span><span class="o">*</span><span class="w"> </span><span class="n">WRITE_ONCE</span><span class="p">(</span><span class="n">scp_chre_ready</span><span class="p">,</span><span class="w"> </span><span class="nb">true</span><span class="p">);</span><span class="w"> </span><span class="c1">//重要，写chre初始化完成变量</span>
+<span class="w">          </span><span class="o">*</span><span class="w"> </span><span class="n">atomic_set</span><span class="p">(</span><span class="o">&amp;</span><span class="n">power_status</span><span class="p">,</span><span class="w"> </span><span class="n">SENSOR_POWER_UP</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="o">*</span><span class="w"> </span><span class="n">scp_A_register_notify</span><span class="p">(</span><span class="o">&amp;</span><span class="n">sensorHub_ready_notifier</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="o">*</span><span class="w"> </span><span class="n">sensorHub_ready_event</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">notifier_block</span><span class="w"> </span><span class="o">*</span><span class="k">this</span><span class="p">,</span><span class="w"> </span><span class="c1">//通知链处理函数</span>
+<span class="w">      </span><span class="o">*</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">event</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">SCP_EVENT_READY</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">      </span><span class="o">*</span><span class="w"> </span><span class="n">scp_power_monitor_notify</span><span class="p">(</span><span class="n">SENSOR_POWER_UP</span><span class="p">,</span><span class="w"> </span><span class="n">ptr</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="o">*</span><span class="w"> </span><span class="n">WRITE_ONCE</span><span class="p">(</span><span class="n">scp_system_ready</span><span class="p">,</span><span class="w"> </span><span class="nb">true</span><span class="p">);</span><span class="w"> </span><span class="c1">//重要，写scp初始化完成变量</span>
+<span class="w">  </span><span class="o">*</span><span class="w"> </span><span class="n">task_power_reset</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">kthread_run</span><span class="p">(</span><span class="n">sensorHub_power_up_work</span><span class="p">,</span><span class="w"></span>
+<span class="w">    </span><span class="o">*</span><span class="w"> </span><span class="n">sensorHub_power_up_loop</span><span class="p">(</span><span class="n">data</span><span class="p">);</span><span class="w"> </span><span class="c1">//for循环</span>
+<span class="w">      </span><span class="o">*</span><span class="w"> </span><span class="n">wait_event</span><span class="p">(</span><span class="n">power_reset_wait</span><span class="p">,</span><span class="n">READ_ONCE</span><span class="p">(</span><span class="n">scp_system_ready</span><span class="p">)</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">READ_ONCE</span><span class="p">(</span><span class="n">scp_chre_ready</span><span class="p">));</span><span class="w"> </span><span class="c1">//等待scp_system_ready和scp_chre_ready变量完成</span>
+<span class="w">        </span><span class="o">*</span><span class="w"> </span><span class="n">sensor_send_dram_info_to_hub</span><span class="p">();</span><span class="w"> </span><span class="c1">//send dram information to scp 加这里  </span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>2.理解一下ipi通信主要的几种数据类型：</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span>static const struct SCP_sensorHub_Cmd SCP_sensorHub_Cmds[] = {
+	SCP_SENSORHUB_CMD(SENSOR_HUB_ACTIVATE,
+		SCP_sensorHub_enable_cmd),
+	SCP_SENSORHUB_CMD(SENSOR_HUB_SET_DELAY,
+		SCP_sensorHub_set_delay_cmd),
+	SCP_SENSORHUB_CMD(SENSOR_HUB_GET_DATA,
+		SCP_sensorHub_get_data_cmd),
+	SCP_SENSORHUB_CMD(SENSOR_HUB_BATCH,
+		SCP_sensorHub_batch_cmd),
+	SCP_SENSORHUB_CMD(SENSOR_HUB_SET_CONFIG,
+		SCP_sensorHub_set_cfg_cmd),
+	SCP_SENSORHUB_CMD(SENSOR_HUB_SET_CUST,
+		SCP_sensorHub_set_cust_cmd),
+	SCP_SENSORHUB_CMD(SENSOR_HUB_BATCH_TIMEOUT,
+		SCP_sensorHub_batch_timeout_cmd),
+	SCP_SENSORHUB_CMD(SENSOR_HUB_SET_TIMESTAMP,
+		SCP_sensorHub_set_timestamp_cmd),
+	SCP_SENSORHUB_CMD(SENSOR_HUB_NOTIFY,
+		SCP_sensorHub_notify_cmd),
+};
+宏定义：
+#define    SENSOR_HUB_ACTIVATE		0
+#define    SENSOR_HUB_SET_DELAY		1
+#define    SENSOR_HUB_GET_DATA		2
+#define    SENSOR_HUB_BATCH			3
+#define    SENSOR_HUB_SET_CONFIG	4
+#define    SENSOR_HUB_SET_CUST		5
+#define    SENSOR_HUB_NOTIFY		6
+#define    SENSOR_HUB_BATCH_TIMEOUT 7
+#define    SENSOR_HUB_SET_TIMESTAMP	8
+
+#define    SENSOR_HUB_POWER_NOTIFY	9
+
+    /* SCP_NOTIFY EVENT */
+    #define    SCP_INIT_DONE			0
+    #define    SCP_FIFO_FULL			1
+    #define    SCP_NOTIFY				2
+    #define    SCP_BATCH_TIMEOUT		3
+    #define	   SCP_DIRECT_PUSH          4
+
+数据结构：
+union SCP_SENSOR_HUB_DATA {
+	struct SCP_SENSOR_HUB_REQ req;
+	struct SCP_SENSOR_HUB_RSP rsp;
+	struct SCP_SENSOR_HUB_ACTIVATE_REQ activate_req;
+	struct SCP_SENSOR_HUB_ACTIVATE_RSP activate_rsp;
+	struct SCP_SENSOR_HUB_SET_DELAY_REQ set_delay_req;
+	struct SCP_SENSOR_HUB_SET_DELAY_RSP set_delay_rsp;
+	struct SCP_SENSOR_HUB_GET_DATA_REQ get_data_req;
+	struct SCP_SENSOR_HUB_GET_DATA_RSP get_data_rsp;
+	struct SCP_SENSOR_HUB_BATCH_REQ batch_req;
+	struct SCP_SENSOR_HUB_BATCH_RSP batch_rsp;
+	struct SCP_SENSOR_HUB_SET_CONFIG_REQ set_config_req;
+	struct SCP_SENSOR_HUB_SET_CONFIG_RSP set_config_rsp;
+	struct SCP_SENSOR_HUB_SET_CUST_REQ set_cust_req;
+	struct SCP_SENSOR_HUB_SET_CUST_RSP set_cust_rsp;
+	struct SCP_SENSOR_HUB_NOTIFY_RSP notify_rsp;
+};
+
+具体数据结构：
+struct SCP_SENSOR_HUB_REQ {
+	uint8_t sensorType;
+	uint8_t action;
+	uint8_t reserve[2];
+	uint32_t data[11];
+};
+
+struct SCP_SENSOR_HUB_RSP {
+	uint8_t sensorType;
+	uint8_t action;
+	int8_t errCode;
+	uint8_t reserve[1];
+	/* uint32_t    reserved[9]; */
+};
+
+struct SCP_SENSOR_HUB_ACTIVATE_REQ {
+	uint8_t sensorType;
+	uint8_t action;
+	uint8_t reserve[2];
+	uint32_t enable;	/* 0 : disable ; 1 : enable */
+	/* uint32_t    reserved[9]; */
+};
+
+#define SCP_SENSOR_HUB_ACTIVATE_RSP SCP_SENSOR_HUB_RSP
+/* typedef SCP_SENSOR_HUB_RSP SCP_SENSOR_HUB_ACTIVATE_RSP; */
+
+struct SCP_SENSOR_HUB_SET_DELAY_REQ {
+	uint8_t sensorType;
+	uint8_t action;
+	uint8_t reserve[2];
+	uint32_t delay;		/* ms */
+	/* uint32_t    reserved[9]; */
+};
+
+#define SCP_SENSOR_HUB_SET_DELAY_RSP  SCP_SENSOR_HUB_RSP
+/* typedef SCP_SENSOR_HUB_RSP SCP_SENSOR_HUB_SET_DELAY_RSP; */
+
+struct SCP_SENSOR_HUB_GET_DATA_REQ {
+	uint8_t sensorType;
+	uint8_t action;
+	uint8_t reserve[2];
+	/* uint32_t    reserved[10]; */
+};
+
+struct SCP_SENSOR_HUB_GET_DATA_RSP {
+	uint8_t sensorType;
+	uint8_t action;
+	int8_t errCode;
+	uint8_t reserve[1];
+	/* struct data_unit_t data_t; */
+	union {
+		int8_t int8_Data[0];
+		int16_t int16_Data[0];
+		int32_t int32_Data[0];
+	} data;
+};
+
+struct SCP_SENSOR_HUB_BATCH_REQ {
+	uint8_t sensorType;
+	uint8_t action;
+	uint8_t flag;
+	uint8_t reserve[1];
+	uint32_t period_ms;	/* batch reporting time in ms */
+	uint32_t timeout_ms;	/* sampling time in ms */
+	/* uint32_t    reserved[7]; */
+};
+
+#define SCP_SENSOR_HUB_BATCH_RSP SCP_SENSOR_HUB_RSP
+/* typedef SCP_SENSOR_HUB_RSP SCP_SENSOR_HUB_BATCH_RSP; */
+
+struct SCP_SENSOR_HUB_SET_CONFIG_REQ {
+	uint8_t sensorType;
+	uint8_t action;
+	// [NEW FEATURE]-BEGIN by wugangnan@paxsz.com 2022-02-23, add terminal boardid cfg
+	//uint8_t reserve[2];
+	uint8_t reserve[1];
+	uint8_t terminal_boardid;
+	// [NEW FEATURE]-END by wugangnan@paxsz.com 2022-02-23, add terminal boardid cfg
+	/* struct sensorFIFO   *bufferBase; */
+	uint32_t bufferBase;/* use int to store buffer DRAM base LSB 32 bits */
+	uint32_t bufferSize;
+	uint64_t ap_timestamp;
+	uint64_t arch_counter;
+	/* uint32_t    reserved[8]; */
+};
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>3.思路就是使用sensor_send_dram_info_to_hub函数往下发机型，增加一个byte就行了，kernel这边如下修改：</p></li>
+</ul>
+<div class="highlight-diff notranslate"><div class="highlight"><pre><span></span><span class="w"> </span>static int sensor_send_dram_info_to_hub(void)<span class="w"></span>
+<span class="w"> </span>{                              /* call by init done workqueue */<span class="w"></span>
+<span class="w"> </span>       struct SCP_sensorHub_data *obj = obj_data;<span class="w"></span>
+<span class="gu">@@ -1227,6 +1262,9 @@ static int sensor_send_dram_info_to_hub(void)</span><span class="w"></span>
+<span class="w"> </span>       data.set_config_req.action = SENSOR_HUB_SET_CONFIG;<span class="w"></span>
+<span class="w"> </span>       data.set_config_req.bufferBase =<span class="w"></span>
+<span class="w"> </span>               (unsigned int)(obj-&gt;shub_dram_phys &amp; 0xFFFFFFFF);<span class="w"></span>
+<span class="gi">+       // [NEW FEATURE]-BEGIN by wugangnan@paxsz.com 2022-02-23, add terminal boardid cfg to scp</span><span class="w"></span>
+<span class="gi">+    data.set_config_req.terminal_boardid = get_terminal_type();</span><span class="w"></span>
+<span class="gi">+       // [NEW FEATURE]-END by wugangnan@paxsz.com 2022-02-23, add terminal boardid cfg to scp</span><span class="w"></span>
+<span class="w"> </span>}<span class="w"></span>
+
+<span class="w"> </span>--- a/kernel-4.19/drivers/misc/mediatek/sensors-1.0/sensorHub/inc_v1/SCP_sensorHub.h<span class="w"></span>
+<span class="gi">+++ b/kernel-4.19/drivers/misc/mediatek/sensors-1.0/sensorHub/inc_v1/SCP_sensorHub.h</span><span class="w"></span>
+<span class="gu">@@ -342,7 +342,11 @@ struct SCP_SENSOR_HUB_BATCH_REQ {</span><span class="w"></span>
+<span class="w"> </span>struct SCP_SENSOR_HUB_SET_CONFIG_REQ {<span class="w"></span>
+<span class="w"> </span>       uint8_t sensorType;<span class="w"></span>
+<span class="w"> </span>       uint8_t action;<span class="w"></span>
+<span class="gd">-       uint8_t reserve[2];</span><span class="w"></span>
+<span class="gi">+       // [NEW FEATURE]-BEGIN by wugangnan@paxsz.com 2022-02-23, add terminal boardid cfg</span><span class="w"></span>
+<span class="gi">+       //uint8_t reserve[2];</span><span class="w"></span>
+<span class="gi">+       uint8_t reserve[1];</span><span class="w"></span>
+<span class="gi">+       uint8_t terminal_boardid;</span><span class="w"></span>
+<span class="gi">+       // [NEW FEATURE]-END by wugangnan@paxsz.com 2022-02-23, add terminal boardid cfg</span><span class="w"></span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>4.scp这边接收IPI流程如下,上层传下来的数据格式是SENSOR_HUB_SET_CONFIG：</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="o">*</span><span class="w"> </span><span class="n">INTERNAL_APP_INIT</span><span class="p">(</span><span class="n">contextHubFwHandleEvent</span><span class="p">);</span><span class="w"> </span>
+<span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">case</span><span class="w"> </span><span class="n">EVT_IPI_RX</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">contextHubHandleIpiRxEvent</span><span class="p">();</span><span class="w"></span>
+<span class="w">   </span><span class="o">*</span><span class="w"> </span><span class="n">contextHubFindCmd</span><span class="p">(</span><span class="n">mTask</span><span class="p">.</span><span class="n">ipi_req</span><span class="p">.</span><span class="n">action</span><span class="p">);</span><span class="w"></span>
+<span class="w">     </span><span class="o">*</span><span class="w"> </span><span class="n">contextHubFwSetCfg</span><span class="w"> </span><span class="c1">//因为上层传下来的数据格式是SENSOR_HUB_SET_CONFIG</span>
+<span class="w">       </span><span class="o">*</span><span class="w"> </span><span class="n">set_cfg_req</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">SCP_SENSOR_HUB_SET_CONFIG_REQ</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="n">req</span><span class="p">;</span><span class="w">  </span><span class="c1">//获取数据</span>
+<span class="w">       </span><span class="o">*</span><span class="w"> </span><span class="n">pax_Set_Terminal_Type</span><span class="p">(</span><span class="n">set_cfg_req</span><span class="o">-&gt;</span><span class="n">terminal_boardid</span><span class="p">);</span><span class="w"> </span><span class="c1">//设置机型</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>5.所以对应scp也需要修改：</p></li>
+</ul>
+<div class="highlight-diff notranslate"><div class="highlight"><pre><span></span><span class="gd">--- a/vendor/mediatek/proprietary/tinysys/freertos/source/middleware/contexthub/contexthub_fw.h</span><span class="w"></span>
+<span class="gi">+++ b/vendor/mediatek/proprietary/tinysys/freertos/source/middleware/contexthub/contexthub_fw.h</span><span class="w"></span>
+<span class="gu">@@ -108,6 +108,14 @@</span><span class="w"></span>
+<span class="w"> </span>#define GRV_INCREASE_NUM_AP             1000000<span class="w"></span>
+<span class="w"> </span>#define GRAV_INCREASE_NUM_AP            1000<span class="w"></span>
+<span class="w"> </span>#define LINEARACCEL_INCREASE_NUM_AP     1000<span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+typedef enum {</span><span class="w"></span>
+<span class="gi">+       TERMINAL_M50_PLASTIC,</span><span class="w"></span>
+<span class="gi">+       TERMINAL_M50_METAL,</span><span class="w"></span>
+<span class="gi">+       TERMINAL_M8</span><span class="w"></span>
+<span class="gi">+}terminal_type_t;</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="w"> </span>typedef bool (*SimpleQueueForciblyDiscardCbkF)(void *data, bool onDelete); //return false to reject<span class="w"></span>
+<span class="w"> </span>struct mtkActiveSensor {<span class="w"></span>
+<span class="w"> </span>    uint64_t latency;<span class="w"></span>
+<span class="gu">@@ -416,7 +424,10 @@ typedef struct {</span><span class="w"></span>
+<span class="w"> </span>    uint8_t    sensorType;<span class="w"></span>
+<span class="w"> </span>    uint8_t    action;<span class="w"></span>
+<span class="w"> </span>    uint8_t    event;<span class="w"></span>
+<span class="gd">-    uint8_t    reserve;</span><span class="w"></span>
+<span class="gi">+    // [NEW FEATURE]-BEGIN by wugangnan@paxsz.com 2022-02-23, add terminal boardid cfg</span><span class="w"></span>
+<span class="gi">+    //uint8_t    reserve;</span><span class="w"></span>
+<span class="gi">+    uint8_t    terminal_boardid;</span><span class="w"></span>
+<span class="gi">+    // [NEW FEATURE]-END by wugangnan@paxsz.com 2022-02-23, add terminal boardid cfg</span><span class="w"></span>
+<span class="w"> </span>    uint32_t   data[11];<span class="w"></span>
+<span class="w"> </span>} SCP_SENSOR_HUB_REQ;<span class="w"></span>
+
+<span class="gu">@@ -478,7 +489,11 @@ typedef SCP_SENSOR_HUB_RSP SCP_SENSOR_HUB_BATCH_RSP;</span><span class="w"></span>
+<span class="w"> </span>typedef struct {<span class="w"></span>
+<span class="w"> </span>    uint8_t            sensorType;<span class="w"></span>
+<span class="w"> </span>    uint8_t            action;<span class="w"></span>
+<span class="gd">-    uint8_t            reserve[2];</span><span class="w"></span>
+<span class="gi">+    // [NEW FEATURE]-BEGIN by wugangnan@paxsz.com 2022-02-23, add terminal boardid cfg</span><span class="w"></span>
+<span class="gi">+    //uint8_t            reserve[2];</span><span class="w"></span>
+<span class="gi">+    uint8_t            reserve[1];</span><span class="w"></span>
+<span class="gi">+    uint8_t            terminal_boardid;</span><span class="w"></span>
+<span class="gi">+    // [NEW FEATURE]-END by wugangnan@paxsz.com 2022-02-23, add terminal boardid cfg</span><span class="w"></span>
+<span class="w"> </span>    struct sensorFIFO   *bufferBase;<span class="w"></span>
+<span class="w"> </span>    uint32_t            bufferSize;<span class="w"></span>
+<span class="w"> </span>    uint64_t            ap_timestamp;<span class="w"></span>
+<span class="gu">@@ -722,5 +737,7 @@ uint8_t chreTypeToMtkType(uint8_t sensortype);</span><span class="w"></span>
+<span class="w"> </span>uint8_t mtkTypeToChreType(uint8_t sensortype);<span class="w"></span>
+<span class="w"> </span>void registerDownSampleInfo(int mtkType, uint32_t rate);<span class="w"></span>
+<span class="w"> </span>void registerHwSampleInfo(int chreType, uint32_t hwDelay);<span class="w"></span>
+<span class="gi">+int pax_Get_Terminal_Type(void);</span><span class="w"></span>
+
+<span class="gd">--- a/vendor/mediatek/proprietary/tinysys/freertos/source/middleware/contexthub/contexthub_fw.c</span><span class="w"></span>
+<span class="gi">+++ b/vendor/mediatek/proprietary/tinysys/freertos/source/middleware/contexthub/contexthub_fw.c</span><span class="w"></span>
+<span class="w"> </span>static int contextHubFwSetCfg(SCP_SENSOR_HUB_REQ *req,<span class="w"></span>
+<span class="w"> </span>                              struct data_unit_t *data)<span class="w"></span>
+<span class="w"> </span>{<span class="w"></span>
+<span class="gu">@@ -1526,6 +1554,10 @@ static int contextHubFwSetCfg(SCP_SENSOR_HUB_REQ *req,</span><span class="w"></span>
+<span class="w"> </span>#ifdef CFG_VCORE_DVFS_SUPPORT<span class="w"></span>
+<span class="w"> </span>    dvfs_enable_DRAM_resource(SENS_MEM_ID);<span class="w"></span>
+<span class="w"> </span>#endif<span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+    // [NEW FEATURE]-BEGIN by wugangnan@paxsz.com 2022-02-23, add terminal boardid cfg to scp</span><span class="w"></span>
+<span class="gi">+    pax_Set_Terminal_Type(set_cfg_req-&gt;terminal_boardid);</span><span class="w"></span>
+<span class="gi">+       // [NEW FEATURE]-END by wugangnan@paxsz.com 2022-02-23, add terminal boardid cfg to scp</span><span class="w"></span>
+</pre></div>
+</div>
+</section>
+<section id="scp">
+<h2>scp驱动功能实现<a class="headerlink" href="#scp" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p>主要思路是driver里面增加一个FSM函数，开机的时候去获取机型就好：</p></li>
+</ul>
+<div class="highlight-diff notranslate"><div class="highlight"><pre><span></span><span class="gh">diff --git a/vendor/mediatek/proprietary/tinysys/freertos/source/middleware/contexthub/MEMS_Driver/magnetometer/cust_mag.h b/vendor/mediatek/proprietary/tinysys/freertos/source/middleware/contexthub/MEMS_Driver/magnetometer/cust_mag.h</span><span class="w"></span>
+<span class="w">old mode 100644</span>
+<span class="w">new mode 100755</span>
+<span class="gh">index 5560d93a820..b8021586e6f</span><span class="w"></span>
+<span class="gd">--- a/vendor/mediatek/proprietary/tinysys/freertos/source/middleware/contexthub/MEMS_Driver/magnetometer/cust_mag.h</span><span class="w"></span>
+<span class="gi">+++ b/vendor/mediatek/proprietary/tinysys/freertos/source/middleware/contexthub/MEMS_Driver/magnetometer/cust_mag.h</span><span class="w"></span>
+<span class="gu">@@ -7,6 +7,10 @@ struct mag_hw {</span><span class="w"></span>
+<span class="w"> </span>    const char *name;<span class="w"></span>
+<span class="w"> </span>    int i2c_num;    /*!&lt; the i2c bus used by the chip */<span class="w"></span>
+<span class="w"> </span>    int direction;  /*!&lt; the direction of the chip */<span class="w"></span>
+<span class="gi">+    // [NEW FEATURE]-BEGIN by wugangnan@paxsz.com 2022-02-23, scp Compatible with both models</span><span class="w"></span>
+<span class="gi">+    int direction_m50;</span><span class="w"></span>
+<span class="gi">+    int direction_m8;</span><span class="w"></span>
+<span class="gi">+    // [NEW FEATURE]-END by wugangnan@paxsz.com 2022-02-23, scp Compatible with both models</span><span class="w"></span>
+<span class="w"> </span>    unsigned char   i2c_addr[M_CUST_I2C_ADDR_NUM];<span class="w"></span>
+<span class="w"> </span>};<span class="w"></span>
+<span class="w"> </span>struct mag_hw* get_cust_mag(const char *name);<span class="w"></span>
+<span class="gh">diff --git a/vendor/mediatek/proprietary/tinysys/freertos/source/middleware/contexthub/MEMS_Driver/magnetometer/magnetometer.c b/vendor/mediatek/proprietary/tinysys/freertos/source/middleware/contexthub/MEMS_Driver/magnetometer/magnetometer.c</span><span class="w"></span>
+<span class="w">old mode 100644</span>
+<span class="w">new mode 100755</span>
+<span class="gh">index 1118c30f715..87e3d5f31dd</span><span class="w"></span>
+<span class="gd">--- a/vendor/mediatek/proprietary/tinysys/freertos/source/middleware/contexthub/MEMS_Driver/magnetometer/magnetometer.c</span><span class="w"></span>
+<span class="gi">+++ b/vendor/mediatek/proprietary/tinysys/freertos/source/middleware/contexthub/MEMS_Driver/magnetometer/magnetometer.c</span><span class="w"></span>
+<span class="gu">@@ -458,6 +458,7 @@ static bool sensorCfgMag(void *data, void *cookie)</span><span class="w"></span>
+<span class="w"> </span>    int32_t *values = data;<span class="w"></span>
+<span class="w"> </span>    float offset[AXES_NUM];<span class="w"></span>
+<span class="w"> </span>    int32_t caliParameter[6] = {0};<span class="w"></span>
+<span class="gi">+    struct transferDataInfo dataInfo;</span><span class="w"></span>
+<span class="w"> </span>
+<span class="w"> </span>    osLog(LOG_ERROR, &quot;sensorCfgMag:\n&quot;);<span class="w"></span>
+<span class="w"> </span>    osLog(LOG_ERROR, &quot;values: %ld, %ld, %ld, %ld, %ld, %ld, %ld, %ld, %ld\n&quot;,<span class="w"></span>
+<span class="gu">@@ -479,6 +480,10 @@ static bool sensorCfgMag(void *data, void *cookie)</span><span class="w"></span>
+<span class="w"> </span>    caliParameter[4] = values[7];<span class="w"></span>
+<span class="w"> </span>    caliParameter[5] = values[8];<span class="w"></span>
+<span class="w"> </span>
+<span class="gi">+    // [NEW FEATURE]-BEGIN by wugangnan@paxsz.com 2022-02-23, add chip cfg to scp Compatible with both models</span><span class="w"></span>
+<span class="gi">+    sensorFsmRunState(&amp;dataInfo, &amp;mTask.fsm, (const void *)CHIP_MAG_CFG, &amp;i2cCallback, &amp;spiCallback);</span><span class="w"></span>
+<span class="gi">+    // [NEW FEATURE]-END by wugangnan@paxsz.com 2022-02-23, add chip cfg to scp Compatible with both models</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="w"> </span>    if (mTask.caliAPI.caliApiSetCaliParam != NULL) {<span class="w"></span>
+<span class="w"> </span>        err = mTask.caliAPI.caliApiSetCaliParam(&amp;caliParameter[0]);<span class="w"></span>
+<span class="w"> </span>        if (err &lt; 0) {<span class="w"></span>
+<span class="gu">@@ -869,6 +874,14 @@ static void handleSensorEvent(const void *state)</span><span class="w"></span>
+<span class="w"> </span>            break;<span class="w"></span>
+<span class="w"> </span>        }<span class="w"></span>
+<span class="w"> </span>
+<span class="gi">+        case CHIP_MAG_CFG_DONE: {</span><span class="w"></span>
+<span class="gi">+            sensorFsmReleaseState(&amp;mTask.fsm);</span><span class="w"></span>
+<span class="gi">+            mTask.nowState = CHIP_IDLE;</span><span class="w"></span>
+<span class="gi">+            osLog(LOG_INFO, &quot;mag: cfg done\n&quot;);</span><span class="w"></span>
+<span class="gi">+            processPendingEvt();</span><span class="w"></span>
+<span class="gi">+            break;</span><span class="w"></span>
+<span class="gi">+        }</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="w"> </span>        case CHIP_SAMPLING_DONE: {<span class="w"></span>
+<span class="w"> </span>            mark_timestamp(SENS_TYPE_MAG, SENS_TYPE_MAG, SAMPLE_DONE, rtcGetTime());<span class="w"></span>
+<span class="w"> </span>            sensorFsmReleaseState(&amp;mTask.fsm);<span class="w"></span>
+<span class="gh">diff --git a/vendor/mediatek/proprietary/tinysys/freertos/source/middleware/contexthub/MEMS_Driver/magnetometer/magnetometer.h b/vendor/mediatek/proprietary/tinysys/freertos/source/middleware/contexthub/MEMS_Driver/magnetometer/magnetometer.h</span><span class="w"></span>
+<span class="w">old mode 100644</span>
+<span class="w">new mode 100755</span>
+<span class="gh">index b054e148c24..088d8b3bbc9</span><span class="w"></span>
+<span class="gd">--- a/vendor/mediatek/proprietary/tinysys/freertos/source/middleware/contexthub/MEMS_Driver/magnetometer/magnetometer.h</span><span class="w"></span>
+<span class="gi">+++ b/vendor/mediatek/proprietary/tinysys/freertos/source/middleware/contexthub/MEMS_Driver/magnetometer/magnetometer.h</span><span class="w"></span>
+<span class="gu">@@ -49,6 +49,8 @@ enum MagState {</span><span class="w"></span>
+<span class="w"> </span>    CHIP_INIT_DONE,<span class="w"></span>
+<span class="w"> </span>    CHIP_IDLE,<span class="w"></span>
+<span class="w"> </span>    CHIP_RESET,<span class="w"></span>
+<span class="gi">+    CHIP_MAG_CFG,</span><span class="w"></span>
+<span class="gi">+    CHIP_MAG_CFG_DONE,</span><span class="w"></span>
+<span class="w"> </span>};<span class="w"></span>
+<span class="w"> </span>struct magData {<span class="w"></span>
+<span class="w"> </span>    float x, y, z;<span class="w"></span>
+<span class="gh">diff --git a/vendor/mediatek/proprietary/tinysys/freertos/source/middleware/contexthub/MEMS_Driver/magnetometer/mmc5603.c b/vendor/mediatek/proprietary/tinysys/freertos/source/middleware/contexthub/MEMS_Driver/magnetometer/mmc5603.c</span><span class="w"></span>
+<span class="gh">index 5a4c35ba59f..386135d5443 100755</span><span class="w"></span>
+<span class="gd">--- a/vendor/mediatek/proprietary/tinysys/freertos/source/middleware/contexthub/MEMS_Driver/magnetometer/mmc5603.c</span><span class="w"></span>
+<span class="gi">+++ b/vendor/mediatek/proprietary/tinysys/freertos/source/middleware/contexthub/MEMS_Driver/magnetometer/mmc5603.c</span><span class="w"></span>
+<span class="gu">@@ -57,6 +57,10 @@ enum MMC5603State</span><span class="w"></span>
+<span class="w"> </span>    STATE_IDLE = CHIP_IDLE,<span class="w"></span>
+<span class="w"> </span>
+<span class="w"> </span>    STATE_FUSE_EN = CHIP_RESET,<span class="w"></span>
+<span class="gi">+    // [NEW FEATURE]-BEGIN by wugangnan@paxsz.com 2022-02-23, add chip cfg to scp Compatible with both models</span><span class="w"></span>
+<span class="gi">+    STATE_MAG_CFG = CHIP_MAG_CFG,</span><span class="w"></span>
+<span class="gi">+    STATE_MAG_CFG_DONE = CHIP_MAG_CFG_DONE,</span><span class="w"></span>
+<span class="gi">+    // [NEW FEATURE]-END by wugangnan@paxsz.com 2022-02-23, add chip cfg to scp Compatible with both models</span><span class="w"></span>
+<span class="w"> </span>    STATE_FUSE_RD,<span class="w"></span>
+<span class="w"> </span>    STATE_CORE,<span class="w"></span>
+<span class="w"> </span>    STATE_CHIP_RESET,<span class="w"></span>
+<span class="gu">@@ -234,6 +238,47 @@ static int mmc5603Selftest(I2cCallbackF i2cCallBack, SpiCbkF spiCallBack, void *</span><span class="w"></span>
+<span class="w"> </span>}<span class="w"></span>
+<span class="w"> </span>
+<span class="w"> </span>#endif<span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+// [NEW FEATURE]-BEGIN by wugangnan@paxsz.com 2022-02-23, add terminal boardid cfg to scp Compatible with both models</span><span class="w"></span>
+<span class="gi">+static int mmc5603MagCfg(I2cCallbackF i2cCallBack, SpiCbkF spiCallBack, void *next_state,</span><span class="w"></span>
+<span class="gi">+                           void *inBuf, uint8_t inSize, uint8_t elemInSize,</span><span class="w"></span>
+<span class="gi">+                           void *outBuf, uint8_t *outSize, uint8_t *elemOutSize)</span><span class="w"></span>
+<span class="gi">+{</span><span class="w"></span>
+<span class="gi">+	int pax_Terminal_Type;</span><span class="w"></span>
+<span class="gi">+	int ret;</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+	if (mTask.cvt.map[AXIS_X] == 0 &amp;&amp; mTask.cvt.map[AXIS_Y] == 0 &amp;&amp; mTask.cvt.map[AXIS_Z] == 0)</span><span class="w"></span>
+<span class="gi">+	{</span><span class="w"></span>
+<span class="gi">+		pax_Terminal_Type = pax_Get_Terminal_Type();</span><span class="w"></span>
+<span class="gi">+		if (pax_Terminal_Type == TERMINAL_M8)</span><span class="w"></span>
+<span class="gi">+		{</span><span class="w"></span>
+<span class="gi">+			mTask.hw-&gt;direction = mTask.hw-&gt;direction_m8;</span><span class="w"></span>
+<span class="gi">+		}</span><span class="w"></span>
+<span class="gi">+		else if(pax_Terminal_Type == TERMINAL_M50_PLASTIC)</span><span class="w"></span>
+<span class="gi">+		{</span><span class="w"></span>
+<span class="gi">+			mTask.hw-&gt;direction = mTask.hw-&gt;direction_m50;</span><span class="w"></span>
+<span class="gi">+		}</span><span class="w"></span>
+<span class="gi">+		else if(pax_Terminal_Type == TERMINAL_M50_METAL)</span><span class="w"></span>
+<span class="gi">+		{</span><span class="w"></span>
+<span class="gi">+			mTask.hw-&gt;direction = mTask.hw-&gt;direction_m50;</span><span class="w"></span>
+<span class="gi">+		}</span><span class="w"></span>
+<span class="gi">+		else {</span><span class="w"></span>
+<span class="gi">+			osLog(LOG_ERROR, &quot;invalid Terminal_Type: %d\n&quot;, pax_Terminal_Type);</span><span class="w"></span>
+<span class="gi">+		}</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+	    if (0 != (ret = sensorDriverGetConvert(mTask.hw-&gt;direction, &amp;mTask.cvt)))</span><span class="w"></span>
+<span class="gi">+	    {</span><span class="w"></span>
+<span class="gi">+	        osLog(LOG_ERROR, &quot;invalid direction: %d\n&quot;, mTask.hw-&gt;direction);</span><span class="w"></span>
+<span class="gi">+	    }</span><span class="w"></span>
+<span class="gi">+		osLog(LOG_ERROR, &quot;mag map[0]:%d, map[1]:%d, map[2]:%d, sign[0]:%d, sign[1]:%d, sign[2]:%d\n\r&quot;,</span><span class="w"></span>
+<span class="gi">+			  mTask.cvt.map[AXIS_X], mTask.cvt.map[AXIS_Y], mTask.cvt.map[AXIS_Z],</span><span class="w"></span>
+<span class="gi">+			  mTask.cvt.sign[AXIS_X], mTask.cvt.sign[AXIS_Y], mTask.cvt.sign[AXIS_Z]);</span><span class="w"></span>
+<span class="gi">+	}</span><span class="w"></span>
+<span class="gi">+	sensorFsmEnqueueFakeI2cEvt(i2cCallBack, next_state, SUCCESS_EVT);</span><span class="w"></span>
+<span class="gi">+	return 0;</span><span class="w"></span>
+<span class="gi">+}</span><span class="w"></span>
+<span class="gi">+// [NEW FEATURE]-END by wugangnan@paxsz.com 2022-02-23, add terminal boardid cfg to scp Compatible with both models</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="w"> </span>static void magGetSensorInfo(struct sensorInfo_t *data)<span class="w"></span>
+<span class="w"> </span>{<span class="w"></span>
+<span class="w"> </span>    memcpy(&amp;data-&gt;mag_dev_info, &amp;mTask.mag_dev_info, sizeof(struct mag_dev_info_t));<span class="w"></span>
+<span class="gu">@@ -472,7 +517,7 @@ static int mmc5603Convert(I2cCallbackF i2cCallBack, SpiCbkF spiCallBack, void *n</span><span class="w"></span>
+<span class="w"> </span>    int32_t idata[AXES_NUM];<span class="w"></span>
+<span class="w"> </span>    uint64_t timestamp = 0;<span class="w"></span>
+<span class="w"> </span>
+<span class="gd">-    //osLog(LOG_ERROR, &quot;mmc5603Convert direction: %d\n&quot;, mTask.hw-&gt;direction);</span><span class="w"></span>
+<span class="gi">+    osLog(LOG_ERROR, &quot;mmc5603Convert direction: %d pax_Get_Terminal_Type: %d mTask.hw-&gt;direction_m8 = %d mTask.hw-&gt;direction_m50 = %d\n&quot;, mTask.hw-&gt;direction ,pax_Get_Terminal_Type(),mTask.hw-&gt;direction_m8,mTask.hw-&gt;direction_m50);</span><span class="w"></span>
+<span class="w"> </span>
+<span class="w"> </span>#if 1<span class="w"></span>
+<span class="w"> </span>    osLog(LOG_ERROR, &quot;%s mmc5603 raw reg data: \n&quot;<span class="w"></span>
+<span class="gu">@@ -496,10 +541,17 @@ static int mmc5603Convert(I2cCallbackF i2cCallBack, SpiCbkF spiCallBack, void *n</span><span class="w"></span>
+<span class="w"> </span>    remap_data[mTask.cvt.map[AXIS_X]] = mTask.cvt.sign[AXIS_X] * data[0].x;<span class="w"></span>
+<span class="w"> </span>    remap_data[mTask.cvt.map[AXIS_Y]] = mTask.cvt.sign[AXIS_Y] * data[0].y;<span class="w"></span>
+<span class="w"> </span>    remap_data[mTask.cvt.map[AXIS_Z]] = mTask.cvt.sign[AXIS_Z] * data[0].z;<span class="w"></span>
+<span class="gd">-    //printf(&quot;%s:: remaped: %f %f %f;;;raw: %f %f %f\n&quot;,__func__,(double)remap_data[0],(double)remap_data[1],(double)remap_data[2],(double)data[0].x,(double)data[0].y,(double)data[0].z);</span><span class="w"></span>
+<span class="gd">-    data[0].x = remap_data[AXIS_X] * 100.0f / 1024;</span><span class="w"></span>
+<span class="gd">-    data[0].y = remap_data[AXIS_Y] * 100.0f / 1024;</span><span class="w"></span>
+<span class="gd">-    data[0].z = remap_data[AXIS_Z] * 100.0f / 1024;</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+    //data[0].x = remap_data[AXIS_X] * 100.0f / 1024;</span><span class="w"></span>
+<span class="gi">+    //data[0].y = remap_data[AXIS_Y] * 100.0f / 1024;</span><span class="w"></span>
+<span class="gi">+    //data[0].z = remap_data[AXIS_Z] * 100.0f / 1024;</span><span class="w"></span>
+<span class="gi">+    //[BUGFIX]-BEGIN by (wugangnan@paxsz.com), use kernel Calculation formula to cali data</span><span class="w"></span>
+<span class="gi">+    data[0].x = remap_data[AXIS_X]  / 10;</span><span class="w"></span>
+<span class="gi">+    data[0].y = remap_data[AXIS_Y]  / 10;</span><span class="w"></span>
+<span class="gi">+    data[0].z = remap_data[AXIS_Z]  / 10;</span><span class="w"></span>
+<span class="gi">+    //[BUGFIX]-END by (wugangnan@paxsz.com), use kernel Calculation formula to cali data</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+    printf(&quot;%s:: remaped: %f %f %f;;;raw: %f %f %f\n&quot;,__func__,(double)remap_data[0],(double)remap_data[1],(double)remap_data[2],(double)data[0].x,(double)data[0].y,(double)data[0].z);</span><span class="w"></span>
+<span class="w"> </span>
+<span class="w"> </span>    mTask.factoryData.ix = (int32_t)(data[0].x * MAGNETOMETER_INCREASE_NUM_AP);<span class="w"></span>
+<span class="w"> </span>    mTask.factoryData.iy = (int32_t)(data[0].y * MAGNETOMETER_INCREASE_NUM_AP);<span class="w"></span>
+<span class="gu">@@ -542,6 +594,8 @@ static struct sensorFsm mmc5603Fsm[] = {</span><span class="w"></span>
+<span class="w"> </span>#ifdef MEMSIC_SELFTEST<span class="w"></span>
+<span class="w"> </span>    sensorFsmCmd(STATE_SELFTEST, STATE_SELFTEST_DONE, mmc5603Selftest),<span class="w"></span>
+<span class="w"> </span>#endif    <span class="w"></span>
+<span class="gi">+    sensorFsmCmd(STATE_MAG_CFG, STATE_MAG_CFG_DONE, mmc5603MagCfg),</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="w"> </span>};<span class="w"></span>
+<span class="w"> </span>
+<span class="w"> </span>static int mmc5603Init(void)<span class="w"></span>
+<span class="gu">@@ -560,6 +614,8 @@ static int mmc5603Init(void)</span><span class="w"></span>
+<span class="w"> </span>    mTask.i2c_addr = mTask.hw-&gt;i2c_addr[0];<span class="w"></span>
+<span class="w"> </span>    osLog(LOG_ERROR, &quot;driver version : %s, mag i2c_num: %d, i2c_addr: 0x%x\n&quot;, MMC5603_DRIVER_VERSION, mTask.hw-&gt;i2c_num, mTask.i2c_addr);<span class="w"></span>
+<span class="w"> </span>
+<span class="gi">+    // [NEW FEATURE]-BEGIN by wugangnan@paxsz.com 2022-02-24, put mag direction compatible Function in mmc5603MagCfg</span><span class="w"></span>
+<span class="gi">+	/*</span><span class="w"></span>
+<span class="w"> </span>    if (0 != (ret = sensorDriverGetConvert(mTask.hw-&gt;direction, &amp;mTask.cvt)))<span class="w"></span>
+<span class="w"> </span>    {<span class="w"></span>
+<span class="w"> </span>        osLog(LOG_ERROR, &quot;invalid direction: %d\n&quot;, mTask.hw-&gt;direction);<span class="w"></span>
+<span class="gu">@@ -567,6 +623,8 @@ static int mmc5603Init(void)</span><span class="w"></span>
+<span class="w"> </span>    osLog(LOG_ERROR, &quot;mag map[0]:%d, map[1]:%d, map[2]:%d, sign[0]:%d, sign[1]:%d, sign[2]:%d\n\r&quot;,<span class="w"></span>
+<span class="w"> </span>          mTask.cvt.map[AXIS_X], mTask.cvt.map[AXIS_Y], mTask.cvt.map[AXIS_Z],<span class="w"></span>
+<span class="w"> </span>          mTask.cvt.sign[AXIS_X], mTask.cvt.sign[AXIS_Y], mTask.cvt.sign[AXIS_Z]);<span class="w"></span>
+<span class="gi">+	*/</span><span class="w"></span>
+<span class="gi">+	// [NEW FEATURE]-END by wugangnan@paxsz.com 2022-02-24, put mag direction compatible Function in mmc5603MagCfg</span><span class="w"></span>
+<span class="w"> </span>
+<span class="w"> </span>    i2cMasterRequest(mTask.hw-&gt;i2c_num, I2C_SPEED);<span class="w"></span>
+<span class="w"> </span>    mTask.txBuf[0] = MMC5603_REG_PRODUCT;<span class="w"></span>
+<span class="gu">@@ -589,7 +647,9 @@ static int mmc5603Init(void)</span><span class="w"></span>
+<span class="w"> </span>#endif<span class="w"></span>
+<span class="w"> </span>        mTask.mag_dev_info.layout = 0x00;<span class="w"></span>
+<span class="w"> </span>        mTask.mag_dev_info.deviceid = 0x10;<span class="w"></span>
+<span class="gd">-        strncpy(mTask.mag_dev_info.libname, &quot;memsic&quot;, sizeof(mTask.mag_dev_info.libname));</span><span class="w"></span>
+<span class="gi">+        // [NEW FEATURE]-BEGIN by wugangnan@paxsz.com 2022-02-24, put Calibration library compatible Function in hal,not in scp driver</span><span class="w"></span>
+<span class="gi">+        //strncpy(mTask.mag_dev_info.libname, &quot;memsic&quot;, sizeof(mTask.mag_dev_info.libname));</span><span class="w"></span>
+<span class="gi">+        // [NEW FEATURE]-END by wugangnan@paxsz.com 2022-02-24, put Calibration library compatible Function in hal,not in scp driver</span><span class="w"></span>
+<span class="w"> </span>        magSensorRegister();<span class="w"></span>
+<span class="w"> </span>        magRegisterInterruptMode(MAG_UNFIFO);<span class="w"></span>
+<span class="w"> </span>        registerMagDriverFsm(mmc5603Fsm, ARRAY_SIZE(mmc5603Fsm));<span class="w"></span>
+</pre></div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, wugn.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+  
+
+<script charset="UTF-8" id="LA_COLLECT" src="//sdk.51.la/js-sdk-pro.min.js"></script>
+<script>LA.init({id: "JjOE14XScyd75b2C",ck: "JjOE14XScyd75b2C"})</script>
+
+<br/>
+<script id="LA-DATA-WIDGET" crossorigin="anonymous" charset="UTF-8" src="https://v6-widget.51.la/v6/JjOE14XScyd75b2C/quote.js?theme=0&f=12&display=1,0,0,0,0,0,1,1"></script>
+
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

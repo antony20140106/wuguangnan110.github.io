@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>wugn</title>
+
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../index.html" class="icon icon-home"> wugn_note
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">README</a></li>
+<li><a class="reference internal" href="#id1">概述</a></li>
+<li><a class="reference internal" href="#id2">参考</a></li>
+<li><a class="reference internal" href="#linuxloader-c">1. LinuxLoader.c</a></li>
+</ul>
+</div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">wugn_note</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs"> 
+<li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+<li>README</li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.forward()">Forward</a></li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.back()">Go Back</a> | </li>
+<li style="float: right;margin-left: 10px;"><a href="/index.html">Home</a> | </li>
+
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="readme">
+<h1>README<a class="headerlink" href="#readme" title="Permalink to this headline"></a></h1>
+<p>在前面<a class="reference internal" href="0005_qcom_XBL%E8%BF%90%E8%A1%8C%E6%B5%81%E7%A8%8B.html"><span class="doc std std-doc">0005_qcom_XBL运行流程.md</span></a>中，我们分析到，在BdsEntry() 中会调用 LaunchDefaultBDSApps() 回载默认app，包含ABL。</p>
+</section>
+<section id="id1">
+<h1>概述<a class="headerlink" href="#id1" title="Permalink to this headline"></a></h1>
+<p>默认app定义在 amss\BOOT.XF.1.4\boot_images\QcomPkg\Sdm660Pkg\LA\uefiplat.cfg 中，如下：</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1">## Default app to boot in platform BDS init</span>
+<span class="n">DefaultChargerApp</span> <span class="o">=</span> <span class="s2">&quot;QcomChargerApp&quot;</span>
+<span class="n">DefaultBDSBootApp</span> <span class="o">=</span> <span class="s2">&quot;LinuxLoader&quot;</span>
+</pre></div>
+</div>
+</section>
+<section id="id2">
+<h1>参考<a class="headerlink" href="#id2" title="Permalink to this headline"></a></h1>
+<ul class="simple">
+<li><p><a class="reference external" href="https://blog.csdn.net/Ciellee/article/details/114406051">【Android SDM660源码分析】- 04 - UEFI ABL LinuxLoader 代码分析</a></p></li>
+</ul>
+</section>
+<section id="linuxloader-c">
+<h1>1. LinuxLoader.c<a class="headerlink" href="#linuxloader-c" title="Permalink to this headline"></a></h1>
+<p>高通代码中 LinuxLoader 代码位于 <code class="docutils literal notranslate"><span class="pre">bootable\bootloader\edk2\QcomModulePkg\Application\LinuxLoader</span></code>
+中。</p>
+<p>从 LinuxLoader\LinuxLoader.inf 可知其入口函数为 LinuxLoaderEntry()
+其主要工作如下：</p>
+<ol class="arabic simple">
+<li><p>分配栈内存</p></li>
+<li><p>如果是首次开机，先读取设备信息，判断是否需要做verity boot验证，然后更新devinfo区域</p></li>
+<li><p>枚举当前设备的emmc 分区</p></li>
+<li><p>判断启动模式，fastboot/RECOVERY/ALARM_BOOT/DM_VERITY_ENFORCING/DM_VERITY_LOGGING/DM_VERITY_KEYSCLEAR启动</p></li>
+</ol>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="cp"># bootable\bootloader\edk2\QcomModulePkg\Application\LinuxLoader\LinuxLoader.c</span>
+<span class="cm">/** Linux Loader Application EntryPoint **/</span><span class="w"></span>
+
+<span class="n">EFI_STATUS</span><span class="w"> </span><span class="n">EFIAPI</span><span class="w">  </span><span class="n">__attribute__</span><span class="w"> </span><span class="p">(</span><span class="w"> </span><span class="p">(</span><span class="n">no_sanitize</span><span class="w"> </span><span class="p">(</span><span class="s">&quot;safe-stack&quot;</span><span class="p">)))</span><span class="w"></span>
+<span class="n">LinuxLoaderEntry</span><span class="w"> </span><span class="p">(</span><span class="n">IN</span><span class="w"> </span><span class="n">EFI_HANDLE</span><span class="w"> </span><span class="n">ImageHandle</span><span class="p">,</span><span class="w"> </span><span class="n">IN</span><span class="w"> </span><span class="n">EFI_SYSTEM_TABLE</span><span class="w"> </span><span class="o">*</span><span class="n">SystemTable</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+
+<span class="w">  </span><span class="n">DEBUG</span><span class="w"> </span><span class="p">((</span><span class="n">EFI_D_INFO</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Loader Build Info: %a %a</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">__DATE__</span><span class="p">,</span><span class="w"> </span><span class="n">__TIME__</span><span class="p">));</span><span class="w"></span>
+<span class="w">  </span><span class="n">DEBUG</span><span class="w"> </span><span class="p">((</span><span class="n">EFI_D_VERBOSE</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;LinuxLoader Load Address to debug ABL: 0x%llx</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">UINTN</span><span class="p">)</span><span class="n">LinuxLoaderEntry</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="p">(</span><span class="o">~</span><span class="w"> </span><span class="p">(</span><span class="mh">0xFFF</span><span class="p">))));</span><span class="w"></span>
+<span class="w">  </span><span class="n">DEBUG</span><span class="w"> </span><span class="p">((</span><span class="n">EFI_D_VERBOSE</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;LinuxLoaderEntry Address: 0x%llx</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">UINTN</span><span class="p">)</span><span class="n">LinuxLoaderEntry</span><span class="p">));</span><span class="w"></span>
+<span class="w">  </span><span class="c1">// 1. 分配栈内存</span>
+<span class="w">  </span><span class="n">Status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">AllocateUnSafeStackPtr</span><span class="w"> </span><span class="p">();</span><span class="w"></span>
+<span class="w">  </span><span class="n">StackGuardChkSetup</span><span class="w"> </span><span class="p">();</span><span class="w"></span>
+<span class="w">  </span><span class="n">BootStatsSetTimeStamp</span><span class="w"> </span><span class="p">(</span><span class="n">BS_BL_START</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">  </span><span class="c1">// 2. 如果是首次开机，先读取设备信息，判断是否需要做verity boot验证，然后更新devinfo区域。Initialize verified boot &amp; Read Device Info</span>
+<span class="w">  </span><span class="n">Status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">DeviceInfoInit</span><span class="w"> </span><span class="p">();</span><span class="w"></span>
+<span class="w">  </span><span class="c1">// 3. 枚举当前设备的emmc 分区</span>
+<span class="w">  </span><span class="n">Status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">EnumeratePartitions</span><span class="w"> </span><span class="p">();</span><span class="w"></span>
+
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">EFI_ERROR</span><span class="w"> </span><span class="p">(</span><span class="n">Status</span><span class="p">))</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">DEBUG</span><span class="w"> </span><span class="p">((</span><span class="n">EFI_D_ERROR</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;LinuxLoader: Could not enumerate partitions: %r</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"></span>
+<span class="w">            </span><span class="n">Status</span><span class="p">));</span><span class="w"></span>
+<span class="w">    </span><span class="k">goto</span><span class="w"> </span><span class="n">stack_guard_update_default</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">  </span><span class="n">UpdatePartitionEntries</span><span class="w"> </span><span class="p">();</span><span class="w"></span>
+<span class="w">  </span><span class="cm">/*Check for multislot boot support*/</span><span class="w"></span>
+<span class="w">  </span><span class="n">MultiSlotBoot</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">PartitionHasMultiSlot</span><span class="w"> </span><span class="p">((</span><span class="n">CONST</span><span class="w"> </span><span class="n">CHAR16</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="sa">L</span><span class="s">&quot;boot&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">MultiSlotBoot</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">DEBUG</span><span class="w"> </span><span class="p">((</span><span class="n">EFI_D_VERBOSE</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Multi Slot boot is supported</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">));</span><span class="w"></span>
+<span class="w">    </span><span class="n">FindPtnActiveSlot</span><span class="w"> </span><span class="p">();</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">  </span><span class="n">Status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">GetKeyPress</span><span class="w"> </span><span class="p">(</span><span class="o">&amp;</span><span class="n">KeyPressed</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">Status</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">EFI_SUCCESS</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">KeyPressed</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">SCAN_DOWN</span><span class="p">)</span><span class="w"></span>
+<span class="w">      </span><span class="n">BootIntoFastboot</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">TRUE</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">KeyPressed</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">SCAN_UP</span><span class="p">)</span><span class="w"></span>
+<span class="w">      </span><span class="n">BootIntoRecovery</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">TRUE</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">KeyPressed</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">SCAN_ESC</span><span class="p">)</span><span class="w"></span>
+<span class="w">      </span><span class="n">RebootDevice</span><span class="w"> </span><span class="p">(</span><span class="n">EMERGENCY_DLOAD</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">Status</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">EFI_DEVICE_ERROR</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">DEBUG</span><span class="w"> </span><span class="p">((</span><span class="n">EFI_D_ERROR</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Error reading key status: %r</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">Status</span><span class="p">));</span><span class="w"></span>
+<span class="w">    </span><span class="k">goto</span><span class="w"> </span><span class="n">stack_guard_update_default</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">  </span><span class="c1">// check for reboot mode</span>
+<span class="w">  </span><span class="n">Status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">GetRebootReason</span><span class="w"> </span><span class="p">(</span><span class="o">&amp;</span><span class="n">BootReason</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">Status</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">EFI_SUCCESS</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">DEBUG</span><span class="w"> </span><span class="p">((</span><span class="n">EFI_D_ERROR</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Failed to get Reboot reason: %r</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">Status</span><span class="p">));</span><span class="w"></span>
+<span class="w">    </span><span class="k">goto</span><span class="w"> </span><span class="n">stack_guard_update_default</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">  </span><span class="k">switch</span><span class="w"> </span><span class="p">(</span><span class="n">BootReason</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="k">case</span><span class="w"> </span><span class="nl">FASTBOOT_MODE</span><span class="p">:</span><span class="w"></span>
+<span class="w">    </span><span class="n">BootIntoFastboot</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">TRUE</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="k">case</span><span class="w"> </span><span class="nl">RECOVERY_MODE</span><span class="p">:</span><span class="w"></span>
+<span class="w">    </span><span class="n">BootIntoRecovery</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">TRUE</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="k">case</span><span class="w"> </span><span class="nl">ALARM_BOOT</span><span class="p">:</span><span class="w"></span>
+<span class="w">    </span><span class="n">BootReasonAlarm</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">TRUE</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="k">case</span><span class="w"> </span><span class="nl">DM_VERITY_ENFORCING</span><span class="p">:</span><span class="w"></span>
+<span class="w">    </span><span class="c1">// write to device info</span>
+<span class="w">    </span><span class="n">Status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">EnableEnforcingMode</span><span class="w"> </span><span class="p">(</span><span class="n">TRUE</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">Status</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">EFI_SUCCESS</span><span class="p">)</span><span class="w"></span>
+<span class="w">      </span><span class="k">goto</span><span class="w"> </span><span class="n">stack_guard_update_default</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="k">case</span><span class="w"> </span><span class="nl">DM_VERITY_LOGGING</span><span class="p">:</span><span class="w"></span>
+<span class="w">    </span><span class="cm">/* Disable MDTP if it&#39;s Enabled through Local Deactivation */</span><span class="w"></span>
+<span class="w">    </span><span class="n">Status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">MdtpDisable</span><span class="w"> </span><span class="p">();</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">EFI_ERROR</span><span class="w"> </span><span class="p">(</span><span class="n">Status</span><span class="p">)</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">Status</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">EFI_NOT_FOUND</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">      </span><span class="n">DEBUG</span><span class="w"> </span><span class="p">((</span><span class="n">EFI_D_ERROR</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;MdtpDisable Returned error: %r</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">Status</span><span class="p">));</span><span class="w"></span>
+<span class="w">      </span><span class="k">goto</span><span class="w"> </span><span class="n">stack_guard_update_default</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="c1">// write to device info</span>
+<span class="w">    </span><span class="n">Status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">EnableEnforcingMode</span><span class="w"> </span><span class="p">(</span><span class="n">FALSE</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">Status</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">EFI_SUCCESS</span><span class="p">)</span><span class="w"></span>
+<span class="w">      </span><span class="k">goto</span><span class="w"> </span><span class="n">stack_guard_update_default</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">    </span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="k">case</span><span class="w"> </span><span class="nl">DM_VERITY_KEYSCLEAR</span><span class="p">:</span><span class="w"></span>
+<span class="w">    </span><span class="n">Status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ResetDeviceState</span><span class="w"> </span><span class="p">();</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">Status</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">EFI_SUCCESS</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">      </span><span class="n">DEBUG</span><span class="w"> </span><span class="p">((</span><span class="n">EFI_D_ERROR</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;VB Reset Device State error: %r</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">Status</span><span class="p">));</span><span class="w"></span>
+<span class="w">      </span><span class="k">goto</span><span class="w"> </span><span class="n">stack_guard_update_default</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="k">default</span><span class="o">:</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">BootReason</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">NORMAL_MODE</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">      </span><span class="n">DEBUG</span><span class="w"> </span><span class="p">((</span><span class="n">EFI_D_ERROR</span><span class="p">,</span><span class="w"></span>
+<span class="w">             </span><span class="s">&quot;Boot reason: 0x%x not handled, defaulting to Normal Boot</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"></span>
+<span class="w">             </span><span class="n">BootReason</span><span class="p">));</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">  </span><span class="n">Status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">RecoveryInit</span><span class="w"> </span><span class="p">(</span><span class="o">&amp;</span><span class="n">BootIntoRecovery</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">Status</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">EFI_SUCCESS</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="n">DEBUG</span><span class="w"> </span><span class="p">((</span><span class="n">EFI_D_VERBOSE</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;RecoveryInit failed ignore: %r</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">Status</span><span class="p">));</span><span class="w"></span>
+
+<span class="w">  </span><span class="cm">/* Populate board data required for fastboot, dtb selection and cmd line */</span><span class="w"></span>
+<span class="w">  </span><span class="n">Status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">BoardInit</span><span class="w"> </span><span class="p">();</span><span class="w"></span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">Status</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">EFI_SUCCESS</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">DEBUG</span><span class="w"> </span><span class="p">((</span><span class="n">EFI_D_ERROR</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Error finding board information: %r</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">Status</span><span class="p">));</span><span class="w"></span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">Status</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">  </span><span class="n">DEBUG</span><span class="w"> </span><span class="p">((</span><span class="n">EFI_D_INFO</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;KeyPress:%u, BootReason:%u</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">KeyPressed</span><span class="p">,</span><span class="w"> </span><span class="n">BootReason</span><span class="p">));</span><span class="w"></span>
+<span class="w">  </span><span class="n">DEBUG</span><span class="w"> </span><span class="p">((</span><span class="n">EFI_D_INFO</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Fastboot=%d, Recovery:%d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                          </span><span class="n">BootIntoFastboot</span><span class="p">,</span><span class="w"> </span><span class="n">BootIntoRecovery</span><span class="p">));</span><span class="w"></span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">GetVmData</span><span class="w"> </span><span class="p">())</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">DEBUG</span><span class="w"> </span><span class="p">((</span><span class="n">EFI_D_ERROR</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;VM Hyp calls not present</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">));</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">BootIntoFastboot</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">BootInfo</span><span class="w"> </span><span class="n">Info</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="mi">0</span><span class="p">};</span><span class="w"></span>
+<span class="w">    </span><span class="n">Info</span><span class="p">.</span><span class="n">MultiSlotBoot</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">MultiSlotBoot</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="n">Info</span><span class="p">.</span><span class="n">BootIntoRecovery</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">BootIntoRecovery</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="n">Info</span><span class="p">.</span><span class="n">BootReasonAlarm</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">BootReasonAlarm</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="n">Status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">LoadImageAndAuth</span><span class="w"> </span><span class="p">(</span><span class="o">&amp;</span><span class="n">Info</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">Status</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">EFI_SUCCESS</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">      </span><span class="n">DEBUG</span><span class="w"> </span><span class="p">((</span><span class="n">EFI_D_ERROR</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;LoadImageAndAuth failed: %r</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">Status</span><span class="p">));</span><span class="w"></span>
+<span class="w">      </span><span class="k">goto</span><span class="w"> </span><span class="n">fastboot</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">    </span><span class="n">BootLinux</span><span class="w"> </span><span class="p">(</span><span class="o">&amp;</span><span class="n">Info</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
+
+<span class="nl">fastboot</span><span class="p">:</span><span class="w"></span>
+<span class="w">  </span><span class="n">DEBUG</span><span class="w"> </span><span class="p">((</span><span class="n">EFI_D_INFO</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Launching fastboot</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">));</span><span class="w"></span>
+<span class="w">  </span><span class="n">Status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">FastbootInitialize</span><span class="w"> </span><span class="p">();</span><span class="w"></span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">EFI_ERROR</span><span class="w"> </span><span class="p">(</span><span class="n">Status</span><span class="p">))</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">DEBUG</span><span class="w"> </span><span class="p">((</span><span class="n">EFI_D_ERROR</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Failed to Launch Fastboot App: %d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">Status</span><span class="p">));</span><span class="w"></span>
+<span class="w">    </span><span class="k">goto</span><span class="w"> </span><span class="n">stack_guard_update_default</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
+
+<span class="nl">stack_guard_update_default</span><span class="p">:</span><span class="w"></span>
+<span class="w">  </span><span class="cm">/*Update stack check guard with defualt value then return*/</span><span class="w"></span>
+<span class="w">  </span><span class="n">__stack_chk_guard</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">DEFAULT_STACK_CHK_GUARD</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">Status</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, wugn.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+  
+
+<script charset="UTF-8" id="LA_COLLECT" src="//sdk.51.la/js-sdk-pro.min.js"></script>
+<script>LA.init({id: "JjOE14XScyd75b2C",ck: "JjOE14XScyd75b2C"})</script>
+
+<br/>
+<script id="LA-DATA-WIDGET" crossorigin="anonymous" charset="UTF-8" src="https://v6-widget.51.la/v6/JjOE14XScyd75b2C/quote.js?theme=0&f=12&display=1,0,0,0,0,0,1,1"></script>
+
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

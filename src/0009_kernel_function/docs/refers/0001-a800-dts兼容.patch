@@ -1,0 +1,368 @@
+From e4e09abea394ef0bb2808246cec0c4483748f3b9 Mon Sep 17 00:00:00 2001
+From: zengjf <zengjianfeng@paxsz.com>
+Date: Mon, 19 Jul 2021 13:48:21 +0800
+Subject: [PATCH] =?UTF-8?q?[Title]:=20=E5=85=BC=E5=AE=B9=E5=A4=9A=E5=A5=97?=
+ =?UTF-8?q?dts=E9=85=8D=E7=BD=AE=EF=BC=8C=E4=B8=80=E5=A5=97=E7=B3=BB?=
+ =?UTF-8?q?=E7=BB=9F=E5=AF=B9=E5=A4=9A=E4=B8=AA=E7=A1=AC=E4=BB=B6?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+[Summary]: YES
+	1. DTS Overlay文件格式：[terminal name]_[SoC name]_[main name]_[port name]
+		1. A800_MT6761_V05_V03.dts
+		2. A800_MT6762_V05_V03.dts
+	2. terminal name在添加新的硬件主板的时候需要添加到列表：
+		1. Makefile:
+			1. device/mediatek/build/core/build_dtboimage.mk
+				1. TERMINAL_NAMES
+			2. kernel-4.9/scripts/drvgen/drvgen.mk
+				1. TERMINAL_NAMES
+		2. pl解析添加: vendor/mediatek/proprietary/bootable/bootloader/lk/app/pax/sp_download.c
+			1. terminal_maps
+	3. dtbo id合成原理：
+		1. uuid = TERMINAL_NAME(1 byte) | MAIN_BOARD(1 byte) | PORT_BOARD(1 byte)
+		2. 以上byte使用的是char类型，各127种版本；
+
+[Test Plan]: YES
+	1. 新建DTS Overlay文件，按找格式要求创建；
+	2. 通过SP配置，自动获取DTS Overlay文件成功，并系统启动成功；
+	3. LK log参考提示信息：
+		1. get DTBO: A800_V03_V02
+		2. uuid: 0x00010503
+
+[Module]: system
+
+[Model]: A800
+
+[author]: zengjianfeng@paxsz.com
+
+[date]: 2021-07-19
+---
+ device/mediatek/build/core/build_dtboimage.mk | 34 ++++++-
+ ...64_bsp_pax.dts => A800_MT6761_V05_V03.dts} |  0
+ ...64_bsp_pax.dts => A800_MT6762_V05_V03.dts} |  0
+ .../configs/k61v1_64_bsp_pax_debug_defconfig  |  4 +-
+ .../arm64/configs/k61v1_64_bsp_pax_defconfig  |  4 +-
+ .../configs/k62v1_64_bsp_pax_debug_defconfig  |  4 +-
+ .../arm64/configs/k62v1_64_bsp_pax_defconfig  |  4 +-
+ kernel-4.9/scripts/drvgen/drvgen.mk           | 31 +++++-
+ .../bootloader/lk/app/pax/sp_download.c       | 97 ++++++++++++-------
+ 9 files changed, 130 insertions(+), 48 deletions(-)
+ rename kernel-4.9/arch/arm64/boot/dts/mediatek/{k61v1_64_bsp_pax.dts => A800_MT6761_V05_V03.dts} (100%)
+ rename kernel-4.9/arch/arm64/boot/dts/mediatek/{k62v1_64_bsp_pax.dts => A800_MT6762_V05_V03.dts} (100%)
+
+diff --git a/device/mediatek/build/core/build_dtboimage.mk b/device/mediatek/build/core/build_dtboimage.mk
+index b4251eb07c9..fd953ba1b71 100644
+--- a/device/mediatek/build/core/build_dtboimage.mk
++++ b/device/mediatek/build/core/build_dtboimage.mk
+@@ -34,18 +34,44 @@ $(foreach prj_path,$(MTK_DTBOIMAGE_DTSI),\
+   $(eval $(call drvgen_dws_to_dtsi,$(MTK_DTBOIMAGE_DWS),$(prj_path)))\
+ )
+ 
++# [FEATURE] Add-BEGIN by (zengjianfeng@paxsz.com), 2021/07/19, Compatible with multiple dts
++TERMINAL_NAMES ?= A800 A920
++$(info TERMINAL_NAMES: $(TERMINAL_NAMES))
+ my_dtbo_id := 0
+ define mk_dtboimg_cfg
+-echo $(1) >>$(2);\
+-echo " id=$(my_dtbo_id)" >>$(2);\
+-$(eval my_dtbo_id := (call int_plus,$(my_dtbo_id),1))
++$(eval dts_file_name := $(basename $(shell basename $1))) \
++$(eval terminal_name := $(shell echo $(dts_file_name) | awk -F'_' '{print $$1}')) \
++$(eval main_name := $(shell echo $(dts_file_name) | awk -F'_' '{print $$3}' | sed -e 's/V//' -e 's/v//' | xargs printf '%02x')) \
++$(eval port_name := $(shell echo $(dts_file_name) | awk -F'_' '{print $$4}' | sed -e 's/V//' -e 's/v//' | xargs printf '%02x')) \
++\
++echo $(dts_file_name): $(terminal_name), $(main_name), $(port_name); \
++\
++for x in $$(seq 0 $(words $(TERMINAL_NAMES))); do \
++    echo $$x: `echo $(TERMINAL_NAMES) | cut -d " " -f $$((x+1))`; \
++\
++    if [ $(terminal_name) = "`echo $(TERMINAL_NAMES) | cut -d " " -f $$((x+1))`" ]; then \
++        break; \
++    fi; \
++done; \
++\
++if [ $$x -eq $(words $(TERMINAL_NAMES)) ]; then \
++    echo "no match defined board, use default id=$(my_dtbo_id)"; \
++    echo " id=$(my_dtbo_id)" >>$(2); \
++    $(eval my_dtbo_id:=$(shell echo $$(($(my_dtbo_id)+1)))) \
++else \
++    echo " id=`echo $$((x+1)) | xargs printf '0x%02x'`$(main_name)$(port_name)"; \
++    echo $(1) >>$(2); \
++    echo " id=`echo $$((x+1)) | xargs printf '0x%02x'`$(main_name)$(port_name)" >>$(2); \
++fi;
+ endef
++# [FEATURE] Add-END by (zengjianfeng@paxsz.com), 2021/07/19, Compatible with multiple dts
+ 
+ MTK_DTBOIMAGE_CFG := $(KERNEL_OUT)/arch/$(KERNEL_TARGET_ARCH)/boot/dts/dtboimg.cfg
+ $(MTK_DTBOIMAGE_CFG): PRIVATE_DTB := $(MTK_DTBOIMAGE_DTB)
+ $(MTK_DTBOIMAGE_CFG): $(MTK_DTBOIMAGE_DTB)
+ 	$(hide) rm -f $@.tmp
+-	$(hide) $(foreach f,$(PRIVATE_DTB),$(call mk_dtboimg_cfg,$(f),$@.tmp))
++	$(info zengjf check postion $(MTK_DTBOIMAGE_CFG))
++	$(foreach f,$(PRIVATE_DTB),$(call mk_dtboimg_cfg,$(f),$@.tmp))
+ 	$(hide) if ! cmp -s $@.tmp $@; then \
+ 		mv $@.tmp $@; \
+ 	else \
+diff --git a/kernel-4.9/arch/arm64/boot/dts/mediatek/k61v1_64_bsp_pax.dts b/kernel-4.9/arch/arm64/boot/dts/mediatek/A800_MT6761_V05_V03.dts
+similarity index 100%
+rename from kernel-4.9/arch/arm64/boot/dts/mediatek/k61v1_64_bsp_pax.dts
+rename to kernel-4.9/arch/arm64/boot/dts/mediatek/A800_MT6761_V05_V03.dts
+diff --git a/kernel-4.9/arch/arm64/boot/dts/mediatek/k62v1_64_bsp_pax.dts b/kernel-4.9/arch/arm64/boot/dts/mediatek/A800_MT6762_V05_V03.dts
+similarity index 100%
+rename from kernel-4.9/arch/arm64/boot/dts/mediatek/k62v1_64_bsp_pax.dts
+rename to kernel-4.9/arch/arm64/boot/dts/mediatek/A800_MT6762_V05_V03.dts
+diff --git a/kernel-4.9/arch/arm64/configs/k61v1_64_bsp_pax_debug_defconfig b/kernel-4.9/arch/arm64/configs/k61v1_64_bsp_pax_debug_defconfig
+index d66f3355f60..d2c8160ce22 100755
+--- a/kernel-4.9/arch/arm64/configs/k61v1_64_bsp_pax_debug_defconfig
++++ b/kernel-4.9/arch/arm64/configs/k61v1_64_bsp_pax_debug_defconfig
+@@ -33,7 +33,7 @@ CONFIG_CMDLINE="console=tty0 console=ttyMT3,921600n1 root=/dev/ram vmalloc=496M
+ # CONFIG_EFI is not set
+ CONFIG_BUILD_ARM64_APPENDED_DTB_IMAGE=y
+ CONFIG_BUILD_ARM64_APPENDED_DTB_IMAGE_NAMES="mediatek/mt6761"
+-CONFIG_BUILD_ARM64_DTB_OVERLAY_IMAGE_NAMES="mediatek/k61v1_64_bsp_pax"
++CONFIG_BUILD_ARM64_DTB_OVERLAY_IMAGE_NAMES="mediatek/A800_MT6761_V05_V03"
+ # CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS is not set
+ CONFIG_COMPAT=y
+ CONFIG_CPU_FREQ=y
+@@ -495,4 +495,4 @@ CONFIG_PAX_PCD_PN518=y
+ CONFIG_PAX_USB_SWITCH=y
+ #CONFIG_MT6370_PMU_CHARGER_TYPE_DETECT=y
+ CONFIG_PAX_CHARGER_IGNORE_COOLER=y
+-CONFIG_PAX_NO_BAT_SUPPORT=y
+\ No newline at end of file
++CONFIG_PAX_NO_BAT_SUPPORT=y
+diff --git a/kernel-4.9/arch/arm64/configs/k61v1_64_bsp_pax_defconfig b/kernel-4.9/arch/arm64/configs/k61v1_64_bsp_pax_defconfig
+index 87f32307275..c95692e03a9 100755
+--- a/kernel-4.9/arch/arm64/configs/k61v1_64_bsp_pax_defconfig
++++ b/kernel-4.9/arch/arm64/configs/k61v1_64_bsp_pax_defconfig
+@@ -35,7 +35,7 @@ CONFIG_CMDLINE="console=tty0 console=ttyMT3,921600n1 root=/dev/ram vmalloc=496M
+ # CONFIG_EFI is not set
+ CONFIG_BUILD_ARM64_APPENDED_DTB_IMAGE=y
+ CONFIG_BUILD_ARM64_APPENDED_DTB_IMAGE_NAMES="mediatek/mt6761"
+-CONFIG_BUILD_ARM64_DTB_OVERLAY_IMAGE_NAMES="mediatek/k61v1_64_bsp_pax"
++CONFIG_BUILD_ARM64_DTB_OVERLAY_IMAGE_NAMES="mediatek/A800_MT6761_V05_V03"
+ # CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS is not set
+ CONFIG_COMPAT=y
+ CONFIG_WQ_POWER_EFFICIENT_DEFAULT=y
+@@ -480,4 +480,4 @@ CONFIG_PAX_PCD_PN518=y
+ CONFIG_PAX_USB_SWITCH=y
+ #CONFIG_MT6370_PMU_CHARGER_TYPE_DETECT=y
+ CONFIG_PAX_CHARGER_IGNORE_COOLER=y
+-CONFIG_PAX_NO_BAT_SUPPORT=y
+\ No newline at end of file
++CONFIG_PAX_NO_BAT_SUPPORT=y
+diff --git a/kernel-4.9/arch/arm64/configs/k62v1_64_bsp_pax_debug_defconfig b/kernel-4.9/arch/arm64/configs/k62v1_64_bsp_pax_debug_defconfig
+index 9f3045143f5..e2eb788b74a 100755
+--- a/kernel-4.9/arch/arm64/configs/k62v1_64_bsp_pax_debug_defconfig
++++ b/kernel-4.9/arch/arm64/configs/k62v1_64_bsp_pax_debug_defconfig
+@@ -33,7 +33,7 @@ CONFIG_CMDLINE="console=tty0 console=ttyMT3,921600n1 root=/dev/ram vmalloc=496M
+ # CONFIG_EFI is not set
+ CONFIG_BUILD_ARM64_APPENDED_DTB_IMAGE=y
+ CONFIG_BUILD_ARM64_APPENDED_DTB_IMAGE_NAMES="mediatek/mt6765"
+-CONFIG_BUILD_ARM64_DTB_OVERLAY_IMAGE_NAMES="mediatek/k62v1_64_bsp_pax"
++CONFIG_BUILD_ARM64_DTB_OVERLAY_IMAGE_NAMES="mediatek/A800_MT6762_V05_V03"
+ # CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS is not set
+ CONFIG_COMPAT=y
+ CONFIG_WQ_POWER_EFFICIENT_DEFAULT=y
+@@ -508,4 +508,4 @@ CONFIG_PAX_PCD_PN518=y
+ CONFIG_PAX_USB_SWITCH=y
+ #CONFIG_MT6370_PMU_CHARGER_TYPE_DETECT=y
+ CONFIG_PAX_CHARGER_IGNORE_COOLER=y
+-CONFIG_PAX_NO_BAT_SUPPORT=y
+\ No newline at end of file
++CONFIG_PAX_NO_BAT_SUPPORT=y
+diff --git a/kernel-4.9/arch/arm64/configs/k62v1_64_bsp_pax_defconfig b/kernel-4.9/arch/arm64/configs/k62v1_64_bsp_pax_defconfig
+index 385eab019aa..7ecf3d46bfe 100755
+--- a/kernel-4.9/arch/arm64/configs/k62v1_64_bsp_pax_defconfig
++++ b/kernel-4.9/arch/arm64/configs/k62v1_64_bsp_pax_defconfig
+@@ -34,7 +34,7 @@ CONFIG_CMDLINE="console=tty0 console=ttyMT3,921600n1 root=/dev/ram vmalloc=496M
+ # CONFIG_EFI is not set
+ CONFIG_BUILD_ARM64_APPENDED_DTB_IMAGE=y
+ CONFIG_BUILD_ARM64_APPENDED_DTB_IMAGE_NAMES="mediatek/mt6765"
+-CONFIG_BUILD_ARM64_DTB_OVERLAY_IMAGE_NAMES="mediatek/k62v1_64_bsp_pax"
++CONFIG_BUILD_ARM64_DTB_OVERLAY_IMAGE_NAMES="mediatek/A800_MT6762_V05_V03"
+ # CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS is not set
+ CONFIG_COMPAT=y
+ CONFIG_WQ_POWER_EFFICIENT_DEFAULT=y
+@@ -484,4 +484,4 @@ CONFIG_PAX_PCD_PN518=y
+ CONFIG_PAX_USB_SWITCH=y
+ #CONFIG_MT6370_PMU_CHARGER_TYPE_DETECT=y
+ CONFIG_PAX_CHARGER_IGNORE_COOLER=y
+-CONFIG_PAX_NO_BAT_SUPPORT=y
+\ No newline at end of file
++CONFIG_PAX_NO_BAT_SUPPORT=y
+diff --git a/kernel-4.9/scripts/drvgen/drvgen.mk b/kernel-4.9/scripts/drvgen/drvgen.mk
+index b868e8a586c..34eab2f3ff4 100644
+--- a/kernel-4.9/scripts/drvgen/drvgen.mk
++++ b/kernel-4.9/scripts/drvgen/drvgen.mk
+@@ -76,11 +76,35 @@ dtbo_check: $(MAIN_DTB_NAMES) $(PROJ_DTB_NAMES)
+ 		$(srctree)/scripts/dtc/ufdt_apply_overlay $(MAIN_DTB_FILES) $$i $$i.merge;\
+ 	done
+ 
++# [FEATURE] Add-BEGIN by (zengjianfeng@paxsz.com), 2021/07/19, Compatible with multiple dts
++TERMINAL_NAMES ?= A800 A920
++$(info TERMINAL_NAMES: $(TERMINAL_NAMES))
+ my_dtbo_id := 0
+ define mk_dtboimg_cfg
+-echo $(1) >>$(2);\
+-echo " id=$(my_dtbo_id)" >>$(2);\
+-$(eval my_dtbo_id:=$(shell echo $$(($(my_dtbo_id)+1))))
++$(eval dts_file_name := $(basename $(shell basename $1))) \
++$(eval terminal_name := $(shell echo $(dts_file_name) | awk -F'_' '{print $$1}')) \
++$(eval main_name := $(shell echo $(dts_file_name) | awk -F'_' '{print $$3}' | sed -e 's/V//' -e 's/v//' | xargs printf '%02x')) \
++$(eval port_name := $(shell echo $(dts_file_name) | awk -F'_' '{print $$4}' | sed -e 's/V//' -e 's/v//' | xargs printf '%02x')) \
++\
++echo $(dts_file_name): $(terminal_name), $(main_name), $(port_name); \
++\
++for x in $$(seq 0 $(words $(TERMINAL_NAMES))); do \
++    echo $$x: `echo $(TERMINAL_NAMES) | cut -d " " -f $$((x+1))`; \
++\
++    if [ $(terminal_name) = "`echo $(TERMINAL_NAMES) | cut -d " " -f $$((x+1))`" ]; then \
++        break; \
++    fi; \
++done; \
++\
++if [ $$x -eq $(words $(TERMINAL_NAMES)) ]; then \
++    echo "no match defined board, use default id=$(my_dtbo_id)"; \
++    echo " id=$(my_dtbo_id)" >>$(2); \
++	$(eval my_dtbo_id:=$(shell echo $$(($(my_dtbo_id)+1)))) \
++else \
++	echo " id=`echo $$((x+1)) | xargs printf '0x%02x'`$(main_name)$(port_name)"; \
++	echo $(1) >>$(2); \
++	echo " id=`echo $$((x+1)) | xargs printf '0x%02x'`$(main_name)$(port_name)" >>$(2); \
++fi;
+ endef
+ 
+ my_dtb_id := 0
+@@ -89,6 +113,7 @@ echo $(1) >>$(2);\
+ echo " id=$(my_dtb_id)" >>$(2);\
+ $(eval my_dtb_id:=$(shell echo $$(($(my_dtb_id)+1))))
+ endef
++# [FEATURE] Add-END by (zengjianfeng@paxsz.com), 2021/07/19, Compatible with multiple dts
+ 
+ dtbs: $(objtree)/dtboimg.cfg $(objtree)/dtbimg.cfg
+ $(objtree)/dtboimg.cfg: FORCE
+diff --git a/vendor/mediatek/proprietary/bootable/bootloader/lk/app/pax/sp_download.c b/vendor/mediatek/proprietary/bootable/bootloader/lk/app/pax/sp_download.c
+index 316d0a9a661..05937c6ada5 100755
+--- a/vendor/mediatek/proprietary/bootable/bootloader/lk/app/pax/sp_download.c
++++ b/vendor/mediatek/proprietary/bootable/bootloader/lk/app/pax/sp_download.c
+@@ -3,7 +3,7 @@
+ #include "sp_download.h"
+ #include <pal_log.h>
+ #include <mt_gpio.h>
+-
++#include <stdlib.h>
+ 
+ static char g_sp_boot_flag =0;
+ static uint16_t PackNum;
+@@ -1612,42 +1612,73 @@ int getCfgItemValStr(char *keyWord, char *pValue)
+     return ret;
+ }
+ 
+-const unsigned char model_list[][32]=
+-{
+-	"A800_V03_V03",
+-	"A800_V02_V02",
+-	"A800_V01_V01",
++// [FEATURE] Add-BEGIN by (zengjianfeng@paxsz.com), 2021/07/19, Compatible with multiple dts
++struct terminal_map {
++    char key[12];
++    unsigned char value;
+ };
+ 
+-
++/******************************************************************************
++* NOTE: 
++*  uuid = TERMINAL_NAME(1 byte) | MAIN_BOARD(1 byte) | PORT_BOARD(1 byte)
++*
++******************************************************************************/
++struct terminal_map terminal_maps[] =
++{
++    {"A800", 0x01},
++    {"A920", 0x02},
++};
+ 
+ void choice_fdt(int *fdt_num)
+ {
+-	char dtbZipStr[9];
+-	char strBoardId[64]={0};
+-	char board_name[64]={0};
+-	char main_name[64]={0};
+-	char port_name[64]={0};
+-	int i;
+-	ShowCfginfo();
+-	if(getCfgItemValStr("TERMINAL_NAME", board_name) == 0
+-	 	  && getCfgItemValStr("MAIN_BOARD", main_name) == 0
+-	  	 && getCfgItemValStr("PORT_BOARD", port_name) == 0) {
+-			sprintf(strBoardId, "%s_%s_%s", board_name, main_name, port_name);
+-			dprintf(INFO,"get DTB: %s\n", strBoardId);
+-	} else {
+-		dprintf(INFO,"no DTB found, used sunxi_IM30_V03_V03.dtb.temp as default\n");
+-		*fdt_num =0;
+-		return;
+-	}
+-	for(i=0;i<sizeof(model_list)/sizeof(model_list[0]);i++)
+-	{
+-		if(strcmp(strBoardId,model_list[i])==0)
+-		{
+-			*fdt_num =i;
+-			break;
+-		}
+-	}
+-	return;
++    int i    = 0;
++    int uuid = 0;
++    char dtbZipStr[9]   = { 0 };
++    char main_name[64]  = { 0 };
++    char port_name[64]  = { 0 };
++    char strBoardId[64] = { 0 };
++    char terminal_name[64] = { 0 };
++    struct terminal_map *t_map = NULL;
++
++    ShowCfginfo();
++
++    if (getCfgItemValStr("TERMINAL_NAME", terminal_name) == 0
++          && getCfgItemValStr("MAIN_BOARD", main_name) == 0
++          && getCfgItemValStr("PORT_BOARD", port_name) == 0 )
++    {
++        sprintf(strBoardId, "%s_%s_%s", terminal_name, main_name, port_name);
++
++        for (; i < (sizeof(terminal_maps) / sizeof(struct terminal_map)); i++) {
++            printf("%s\n", terminal_maps[i].key);
++            if (strcmp(terminal_name, terminal_maps[i].key) == 0) {
++                uuid |= (terminal_maps[i].value << 16);
++                break;
++            }
++        }
++
++        if (i == (sizeof(terminal_maps) / sizeof(struct terminal_map))) {
++            *fdt_num = 0;
++            return;
++        }
++
++        uuid |= atoi(main_name + 1) << 8;
++        uuid |= atoi(port_name + 1);
++
++        if (uuid < 0x010503)
++            uuid = 0x010503;
++
++        dprintf(INFO,"get DTBO: %s\n", strBoardId);
++        dprintf(INFO,"uuid: 0x%08x\n", uuid);
++
++        *fdt_num = uuid;
++    } else {
++        dprintf(INFO,"no DTBO found, used default index 0 for DTBO\n");
++        *fdt_num = 0;
++
++        return;
++    }
++
++    return;
+ }
++// [FEATURE] Add-END by (zengjianfeng@paxsz.com), 2021/07/19, Compatible with multiple dts
+ 
+-- 
+2.17.1
+

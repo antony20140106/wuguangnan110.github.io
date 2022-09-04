@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>wugn</title>
+
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../index.html" class="icon icon-home"> wugn_note
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">Android Brightness Backlight</a><ul>
+<li><a class="reference internal" href="#id1">参考文档</a></li>
+<li><a class="reference internal" href="#config">config</a></li>
+<li><a class="reference internal" href="#dumpsys-display">dumpsys display</a></li>
+<li><a class="reference internal" href="#monotone-cubic-spline">Monotone Cubic Spline</a></li>
+<li><a class="reference internal" href="#light-sensor">Light Sensor</a></li>
+</ul>
+</li>
+</ul>
+</div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">wugn_note</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs"> 
+<li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+<li>Android Brightness Backlight</li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.forward()">Forward</a></li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.back()">Go Back</a> | </li>
+<li style="float: right;margin-left: 10px;"><a href="/index.html">Home</a> | </li>
+
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="android-brightness-backlight">
+<h1>Android Brightness Backlight<a class="headerlink" href="#android-brightness-backlight" title="Permalink to this headline"></a></h1>
+<p>光感传感器和背光关系分析，最终通过Monotone Cubic Spline拟合</p>
+<section id="id1">
+<h2>参考文档<a class="headerlink" href="#id1" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p><a class="reference internal" href="0010_Android_Auto_Brightness.html"><span class="doc std std-doc">0368_Android_Auto_Brightness.md</span></a></p></li>
+<li><p><a class="reference internal" href="0011_A_Manual_Backlight.html"><span class="doc std std-doc">0434_A_Manual_Backlight.md</span></a></p></li>
+</ul>
+</section>
+<section id="config">
+<h2>config<a class="headerlink" href="#config" title="Permalink to this headline"></a></h2>
+<p>vendor/mediatek/proprietary/packages/overlay/vendor/FrameworkResOverlay/brightness_adaptive_support/res/values/config.xml</p>
+<div class="highlight-xml notranslate"><div class="highlight"><pre><span></span><span class="cp">&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot;?&gt;</span>
+<span class="cm">&lt;!--</span>
+<span class="cm">/*</span>
+<span class="cm">** Copyright 2009, The Android Open Source Project</span>
+<span class="cm">**</span>
+<span class="cm">** Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span class="cm">** you may not use this file except in compliance with the License.</span>
+<span class="cm">** You may obtain a copy of the License at</span>
+<span class="cm">**</span>
+<span class="cm">**     http://www.apache.org/licenses/LICENSE-2.0</span>
+<span class="cm">**</span>
+<span class="cm">** Unless required by applicable law or agreed to in writing, software</span>
+<span class="cm">** distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span class="cm">** WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
+<span class="cm">** See the License for the specific language governing permissions and</span>
+<span class="cm">** limitations under the License.</span>
+<span class="cm">*/</span>
+<span class="cm">--&gt;</span>
+
+<span class="cm">&lt;!-- These resources are around just to allow their values to be customized</span>
+<span class="cm">     for different hardware and product builds.  Do not translate. --&gt;</span>
+<span class="nt">&lt;resources</span> <span class="na">xmlns:xliff=</span><span class="s">&quot;urn:oasis:names:tc:xliff:document:1.2&quot;</span><span class="nt">&gt;</span>
+
+    <span class="cm">&lt;!-- Flag indicating whether the we should enable the automatic brightness in Settings.</span>
+<span class="cm">         Software implementation will be used if config_hardware_auto_brightness_available is not set --&gt;</span>
+    <span class="nt">&lt;bool</span> <span class="na">name=</span><span class="s">&quot;config_automatic_brightness_available&quot;</span><span class="nt">&gt;</span>true<span class="nt">&lt;/bool&gt;</span>
+
+    <span class="cm">&lt;!-- Array of light sensor LUX values to define our levels for auto backlight brightness support.</span>
+<span class="cm">         The N entries of this array define N + 1 control points as follows:</span>
+<span class="cm">         (1-based arrays)</span>
+
+<span class="cm">         Point 1:            (0, value[1]):             lux &lt;= 0</span>
+<span class="cm">         Point 2:     (level[1], value[2]):  0        &lt; lux &lt;= level[1]</span>
+<span class="cm">         Point 3:     (level[2], value[3]):  level[2] &lt; lux &lt;= level[3]</span>
+<span class="cm">         ...</span>
+<span class="cm">         Point N+1: (level[N], value[N+1]):  level[N] &lt; lux</span>
+
+<span class="cm">         The control points must be strictly increasing.  Each control point</span>
+<span class="cm">         corresponds to an entry in the brightness backlight values arrays.</span>
+<span class="cm">         For example, if LUX == level[1] (first element of the levels array)</span>
+<span class="cm">         then the brightness will be determined by value[2] (second element</span>
+<span class="cm">         of the brightness values array).</span>
+
+<span class="cm">         Spline interpolation is used to determine the auto-brightness</span>
+<span class="cm">         backlight values for LUX levels between these control points.</span>
+
+<span class="cm">         Must be overridden in platform specific overlays --&gt;</span>
+    <span class="nt">&lt;integer-array</span> <span class="na">name=</span><span class="s">&quot;config_autoBrightnessLevels&quot;</span><span class="nt">&gt;</span>
+        <span class="nt">&lt;item&gt;</span>128<span class="nt">&lt;/item&gt;</span>
+        <span class="nt">&lt;item&gt;</span>256<span class="nt">&lt;/item&gt;</span>
+        <span class="nt">&lt;item&gt;</span>384<span class="nt">&lt;/item&gt;</span>
+        <span class="nt">&lt;item&gt;</span>512<span class="nt">&lt;/item&gt;</span>
+        <span class="nt">&lt;item&gt;</span>640<span class="nt">&lt;/item&gt;</span>
+        <span class="nt">&lt;item&gt;</span>768<span class="nt">&lt;/item&gt;</span>
+        <span class="nt">&lt;item&gt;</span>896<span class="nt">&lt;/item&gt;</span>
+        <span class="nt">&lt;item&gt;</span>1024<span class="nt">&lt;/item&gt;</span>
+        <span class="nt">&lt;item&gt;</span>2048<span class="nt">&lt;/item&gt;</span>
+        <span class="nt">&lt;item&gt;</span>4096<span class="nt">&lt;/item&gt;</span>
+        <span class="nt">&lt;item&gt;</span>6144<span class="nt">&lt;/item&gt;</span>
+        <span class="nt">&lt;item&gt;</span>8192<span class="nt">&lt;/item&gt;</span>
+        <span class="nt">&lt;item&gt;</span>10240<span class="nt">&lt;/item&gt;</span>
+        <span class="nt">&lt;item&gt;</span>12288<span class="nt">&lt;/item&gt;</span>
+        <span class="nt">&lt;item&gt;</span>14336<span class="nt">&lt;/item&gt;</span>
+        <span class="nt">&lt;item&gt;</span>16384<span class="nt">&lt;/item&gt;</span>
+        <span class="nt">&lt;item&gt;</span>18432<span class="nt">&lt;/item&gt;</span>
+    <span class="nt">&lt;/integer-array&gt;</span>
+
+    <span class="cm">&lt;!-- Array of output values for LCD backlight corresponding to the LUX values</span>
+<span class="cm">         in the config_autoBrightnessLevels array.  This array should have size one greater</span>
+<span class="cm">         than the size of the config_autoBrightnessLevels array.</span>
+<span class="cm">         The brightness values must be between 0 and 255 and be non-decreasing.</span>
+<span class="cm">         This must be overridden in platform specific overlays --&gt;</span>
+    <span class="nt">&lt;integer-array</span> <span class="na">name=</span><span class="s">&quot;config_autoBrightnessLcdBacklightValues&quot;</span><span class="nt">&gt;</span>
+        <span class="nt">&lt;item&gt;</span>8<span class="nt">&lt;/item&gt;</span>
+        <span class="nt">&lt;item&gt;</span>64<span class="nt">&lt;/item&gt;</span>
+        <span class="nt">&lt;item&gt;</span>98<span class="nt">&lt;/item&gt;</span>
+        <span class="nt">&lt;item&gt;</span>104<span class="nt">&lt;/item&gt;</span>
+        <span class="nt">&lt;item&gt;</span>110<span class="nt">&lt;/item&gt;</span>
+        <span class="nt">&lt;item&gt;</span>116<span class="nt">&lt;/item&gt;</span>
+        <span class="nt">&lt;item&gt;</span>122<span class="nt">&lt;/item&gt;</span>
+        <span class="nt">&lt;item&gt;</span>128<span class="nt">&lt;/item&gt;</span>
+        <span class="nt">&lt;item&gt;</span>134<span class="nt">&lt;/item&gt;</span>
+        <span class="nt">&lt;item&gt;</span>182<span class="nt">&lt;/item&gt;</span>
+        <span class="nt">&lt;item&gt;</span>255<span class="nt">&lt;/item&gt;</span>
+        <span class="nt">&lt;item&gt;</span>255<span class="nt">&lt;/item&gt;</span>
+        <span class="nt">&lt;item&gt;</span>255<span class="nt">&lt;/item&gt;</span>
+        <span class="nt">&lt;item&gt;</span>255<span class="nt">&lt;/item&gt;</span>
+        <span class="nt">&lt;item&gt;</span>255<span class="nt">&lt;/item&gt;</span>
+        <span class="nt">&lt;item&gt;</span>255<span class="nt">&lt;/item&gt;</span>
+        <span class="nt">&lt;item&gt;</span>255<span class="nt">&lt;/item&gt;</span>
+        <span class="nt">&lt;item&gt;</span>255<span class="nt">&lt;/item&gt;</span>
+    <span class="nt">&lt;/integer-array&gt;</span>
+
+    <span class="cm">&lt;!-- Indicate whether to allow the device to suspend when the screen is off</span>
+<span class="cm">         due to the proximity sensor.  This resource should only be set to true</span>
+<span class="cm">         if the sensor HAL correctly handles the proximity sensor as a wake-up source.</span>
+<span class="cm">         Otherwise, the device may fail to wake out of suspend reliably.</span>
+<span class="cm">         The default is false. --&gt;</span>
+    <span class="nt">&lt;bool</span> <span class="na">name=</span><span class="s">&quot;config_suspendWhenScreenOffDueToProximity&quot;</span><span class="nt">&gt;</span>true<span class="nt">&lt;/bool&gt;</span>
+<span class="nt">&lt;/resources&gt;</span>
+</pre></div>
+</div>
+<p>获取上面数组数据</p>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="c1">// frameworks/base/services/core/java/com/android/server/display/BrightnessMappingStrategy.java</span>
+
+<span class="nd">@Nullable</span>
+<span class="kd">public</span> <span class="kd">static</span> <span class="n">BrightnessMappingStrategy</span> <span class="nf">create</span><span class="p">(</span><span class="n">Resources</span> <span class="n">resources</span><span class="p">)</span> <span class="p">{</span>
+    <span class="kt">float</span><span class="o">[]</span> <span class="n">luxLevels</span> <span class="o">=</span> <span class="n">getLuxLevels</span><span class="p">(</span><span class="n">resources</span><span class="p">.</span><span class="na">getIntArray</span><span class="p">(</span>
+            <span class="n">com</span><span class="p">.</span><span class="na">android</span><span class="p">.</span><span class="na">internal</span><span class="p">.</span><span class="na">R</span><span class="p">.</span><span class="na">array</span><span class="p">.</span><span class="na">config_autoBrightnessLevels</span><span class="p">));</span>
+    <span class="kt">int</span><span class="o">[]</span> <span class="n">brightnessLevelsBacklight</span> <span class="o">=</span> <span class="n">resources</span><span class="p">.</span><span class="na">getIntArray</span><span class="p">(</span>
+            <span class="n">com</span><span class="p">.</span><span class="na">android</span><span class="p">.</span><span class="na">internal</span><span class="p">.</span><span class="na">R</span><span class="p">.</span><span class="na">array</span><span class="p">.</span><span class="na">config_autoBrightnessLcdBacklightValues</span><span class="p">);</span>
+    <span class="kt">float</span><span class="o">[]</span> <span class="n">brightnessLevelsNits</span> <span class="o">=</span> <span class="n">getFloatArray</span><span class="p">(</span><span class="n">resources</span><span class="p">.</span><span class="na">obtainTypedArray</span><span class="p">(</span>
+            <span class="n">com</span><span class="p">.</span><span class="na">android</span><span class="p">.</span><span class="na">internal</span><span class="p">.</span><span class="na">R</span><span class="p">.</span><span class="na">array</span><span class="p">.</span><span class="na">config_autoBrightnessDisplayValuesNits</span><span class="p">));</span>
+    <span class="kt">float</span> <span class="n">autoBrightnessAdjustmentMaxGamma</span> <span class="o">=</span> <span class="n">resources</span><span class="p">.</span><span class="na">getFraction</span><span class="p">(</span>
+            <span class="n">com</span><span class="p">.</span><span class="na">android</span><span class="p">.</span><span class="na">internal</span><span class="p">.</span><span class="na">R</span><span class="p">.</span><span class="na">fraction</span><span class="p">.</span><span class="na">config_autoBrightnessAdjustmentMaxGamma</span><span class="p">,</span>
+            <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">);</span>
+
+    <span class="kt">float</span><span class="o">[]</span> <span class="n">nitsRange</span> <span class="o">=</span> <span class="n">getFloatArray</span><span class="p">(</span><span class="n">resources</span><span class="p">.</span><span class="na">obtainTypedArray</span><span class="p">(</span>
+            <span class="n">com</span><span class="p">.</span><span class="na">android</span><span class="p">.</span><span class="na">internal</span><span class="p">.</span><span class="na">R</span><span class="p">.</span><span class="na">array</span><span class="p">.</span><span class="na">config_screenBrightnessNits</span><span class="p">));</span>
+    <span class="kt">int</span><span class="o">[]</span> <span class="n">backlightRange</span> <span class="o">=</span> <span class="n">resources</span><span class="p">.</span><span class="na">getIntArray</span><span class="p">(</span>
+            <span class="n">com</span><span class="p">.</span><span class="na">android</span><span class="p">.</span><span class="na">internal</span><span class="p">.</span><span class="na">R</span><span class="p">.</span><span class="na">array</span><span class="p">.</span><span class="na">config_screenBrightnessBacklight</span><span class="p">);</span>
+
+    <span class="kt">long</span> <span class="n">shortTermModelTimeout</span> <span class="o">=</span> <span class="n">resources</span><span class="p">.</span><span class="na">getInteger</span><span class="p">(</span>
+            <span class="n">com</span><span class="p">.</span><span class="na">android</span><span class="p">.</span><span class="na">internal</span><span class="p">.</span><span class="na">R</span><span class="p">.</span><span class="na">integer</span><span class="p">.</span><span class="na">config_autoBrightnessShortTermModelTimeout</span><span class="p">);</span>
+    <span class="n">Slog</span><span class="p">.</span><span class="na">e</span><span class="p">(</span><span class="n">TAG</span><span class="p">,</span> <span class="s">&quot;PhysicalMappingStrategy&quot;</span><span class="p">);</span>
+
+    <span class="n">Exception</span> <span class="n">e</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Exception</span><span class="p">(</span><span class="s">&quot;this is a log&quot;</span><span class="p">);</span>
+    <span class="n">e</span><span class="p">.</span><span class="na">printStackTrace</span><span class="p">();</span>
+
+    <span class="n">Slog</span><span class="p">.</span><span class="na">e</span><span class="p">(</span><span class="n">TAG</span><span class="p">,</span> <span class="s">&quot;luxLevels&quot;</span> <span class="o">+</span> <span class="n">Arrays</span><span class="p">.</span><span class="na">toString</span><span class="p">(</span><span class="n">luxLevels</span><span class="p">));</span>
+    <span class="n">Slog</span><span class="p">.</span><span class="na">e</span><span class="p">(</span><span class="n">TAG</span><span class="p">,</span> <span class="s">&quot;brightnessLevelsBacklight&quot;</span> <span class="o">+</span> <span class="n">Arrays</span><span class="p">.</span><span class="na">toString</span><span class="p">(</span><span class="n">brightnessLevelsBacklight</span><span class="p">));</span>
+    <span class="n">Slog</span><span class="p">.</span><span class="na">e</span><span class="p">(</span><span class="n">TAG</span><span class="p">,</span> <span class="s">&quot;nitsRange&quot;</span> <span class="o">+</span> <span class="n">Arrays</span><span class="p">.</span><span class="na">toString</span><span class="p">(</span><span class="n">nitsRange</span><span class="p">));</span>
+    <span class="n">Slog</span><span class="p">.</span><span class="na">e</span><span class="p">(</span><span class="n">TAG</span><span class="p">,</span> <span class="s">&quot;backlightRange&quot;</span> <span class="o">+</span> <span class="n">Arrays</span><span class="p">.</span><span class="na">toString</span><span class="p">(</span><span class="n">backlightRange</span><span class="p">));</span>
+    <span class="n">Slog</span><span class="p">.</span><span class="na">e</span><span class="p">(</span><span class="n">TAG</span><span class="p">,</span> <span class="s">&quot;brightnessLevelsNits&quot;</span> <span class="o">+</span> <span class="n">Arrays</span><span class="p">.</span><span class="na">toString</span><span class="p">(</span><span class="n">brightnessLevelsNits</span><span class="p">));</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="n">isValidMapping</span><span class="p">(</span><span class="n">nitsRange</span><span class="p">,</span> <span class="n">backlightRange</span><span class="p">)</span>
+            <span class="o">&amp;&amp;</span> <span class="n">isValidMapping</span><span class="p">(</span><span class="n">luxLevels</span><span class="p">,</span> <span class="n">brightnessLevelsNits</span><span class="p">))</span> <span class="p">{</span>
+        <span class="kt">int</span> <span class="n">minimumBacklight</span> <span class="o">=</span> <span class="n">resources</span><span class="p">.</span><span class="na">getInteger</span><span class="p">(</span>
+                <span class="n">com</span><span class="p">.</span><span class="na">android</span><span class="p">.</span><span class="na">internal</span><span class="p">.</span><span class="na">R</span><span class="p">.</span><span class="na">integer</span><span class="p">.</span><span class="na">config_screenBrightnessSettingMinimum</span><span class="p">);</span>
+        <span class="kt">int</span> <span class="n">maximumBacklight</span> <span class="o">=</span> <span class="n">resources</span><span class="p">.</span><span class="na">getInteger</span><span class="p">(</span>
+                <span class="n">com</span><span class="p">.</span><span class="na">android</span><span class="p">.</span><span class="na">internal</span><span class="p">.</span><span class="na">R</span><span class="p">.</span><span class="na">integer</span><span class="p">.</span><span class="na">config_screenBrightnessSettingMaximum</span><span class="p">);</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">backlightRange</span><span class="o">[</span><span class="mi">0</span><span class="o">]</span> <span class="o">&gt;</span> <span class="n">minimumBacklight</span>
+                <span class="o">||</span> <span class="n">backlightRange</span><span class="o">[</span><span class="n">backlightRange</span><span class="p">.</span><span class="na">length</span> <span class="o">-</span> <span class="mi">1</span><span class="o">]</span> <span class="o">&lt;</span> <span class="n">maximumBacklight</span><span class="p">)</span> <span class="p">{</span>
+            <span class="n">Slog</span><span class="p">.</span><span class="na">w</span><span class="p">(</span><span class="n">TAG</span><span class="p">,</span> <span class="s">&quot;Screen brightness mapping does not cover whole range of available &quot;</span> <span class="o">+</span>
+                    <span class="s">&quot;backlight values, autobrightness functionality may be impaired.&quot;</span><span class="p">);</span>
+        <span class="p">}</span>
+        <span class="n">BrightnessConfiguration</span><span class="p">.</span><span class="na">Builder</span> <span class="n">builder</span> <span class="o">=</span> <span class="k">new</span> <span class="n">BrightnessConfiguration</span><span class="p">.</span><span class="na">Builder</span><span class="p">(</span>
+                <span class="n">luxLevels</span><span class="p">,</span> <span class="n">brightnessLevelsNits</span><span class="p">);</span>
+        <span class="n">builder</span><span class="p">.</span><span class="na">setShortTermModelTimeoutMillis</span><span class="p">(</span><span class="n">shortTermModelTimeout</span><span class="p">);</span>
+        <span class="n">builder</span><span class="p">.</span><span class="na">setShortTermModelLowerLuxMultiplier</span><span class="p">(</span><span class="n">SHORT_TERM_MODEL_THRESHOLD_RATIO</span><span class="p">);</span>
+        <span class="n">builder</span><span class="p">.</span><span class="na">setShortTermModelUpperLuxMultiplier</span><span class="p">(</span><span class="n">SHORT_TERM_MODEL_THRESHOLD_RATIO</span><span class="p">);</span>
+        <span class="n">Slog</span><span class="p">.</span><span class="na">e</span><span class="p">(</span><span class="n">TAG</span><span class="p">,</span> <span class="s">&quot;PhysicalMappingStrategy&quot;</span><span class="p">);</span>
+        <span class="k">return</span> <span class="k">new</span> <span class="n">PhysicalMappingStrategy</span><span class="p">(</span><span class="n">builder</span><span class="p">.</span><span class="na">build</span><span class="p">(),</span> <span class="n">nitsRange</span><span class="p">,</span> <span class="n">backlightRange</span><span class="p">,</span>
+                <span class="n">autoBrightnessAdjustmentMaxGamma</span><span class="p">);</span>
+    <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="n">isValidMapping</span><span class="p">(</span><span class="n">luxLevels</span><span class="p">,</span> <span class="n">brightnessLevelsBacklight</span><span class="p">))</span> <span class="p">{</span>
+        <span class="n">Slog</span><span class="p">.</span><span class="na">e</span><span class="p">(</span><span class="n">TAG</span><span class="p">,</span> <span class="s">&quot;SimpleMappingStrategy&quot;</span><span class="p">);</span>
+        <span class="k">return</span> <span class="k">new</span> <span class="n">SimpleMappingStrategy</span><span class="p">(</span><span class="n">luxLevels</span><span class="p">,</span> <span class="n">brightnessLevelsBacklight</span><span class="p">,</span>
+                <span class="n">autoBrightnessAdjustmentMaxGamma</span><span class="p">,</span> <span class="n">shortTermModelTimeout</span><span class="p">);</span>
+    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="kc">null</span><span class="p">;</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>添加的log输出diff</p>
+<div class="highlight-diff notranslate"><div class="highlight"><pre><span></span><span class="gh">diff --git a/frameworks/base/services/core/java/com/android/server/display/BrightnessMappingStrategy.java b/frameworks/base/services/core/java/com/android/server/display/BrightnessMappingStrategy.java</span><span class="w"></span>
+<span class="gh">index 6f12155c5ec..f715ca9dbe9 100644</span><span class="w"></span>
+<span class="gd">--- a/frameworks/base/services/core/java/com/android/server/display/BrightnessMappingStrategy.java</span><span class="w"></span>
+<span class="gi">+++ b/frameworks/base/services/core/java/com/android/server/display/BrightnessMappingStrategy.java</span><span class="w"></span>
+<span class="gu">@@ -79,6 +79,16 @@ public abstract class BrightnessMappingStrategy {</span><span class="w"></span>
+
+<span class="w"> </span>        long shortTermModelTimeout = resources.getInteger(<span class="w"></span>
+<span class="w"> </span>                com.android.internal.R.integer.config_autoBrightnessShortTermModelTimeout);<span class="w"></span>
+<span class="gi">+        Slog.e(TAG, &quot;PhysicalMappingStrategy&quot;);</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+        Exception e = new Exception(&quot;this is a log&quot;);</span><span class="w"></span>
+<span class="gi">+        e.printStackTrace();</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+        Slog.e(TAG, &quot;luxLevels&quot; + Arrays.toString(luxLevels));</span><span class="w"></span>
+<span class="gi">+        Slog.e(TAG, &quot;brightnessLevelsBacklight&quot; + Arrays.toString(brightnessLevelsBacklight));</span><span class="w"></span>
+<span class="gi">+        Slog.e(TAG, &quot;nitsRange&quot; + Arrays.toString(nitsRange));</span><span class="w"></span>
+<span class="gi">+        Slog.e(TAG, &quot;backlightRange&quot; + Arrays.toString(backlightRange));</span><span class="w"></span>
+<span class="gi">+        Slog.e(TAG, &quot;brightnessLevelsNits&quot; + Arrays.toString(brightnessLevelsNits));</span><span class="w"></span>
+
+<span class="w"> </span>        if (isValidMapping(nitsRange, backlightRange)<span class="w"></span>
+<span class="w"> </span>                &amp;&amp; isValidMapping(luxLevels, brightnessLevelsNits)) {<span class="w"></span>
+<span class="gu">@@ -96,9 +106,11 @@ public abstract class BrightnessMappingStrategy {</span><span class="w"></span>
+<span class="w"> </span>            builder.setShortTermModelTimeoutMillis(shortTermModelTimeout);<span class="w"></span>
+<span class="w"> </span>            builder.setShortTermModelLowerLuxMultiplier(SHORT_TERM_MODEL_THRESHOLD_RATIO);<span class="w"></span>
+<span class="w"> </span>            builder.setShortTermModelUpperLuxMultiplier(SHORT_TERM_MODEL_THRESHOLD_RATIO);<span class="w"></span>
+<span class="gi">+            Slog.e(TAG, &quot;PhysicalMappingStrategy&quot;);</span><span class="w"></span>
+<span class="w"> </span>            return new PhysicalMappingStrategy(builder.build(), nitsRange, backlightRange,<span class="w"></span>
+<span class="w"> </span>                    autoBrightnessAdjustmentMaxGamma);<span class="w"></span>
+<span class="w"> </span>        } else if (isValidMapping(luxLevels, brightnessLevelsBacklight)) {<span class="w"></span>
+<span class="gi">+            Slog.e(TAG, &quot;SimpleMappingStrategy&quot;);</span><span class="w"></span>
+<span class="w"> </span>            return new SimpleMappingStrategy(luxLevels, brightnessLevelsBacklight,<span class="w"></span>
+<span class="w"> </span>                    autoBrightnessAdjustmentMaxGamma, shortTermModelTimeout);<span class="w"></span>
+<span class="w"> </span>        } else {<span class="w"></span>
+</pre></div>
+</div>
+<p>logcat输出上面数据以便确认</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">E</span> <span class="n">BrightnessMappingStrategy</span><span class="p">:</span> <span class="n">PhysicalMappingStrategy</span>
+<span class="n">I</span> <span class="n">HealthServiceWrapper</span><span class="p">:</span> <span class="n">health</span><span class="p">:</span> <span class="n">HealthServiceWrapper</span> <span class="n">listening</span> <span class="n">to</span> <span class="n">instance</span> <span class="n">default</span>
+<span class="n">E</span> <span class="n">BrightnessMappingStrategy</span><span class="p">:</span> <span class="n">luxLevels</span><span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">128.0</span><span class="p">,</span> <span class="mf">256.0</span><span class="p">,</span> <span class="mf">384.0</span><span class="p">,</span> <span class="mf">512.0</span><span class="p">,</span> <span class="mf">640.0</span><span class="p">,</span> <span class="mf">768.0</span><span class="p">,</span> <span class="mf">896.0</span><span class="p">,</span> <span class="mf">1024.0</span><span class="p">,</span> <span class="mf">2048.0</span><span class="p">,</span> <span class="mf">4096.0</span><span class="p">,</span> <span class="mf">6144.0</span><span class="p">,</span> <span class="mf">8192.0</span><span class="p">,</span> <span class="mf">10240.0</span><span class="p">,</span> <span class="mf">12288.0</span><span class="p">,</span> <span class="mf">14336.0</span><span class="p">,</span> <span class="mf">16384.0</span><span class="p">,</span> <span class="mf">18432.0</span><span class="p">]</span>
+<span class="n">E</span> <span class="n">BrightnessMappingStrategy</span><span class="p">:</span> <span class="n">brightnessLevelsBacklight</span><span class="p">[</span><span class="mi">8</span><span class="p">,</span> <span class="mi">64</span><span class="p">,</span> <span class="mi">98</span><span class="p">,</span> <span class="mi">104</span><span class="p">,</span> <span class="mi">110</span><span class="p">,</span> <span class="mi">116</span><span class="p">,</span> <span class="mi">122</span><span class="p">,</span> <span class="mi">128</span><span class="p">,</span> <span class="mi">134</span><span class="p">,</span> <span class="mi">182</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="mi">255</span><span class="p">]</span>
+<span class="n">E</span> <span class="n">BrightnessMappingStrategy</span><span class="p">:</span> <span class="n">nitsRange</span><span class="p">[]</span>
+<span class="n">E</span> <span class="n">BrightnessMappingStrategy</span><span class="p">:</span> <span class="n">backlightRange</span><span class="p">[]</span>
+<span class="n">E</span> <span class="n">BrightnessMappingStrategy</span><span class="p">:</span> <span class="n">brightnessLevelsNits</span><span class="p">[]</span>
+<span class="n">D</span> <span class="n">StatsPullAtomService</span><span class="p">:</span> <span class="n">Registering</span> <span class="n">pullers</span> <span class="k">with</span> <span class="n">statsd</span>
+<span class="n">E</span> <span class="n">BrightnessMappingStrategy</span><span class="p">:</span> <span class="n">SimpleMappingStrategy</span>
+</pre></div>
+</div>
+<p>如下是BrightnessMappingStrategy初始化过程，采用SimpleMappingStrategy策略，其中采用MonotoneCubicSpline算法</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">*</span> <span class="n">frameworks</span><span class="o">/</span><span class="n">base</span><span class="o">/</span><span class="n">services</span><span class="o">/</span><span class="n">core</span><span class="o">/</span><span class="n">java</span><span class="o">/</span><span class="n">com</span><span class="o">/</span><span class="n">android</span><span class="o">/</span><span class="n">server</span><span class="o">/</span><span class="n">display</span><span class="o">/</span><span class="n">BrightnessMappingStrategy</span><span class="o">.</span><span class="n">java</span>
+  <span class="o">*</span> <span class="n">public</span> <span class="n">static</span> <span class="n">BrightnessMappingStrategy</span> <span class="n">create</span><span class="p">(</span><span class="n">Resources</span> <span class="n">resources</span><span class="p">)</span>
+    <span class="o">*</span> <span class="nb">float</span><span class="p">[]</span> <span class="n">luxLevels</span> <span class="o">=</span> <span class="n">getLuxLevels</span><span class="p">(</span><span class="n">resources</span><span class="o">.</span><span class="n">getIntArray</span><span class="p">(</span><span class="n">com</span><span class="o">.</span><span class="n">android</span><span class="o">.</span><span class="n">internal</span><span class="o">.</span><span class="n">R</span><span class="o">.</span><span class="n">array</span><span class="o">.</span><span class="n">config_autoBrightnessLevels</span><span class="p">));</span>
+    <span class="o">*</span> <span class="nb">int</span><span class="p">[]</span> <span class="n">brightnessLevelsBacklight</span> <span class="o">=</span> <span class="n">resources</span><span class="o">.</span><span class="n">getIntArray</span><span class="p">(</span><span class="n">com</span><span class="o">.</span><span class="n">android</span><span class="o">.</span><span class="n">internal</span><span class="o">.</span><span class="n">R</span><span class="o">.</span><span class="n">array</span><span class="o">.</span><span class="n">config_autoBrightnessLcdBacklightValues</span><span class="p">);</span>
+    <span class="o">*</span> <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="n">isValidMapping</span><span class="p">(</span><span class="n">luxLevels</span><span class="p">,</span> <span class="n">brightnessLevelsBacklight</span><span class="p">))</span> <span class="p">{</span>
+      <span class="o">*</span> <span class="k">return</span> <span class="n">new</span> <span class="n">SimpleMappingStrategy</span><span class="p">(</span><span class="n">luxLevels</span><span class="p">,</span> <span class="n">brightnessLevelsBacklight</span><span class="p">,</span> <span class="n">autoBrightnessAdjustmentMaxGamma</span><span class="p">,</span> <span class="n">shortTermModelTimeout</span><span class="p">);</span>
+        <span class="o">*</span> <span class="n">private</span> <span class="n">static</span> <span class="k">class</span> <span class="nc">SimpleMappingStrategy</span> <span class="n">extends</span> <span class="n">BrightnessMappingStrategy</span>
+          <span class="o">*</span> <span class="n">private</span> <span class="n">SimpleMappingStrategy</span><span class="p">(</span><span class="nb">float</span><span class="p">[]</span> <span class="n">lux</span><span class="p">,</span> <span class="nb">int</span><span class="p">[]</span> <span class="n">brightness</span><span class="p">,</span> <span class="nb">float</span> <span class="n">maxGamma</span><span class="p">,</span> <span class="n">long</span> <span class="n">timeout</span><span class="p">)</span>
+            <span class="o">*</span> <span class="k">for</span> <span class="p">(</span><span class="nb">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">N</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span>
+              <span class="o">*</span> <span class="n">mLux</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">lux</span><span class="p">[</span><span class="n">i</span><span class="p">];</span>
+              <span class="o">*</span> <span class="n">mBrightness</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">normalizeAbsoluteBrightness</span><span class="p">(</span><span class="n">brightness</span><span class="p">[</span><span class="n">i</span><span class="p">]);</span>
+              <span class="o">*</span> <span class="n">computeSpline</span><span class="p">();</span>
+                <span class="o">*</span> <span class="n">Pair</span><span class="o">&lt;</span><span class="nb">float</span><span class="p">[],</span> <span class="nb">float</span><span class="p">[]</span><span class="o">&gt;</span> <span class="n">curve</span> <span class="o">=</span> <span class="n">getAdjustedCurve</span><span class="p">(</span><span class="n">mLux</span><span class="p">,</span> <span class="n">mBrightness</span><span class="p">,</span> <span class="n">mUserLux</span><span class="p">,</span> <span class="n">mUserBrightness</span><span class="p">,</span> <span class="n">mAutoBrightnessAdjustment</span><span class="p">,</span> <span class="n">mMaxGamma</span><span class="p">);</span>
+                <span class="o">*</span> <span class="n">mSpline</span> <span class="o">=</span> <span class="n">Spline</span><span class="o">.</span><span class="n">createSpline</span><span class="p">(</span><span class="n">curve</span><span class="o">.</span><span class="n">first</span><span class="p">,</span> <span class="n">curve</span><span class="o">.</span><span class="n">second</span><span class="p">);</span>
+                  <span class="o">*</span> <span class="n">frameworks</span><span class="o">/</span><span class="n">base</span><span class="o">/</span><span class="n">core</span><span class="o">/</span><span class="n">java</span><span class="o">/</span><span class="n">android</span><span class="o">/</span><span class="n">util</span><span class="o">/</span><span class="n">Spline</span><span class="o">.</span><span class="n">java</span>
+                    <span class="o">*</span> <span class="n">public</span> <span class="n">static</span> <span class="n">Spline</span> <span class="n">createSpline</span><span class="p">(</span><span class="nb">float</span><span class="p">[]</span> <span class="n">x</span><span class="p">,</span> <span class="nb">float</span><span class="p">[]</span> <span class="n">y</span><span class="p">)</span>
+                      <span class="o">*</span> <span class="k">if</span> <span class="p">(</span><span class="n">isMonotonic</span><span class="p">(</span><span class="n">y</span><span class="p">))</span>
+                        <span class="o">*</span> <span class="k">return</span> <span class="n">createMonotoneCubicSpline</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">);</span>
+                          <span class="o">*</span> <span class="n">public</span> <span class="n">static</span> <span class="k">class</span> <span class="nc">MonotoneCubicSpline</span> <span class="n">extends</span> <span class="n">Spline</span>
+                            <span class="o">*</span> <span class="n">public</span> <span class="n">MonotoneCubicSpline</span><span class="p">(</span><span class="nb">float</span><span class="p">[]</span> <span class="n">x</span><span class="p">,</span> <span class="nb">float</span><span class="p">[]</span> <span class="n">y</span><span class="p">)</span>
+                            <span class="o">*</span> <span class="k">return</span> <span class="n">new</span> <span class="n">MonotoneCubicSpline</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">);</span>
+</pre></div>
+</div>
+</section>
+<section id="dumpsys-display">
+<h2>dumpsys display<a class="headerlink" href="#dumpsys-display" title="Permalink to this headline"></a></h2>
+<ul>
+<li><p>dumpsys display | grep mUserBrightness</p></li>
+<li><p>dumpsys display</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">SimpleMappingStrategy</span>
+  <span class="n">mSpline</span><span class="o">=</span><span class="n">MonotoneCubicSpline</span><span class="p">{[(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.027559055</span><span class="p">:</span> <span class="mf">0.0017224409</span><span class="p">),</span> <span class="p">(</span><span class="mf">128.0</span><span class="p">,</span> <span class="mf">0.2480315</span><span class="p">:</span> <span class="mf">0.0013841044</span><span class="p">),</span> <span class="p">(</span><span class="mf">256.0</span><span class="p">,</span> <span class="mf">0.38188976</span><span class="p">:</span> <span class="mf">5.302923E-4</span><span class="p">),</span> <span class="p">(</span><span class="mf">384.0</span><span class="p">,</span> <span class="mf">0.4055118</span><span class="p">:</span> <span class="mf">1.5908774E-4</span><span class="p">),</span> <span class="p">(</span><span class="mf">512.0</span><span class="p">,</span> <span class="mf">0.42913386</span><span class="p">:</span> <span class="mf">1.8454727E-4</span><span class="p">),</span>
+<span class="p">(</span><span class="mf">640.0</span><span class="p">,</span> <span class="mf">0.4527559</span><span class="p">:</span> <span class="mf">1.8454727E-4</span><span class="p">),</span> <span class="p">(</span><span class="mf">768.0</span><span class="p">,</span> <span class="mf">0.47637796</span><span class="p">:</span> <span class="mf">1.8454727E-4</span><span class="p">),</span> <span class="p">(</span><span class="mf">896.0</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">:</span> <span class="mf">1.8454716E-4</span><span class="p">),</span> <span class="p">(</span><span class="mf">1024.0</span><span class="p">,</span> <span class="mf">0.52362204</span><span class="p">:</span> <span class="mf">1.8454721E-4</span><span class="p">),</span> <span class="p">(</span><span class="mf">2048.0</span><span class="p">,</span> <span class="mf">0.71259844</span><span class="p">:</span> <span class="mf">1.6244003E-4</span><span class="p">),</span> <span class="p">(</span><span class="mf">4096.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">),</span> <span class="p">(</span><span class="mf">6144.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">:</span>
+ <span class="mf">0.0</span><span class="p">),</span> <span class="p">(</span><span class="mf">8192.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">),</span> <span class="p">(</span><span class="mf">10240.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">),</span> <span class="p">(</span><span class="mf">12288.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">),</span> <span class="p">(</span><span class="mf">14336.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">),</span> <span class="p">(</span><span class="mf">16384.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">),</span> <span class="p">(</span><span class="mf">18432.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">)]}</span>
+  <span class="n">mMaxGamma</span><span class="o">=</span><span class="mf">3.0</span>
+  <span class="n">mAutoBrightnessAdjustment</span><span class="o">=</span><span class="mf">0.0</span>
+  <span class="n">mUserLux</span><span class="o">=-</span><span class="mf">1.0</span>
+  <span class="n">mUserBrightness</span><span class="o">=-</span><span class="mf">1.0</span>
+</pre></div>
+</div>
+<ul>
+<li><p>mSpline=MonotoneCubicSpline{…}</p>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="c1">// frameworks/base/core/java/android/util/Spline.java</span>
+
+<span class="c1">// For debugging.</span>
+<span class="nd">@Override</span>
+<span class="kd">public</span> <span class="n">String</span> <span class="nf">toString</span><span class="p">()</span> <span class="p">{</span>
+    <span class="n">StringBuilder</span> <span class="n">str</span> <span class="o">=</span> <span class="k">new</span> <span class="n">StringBuilder</span><span class="p">();</span>
+    <span class="kd">final</span> <span class="kt">int</span> <span class="n">n</span> <span class="o">=</span> <span class="n">mX</span><span class="p">.</span><span class="na">length</span><span class="p">;</span>
+    <span class="n">str</span><span class="p">.</span><span class="na">append</span><span class="p">(</span><span class="s">&quot;MonotoneCubicSpline{[&quot;</span><span class="p">);</span>
+    <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">n</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">i</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+            <span class="n">str</span><span class="p">.</span><span class="na">append</span><span class="p">(</span><span class="s">&quot;, &quot;</span><span class="p">);</span>
+        <span class="p">}</span>
+        <span class="n">str</span><span class="p">.</span><span class="na">append</span><span class="p">(</span><span class="s">&quot;(&quot;</span><span class="p">).</span><span class="na">append</span><span class="p">(</span><span class="n">mX</span><span class="o">[</span><span class="n">i</span><span class="o">]</span><span class="p">);</span>
+        <span class="n">str</span><span class="p">.</span><span class="na">append</span><span class="p">(</span><span class="s">&quot;, &quot;</span><span class="p">).</span><span class="na">append</span><span class="p">(</span><span class="n">mY</span><span class="o">[</span><span class="n">i</span><span class="o">]</span><span class="p">);</span>
+        <span class="n">str</span><span class="p">.</span><span class="na">append</span><span class="p">(</span><span class="s">&quot;: &quot;</span><span class="p">).</span><span class="na">append</span><span class="p">(</span><span class="n">mM</span><span class="o">[</span><span class="n">i</span><span class="o">]</span><span class="p">).</span><span class="na">append</span><span class="p">(</span><span class="s">&quot;)&quot;</span><span class="p">);</span>
+    <span class="p">}</span>
+    <span class="n">str</span><span class="p">.</span><span class="na">append</span><span class="p">(</span><span class="s">&quot;]}&quot;</span><span class="p">);</span>
+    <span class="k">return</span> <span class="n">str</span><span class="p">.</span><span class="na">toString</span><span class="p">();</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</li>
+</ul>
+</li>
+</ul>
+</section>
+<section id="monotone-cubic-spline">
+<h2>Monotone Cubic Spline<a class="headerlink" href="#monotone-cubic-spline" title="Permalink to this headline"></a></h2>
+<p>pip3 install scipy</p>
+<p><img alt="0435-Android_Monotone_Cubic_Spline.png" src="src/0011_sensor_function/docs/images/0435-Android_Monotone_Cubic_Spline.png" /></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">scipy.interpolate</span> <span class="kn">import</span> <span class="n">CubicSpline</span>
+<span class="kn">from</span> <span class="nn">matplotlib</span> <span class="kn">import</span> <span class="n">pyplot</span> <span class="k">as</span> <span class="n">plt</span>
+
+
+<span class="c1"># 示例数据，从Android中通过dumpsys display命令，获取的SimpleMappingStrategy实例变量MonotoneCubicSpline数据</span>
+<span class="n">data</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.027559055</span><span class="p">,</span> <span class="mf">0.0017224409</span><span class="p">),</span> 
+    <span class="p">(</span><span class="mf">128.0</span><span class="p">,</span> <span class="mf">0.2480315</span><span class="p">,</span> <span class="mf">0.0013841044</span><span class="p">),</span> 
+    <span class="p">(</span><span class="mf">256.0</span><span class="p">,</span> <span class="mf">0.38188976</span><span class="p">,</span> <span class="mf">5.302923E-4</span><span class="p">),</span> 
+    <span class="p">(</span><span class="mf">384.0</span><span class="p">,</span> <span class="mf">0.4055118</span><span class="p">,</span> <span class="mf">1.5908774E-4</span><span class="p">),</span> 
+    <span class="p">(</span><span class="mf">512.0</span><span class="p">,</span> <span class="mf">0.42913386</span><span class="p">,</span> <span class="mf">1.8454727E-4</span><span class="p">),</span> 
+    <span class="p">(</span><span class="mf">640.0</span><span class="p">,</span> <span class="mf">0.4527559</span><span class="p">,</span> <span class="mf">1.8454727E-4</span><span class="p">),</span> 
+    <span class="p">(</span><span class="mf">768.0</span><span class="p">,</span> <span class="mf">0.47637796</span><span class="p">,</span> <span class="mf">1.8454727E-4</span><span class="p">),</span> 
+    <span class="p">(</span><span class="mf">896.0</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mf">1.8454716E-4</span><span class="p">),</span> 
+    <span class="p">(</span><span class="mf">1024.0</span><span class="p">,</span> <span class="mf">0.52362204</span><span class="p">,</span> <span class="mf">1.8454721E-4</span><span class="p">),</span> 
+    <span class="p">(</span><span class="mf">2048.0</span><span class="p">,</span> <span class="mf">0.71259844</span><span class="p">,</span> <span class="mf">1.6244003E-4</span><span class="p">),</span> 
+    <span class="p">(</span><span class="mf">4096.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">),</span> 
+    <span class="c1"># (6144.0, 1.0, 0.0), </span>
+    <span class="c1"># (8192.0, 1.0, 0.0), </span>
+    <span class="c1"># (10240.0, 1.0, 0.0), </span>
+    <span class="c1"># (12288.0, 1.0, 0.0), </span>
+    <span class="c1"># (14336.0, 1.0, 0.0), </span>
+    <span class="c1"># (16384.0, 1.0, 0.0), </span>
+    <span class="c1"># (18432.0, 1.0, 0.0)</span>
+<span class="p">]</span>
+
+<span class="k">def</span> <span class="nf">main</span><span class="p">(</span><span class="n">argv</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="p">:</span>
+
+    <span class="n">X1</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">Y1</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)):</span>
+        <span class="n">X1</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>
+        <span class="c1"># Brightness量程(0 ~ 1)转为PWM量程(0 ~ 255)</span>
+        <span class="c1"># Y1.append(data[i][1] * 255)</span>
+        <span class="c1"># 不转换PWM量程(0 ~ 255)的原因是和Android数据方便对比，Android默认Brightness量程(0 ~ 1)</span>
+        <span class="n">Y1</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">1</span><span class="p">])</span>
+    
+    <span class="c1"># 生成曲线</span>
+    <span class="n">cs</span> <span class="o">=</span> <span class="n">CubicSpline</span><span class="p">(</span><span class="n">X1</span><span class="p">,</span> <span class="n">Y1</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">argv</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="c1"># 单独计算一个值</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;input lux: &quot;</span> <span class="o">+</span>  <span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Brightness: &quot;</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="si">{:.2f}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">cs</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">]))))</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># 生成曲线x轴坐标点</span>
+        <span class="n">xs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">X1</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">X1</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">],</span> <span class="mi">1</span><span class="p">)</span>
+
+        <span class="c1"># 绘制曲线，有x轴坐标点生成y坐标点：cs(xs)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">xs</span><span class="p">,</span> <span class="n">cs</span><span class="p">(</span><span class="n">xs</span><span class="p">),</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;S&quot;</span><span class="p">)</span>
+        <span class="c1"># 绘制点以及文本</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)):</span>
+            <span class="c1"># 绘制点</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">X1</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">Y1</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="s1">&#39;o&#39;</span><span class="p">)</span>
+            <span class="c1"># 加入字符显示的偏移</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="n">X1</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="mi">15</span><span class="p">,</span> <span class="n">Y1</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span> <span class="mf">0.02</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">X1</span><span class="p">[</span><span class="n">i</span><span class="p">])</span> <span class="o">+</span> <span class="s2">&quot;, &quot;</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="si">{:.2f}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">Y1</span><span class="p">[</span><span class="n">i</span><span class="p">]),</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">9</span><span class="p">,</span> <span class="n">rotation</span><span class="o">=</span><span class="mi">90</span><span class="p">)</span>
+
+        <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s2">&quot;X LUX&quot;</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s2">&quot;Y PWM(0 ~ 255)&quot;</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;Android (Light Sensor) &amp; (LCD PWM) Mapper&quot;</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span> <span class="p">:</span>
+    <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="n">main</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">))</span>
+</pre></div>
+</div>
+<ul>
+<li><p>print(cs(78.4594))输出：0.16927823732647743</p>
+<ul>
+<li><p>Android Logcat输入如下：</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">D</span> <span class="n">AutomaticBrightnessController</span><span class="p">:</span> <span class="n">setAmbientLux</span><span class="p">(</span><span class="mf">78.4594</span><span class="p">)</span>
+<span class="n">D</span> <span class="n">AutomaticBrightnessController</span><span class="p">:</span> <span class="n">updateAmbientLux</span><span class="p">:</span> <span class="n">Darkened</span><span class="p">:</span> <span class="n">mBrighteningLuxThreshold</span><span class="o">=</span><span class="mf">86.305336</span><span class="p">,</span> <span class="n">mAmbientLightRingBuffer</span><span class="o">=</span><span class="p">[</span><span class="mf">460.0</span> <span class="o">/</span> <span class="mi">7998</span><span class="n">ms</span><span class="p">,</span> <span class="mf">360.0</span> <span class="o">/</span> <span class="mi">504</span><span class="n">ms</span><span class="p">,</span> <span class="mf">0.0</span> <span class="o">/</span> <span class="mi">1502</span><span class="n">ms</span><span class="p">],</span> <span class="n">mAm</span>
+<span class="n">D</span> <span class="n">AutomaticBrightnessController</span><span class="p">:</span> <span class="n">updateAutoBrightness</span><span class="p">:</span> <span class="n">mScreenAutoBrightness</span><span class="o">=</span><span class="mf">0.4194107</span><span class="p">,</span> <span class="n">newScreenAutoBrightness</span><span class="o">=</span><span class="mf">0.1689984</span>
+</pre></div>
+</div>
+</li>
+</ul>
+</li>
+<li><p>为了方便调试，最后还是转换成PWM量程(0 ~ 255)比较合适，实际查看亮度值如下</p>
+<ul>
+<li><p>lux: 550</p>
+<ul>
+<li><p>print(cs(550)) PWM量程值: 111.35041199897756</p></li>
+<li><p>cat /sys/class/leds/lcd-backlight/brightness</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="mi">107</span>
+</pre></div>
+</div>
+</li>
+<li><p>和107很接近了</p></li>
+</ul>
+</li>
+<li><p>lux: 460</p>
+<ul>
+<li><p>print(cs(550)) PWM量程值: 106.56775399154981</p></li>
+<li><p>cat /sys/class/leds/lcd-backlight/brightness</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="mi">107</span>
+</pre></div>
+</div>
+</li>
+<li><p>和107很接近了</p></li>
+</ul>
+</li>
+<li><p>lux: 180</p>
+<ul>
+<li><p>print(cs(550)) PWM量程值: 80.75037983146315</p></li>
+<li><p>cat /sys/class/leds/lcd-backlight/brightness</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="mi">81</span>
+</pre></div>
+</div>
+</li>
+<li><p>和81很接近了</p></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</section>
+<section id="light-sensor">
+<h2>Light Sensor<a class="headerlink" href="#light-sensor" title="Permalink to this headline"></a></h2>
+<p>注册传感器</p>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="c1">// frameworks/base/services/core/java/com/android/server/display/AutomaticBrightnessController.java</span>
+
+<span class="kd">private</span> <span class="kd">final</span> <span class="n">SensorEventListener</span> <span class="n">mLightSensorListener</span> <span class="o">=</span> <span class="k">new</span> <span class="n">SensorEventListener</span><span class="p">()</span> <span class="p">{</span>
+    <span class="nd">@Override</span>
+    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">onSensorChanged</span><span class="p">(</span><span class="n">SensorEvent</span> <span class="n">event</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">mLightSensorEnabled</span><span class="p">)</span> <span class="p">{</span>
+            <span class="kd">final</span> <span class="kt">long</span> <span class="n">time</span> <span class="o">=</span> <span class="n">SystemClock</span><span class="p">.</span><span class="na">uptimeMillis</span><span class="p">();</span>
+            <span class="kd">final</span> <span class="kt">float</span> <span class="n">lux</span> <span class="o">=</span> <span class="n">event</span><span class="p">.</span><span class="na">values</span><span class="o">[</span><span class="mi">0</span><span class="o">]</span><span class="p">;</span>
+            <span class="n">handleLightSensorEvent</span><span class="p">(</span><span class="n">time</span><span class="p">,</span> <span class="n">lux</span><span class="p">);</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="nd">@Override</span>
+    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">onAccuracyChanged</span><span class="p">(</span><span class="n">Sensor</span> <span class="n">sensor</span><span class="p">,</span> <span class="kt">int</span> <span class="n">accuracy</span><span class="p">)</span> <span class="p">{</span>
+        <span class="c1">// Not used.</span>
+    <span class="p">}</span>
+<span class="p">};</span>
+
+<span class="kd">private</span> <span class="kt">boolean</span> <span class="nf">setLightSensorEnabled</span><span class="p">(</span><span class="kt">boolean</span> <span class="n">enable</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">enable</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">mLightSensorEnabled</span><span class="p">)</span> <span class="p">{</span>
+            <span class="n">mLightSensorEnabled</span> <span class="o">=</span> <span class="kc">true</span><span class="p">;</span>
+            <span class="n">mLightSensorEnableTime</span> <span class="o">=</span> <span class="n">SystemClock</span><span class="p">.</span><span class="na">uptimeMillis</span><span class="p">();</span>
+            <span class="n">mCurrentLightSensorRate</span> <span class="o">=</span> <span class="n">mInitialLightSensorRate</span><span class="p">;</span>
+            <span class="n">registerForegroundAppUpdater</span><span class="p">();</span>
+            <span class="n">mSensorManager</span><span class="p">.</span><span class="na">registerListener</span><span class="p">(</span><span class="n">mLightSensorListener</span><span class="p">,</span> <span class="n">mLightSensor</span><span class="p">,</span>
+                    <span class="n">mCurrentLightSensorRate</span> <span class="o">*</span> <span class="mi">1000</span><span class="p">,</span> <span class="n">mHandler</span><span class="p">);</span>
+            <span class="k">return</span> <span class="kc">true</span><span class="p">;</span>
+        <span class="p">}</span>
+    <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="n">mLightSensorEnabled</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">mLightSensorEnabled</span> <span class="o">=</span> <span class="kc">false</span><span class="p">;</span>
+        <span class="n">mAmbientLuxValid</span> <span class="o">=</span> <span class="o">!</span><span class="n">mResetAmbientLuxAfterWarmUpConfig</span><span class="p">;</span>
+        <span class="n">mScreenAutoBrightness</span> <span class="o">=</span> <span class="n">PowerManager</span><span class="p">.</span><span class="na">BRIGHTNESS_INVALID_FLOAT</span><span class="p">;</span>
+        <span class="n">mRecentLightSamples</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+        <span class="n">mAmbientLightRingBuffer</span><span class="p">.</span><span class="na">clear</span><span class="p">();</span>
+        <span class="n">mCurrentLightSensorRate</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">;</span>
+        <span class="n">mHandler</span><span class="p">.</span><span class="na">removeMessages</span><span class="p">(</span><span class="n">MSG_UPDATE_AMBIENT_LUX</span><span class="p">);</span>
+        <span class="n">unregisterForegroundAppUpdater</span><span class="p">();</span>
+        <span class="n">mSensorManager</span><span class="p">.</span><span class="na">unregisterListener</span><span class="p">(</span><span class="n">mLightSensorListener</span><span class="p">);</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="kc">false</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>分析diff</p>
+<div class="highlight-diff notranslate"><div class="highlight"><pre><span></span><span class="gh">diff --git a/frameworks/base/services/core/java/com/android/server/display/DisplayPowerController.java b/frameworks/base/services/core/java/com/android/server/display/DisplayPowerController.java</span><span class="w"></span>
+<span class="gh">index 32cde50d5ec..6aed7693b53 100644</span><span class="w"></span>
+<span class="gd">--- a/frameworks/base/services/core/java/com/android/server/display/DisplayPowerController.java</span><span class="w"></span>
+<span class="gi">+++ b/frameworks/base/services/core/java/com/android/server/display/DisplayPowerController.java</span><span class="w"></span>
+<span class="gu">@@ -95,7 +95,7 @@ final class DisplayPowerController implements AutomaticBrightnessController.Call</span><span class="w"></span>
+<span class="w"> </span>    private static final String SCREEN_ON_BLOCKED_TRACE_NAME = &quot;Screen on blocked&quot;;<span class="w"></span>
+<span class="w"> </span>    private static final String SCREEN_OFF_BLOCKED_TRACE_NAME = &quot;Screen off blocked&quot;;<span class="w"></span>
+
+<span class="gd">-    private static final boolean DEBUG = SystemProperties.getBoolean(&quot;dbg.dms.dpc&quot;, false);</span><span class="w"></span>
+<span class="gi">+    private static final boolean DEBUG = true;</span><span class="w"></span>
+<span class="w"> </span>    private static final boolean MTK_DEBUG = &quot;eng&quot;.equals(Build.TYPE);<span class="w"></span>
+<span class="w"> </span>    private static final boolean DEBUG_PRETEND_PROXIMITY_SENSOR_ABSENT = false;<span class="w"></span>
+
+<span class="gu">@@ -763,6 +763,9 @@ final class DisplayPowerController implements AutomaticBrightnessController.Call</span><span class="w"></span>
+<span class="w"> </span>        int brightnessAdjustmentFlags = 0;<span class="w"></span>
+<span class="w"> </span>        mBrightnessReasonTemp.set(null);<span class="w"></span>
+
+<span class="gi">+        Exception e = new Exception(&quot;this is a log&quot;);</span><span class="w"></span>
+<span class="gi">+        e.printStackTrace();</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="w"> </span>        synchronized (mLock) {<span class="w"></span>
+<span class="w"> </span>            mPendingUpdatePowerStateLocked = false;<span class="w"></span>
+<span class="w"> </span>            if (mPendingRequestLocked == null) {<span class="w"></span>
+<span class="gh">diff --git a/frameworks/base/services/core/java/com/android/server/display/DisplayPowerState.java b/frameworks/base/services/core/java/com/android/server/display/DisplayPowerState.java</span><span class="w"></span>
+<span class="gh">index 68ae8ecae86..54b1ca112b8 100644</span><span class="w"></span>
+<span class="gd">--- a/frameworks/base/services/core/java/com/android/server/display/DisplayPowerState.java</span><span class="w"></span>
+<span class="gi">+++ b/frameworks/base/services/core/java/com/android/server/display/DisplayPowerState.java</span><span class="w"></span>
+<span class="gu">@@ -51,7 +51,7 @@ import java.io.PrintWriter;</span><span class="w"></span>
+<span class="w"> </span>final class DisplayPowerState {<span class="w"></span>
+<span class="w"> </span>    private static final String TAG = &quot;DisplayPowerState&quot;;<span class="w"></span>
+
+<span class="gd">-    private static boolean DEBUG = SystemProperties.getBoolean(&quot;dbg.dms.dps&quot;, false);</span><span class="w"></span>
+<span class="gi">+    private static boolean DEBUG = true;</span><span class="w"></span>
+<span class="w"> </span>    private static String COUNTER_COLOR_FADE = &quot;ColorFadeLevel&quot;;<span class="w"></span>
+
+<span class="w"> </span>    private final Handler mHandler;<span class="w"></span>
+<span class="gu">@@ -155,6 +155,9 @@ final class DisplayPowerState {</span><span class="w"></span>
+<span class="w"> </span>                Slog.d(TAG, &quot;setScreenBrightness: brightness=&quot; + brightness);<span class="w"></span>
+<span class="w"> </span>            }<span class="w"></span>
+
+<span class="gi">+            Exception e = new Exception(&quot;this is a log&quot;);</span><span class="w"></span>
+<span class="gi">+            e.printStackTrace();</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="w"> </span>            mScreenBrightness = brightness;<span class="w"></span>
+<span class="w"> </span>            if (mScreenState != Display.STATE_OFF) {<span class="w"></span>
+<span class="w"> </span>                mScreenReady = false;<span class="w"></span>
+<span class="gh">diff --git a/frameworks/base/services/core/java/com/android/server/display/RampAnimator.java b/frameworks/base/services/core/java/com/android/server/display/RampAnimator.java</span><span class="w"></span>
+<span class="gh">index 7916d816dc9..9ea3706fca9 100644</span><span class="w"></span>
+<span class="gd">--- a/frameworks/base/services/core/java/com/android/server/display/RampAnimator.java</span><span class="w"></span>
+<span class="gi">+++ b/frameworks/base/services/core/java/com/android/server/display/RampAnimator.java</span><span class="w"></span>
+<span class="gu">@@ -98,6 +98,9 @@ final class RampAnimator&lt;T&gt; {</span><span class="w"></span>
+<span class="w"> </span>        final boolean changed = (mTargetValue != target);<span class="w"></span>
+<span class="w"> </span>        mTargetValue = target;<span class="w"></span>
+
+<span class="gi">+        Exception e = new Exception(&quot;this is a log&quot;);</span><span class="w"></span>
+<span class="gi">+        e.printStackTrace();</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="w"> </span>        // Start animating.<span class="w"></span>
+<span class="w"> </span>        if (!mAnimating &amp;&amp; target != mCurrentValue) {<span class="w"></span>
+<span class="w"> </span>            mAnimating = true;<span class="w"></span>
+</pre></div>
+</div>
+<p>Logcat输出的diff log</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>10-27 06:25:51.096  1145  1224 D AutomaticBrightnessController: calculateAmbientLux: totalWeight=1.9005E7, newAmbientLux=78.4594
+10-27 06:25:51.096  1145  1224 D AutomaticBrightnessController: setAmbientLux(78.4594)
+10-27 06:25:51.097  1145  1224 D AutomaticBrightnessController: updateAmbientLux: Darkened: mBrighteningLuxThreshold=86.305336, mAmbientLightRingBuffer=[460.0 / 7998ms, 360.0 / 504ms, 0.0 / 1502ms], mAm
+bientLux=78.4594
+10-27 06:25:51.097  1145  1224 D AutomaticBrightnessController: updateAutoBrightness: mScreenAutoBrightness=0.4194107, newScreenAutoBrightness=0.1689984
+10-27 06:25:51.098  1145  1224 D AutomaticBrightnessController: updateAmbientLux: Scheduling ambient lux update for 9052090520 (in 497 ms)
+10-27 06:25:51.098  1145  1224 W System.err: java.lang.Exception: this is a log
+10-27 06:25:51.099  1145  1224 W System.err:    at com.android.server.display.DisplayPowerController.updatePowerState(DisplayPowerController.java:766)
+10-27 06:25:51.101  1145  1224 W System.err:    at com.android.server.display.DisplayPowerController.access$600(DisplayPowerController.java:92)
+10-27 06:25:51.102  1145  1224 W System.err:    at com.android.server.display.DisplayPowerController$DisplayControllerHandler.handleMessage(DisplayPowerController.java:1952)
+10-27 06:25:51.103  1145  1224 W System.err:    at android.os.Handler.dispatchMessage(Handler.java:106)
+10-27 06:25:51.104  1145  1224 W System.err:    at android.os.Looper.loop(Looper.java:223)
+10-27 06:25:51.104  1145  1224 W System.err:    at android.os.HandlerThread.run(HandlerThread.java:67)
+10-27 06:25:51.104  1145  1224 W System.err:    at com.android.server.ServiceThread.run(ServiceThread.java:44)
+10-27 06:25:51.106  1145  1224 V SettingsProvider: name : screen_brightness_float appId : 1000
+10-27 06:25:51.108  1145  1224 D DisplayPowerController: Animating brightness: target=0.1689984, rate=0.2352941
+10-27 06:25:51.111  1145  1145 V SettingsProvider: name : screen_brightness appId : 1000
+10-27 06:25:51.112  1145  1224 D DisplayPowerController: Unfinished business...
+10-27 06:25:51.113  1145  1224 W System.err: java.lang.Exception: this is a log
+10-27 06:25:51.113  1145  1224 W System.err:    at com.android.server.display.DisplayPowerController.updatePowerState(DisplayPowerController.java:766)
+10-27 06:25:51.114  1145  1224 W System.err:    at com.android.server.display.DisplayPowerController.access$600(DisplayPowerController.java:92)
+10-27 06:25:51.114  1145  1224 W System.err:    at com.android.server.display.DisplayPowerController$DisplayControllerHandler.handleMessage(DisplayPowerController.java:1952)
+10-27 06:25:51.114  1145  1224 W System.err:    at android.os.Handler.dispatchMessage(Handler.java:106)
+10-27 06:25:51.114  1145  1224 W System.err:    at android.os.Looper.loop(Looper.java:223)
+10-27 06:25:51.114  1145  1224 W System.err:    at android.os.HandlerThread.run(HandlerThread.java:67)
+10-27 06:25:51.114  1145  1224 W System.err:    at com.android.server.ServiceThread.run(ServiceThread.java:44)
+10-27 06:25:51.115  1145  1224 V SettingsProvider: name : screen_brightness_float appId : 1000
+10-27 06:25:51.116  1145  1224 D DisplayPowerController: Animating brightness: target=0.1689984, rate=0.2352941
+10-27 06:25:51.119  1145  1224 W System.err: java.lang.Exception: this is a log
+10-27 06:25:51.120  1145  1145 V SettingsProvider: name : screen_brightness appId : 1000
+10-27 06:25:51.120  1145  1224 W System.err:    at com.android.server.display.DisplayPowerController.updatePowerState(DisplayPowerController.java:766)
+10-27 06:25:51.121  1145  1224 W System.err:    at com.android.server.display.DisplayPowerController.access$600(DisplayPowerController.java:92)
+10-27 06:25:51.121  1145  1224 W System.err:    at com.android.server.display.DisplayPowerController$DisplayControllerHandler.handleMessage(DisplayPowerController.java:1952)
+10-27 06:25:51.122  1145  1224 W System.err:    at android.os.Handler.dispatchMessage(Handler.java:106)
+10-27 06:25:51.122  1145  1224 W System.err:    at android.os.Looper.loop(Looper.java:223)
+10-27 06:25:51.123  1145  1224 W System.err:    at android.os.HandlerThread.run(HandlerThread.java:67)
+10-27 06:25:51.123  1145  1224 W System.err:    at com.android.server.ServiceThread.run(ServiceThread.java:44)
+10-27 06:25:51.124  1145  1224 V SettingsProvider: name : screen_brightness_float appId : 1000
+10-27 06:25:51.125  1145  1224 D DisplayPowerController: Animating brightness: target=0.1689984, rate=0.2352941
+10-27 06:25:51.126  1145  1224 D DisplayPowerState: setScreenBrightness: brightness=0.41628808
+10-27 06:25:51.127  1145  1224 W System.err: java.lang.Exception: this is a log
+10-27 06:25:51.128  1145  1224 W System.err:    at com.android.server.display.DisplayPowerState.setScreenBrightness(DisplayPowerState.java:158)
+10-27 06:25:51.128  1145  1224 W System.err:    at com.android.server.display.DisplayPowerState$2.setValue(DisplayPowerState.java:116)
+10-27 06:25:51.129  1145  1224 W System.err:    at com.android.server.display.DisplayPowerState$2.setValue(DisplayPowerState.java:113)
+10-27 06:25:51.129  1145  1224 W System.err:    at com.android.server.display.RampAnimator$1.run(RampAnimator.java:161)
+10-27 06:25:51.130  1145  1224 W System.err:    at android.view.Choreographer$CallbackRecord.run(Choreographer.java:974)
+10-27 06:25:51.130  1145  1224 W System.err:    at android.view.Choreographer.doCallbacks(Choreographer.java:797)
+10-27 06:25:51.130  1145  1224 W System.err:    at android.view.Choreographer.doFrame(Choreographer.java:728)
+10-27 06:25:51.131  1145  1224 W System.err:    at android.view.Choreographer$FrameDisplayEventReceiver.run(Choreographer.java:959)
+10-27 06:25:51.131  1145  1224 W System.err:    at android.os.Handler.handleCallback(Handler.java:938)
+10-27 06:25:51.132  1145  1224 W System.err:    at android.os.Handler.dispatchMessage(Handler.java:99)
+10-27 06:25:51.132  1145  1224 W System.err:    at android.os.Looper.loop(Looper.java:223)
+10-27 06:25:51.133  1145  1224 W System.err:    at android.os.HandlerThread.run(HandlerThread.java:67)
+10-27 06:25:51.133  1145  1224 W System.err:    at com.android.server.ServiceThread.run(ServiceThread.java:44)
+10-27 06:25:51.134  1145  1224 D DisplayPowerState: Requesting new screen state: state=ON, backlight=0.41628808
+10-27 06:25:51.135  1145  1224 D DisplayPowerState: Screen ready
+10-27 06:25:51.135  1145  3232 D DisplayPowerState: Updating screen state: state=ON, backlight=0.41628808
+10-27 06:25:51.135  1145  1224 D DisplayPowerState: Screen ready
+10-27 06:25:51.136   525   525 D android.hardware.lights-service.mediatek: write 107 to /sys/class/leds/lcd-backlight/brightness, result: 0
+10-27 06:25:51.138   773   844 D AAL     : onBacklightChanged: 433/1023 -&gt; 429/1023(phy:1717/4095)
+10-27 06:25:51.138   773   844 D AAL     : LABC: LABC after setTarget isSmoothBacklight=1
+</pre></div>
+</div>
+<p>光感传感器工作流程</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>* frameworks/base/services/core/java/com/android/server/display/AutomaticBrightnessController.java
+  * private boolean setLightSensorEnabled(boolean enable)
+    * mSensorManager.registerListener(mLightSensorListener, mLightSensor, mCurrentLightSensorRate * 1000, mHandler);
+      * private final SensorEventListener mLightSensorListener = new SensorEventListener() { }
+        * public void onSensorChanged(SensorEvent event)
+          * handleLightSensorEvent(time, lux);
+            * applyLightSensorMeasurement(time, lux);
+              * mAmbientLightRingBuffer.push(time, lux);
+              * mLastObservedLux = lux;
+              * mLastObservedLuxTime = time;
+            * updateAmbientLux(time);
+              * setAmbientLux(fastAmbientLux);
+              * updateAutoBrightness(true /* sendUpdate */, false /* isManuallySet */);
+                * float value = mBrightnessMapper.getBrightness(mAmbientLux, mForegroundAppPackageName, mForegroundAppCategory);
+                * float newScreenAutoBrightness = clampScreenBrightness(value);
+                * mScreenAutoBrightness = newScreenAutoBrightness;
+                  * 后面使用这个值更新屏幕亮度
+                * if (sendUpdate)
+                  * mCallbacks.updateBrightness();
+                    * frameworks/base/services/core/java/com/android/server/display/DisplayPowerController.java
+                      * public void updateBrightness()
+                        * sendUpdatePowerState();
+                          * sendUpdatePowerStateLocked();
+                            * Message msg = mHandler.obtainMessage(MSG_UPDATE_POWER_STATE);
+                            * mHandler.sendMessage(msg)
+                              * private final class DisplayControllerHandler extends Handler
+                                * public void handleMessage(Message msg)
+                                  * case MSG_UPDATE_POWER_STATE:
+                                    * updatePowerState()
+                                      * if (Float.isNaN(brightnessState))
+                                        * if (autoBrightnessEnabled)
+                                          * brightnessState = mAutomaticBrightnessController.getAutomaticScreenBrightness();
+                                            * frameworks/base/services/core/java/com/android/server/display/AutomaticBrightnessController.java
+                                              * public float getAutomaticScreenBrightness()
+                                                * return mScreenAutoBrightness;
+                                          * newAutoBrightnessAdjustment = mAutomaticBrightnessController.getAutomaticScreenBrightnessAdjustment();
+                                            * frameworks/base/services/core/java/com/android/server/display/AutomaticBrightnessController.java
+                                              * public float getAutomaticScreenBrightnessAdjustment()
+                                                * return mBrightnessMapper.getAutoBrightnessAdjustment();
+                                                  * frameworks/base/services/core/java/com/android/server/display/BrightnessMappingStrategy.java
+                                                    * private static class SimpleMappingStrategy extends BrightnessMappingStrategy
+                                                      * public float getAutoBrightnessAdjustment()
+                                                        * return mAutoBrightnessAdjustment;
+                                          * float animateValue = clampScreenBrightness(brightnessState);
+                                          * animateScreenBrightness(animateValue, sdrAnimateValue, rampSpeed);
+                                            * if (DEBUG)
+                                              * Slog.d(TAG, &quot;Animating brightness: target=&quot; + target + &quot;, sdrTarget=&quot; + sdrTarget + &quot;, rate=&quot; + rate);
+                                            * mScreenBrightnessRampAnimator.animateTo(target, sdrTarget, rate)
+                                              * frameworks/base/services/core/java/com/android/server/display/RampAnimator.java
+                                                * public boolean animateTo(float target, float rate)
+                                                  * if (!mAnimating &amp;&amp; target != mCurrentValue)
+                                                    * postAnimationCallback();
+                                                      * mChoreographer.postCallback(Choreographer.CALLBACK_ANIMATION, mAnimationCallback, null);
+                                                        * private final Runnable mAnimationCallback = new Runnable()
+                                                          * public void run()
+                                                            * mProperty.setValue(mObject, mCurrentValue);
+                                                              * DisplayPowerState.SCREEN_BRIGHTNESS_FLOAT
+                                                                * frameworks/base/services/core/java/com/android/server/display/DisplayPowerState.java
+                                                                  * public static final FloatProperty&lt;DisplayPowerState&gt; SCREEN_BRIGHTNESS_FLOAT = new FloatProperty&lt;DisplayPowerState&gt;(&quot;screenBrightnessFloat&quot;)
+                                                                    * public void setValue(DisplayPowerState object, float value)
+                                                                      * object.setScreenBrightness(value);
+                                                                        * public void setScreenBrightness(float brightness)
+                                                                          * mScreenBrightness = brightness;
+                                                                          * scheduleScreenUpdate();
+                                                                            * postScreenUpdateThreadSafe();
+                                                                              * mHandler.post(mScreenUpdateRunnable);
+                                                                                * private final Runnable mScreenUpdateRunnable = new Runnable()
+                                                                                  * float brightnessState = mScreenState != Display.STATE_OFF &amp;&amp; mColorFadeLevel &gt; 0f ? mScreenBrightness : PowerManager.BRIGHTNESS_OFF_FLOAT;
+                                                                                  * mPhotonicModulator.setState(mScreenState, brightnessState, sdrBrightnessState)
+                                                                                    * mLock.notifyAll();
+                                                                                      * 肯定有一个地方在等待这个notify释放
+                                                                                        * frameworks/base/services/core/java/com/android/server/display/DisplayPowerState.java
+                                                                                          * public void run()
+                                                                                            * mLock.wait();
+                                                                                            * mBlanker.requestDisplayState(mDisplayId, state, brightnessState, sdrBrightnessState);
+                                                                                              * frameworks/base/services/core/java/com/android/server/display/DisplayManagerService.java
+                                                                                                * private final DisplayBlanker mDisplayBlanker = new DisplayBlanker()
+                                                                                                  * public synchronized void requestDisplayState(int displayId, int state, float brightness, float sdrBrightness)
+                                                                                                    * if (state != Display.STATE_OFF)
+                                                                                                      * requestDisplayStateInternal(displayId, state, brightness, sdrBrightness);
+                                                                                                        * runnable = updateDisplayStateLocked(mLogicalDisplayMapper.getDisplayLocked(displayId).getPrimaryDisplayDeviceLocked());
+                                                                                                          * return device.requestDisplayStateLocked(state, brightnessPair.brightness, brightnessPair.sdrBrightness);
+                                                                                                            * frameworks/base/services/core/java/com/android/server/display/LocalDisplayAdapter.java
+                                                                                                              * public Runnable requestDisplayStateLocked(final int state, final float brightnessState, final float sdrBrightnessState)
+                                                                                                                * return new Runnable() { }
+                                                                                                                  * public void run()
+                                                                                                                    * setDisplayBrightness(brightnessState, sdrBrightnessState);
+                                                                                                                      * mBacklightAdapter.setBacklight(sdrBacklight, sdrNits, backlight, nits);
+                                                                                                                        * mBacklight.setBrightness(backlight);
+                                                            * if (mTargetValue != mCurrentValue)
+                                                              * postAnimationCallback();
+</pre></div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, wugn.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+  
+
+<script charset="UTF-8" id="LA_COLLECT" src="//sdk.51.la/js-sdk-pro.min.js"></script>
+<script>LA.init({id: "JjOE14XScyd75b2C",ck: "JjOE14XScyd75b2C"})</script>
+
+<br/>
+<script id="LA-DATA-WIDGET" crossorigin="anonymous" charset="UTF-8" src="https://v6-widget.51.la/v6/JjOE14XScyd75b2C/quote.js?theme=0&f=12&display=1,0,0,0,0,0,1,1"></script>
+
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

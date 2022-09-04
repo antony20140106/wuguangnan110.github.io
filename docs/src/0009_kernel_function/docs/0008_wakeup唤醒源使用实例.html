@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>wugn</title>
+
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../index.html" class="icon icon-home"> wugn_note
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">概述</a></li>
+<li><a class="reference internal" href="#id2">参考</a></li>
+<li><a class="reference internal" href="#pm-stay-awake">pm_stay_awake()</a></li>
+<li><a class="reference internal" href="#pm-relax">pm_relax()</a></li>
+<li><a class="reference internal" href="#pm-wakeup-event">__pm_wakeup_event</a></li>
+<li><a class="reference internal" href="#id3">历程</a></li>
+</ul>
+</div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">wugn_note</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs"> 
+<li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+<li>概述</li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.forward()">Forward</a></li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.back()">Go Back</a> | </li>
+<li style="float: right;margin-left: 10px;"><a href="/index.html">Home</a> | </li>
+
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="id1">
+<h1>概述<a class="headerlink" href="#id1" title="Permalink to this headline"></a></h1>
+<p>notify实例</p>
+</section>
+<section id="id2">
+<h1>参考<a class="headerlink" href="#id2" title="Permalink to this headline"></a></h1>
+<ul class="simple">
+<li><p><a class="reference external" href="https://www.jianshu.com/p/92591a82486a?utm_campaign=maleskine&amp;utm_content=note&amp;utm_medium=seo_notes&amp;utm_source=recommendation">电源管理</a></p></li>
+</ul>
+</section>
+<section id="pm-stay-awake">
+<h1>pm_stay_awake()<a class="headerlink" href="#pm-stay-awake" title="Permalink to this headline"></a></h1>
+<p>当设备有wakeup event正在处理时，需要调用该接口通知PM core，该接口的实现如下<code class="docutils literal notranslate"><span class="pre">kernel/drivers/base/power/wakeup.c</span></code>：</p>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span><span class="w"> </span><span class="nf">pm_stay_awake</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w"> </span><span class="o">*</span><span class="n">dev</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">long</span><span class="w"> </span><span class="n">flags</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">dev</span><span class="p">)</span><span class="w"></span>
+<span class="w">        </span><span class="k">return</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">    </span><span class="n">spin_lock_irqsave</span><span class="p">(</span><span class="o">&amp;</span><span class="n">dev</span><span class="o">-&gt;</span><span class="n">power</span><span class="p">.</span><span class="n">lock</span><span class="p">,</span><span class="w"> </span><span class="n">flags</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="n">__pm_stay_awake</span><span class="p">(</span><span class="n">dev</span><span class="o">-&gt;</span><span class="n">power</span><span class="p">.</span><span class="n">wakeup</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="n">spin_unlock_irqrestore</span><span class="p">(</span><span class="o">&amp;</span><span class="n">dev</span><span class="o">-&gt;</span><span class="n">power</span><span class="p">.</span><span class="n">lock</span><span class="p">,</span><span class="w"> </span><span class="n">flags</span><span class="p">);</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="kt">void</span><span class="w"> </span><span class="nf">__pm_stay_awake</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">wakeup_source</span><span class="w"> </span><span class="o">*</span><span class="n">ws</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">long</span><span class="w"> </span><span class="n">flags</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">ws</span><span class="p">)</span><span class="w"></span>
+<span class="w">        </span><span class="k">return</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">    </span><span class="n">spin_lock_irqsave</span><span class="p">(</span><span class="o">&amp;</span><span class="n">ws</span><span class="o">-&gt;</span><span class="n">lock</span><span class="p">,</span><span class="w"> </span><span class="n">flags</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">    </span><span class="n">wakeup_source_report_event</span><span class="p">(</span><span class="n">ws</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="n">del_timer</span><span class="p">(</span><span class="o">&amp;</span><span class="n">ws</span><span class="o">-&gt;</span><span class="n">timer</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="n">ws</span><span class="o">-&gt;</span><span class="n">timer_expires</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">    </span><span class="n">spin_unlock_irqrestore</span><span class="p">(</span><span class="o">&amp;</span><span class="n">ws</span><span class="o">-&gt;</span><span class="n">lock</span><span class="p">,</span><span class="w"> </span><span class="n">flags</span><span class="p">);</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">wakeup_source_report_event</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">wakeup_source</span><span class="w"> </span><span class="o">*</span><span class="n">ws</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">ws</span><span class="o">-&gt;</span><span class="n">event_count</span><span class="o">++</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="cm">/* This is racy, but the counter is approximate anyway. */</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">events_check_enabled</span><span class="p">)</span><span class="w"></span>
+<span class="w">        </span><span class="n">ws</span><span class="o">-&gt;</span><span class="n">wakeup_count</span><span class="o">++</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">ws</span><span class="o">-&gt;</span><span class="n">active</span><span class="p">)</span><span class="w"></span>
+<span class="w">        </span><span class="n">wakeup_source_activate</span><span class="p">(</span><span class="n">ws</span><span class="p">);</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<p>wakeup_source_report_event中增加wakeup source的event_count次数，即表示该source又产生了一个event。然后根据events_check_enabled变量的状态，增加wakeup_count。如果wakeup source没有active，则调用wakeup_source_activate进行activate操作。</p>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="cm">/*</span>
+<span class="cm"> * The functions below use the observation that each wakeup event starts a</span>
+<span class="cm"> * period in which the system should not be suspended.  The moment this period</span>
+<span class="cm"> * will end depends on how the wakeup event is going to be processed after being</span>
+<span class="cm"> * detected and all of the possible cases can be divided into two distinct</span>
+<span class="cm"> * groups.</span>
+<span class="cm"> *</span>
+<span class="cm"> * First, a wakeup event may be detected by the same functional unit that will</span>
+<span class="cm"> * carry out the entire processing of it and possibly will pass it to user space</span>
+<span class="cm"> * for further processing.  In that case the functional unit that has detected</span>
+<span class="cm"> * the event may later &quot;close&quot; the &quot;no suspend&quot; period associated with it</span>
+<span class="cm"> * directly as soon as it has been dealt with.  The pair of pm_stay_awake() and</span>
+<span class="cm"> * pm_relax(), balanced with each other, is supposed to be used in such</span>
+<span class="cm"> * situations.</span>
+<span class="cm"> *</span>
+<span class="cm"> * Second, a wakeup event may be detected by one functional unit and processed</span>
+<span class="cm"> * by another one.  In that case the unit that has detected it cannot really</span>
+<span class="cm"> * &quot;close&quot; the &quot;no suspend&quot; period associated with it, unless it knows in</span>
+<span class="cm"> * advance what&#39;s going to happen to the event during processing.  This</span>
+<span class="cm"> * knowledge, however, may not be available to it, so it can simply specify time</span>
+<span class="cm"> * to wait before the system can be suspended and pass it as the second</span>
+<span class="cm"> * argument of pm_wakeup_event().</span>
+<span class="cm"> *</span>
+<span class="cm"> * It is valid to call pm_relax() after pm_wakeup_event(), in which case the</span>
+<span class="cm"> * &quot;no suspend&quot; period will be ended either by the pm_relax(), or by the timer</span>
+<span class="cm"> * function executed when the timer expires, whichever comes first.</span>
+<span class="cm"> */</span><span class="w"></span>
+
+<span class="cm">/**</span>
+<span class="cm"> * wakup_source_activate - Mark given wakeup source as active.</span>
+<span class="cm"> * @ws: Wakeup source to handle.</span>
+<span class="cm"> *</span>
+<span class="cm"> * Update the @ws&#39; statistics and, if @ws has just been activated, notify the PM</span>
+<span class="cm"> * core of the event by incrementing the counter of of wakeup events being</span>
+<span class="cm"> * processed.</span>
+<span class="cm"> */</span><span class="w"></span>
+<span class="k">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">wakeup_source_activate</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">wakeup_source</span><span class="w"> </span><span class="o">*</span><span class="n">ws</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">cec</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">WARN_ONCE</span><span class="p">(</span><span class="n">wakeup_source_not_registered</span><span class="p">(</span><span class="n">ws</span><span class="p">),</span><span class="w"></span>
+<span class="w">			</span><span class="s">&quot;unregistered wakeup source</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">))</span><span class="w"></span>
+<span class="w">		</span><span class="k">return</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">ws</span><span class="o">-&gt;</span><span class="n">active</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">true</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="n">ws</span><span class="o">-&gt;</span><span class="n">active_count</span><span class="o">++</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="n">ws</span><span class="o">-&gt;</span><span class="n">last_time</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ktime_get</span><span class="p">();</span><span class="w"></span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ws</span><span class="o">-&gt;</span><span class="n">autosleep_enabled</span><span class="p">)</span><span class="w"></span>
+<span class="w">		</span><span class="n">ws</span><span class="o">-&gt;</span><span class="n">start_prevent_time</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ws</span><span class="o">-&gt;</span><span class="n">last_time</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">	</span><span class="cm">/* Increment the counter of events in progress. */</span><span class="w"></span>
+<span class="w">	</span><span class="n">cec</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">atomic_inc_return</span><span class="p">(</span><span class="o">&amp;</span><span class="n">combined_event_count</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">trace_wakeup_source_activate</span><span class="p">(</span><span class="n">ws</span><span class="o">-&gt;</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="n">cec</span><span class="p">);</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<p>wakeup_source_activate中首先调用freeze_wake，将系统从suspend to freeze状态下唤醒，然后设置active标志，增加active_count，更新last_time。如果使能了autosleep，更新start_prevent_time，此刻该wakeup source会开始阻止系统auto sleep。增加“wakeup events in progress”计数，增加该计数意味着系统正在处理的wakeup event数目不为零，即系统不能suspend。</p>
+</section>
+<section id="pm-relax">
+<h1>pm_relax()<a class="headerlink" href="#pm-relax" title="Permalink to this headline"></a></h1>
+<p>pm_relax和pm_stay_awake成对出现，用于在wakeup event处理结束后通知PM core，其实现如下</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">kernel/drivers/base/power/wakeup.c</span></code>:</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span><span class="w"> </span><span class="nf">pm_relax</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w"> </span><span class="o">*</span><span class="n">dev</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">long</span><span class="w"> </span><span class="n">flags</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">dev</span><span class="p">)</span><span class="w"></span>
+<span class="w">        </span><span class="k">return</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">    </span><span class="n">spin_lock_irqsave</span><span class="p">(</span><span class="o">&amp;</span><span class="n">dev</span><span class="o">-&gt;</span><span class="n">power</span><span class="p">.</span><span class="n">lock</span><span class="p">,</span><span class="w"> </span><span class="n">flags</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="n">__pm_relax</span><span class="p">(</span><span class="n">dev</span><span class="o">-&gt;</span><span class="n">power</span><span class="p">.</span><span class="n">wakeup</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="n">spin_unlock_irqrestore</span><span class="p">(</span><span class="o">&amp;</span><span class="n">dev</span><span class="o">-&gt;</span><span class="n">power</span><span class="p">.</span><span class="n">lock</span><span class="p">,</span><span class="w"> </span><span class="n">flags</span><span class="p">);</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="kt">void</span><span class="w"> </span><span class="nf">__pm_relax</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">wakeup_source</span><span class="w"> </span><span class="o">*</span><span class="n">ws</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">long</span><span class="w"> </span><span class="n">flags</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">ws</span><span class="p">)</span><span class="w"></span>
+<span class="w">        </span><span class="k">return</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">    </span><span class="n">spin_lock_irqsave</span><span class="p">(</span><span class="o">&amp;</span><span class="n">ws</span><span class="o">-&gt;</span><span class="n">lock</span><span class="p">,</span><span class="w"> </span><span class="n">flags</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ws</span><span class="o">-&gt;</span><span class="n">active</span><span class="p">)</span><span class="w"></span>
+<span class="w">        </span><span class="n">wakeup_source_deactivate</span><span class="p">(</span><span class="n">ws</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="n">spin_unlock_irqrestore</span><span class="p">(</span><span class="o">&amp;</span><span class="n">ws</span><span class="o">-&gt;</span><span class="n">lock</span><span class="p">,</span><span class="w"> </span><span class="n">flags</span><span class="p">);</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<p>pm_relax中直接调用pm_relax，pm_relax判断wakeup source如果处于active状态，则调用wakeup_source_deactivate接口，deactivate该wakeup source</p>
+</section>
+<section id="pm-wakeup-event">
+<h1>__pm_wakeup_event<a class="headerlink" href="#pm-wakeup-event" title="Permalink to this headline"></a></h1>
+<ul class="simple">
+<li><p><a class="reference external" href="https://www.elecfans.com/emb/202009141297122.html">Linux电源管理总体框架及实现原理</a></p></li>
+</ul>
+<p>关于wakeup event framework核心功能</p>
+<ol class="arabic simple">
+<li><p>__pm_stay_awake ： wakeup source 切换为acTIve状态的接口</p></li>
+<li><p>__pm_relax： wakeup source 切换为disacTIve状态的接口</p></li>
+<li><p>__pm_wakeup_event： 上边两个接口的结合体，引入了时间控制</p></li>
+</ol>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="cm">/**</span>
+<span class="cm"> * __pm_wakeup_event - Notify the PM core of a wakeup event.</span>
+<span class="cm"> * @ws: Wakeup source object associated with the event source.</span>
+<span class="cm"> * @msec: Anticipated event processing time (in milliseconds).预期事件处理时间</span>
+<span class="cm"> *</span>
+<span class="cm"> * Notify the PM core of a wakeup event whose source is @ws that will take 内核处理大约需要@msec 毫秒</span>
+<span class="cm"> * approximately @msec milliseconds to be processed by the kernel.  If @ws is</span>
+<span class="cm"> * not active, activate it.  If @msec is nonzero, set up the @ws&#39; timer to  </span>
+<span class="cm"> * execute pm_wakeup_timer_fn() in future. 如果@ws 未激活，请激活它。 如果@msec 不为零，则设置@ws 的计时器以在将来执行 pm_wakeup_timer_fn()。</span>
+<span class="cm"> *</span>
+<span class="cm"> * It is safe to call this function from interrupt context.</span>
+<span class="cm"> */</span><span class="w"></span>
+<span class="kt">void</span><span class="w"> </span><span class="nf">__pm_wakeup_event</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">wakeup_source</span><span class="w"> </span><span class="o">*</span><span class="n">ws</span><span class="p">,</span><span class="w"> </span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">msec</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">long</span><span class="w"> </span><span class="n">flags</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">long</span><span class="w"> </span><span class="n">expires</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">ws</span><span class="p">)</span><span class="w"></span>
+<span class="w">                </span><span class="k">return</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">        </span><span class="n">spin_lock_irqsave</span><span class="p">(</span><span class="o">&amp;</span><span class="n">ws</span><span class="o">-&gt;</span><span class="n">lock</span><span class="p">,</span><span class="w"> </span><span class="n">flags</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">        </span><span class="n">wakeup_source_report_event</span><span class="p">(</span><span class="n">ws</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">msec</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="n">wakeup_source_deactivate</span><span class="p">(</span><span class="n">ws</span><span class="p">);</span><span class="w"></span>
+<span class="w">                </span><span class="k">goto</span><span class="w"> </span><span class="n">unlock</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">        </span><span class="n">expires</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">jiffies</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">msecs_to_jiffies</span><span class="p">(</span><span class="n">msec</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">expires</span><span class="p">)</span><span class="w"></span>
+<span class="w">                </span><span class="n">expires</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">ws</span><span class="o">-&gt;</span><span class="n">timer_expires</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="n">time_after</span><span class="p">(</span><span class="n">expires</span><span class="p">,</span><span class="w"> </span><span class="n">ws</span><span class="o">-&gt;</span><span class="n">timer_expires</span><span class="p">))</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="n">mod_timer</span><span class="p">(</span><span class="o">&amp;</span><span class="n">ws</span><span class="o">-&gt;</span><span class="n">timer</span><span class="p">,</span><span class="w"> </span><span class="n">expires</span><span class="p">);</span><span class="w"></span>
+<span class="w">                </span><span class="n">ws</span><span class="o">-&gt;</span><span class="n">timer_expires</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">expires</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+
+<span class="w"> </span><span class="nl">unlock</span><span class="p">:</span><span class="w"></span>
+<span class="w">        </span><span class="n">spin_unlock_irqrestore</span><span class="p">(</span><span class="o">&amp;</span><span class="n">ws</span><span class="o">-&gt;</span><span class="n">lock</span><span class="p">,</span><span class="w"> </span><span class="n">flags</span><span class="p">);</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+<span class="n">EXPORT_SYMBOL_GPL</span><span class="p">(</span><span class="n">__pm_wakeup_event</span><span class="p">);</span><span class="w"></span>
+</pre></div>
+</div>
+</section>
+<section id="id3">
+<h1>历程<a class="headerlink" href="#id3" title="Permalink to this headline"></a></h1>
+<p>以下是基于高通qcm2290平台kernel-4.19实现的。</p>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;linux/pm_wakeup.h&gt;</span><span class="cp"></span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">mp2721_read_byte</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">mp2721</span><span class="w"> </span><span class="o">*</span><span class="n">mp</span><span class="p">,</span><span class="w"> </span><span class="n">u8</span><span class="w"> </span><span class="o">*</span><span class="n">data</span><span class="p">,</span><span class="w"> </span><span class="n">u8</span><span class="w"> </span><span class="n">reg</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="kt">int</span><span class="w"> </span><span class="n">ret</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">pm_stay_awake</span><span class="p">(</span><span class="n">mp</span><span class="o">-&gt;</span><span class="n">dev</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="n">mutex_lock</span><span class="p">(</span><span class="o">&amp;</span><span class="n">mp2721_i2c_lock</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">i2c_smbus_read_byte_data</span><span class="p">(</span><span class="n">mp</span><span class="o">-&gt;</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="n">reg</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ret</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="n">chr_err</span><span class="p">(</span><span class="s">&quot;failed to read 0x%.2x</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">reg</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="n">mutex_unlock</span><span class="p">(</span><span class="o">&amp;</span><span class="n">mp2721_i2c_lock</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="k">return</span><span class="w"> </span><span class="n">ret</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+
+<span class="w">	</span><span class="o">*</span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">u8</span><span class="p">)</span><span class="n">ret</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="n">mutex_unlock</span><span class="p">(</span><span class="o">&amp;</span><span class="n">mp2721_i2c_lock</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="n">pm_relax</span><span class="p">(</span><span class="n">mp</span><span class="o">-&gt;</span><span class="n">dev</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">	</span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, wugn.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+  
+
+<script charset="UTF-8" id="LA_COLLECT" src="//sdk.51.la/js-sdk-pro.min.js"></script>
+<script>LA.init({id: "JjOE14XScyd75b2C",ck: "JjOE14XScyd75b2C"})</script>
+
+<br/>
+<script id="LA-DATA-WIDGET" crossorigin="anonymous" charset="UTF-8" src="https://v6-widget.51.la/v6/JjOE14XScyd75b2C/quote.js?theme=0&f=12&display=1,0,0,0,0,0,1,1"></script>
+
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>wugn</title>
+
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../index.html" class="icon icon-home"> wugn_note
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">README</a></li>
+<li><a class="reference internal" href="#refers">refers</a></li>
+<li><a class="reference internal" href="#kernel">开发板kernel驱动分析</a></li>
+<li><a class="reference internal" href="#id1">硬件信息</a></li>
+<li><a class="reference internal" href="#ilitek-v3">ILITEK_V3涉及文件</a></li>
+<li><a class="reference internal" href="#id2">ILITEK_V3代码流程</a></li>
+<li><a class="reference internal" href="#pinctrl">增加pinctrl</a></li>
+<li><a class="reference internal" href="#id3">调试过程</a><ul>
+<li><a class="reference internal" href="#vdd-vcc">1.供电VDD VCC确定</a></li>
+<li><a class="reference internal" href="#rst-int-gpio">2.RST/INT GPIO确认</a></li>
+<li><a class="reference internal" href="#panel">3.panel配置</a></li>
+<li><a class="reference internal" href="#id4">4.无法获取panel</a></li>
+</ul>
+</li>
+</ul>
+</div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">wugn_note</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs"> 
+<li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+<li>README</li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.forward()">Forward</a></li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.back()">Go Back</a> | </li>
+<li style="float: right;margin-left: 10px;"><a href="/index.html">Home</a> | </li>
+
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="readme">
+<h1>README<a class="headerlink" href="#readme" title="Permalink to this headline"></a></h1>
+<p>高通平台qcm2290，TP ILITEK_TDDI_DRIVERV3.X调试。</p>
+</section>
+<section id="refers">
+<h1>refers<a class="headerlink" href="#refers" title="Permalink to this headline"></a></h1>
+</section>
+<section id="kernel">
+<h1>开发板kernel驱动分析<a class="headerlink" href="#kernel" title="Permalink to this headline"></a></h1>
+<ul class="simple">
+<li><p>QCM2290开发板原始驱动如下：</p></li>
+</ul>
+<div class="highlight-log notranslate"><div class="highlight"><pre><span></span>路径：
+drivers/input/touchscreen/focaltech_touch/
+
+cfg:
+vendor/bengal_defconfig
+356:CONFIG_TOUCHSCREEN_FTS=y
+
+makefile:
+obj-$(CONFIG_TOUCHSCREEN_FTS)   +=  focaltech_core.o
+obj-$(CONFIG_TOUCHSCREEN_FTS)   +=  focaltech_ex_fun.o
+obj-$(CONFIG_TOUCHSCREEN_FTS)   +=  focaltech_ex_mode.o
+obj-$(CONFIG_TOUCHSCREEN_FTS)   +=  focaltech_gesture.o
+obj-$(CONFIG_TOUCHSCREEN_FTS)   +=  focaltech_esdcheck.o
+obj-$(CONFIG_TOUCHSCREEN_FTS)   +=  focaltech_point_report_check.o
+
+obj-$(CONFIG_TOUCHSCREEN_FTS)   +=  focaltech_i2c.o
+obj-$(CONFIG_TOUCHSCREEN_FTS)   +=  focaltech_flash.o
+obj-$(CONFIG_TOUCHSCREEN_FTS)   +=  focaltech_flash/
+
+dts:
+&amp;qupv3_se2_i2c {
+        status = &quot;okay&quot;;
+        //qcom,i2c-touch-active=&quot;novatek,NVT-ts&quot;;
+
+        focaltech@38{
+                compatible = &quot;focaltech,fts_ts&quot;;
+                reg = &lt;0x38&gt;;
+                interrupt-parent = &lt;&amp;tlmm&gt;;
+                interrupts = &lt;22 0x2008&gt;;
+                focaltech,reset-gpio = &lt;&amp;tlmm 71 0x0&gt;;
+                focaltech,irq-gpio = &lt;&amp;tlmm 80 0x02008&gt;;
+                vdd-supply = &lt;&amp;L17A&gt;;
+                vcc_i2c-supply  = &lt;&amp;L15A&gt;;
+                focaltech,max-touch-number = &lt;5&gt;;
+                focaltech,display-coords =  &lt;0 0 720 1280&gt;;
+                pinctrl-names = &quot;pmx_ts_active&quot;,&quot;pmx_ts_suspend&quot;,&quot;pmx_ts_release&quot;;
+                pinctrl-0 = &lt;&amp;ts_int_active &amp;ts_reset_active&gt;;
+                pinctrl-1 = &lt;&amp;ts_int_suspend &amp;ts_reset_suspend&gt;;
+                pinctrl-2 = &lt;&amp;ts_release&gt;;
+                focaltech,have-key;
+                focaltech,key-number = &lt;3&gt;;
+                focaltech,keys = &lt;139 172 158&gt;;
+                focaltech,key-y-coords = &lt;1340 1340 1340&gt;;
+                focaltech,key-x-coords = &lt;150 330 660&gt;;
+                panel = &lt;&amp;dsi_ili9881d_720p_video&gt;;
+        };
+};
+</pre></div>
+</div>
+</section>
+<section id="id1">
+<h1>硬件信息<a class="headerlink" href="#id1" title="Permalink to this headline"></a></h1>
+<p><img alt="0002_0000.png" src="../../../_images/0002_00008.png" /></p>
+<p>功能 | 引脚 |
+—|—|—
+reset | GPIO_71 |
+int| GPIO_80 |
+sda| GPIO_6(i2c2)|
+scl| GPIO_7(i2c2)|</p>
+<p>供电是和sensor共电3.0V ：</p>
+<p><img alt="0002_0001.png" src="../../../_images/0002_00016.png" />
+<img alt="0002_0002.png" src="../../../_images/0002_00025.png" /></p>
+</section>
+<section id="ilitek-v3">
+<h1>ILITEK_V3涉及文件<a class="headerlink" href="#ilitek-v3" title="Permalink to this headline"></a></h1>
+<p>File |Description
+—|—|—
+ili9881x_mtk.c | MTK 平台初始化，设置 GPIO、 ISR、 Suspend/Resume 等
+ili9881x_qcom.c | QCOM 平台初始化，设置 GPIO、 ISR、 Suspend/Resume 等
+ili9881x_i2c.c  | I2C 读写
+ili9881x_spi.c  | SPI 读写
+ili9881x.c  | 事件入口管理， FW 更新、 产测、报点、 workqueue 和休眠控制
+ili9881x_touch.c  | IC 相关操作，包含取得 Chip ID、 ICE Mode、 Soft Reset 等
+ili9881x_flash.c  | FW 更新、配置 Flash 参数、 Flash 读写操作
+ili9881x_hostdl.c  | 无 Flash 配置，开机时 FW 由驱动 Host load code
+ili9881x_mp.c  | 整机产测，需搭配正确的 FW 及 ini 档
+ili9881x_touch.c |  报点，载入 Gesture Code 及 MP Code
+ili9881x_node.c |  建立与上层沟通的节点、 IOCTL
+ili9881x.h  | 所有档案共用的头文件，定义 Linux 头文件、 IC 及 Flash 位址、功能开关、 Debug 讯息、驱动版本等
+ili9881x_fw.hv |  从 Hex 档案转译的 firmware 资料，用于镜像烧录。
+Makefile | 选择要编译的通讯介面及平台 (仅支援 built-in，如要用 module 需自
+行修改)。</p>
+</section>
+<section id="id2">
+<h1>ILITEK_V3代码流程<a class="headerlink" href="#id2" title="Permalink to this headline"></a></h1>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">drivers\input\touchscreen\ILITEK_V3\ilitek_v3_qcom.c</span></code>:</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span>* module_init(ilitek_plat_dev_init);
+  * ili_dev_init(&amp;hwif)
+  * .of_match_table = of_match_ptr(tp_match_table),{.compatible = DTS_OF_NAME}, #define DTS_OF_NAME &quot;tchip,ilitek&quot; //platform device和driver匹配
+    * ilitek_plat_probe(void) 
+      * #if REGULATOR_POWER ilitek_plat_regulator_power_init(); //使能regulator
+        * ilits-&gt;vdd = regulator_get(ilits-&gt;dev, vdd_name);//const char *vdd_name = &quot;vdd&quot;;
+        * regulator_set_voltage(ilits-&gt;vdd, VDD_VOLTAGE, VDD_VOLTAGE)
+        * regulator_get(ilits-&gt;dev, vcc_name);//const char *vcc_name = &quot;vcc&quot;;
+        * regulator_set_voltage(ilits-&gt;vcc, VCC_VOLTAGE, VCC_VOLTAGE)
+      * #ifdef __DRM_PANEL_H__ ili_v3_drm_check_dt(ilits-&gt;dev-&gt;of_node);
+        * of_count_phandle_with_args(np, &quot;panel&quot;, NULL); //在dts中找panel，这里定义
+        * panel = of_drm_find_panel(node);
+        * active_panel = panel; //全局变量，供notify使用
+      * ilitek_plat_gpio_register()
+        * ilits-&gt;tp_int = of_get_named_gpio_flags(dev_node, DTS_INT_GPIO, 0, &amp;flag);//#define DTS_INT_GPIO	&quot;touch,irq-gpio&quot;
+        * ilits-&gt;tp_rst = of_get_named_gpio_flags(dev_node, DTS_RESET_GPIO, 0, &amp;flag);//#define DTS_RESET_GPIO	&quot;touch,reset-gpio&quot;
+      * ili_irq_register(ilits-&gt;irq_tirgger_type); //注册中断
+        * devm_request_threaded_irq(ilits-&gt;dev, ilits-&gt;irq_num, ilitek_plat_isr_top_half,ilitek_plat_isr_bottom_half,type | IRQF_ONESHOT, &quot;ilitek&quot;, NULL); //申请中断，
+      * ili_tddi_init() // ?
+      * #if SPRD_SYSFS_SUSPEND_RESUME ili_sysfs_add_device(ilits-&gt;dev); //增加sys调试节点，休眠唤醒通过写节点方式
+      * #else ilitek_plat_sleep_init();
+        * #ifdef __DRM_PANEL_H__ ilits-&gt;notifier_fb.notifier_call = drm_notifier_callback; //亮灭屏监听panel
+          * case DRM_PANEL_BLANK_UNBLANK:
+            * ili_sleep_handler(TP_RESUME) //亮屏
+          * case DRM_PANEL_BLANK_POWERDOWN:
+            * ili_sleep_handler(TP_DEEP_SLEEP) //灭屏
+        * drm_panel_notifier_register(active_panel, &amp;ilits-&gt;notifier_fb) //注册notify
+      * #if CHARGER_NOTIFIER_CALLBACK ilitek_plat_charger_init();// ?
+</pre></div>
+</div>
+<p>看看中断上下段内容：</p>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="k">static</span><span class="w"> </span><span class="n">irqreturn_t</span><span class="w"> </span><span class="nf">ilitek_plat_isr_top_half</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">irq</span><span class="p">,</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="o">*</span><span class="n">dev_id</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">irq</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">ilits</span><span class="o">-&gt;</span><span class="n">irq_num</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="n">ILI_ERR</span><span class="p">(</span><span class="s">&quot;Incorrect irq number (%d)</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">irq</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="k">return</span><span class="w"> </span><span class="n">IRQ_NONE</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">atomic_read</span><span class="p">(</span><span class="o">&amp;</span><span class="n">ilits</span><span class="o">-&gt;</span><span class="n">cmd_int_check</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">ENABLE</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="n">atomic_set</span><span class="p">(</span><span class="o">&amp;</span><span class="n">ilits</span><span class="o">-&gt;</span><span class="n">cmd_int_check</span><span class="p">,</span><span class="w"> </span><span class="n">DISABLE</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="n">ILI_DBG</span><span class="p">(</span><span class="s">&quot;CMD INT detected, ignore</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="n">wake_up</span><span class="p">(</span><span class="o">&amp;</span><span class="p">(</span><span class="n">ilits</span><span class="o">-&gt;</span><span class="n">inq</span><span class="p">));</span><span class="w"></span>
+<span class="w">		</span><span class="k">return</span><span class="w"> </span><span class="n">IRQ_HANDLED</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ilits</span><span class="o">-&gt;</span><span class="n">prox_near</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="n">ILI_INFO</span><span class="p">(</span><span class="s">&quot;Proximity event, ignore interrupt!</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="k">return</span><span class="w"> </span><span class="n">IRQ_HANDLED</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">ILI_DBG</span><span class="p">(</span><span class="s">&quot;report: %d, rst: %d, fw: %d, switch: %d, mp: %d, sleep: %d, esd: %d, igr:%d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"></span>
+<span class="w">			</span><span class="n">ilits</span><span class="o">-&gt;</span><span class="n">report</span><span class="p">,</span><span class="w"></span>
+<span class="w">			</span><span class="n">atomic_read</span><span class="p">(</span><span class="o">&amp;</span><span class="n">ilits</span><span class="o">-&gt;</span><span class="n">tp_reset</span><span class="p">),</span><span class="w"></span>
+<span class="w">			</span><span class="n">atomic_read</span><span class="p">(</span><span class="o">&amp;</span><span class="n">ilits</span><span class="o">-&gt;</span><span class="n">fw_stat</span><span class="p">),</span><span class="w"></span>
+<span class="w">			</span><span class="n">atomic_read</span><span class="p">(</span><span class="o">&amp;</span><span class="n">ilits</span><span class="o">-&gt;</span><span class="n">tp_sw_mode</span><span class="p">),</span><span class="w"></span>
+<span class="w">			</span><span class="n">atomic_read</span><span class="p">(</span><span class="o">&amp;</span><span class="n">ilits</span><span class="o">-&gt;</span><span class="n">mp_stat</span><span class="p">),</span><span class="w"></span>
+<span class="w">			</span><span class="n">atomic_read</span><span class="p">(</span><span class="o">&amp;</span><span class="n">ilits</span><span class="o">-&gt;</span><span class="n">tp_sleep</span><span class="p">),</span><span class="w"></span>
+<span class="w">			</span><span class="n">atomic_read</span><span class="p">(</span><span class="o">&amp;</span><span class="n">ilits</span><span class="o">-&gt;</span><span class="n">esd_stat</span><span class="p">),</span><span class="w"></span>
+<span class="w">			</span><span class="n">atomic_read</span><span class="p">(</span><span class="o">&amp;</span><span class="n">ilits</span><span class="o">-&gt;</span><span class="n">ignore_report</span><span class="p">));</span><span class="w"></span>
+
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">ilits</span><span class="o">-&gt;</span><span class="n">report</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="n">atomic_read</span><span class="p">(</span><span class="o">&amp;</span><span class="n">ilits</span><span class="o">-&gt;</span><span class="n">tp_reset</span><span class="p">)</span><span class="w"> </span><span class="o">||</span><span class="w">  </span><span class="n">atomic_read</span><span class="p">(</span><span class="o">&amp;</span><span class="n">ilits</span><span class="o">-&gt;</span><span class="n">ignore_report</span><span class="p">)</span><span class="w"> </span><span class="o">||</span><span class="w"></span>
+<span class="w">		</span><span class="n">atomic_read</span><span class="p">(</span><span class="o">&amp;</span><span class="n">ilits</span><span class="o">-&gt;</span><span class="n">fw_stat</span><span class="p">)</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="n">atomic_read</span><span class="p">(</span><span class="o">&amp;</span><span class="n">ilits</span><span class="o">-&gt;</span><span class="n">tp_sw_mode</span><span class="p">)</span><span class="w"> </span><span class="o">||</span><span class="w"></span>
+<span class="w">		</span><span class="n">atomic_read</span><span class="p">(</span><span class="o">&amp;</span><span class="n">ilits</span><span class="o">-&gt;</span><span class="n">mp_stat</span><span class="p">)</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="n">atomic_read</span><span class="p">(</span><span class="o">&amp;</span><span class="n">ilits</span><span class="o">-&gt;</span><span class="n">tp_sleep</span><span class="p">)</span><span class="w"> </span><span class="o">||</span><span class="w"></span>
+<span class="w">		</span><span class="n">atomic_read</span><span class="p">(</span><span class="o">&amp;</span><span class="n">ilits</span><span class="o">-&gt;</span><span class="n">esd_stat</span><span class="p">))</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">			</span><span class="n">ILI_DBG</span><span class="p">(</span><span class="s">&quot;ignore interrupt !</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">			</span><span class="k">return</span><span class="w"> </span><span class="n">IRQ_HANDLED</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+
+<span class="w">	</span><span class="k">return</span><span class="w"> </span><span class="n">IRQ_WAKE_THREAD</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="k">static</span><span class="w"> </span><span class="n">irqreturn_t</span><span class="w"> </span><span class="nf">ilitek_plat_isr_bottom_half</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">irq</span><span class="p">,</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="o">*</span><span class="n">dev_id</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mutex_is_locked</span><span class="p">(</span><span class="o">&amp;</span><span class="n">ilits</span><span class="o">-&gt;</span><span class="n">touch_mutex</span><span class="p">))</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="n">ILI_DBG</span><span class="p">(</span><span class="s">&quot;touch is locked, ignore</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="k">return</span><span class="w"> </span><span class="n">IRQ_HANDLED</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+<span class="w">	</span><span class="n">mutex_lock</span><span class="p">(</span><span class="o">&amp;</span><span class="n">ilits</span><span class="o">-&gt;</span><span class="n">touch_mutex</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="n">ili_report_handler</span><span class="p">();</span><span class="w"> </span><span class="c1">//报点</span>
+<span class="w">	</span><span class="n">mutex_unlock</span><span class="p">(</span><span class="o">&amp;</span><span class="n">ilits</span><span class="o">-&gt;</span><span class="n">touch_mutex</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="k">return</span><span class="w"> </span><span class="n">IRQ_HANDLED</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+</section>
+<section id="pinctrl">
+<h1>增加pinctrl<a class="headerlink" href="#pinctrl" title="Permalink to this headline"></a></h1>
+<p>主要功能是在resume时调用pmx_ts_active拉高rst和int，suspend时调用pmx_ts_suspend拉低rst和int。</p>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span>dts:
+		pinctrl-names = &quot;pmx_ts_active&quot;,&quot;pmx_ts_suspend&quot;,&quot;pmx_ts_release&quot;;
+		pinctrl-0 = &lt;&amp;ts_int_active &amp;ts_reset_active&gt;;
+		pinctrl-1 = &lt;&amp;ts_int_suspend &amp;ts_reset_suspend&gt;;
+		pinctrl-2 = &lt;&amp;ts_release&gt;;
+
+pinctrl:
+		pmx_ts_int_active {
+			ts_int_active: ts_int_active {
+				mux {
+					pins = &quot;gpio80&quot;;
+					function = &quot;gpio&quot;;
+				};
+
+				config {
+					pins = &quot;gpio80&quot;;
+					drive-strength = &lt;8&gt;;
+					bias-pull-up;
+				};
+			};
+		};
+
+		pmx_ts_int_suspend {
+			ts_int_suspend: ts_int_suspend {
+				mux {
+					pins = &quot;gpio80&quot;;
+					function = &quot;gpio&quot;;
+				};
+
+				config {
+					pins = &quot;gpio80&quot;;
+					drive-strength = &lt;2&gt;;
+					bias-pull-down;
+				};
+			};
+		};
+
+		pmx_ts_reset_active {
+			ts_reset_active: ts_reset_active {
+				mux {
+					pins = &quot;gpio71&quot;;
+					function = &quot;gpio&quot;;
+				};
+
+				config {
+					pins = &quot;gpio71&quot;;
+					drive-strength = &lt;8&gt;;
+					bias-pull-up;
+				};
+			};
+		};
+
+		pmx_ts_reset_suspend {
+			ts_reset_suspend: ts_reset_suspend {
+				mux {
+					pins = &quot;gpio71&quot;;
+					function = &quot;gpio&quot;;
+				};
+
+				config {
+					pins = &quot;gpio71&quot;;
+					drive-strength = &lt;2&gt;;
+					bias-pull-down;
+				};
+			};
+		};
+
+		pmx_ts_release {
+			ts_release: ts_release {
+				mux {
+					pins = &quot;gpio80&quot;, &quot;gpio71&quot;;
+					function = &quot;gpio&quot;;
+				};
+
+				config {
+					pins = &quot;gpio80&quot;, &quot;gpio71&quot;;
+					drive-strength = &lt;2&gt;;
+					bias-pull-down;
+				};
+			};
+		};
+
+
+代码：
+
+#if ILI_PINCTRL_EN
+static int ilitek_pinctrl_init(struct ilitek_ts_data *ts)
+{
+	int ret = 0;
+
+	ts-&gt;pinctrl = devm_pinctrl_get(ts-&gt;dev);
+	if (IS_ERR_OR_NULL(ts-&gt;pinctrl)) {
+		FTS_ERROR(&quot;Failed to get pinctrl, please check dts&quot;);
+		ret = PTR_ERR(ts-&gt;pinctrl);
+		goto err_pinctrl_get;
+	}
+
+	ts-&gt;pins_active = pinctrl_lookup_state(ts-&gt;pinctrl, &quot;pmx_ts_active&quot;);
+	if (IS_ERR_OR_NULL(ts-&gt;pins_active)) {
+		FTS_ERROR(&quot;Pin state[active] not found&quot;);
+		ret = PTR_ERR(ts-&gt;pins_active);
+		goto err_pinctrl_lookup;
+	}
+
+	ts-&gt;pins_suspend = pinctrl_lookup_state(ts-&gt;pinctrl, &quot;pmx_ts_suspend&quot;);
+	if (IS_ERR_OR_NULL(ts-&gt;pins_suspend)) {
+		FTS_ERROR(&quot;Pin state[suspend] not found&quot;);
+		ret = PTR_ERR(ts-&gt;pins_suspend);
+		goto err_pinctrl_lookup;
+	}
+
+	ts-&gt;pins_release = pinctrl_lookup_state(ts-&gt;pinctrl, &quot;pmx_ts_release&quot;);
+	if (IS_ERR_OR_NULL(ts-&gt;pins_release)) {
+		FTS_ERROR(&quot;Pin state[release] not found&quot;);
+		ret = PTR_ERR(ts-&gt;pins_release);
+	}
+
+	return 0;
+err_pinctrl_lookup:
+	if (ts-&gt;pinctrl) {
+		devm_pinctrl_put(ts-&gt;pinctrl);
+	}
+err_pinctrl_get:
+	ts-&gt;pinctrl = NULL;
+	ts-&gt;pins_release = NULL;
+	ts-&gt;pins_suspend = NULL;
+	ts-&gt;pins_active = NULL;
+	return ret;
+}
+static int ilitek_pinctrl_select_normal(struct ilitek_ts_data *ts)
+{
+	int ret = 0;
+
+	if (ts-&gt;pinctrl &amp;&amp; ts-&gt;pins_active) {
+		ret = pinctrl_select_state(ts-&gt;pinctrl, ts-&gt;pins_active);
+		if (ret &lt; 0) {
+			FTS_ERROR(&quot;Set normal pin state error:%d&quot;, ret);
+		}
+	}
+
+	return ret;
+}
+
+static int ilitek_pinctrl_select_suspend(struct ilitek_ts_data *ts)
+{
+	int ret = 0;
+
+	if (ts-&gt;pinctrl &amp;&amp; ts-&gt;pins_suspend) {
+		ret = pinctrl_select_state(ts-&gt;pinctrl, ts-&gt;pins_suspend);
+		if (ret &lt; 0) {
+			FTS_ERROR(&quot;Set suspend pin state error:%d&quot;, ret);
+		}
+	}
+
+	return ret;
+}
+
+static int ilitek_pinctrl_select_release(struct ilitek_ts_data *ts)
+{
+	int ret = 0;
+
+	if (ts-&gt;pinctrl) {
+		if (IS_ERR_OR_NULL(ts-&gt;pins_release)) {
+			devm_pinctrl_put(ts-&gt;pinctrl);
+			ts-&gt;pinctrl = NULL;
+		} else {
+			ret = pinctrl_select_state(ts-&gt;pinctrl, ts-&gt;pins_release);
+			if (ret &lt; 0)
+				FTS_ERROR(&quot;Set gesture pin state error:%d&quot;, ret);
+		}
+	}
+
+	return ret;
+}
+#endif /* ILI_PINCTRL_EN */
+
+
+probe(){
+
+  #if ILI_PINCTRL_EN
+		ilitek_pinctrl_init(ilits);
+		ilitek_pinctrl_select_normal(ilits);
+#endif
+}
+</pre></div>
+</div>
+</section>
+<section id="id3">
+<h1>调试过程<a class="headerlink" href="#id3" title="Permalink to this headline"></a></h1>
+<p>首先需要配置i2c、log、平台(高通、MTK)：</p>
+<ul class="simple">
+<li><p>打开调试功能<code class="docutils literal notranslate"><span class="pre">ilitek_v3.h</span></code>：</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="cp">#define DEBUG_OUTPUT	DEBUG_ALL</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>配置为i2c通信：</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span>ilitek_v3.h：
+#define TDDI_INTERFACE			BUS_I2C /* BUS_I2C(0x18) or BUS_SPI(0x1C) */
+
+Makefile：
+BUILD_INFAE := i2c
+BUILD_PLATFORM := qcom
+BUILD_MODULE := n
+</pre></div>
+</div>
+<p>原装屏正常打印：</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>[   10.084701] i2c_pmic 1-0009: ignoring dependency for device, assuming no driver
+[   10.097757] [FTS_TS/I]fts_ts_probe:Touch Screen(I2C BUS) driver prboe...
+[   10.104583] [FTS_TS/I]fts_ts_probe_entry:Focaltech V3.1 20190807
+[   10.110659] [FTS_TS/I]fts_get_dt_coords:display x(0 720) y(0 1280)
+[   10.116889] [FTS_TS/I]fts_parse_dt:VK Number:3, key:(139,172,158), coords:(150,1340),(330,1340),(660,1340)
+[   10.126877] [FTS_TS/I]fts_parse_dt:max touch number:5, irq gpio:1233, reset gpio:1224
+[   10.135461] [FTS_TS/I]fts_input_init:set key capabilities
+[   10.141602] input: fts_ts as /devices/platform/soc/4a88000.i2c/i2c-2/2-0038/input/input2
+[   10.150742] fts_ts 2-0038: Linked as a consumer to regulator.40
+[   10.157370] fts_ts 2-0038: Linked as a consumer to regulator.38
+[   10.385623] [FTS_TS/I]fts_get_ic_information:get ic information, chip id = 0x5422
+[   10.393189] [FTS_TS/I]fts_create_apk_debug_channel:Create proc entry success!
+[   10.400517] [FTS_TS/I]fts_create_sysfs:[EX]: sysfs_create_group() succeeded!!
+[   10.408361] [FTS_TS/I]fts_irq_registration:irq:243, flag:2002
+[   10.414876] [FTS_TS/I]fts_fwupg_init:fw upgrade init function
+[   10.420697] [FTS_TS/I]fts_ts_probe:Touch Screen(I2C BUS) driver prboe successfully
+[   10.421233] fts_ts 2-0038: Falling back to syfs fallback for: focaltech_ts_fw_gvo.bin
+</pre></div>
+</div>
+<section id="vdd-vcc">
+<h2>1.供电VDD VCC确定<a class="headerlink" href="#vdd-vcc" title="Permalink to this headline"></a></h2>
+<p>首先确定供电这块，硬件同事说tp只有VDD一路电LDO17A_3V0，如下图，3v：</p>
+<p><img alt="0002_0003.png" src="../../../_images/0002_00034.png" />
+<img alt="0002_0004.png" src="../../../_images/0002_00044.png" /></p>
+<p>软件修改ldo电压值<code class="docutils literal notranslate"><span class="pre">ilitek_v3.h</span></code>：</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1">#define VDD_VOLTAGE			1800000</span>
+<span class="c1">#define REGULATOR_POWER                 ENABLE</span>
+</pre></div>
+</div>
+<p>软件参考开发板，vdd是kernel自动添加-supply后缀组成vdd-supply，vcc_i2c同理，从dts中获取：</p>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span>dts：
+            compatible = &quot;focaltech,fts_ts&quot;;
+                reg = &lt;0x38&gt;;
+                vdd-supply = &lt;&amp;L17A&gt;;
+                vcc_i2c-supply  = &lt;&amp;L15A&gt;;
+
+
+        rpm-regulator-ldoa15 {
+                status = &quot;okay&quot;;
+                L15A: pm2250_l15: regulator-l15 {
+                        regulator-min-microvolt = &lt;1200000&gt;;
+                        regulator-max-microvolt = &lt;2000000&gt;;
+                        qcom,init-voltage = &lt;1800000&gt;;
+                        status = &quot;okay&quot;;
+                };
+        };
+
+ldoa17的电压值必须在3v~3.6v之间，否则会报错：
+pm2250_l17: requested voltage range [1800000, 1800000] does not fit within constraints: [3000000, 3600000]
+
+        rpm-regulator-ldoa17 {
+                status = &quot;okay&quot;;
+                L17A: pm2250_l17: regulator-l17 {
+                        regulator-min-microvolt = &lt;3000000&gt;;
+                        regulator-max-microvolt = &lt;3600000&gt;;
+                        qcom,init-voltage = &lt;2800000&gt;;
+                        status = &quot;okay&quot;;
+                };
+        };
+
+/*****************************************************************************
+* Name: fts_power_source_init
+* Brief: Init regulator power:vdd/vcc_io(if have), generally, no vcc_io
+*        vdd----&gt;vdd-supply in dts, kernel will auto add &quot;-supply&quot; to parse
+*        Must be call after fts_gpio_configure() execute,because this function
+*        will operate reset-gpio which request gpio in fts_gpio_configure()
+* Input:
+* Output:
+* Return: return 0 if init power successfully, otherwise return error code
+*****************************************************************************/
+static int fts_power_source_init(struct fts_ts_data *ts_data)
+{
+	int ret = 0;
+
+	FTS_FUNC_ENTER();
+	ts_data-&gt;vdd = regulator_get(ts_data-&gt;dev, &quot;vdd&quot;);
+	if (IS_ERR_OR_NULL(ts_data-&gt;vdd)) {
+		ret = PTR_ERR(ts_data-&gt;vdd);
+		FTS_ERROR(&quot;get vdd regulator failed,ret=%d&quot;, ret);
+		return ret;
+	}
+
+	if (regulator_count_voltages(ts_data-&gt;vdd) &gt; 0) {
+		ret = regulator_set_voltage(ts_data-&gt;vdd, FTS_VTG_MIN_UV,
+						FTS_VTG_MAX_UV);
+		if (ret) {
+			FTS_ERROR(&quot;vdd regulator set_vtg failed ret=%d&quot;, ret);
+			regulator_put(ts_data-&gt;vdd);
+			return ret;
+		}
+
+		ret = regulator_set_load(ts_data-&gt;vdd, FTS_LOAD_MAX_UA);
+		if (ret) {
+			FTS_ERROR(&quot;vdd regulator set_load failed ret=%d&quot;, ret);
+			regulator_put(ts_data-&gt;vdd);
+			return ret;
+		}
+	}
+
+	ts_data-&gt;vcc_i2c = regulator_get(ts_data-&gt;dev, &quot;vcc_i2c&quot;);
+	if (!IS_ERR_OR_NULL(ts_data-&gt;vcc_i2c)) {
+		if (regulator_count_voltages(ts_data-&gt;vcc_i2c) &gt; 0) {
+			ret = regulator_set_voltage(ts_data-&gt;vcc_i2c,
+						FTS_I2C_VTG_MIN_UV,
+						FTS_I2C_VTG_MAX_UV);
+			if (ret) {
+				FTS_ERROR(&quot;vcc_i2c regulator set_vtg failed,ret=%d&quot;, ret);
+				regulator_put(ts_data-&gt;vcc_i2c);
+			}
+		}
+	}
+
+#if FTS_PINCTRL_EN
+	fts_pinctrl_init(ts_data);
+	fts_pinctrl_select_normal(ts_data);
+#endif
+
+	ts_data-&gt;power_disabled = true;
+	ret = fts_power_source_ctrl(ts_data, ENABLE);
+	if (ret) {
+		FTS_ERROR(&quot;fail to enable power(regulator)&quot;);
+	}
+
+	FTS_FUNC_EXIT();
+	return ret;
+}
+</pre></div>
+</div>
+</section>
+<section id="rst-int-gpio">
+<h2>2.RST/INT GPIO确认<a class="headerlink" href="#rst-int-gpio" title="Permalink to this headline"></a></h2>
+<p>确认同开发板focaltech tp配置一样。</p>
+</section>
+<section id="panel">
+<h2>3.panel配置<a class="headerlink" href="#panel" title="Permalink to this headline"></a></h2>
+<p>panel选择<code class="docutils literal notranslate"><span class="pre">dsi_ili7807s_1080p_video</span></code>，</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">&amp;</span><span class="n">qupv3_se2_i2c</span> <span class="p">{</span>
+	<span class="n">status</span> <span class="o">=</span> <span class="s2">&quot;okay&quot;</span><span class="p">;</span>
+	<span class="n">ilitek_ts</span><span class="o">@</span><span class="mi">41</span> <span class="p">{</span>
+		<span class="n">compatible</span> <span class="o">=</span> <span class="s2">&quot;tchip,ilitek&quot;</span><span class="p">;</span>
+		<span class="n">status</span> <span class="o">=</span> <span class="s2">&quot;okay&quot;</span><span class="p">;</span>
+		<span class="n">reg</span> <span class="o">=</span> <span class="o">&lt;</span><span class="mh">0x41</span><span class="o">&gt;</span><span class="p">;</span>
+		<span class="n">interrupt</span><span class="o">-</span><span class="n">parent</span> <span class="o">=</span> <span class="o">&lt;&amp;</span><span class="n">tlmm</span><span class="o">&gt;</span><span class="p">;</span>
+		<span class="n">touch</span><span class="p">,</span><span class="n">reset</span><span class="o">-</span><span class="n">gpio</span> <span class="o">=</span> <span class="o">&lt;&amp;</span><span class="n">tlmm</span> <span class="mi">71</span> <span class="mh">0x0</span><span class="o">&gt;</span><span class="p">;</span>
+		<span class="n">touch</span><span class="p">,</span><span class="n">irq</span><span class="o">-</span><span class="n">gpio</span> <span class="o">=</span> <span class="o">&lt;&amp;</span><span class="n">tlmm</span> <span class="mi">80</span> <span class="mh">0x02008</span><span class="o">&gt;</span><span class="p">;</span>
+		<span class="n">vdd</span><span class="o">-</span><span class="n">supply</span> <span class="o">=</span> <span class="o">&lt;&amp;</span><span class="n">L17A</span><span class="o">&gt;</span><span class="p">;</span>
+		<span class="n">vcc_i2c</span><span class="o">-</span><span class="n">supply</span>  <span class="o">=</span> <span class="o">&lt;&amp;</span><span class="n">L15A</span><span class="o">&gt;</span><span class="p">;</span>
+		<span class="n">panel</span> <span class="o">=</span> <span class="o">&lt;&amp;</span><span class="n">dsi_ili7807s_1080p_video</span><span class="o">&gt;</span><span class="p">;</span>
+	<span class="p">};</span>
+<span class="p">};</span>
+</pre></div>
+</div>
+</section>
+<section id="id4">
+<h2>4.无法获取panel<a class="headerlink" href="#id4" title="Permalink to this headline"></a></h2>
+<p>没接TP：</p>
+<div class="highlight-log notranslate"><div class="highlight"><pre><span></span>[    4.258161] ILITEK: (ilitek_i2c_probe, 323): ilitek i2c probe
+[    4.263994] ILITEK: (ilitek_plat_probe, 625): platform probe
+[    4.269679] ILITEK: (ili_v3_drm_check_dt, 435): find drm_panel count(1)
+[    4.269684] ILITEK: (ili_v3_drm_check_dt, 438): nodeffffffe034a3caf0
+[    4.276421] ILITEK: (ili_v3_drm_check_dt, 440): panelfffffffffffffdfb
+[    4.282797] ILITEK: (ili_v3_drm_check_dt, 450): no find drm_panel
+[    4.289369] ILITEK: (ilitek_plat_probe, 633): [ili_v3_drm_check_dt] parse drm-panel fail
+[    4.295521] ILITEK: (ilitek_plat_gpio_register, 185): TP INT: 1233
+[    4.309842] ILITEK: (ilitek_plat_gpio_register, 186): TP RESET: 1224
+[    4.316392] ILITEK: (ili_irq_register, 338): ilits-&gt;irq_num = 195
+[    4.322982] ILITEK: (ili_irq_register, 346): IRQ TYPE = IRQF_TRIGGER_FALLING
+[    4.330075] ILITEK: (ili_tddi_init, 1166): driver version = 3.0.7.0.210625
+[    4.337492] ILITEK: (ili_reset_ctrl, 1032): TP HW RST
+[    4.342579] ILITEK: (ili_tp_reset, 31): edge delay = 40
+[    4.393859] ILITEK: (ili_set_tp_data_len, 822): TP mode = 0, format = 0, len = 112
+[    4.402473] i2c_geni 4a88000.i2c: GSI QN err:0x0, status:0x4cc, err:2
+[    4.408934] i2c_geni 4a88000.i2c: GSI QN err:0x0, status:0x4cc, err:2
+[    4.415756] ILITEK: (ilitek_i2c_write, 171): i2c write error, ret = -1
+[    4.422310] ILITEK: (ili_i2c_wrapper, 280): i2c-wrapper write error
+[    4.428621] ILITEK: (ili_ice_mode_ctrl, 350): write ice mode cmd error
+[    4.435172] ILITEK: (ili_ice_mode_write, 267): ice mode not enabled
+[    4.441453] ILITEK: (ili_ice_mode_ctrl, 357): Write cs high failed
+[    4.447656] ILITEK: (ili_ice_mode_ctrl, 375): Enable ICE mode, mcu on = 0
+[    4.454482] ILITEK: (ili_ic_dummy_check, 1264): ice mode doesn&#39;t enable
+[    4.461121] ILITEK: (ili_tddi_init, 1207): Not found ilitek chip
+[    4.467147] ILITEK: (ilitek_plat_probe, 642): ILITEK Driver probe failed
+[    4.474049] ILITEK: (ili_dev_remove, 1268): remove ilitek dev
+[    4.480325] ILITEK: (ili_interface_dev_exit, 475): remove i2c dev
+</pre></div>
+</div>
+<p>接了TP：</p>
+<div class="highlight-log notranslate"><div class="highlight"><pre><span></span>[    4.231417] ILITEK: (ilitek_i2c_probe, 323): ilitek i2c probe
+[    4.237251] ILITEK: (ilitek_plat_probe, 716): platform probe
+[    4.243114] ILITEK_TDDI 1-0041: Linked as a consumer to regulator.40
+[    4.249630] ILITEK_TDDI 1-0041: Linked as a consumer to regulator.38
+[    4.256011] ILITEK: (ili_plat_regulator_power_on, 126): POWER ON
+[    4.268060] ILITEK: (ili_v3_drm_check_dt, 435): find drm_panel count(1)
+[    4.268064] ILITEK: (ili_v3_drm_check_dt, 438): nodeffffffd8b4a3daf0
+[    4.274804] ILITEK: (ili_v3_drm_check_dt, 440): panelfffffffffffffdfb
+[    4.281176] ILITEK: (ili_v3_drm_check_dt, 450): no find drm_panel
+[    4.287725] ILITEK: (ilitek_plat_probe, 724): [ili_v3_drm_check_dt] parse drm-panel fail
+[    4.293885] ILITEK: (ilitek_plat_gpio_register, 185): TP INT: 1233
+[    4.308211] ILITEK: (ilitek_plat_gpio_register, 186): TP RESET: 1224
+[    4.315009] ILITEK: (ili_irq_register, 338): ilits-&gt;irq_num = 195
+[    4.321658] ILITEK: (ili_irq_register, 346): IRQ TYPE = IRQF_TRIGGER_FALLING
+[    4.328750] ILITEK: (ili_tddi_init, 1166): driver version = 3.0.7.0.210625
+[    4.336214] ILITEK: (ili_reset_ctrl, 1032): TP HW RST
+[    4.341293] ILITEK: (ili_tp_reset, 31): edge delay = 40
+[    4.392572] ILITEK: (ili_set_tp_data_len, 822): TP mode = 0, format = 0, len = 112
+[    4.904171] i2c_geni 4a88000.i2c: I2C gsi xfer timeout:126 flags:0 addr:0x41
+[    4.911428] i2c_geni 4a88000.i2c: GSI QN err:0x0, status:0x644, err:4
+[    4.918348] ILITEK: (ilitek_i2c_write, 171): i2c write error, ret = -1
+[    4.924916] ILITEK: (ili_i2c_wrapper, 280): i2c-wrapper write error
+[    4.931232] ILITEK: (ili_ice_mode_ctrl, 350): write ice mode cmd error
+[    4.937796] ILITEK: (ili_ice_mode_write, 267): ice mode not enabled
+[    4.944099] ILITEK: (ili_ice_mode_ctrl, 357): Write cs high failed
+[    4.950323] ILITEK: (ili_ice_mode_ctrl, 375): Enable ICE mode, mcu on = 0
+[    4.957142] ILITEK: (ili_ic_dummy_check, 1264): ice mode doesn&#39;t enable
+[    4.963791] ILITEK: (ili_tddi_init, 1207): Not found ilitek chip
+[    4.969847] ILITEK: (ilitek_plat_probe, 738): ILITEK Driver probe failed
+[    4.976763] ILITEK: (ili_dev_remove, 1268): remove ilitek dev
+[    4.982706] esd_check (256) used greatest stack depth: 13856 bytes left
+[    4.989629] ILITEK: (ili_interface_dev_exit, 475): remove i2c dev
+
+</pre></div>
+</div>
+<p>由于panel驱动还没加载，所以将tp驱动延时加载就好了,修改如下：</p>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="n">module_init</span><span class="p">(</span><span class="n">ilitek_plat_dev_init</span><span class="p">);</span><span class="w"></span>
+<span class="n">改为</span><span class="w"></span>
+<span class="nf">late_initcall</span><span class="p">(</span><span class="n">ilitek_plat_dev_init</span><span class="p">);</span><span class="w"></span>
+</pre></div>
+</div>
+<p>正常打印：</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span>    <span class="mf">6.896123</span><span class="p">]</span> <span class="n">ILITEK</span><span class="p">:</span> <span class="p">(</span><span class="n">ili_plat_regulator_power_on</span><span class="p">,</span> <span class="mi">126</span><span class="p">):</span> <span class="n">POWER</span> <span class="n">ON</span>
+<span class="p">[</span>    <span class="mf">6.902485</span><span class="p">]</span> <span class="n">PAX_CHG</span><span class="p">:</span> <span class="n">psy_charger_get_property</span> <span class="n">psp</span><span class="p">:</span><span class="mi">30</span>
+<span class="p">[</span>    <span class="mf">6.913144</span><span class="p">]</span> <span class="n">ILITEK</span><span class="p">:</span> <span class="p">(</span><span class="n">ili_v3_drm_check_dt</span><span class="p">,</span> <span class="mi">435</span><span class="p">):</span> <span class="n">find</span> <span class="n">drm_panel</span> <span class="n">count</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="p">[</span>    <span class="mf">6.913147</span><span class="p">]</span> <span class="n">ILITEK</span><span class="p">:</span> <span class="p">(</span><span class="n">ili_v3_drm_check_dt</span><span class="p">,</span> <span class="mi">438</span><span class="p">):</span> <span class="n">nodeffffffd234a3daf0</span>
+<span class="p">[</span>    <span class="mf">6.913498</span><span class="p">]</span> <span class="n">PAX_CHG</span><span class="p">:</span> <span class="n">psy_charger_get_property</span> <span class="n">psp</span><span class="p">:</span><span class="mi">35</span>
+<span class="p">[</span>    <span class="mf">6.918460</span><span class="p">]</span> <span class="n">ILITEK</span><span class="p">:</span> <span class="p">(</span><span class="n">ili_v3_drm_check_dt</span><span class="p">,</span> <span class="mi">440</span><span class="p">):</span> <span class="n">panelffffffd21348e4a8</span>
+<span class="p">[</span>    <span class="mf">6.918462</span><span class="p">]</span> <span class="n">ILITEK</span><span class="p">:</span> <span class="p">(</span><span class="n">ili_v3_drm_check_dt</span><span class="p">,</span> <span class="mi">444</span><span class="p">):</span> <span class="n">find</span> <span class="n">drm_panel</span> <span class="n">successfully</span>
+<span class="p">[</span>    <span class="mf">6.943106</span><span class="p">]</span> <span class="n">ILITEK</span><span class="p">:</span> <span class="p">(</span><span class="n">ilitek_plat_gpio_register</span><span class="p">,</span> <span class="mi">185</span><span class="p">):</span> <span class="n">TP</span> <span class="n">INT</span><span class="p">:</span> <span class="mi">1233</span>
+<span class="p">[</span>    <span class="mf">6.956310</span><span class="p">]</span> <span class="n">ILITEK</span><span class="p">:</span> <span class="p">(</span><span class="n">ilitek_plat_gpio_register</span><span class="p">,</span> <span class="mi">186</span><span class="p">):</span> <span class="n">TP</span> <span class="n">RESET</span><span class="p">:</span> <span class="mi">1224</span>
+<span class="p">[</span>    <span class="mf">6.963010</span><span class="p">]</span> <span class="n">ILITEK</span><span class="p">:</span> <span class="p">(</span><span class="n">ili_irq_register</span><span class="p">,</span> <span class="mi">338</span><span class="p">):</span> <span class="n">ilits</span><span class="o">-&gt;</span><span class="n">irq_num</span> <span class="o">=</span> <span class="mi">243</span>
+<span class="p">[</span>    <span class="mf">6.969364</span><span class="p">]</span> <span class="n">ILITEK</span><span class="p">:</span> <span class="p">(</span><span class="n">ili_irq_register</span><span class="p">,</span> <span class="mi">346</span><span class="p">):</span> <span class="n">IRQ</span> <span class="n">TYPE</span> <span class="o">=</span> <span class="n">IRQF_TRIGGER_FALLING</span>
+<span class="p">[</span>    <span class="mf">6.976453</span><span class="p">]</span> <span class="n">ILITEK</span><span class="p">:</span> <span class="p">(</span><span class="n">ili_tddi_init</span><span class="p">,</span> <span class="mi">1166</span><span class="p">):</span> <span class="n">driver</span> <span class="n">version</span> <span class="o">=</span> <span class="mf">3.0.7.0.210625</span>
+<span class="p">[</span>    <span class="mf">6.983650</span><span class="p">]</span> <span class="n">ILITEK</span><span class="p">:</span> <span class="p">(</span><span class="n">ili_reset_ctrl</span><span class="p">,</span> <span class="mi">1032</span><span class="p">):</span> <span class="n">TP</span> <span class="n">HW</span> <span class="n">RST</span>
+<span class="p">[</span>    <span class="mf">6.988751</span><span class="p">]</span> <span class="n">ILITEK</span><span class="p">:</span> <span class="p">(</span><span class="n">ili_tp_reset</span><span class="p">,</span> <span class="mi">31</span><span class="p">):</span> <span class="n">edge</span> <span class="n">delay</span> <span class="o">=</span> <span class="mi">40</span>
+<span class="p">[</span>    <span class="mf">7.040036</span><span class="p">]</span> <span class="n">ILITEK</span><span class="p">:</span> <span class="p">(</span><span class="n">ili_set_tp_data_len</span><span class="p">,</span> <span class="mi">822</span><span class="p">):</span> <span class="n">TP</span> <span class="n">mode</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="nb">format</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="nb">len</span> <span class="o">=</span> <span class="mi">112</span>
+<span class="p">[</span>    <span class="mf">7.209026</span><span class="p">]</span> <span class="n">PAX_CHG</span><span class="p">:</span> <span class="n">pax_is_charger_on</span> <span class="n">chr_type</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="p">[</span>    <span class="mf">7.213929</span><span class="p">]</span> <span class="n">PAX_CHG</span><span class="p">:</span> <span class="n">disable</span> <span class="n">charging</span> <span class="mi">0</span> <span class="mi">0</span> <span class="mi">0</span>
+<span class="p">[</span>    <span class="mf">7.218138</span><span class="p">]</span> <span class="n">PAX_CHG</span><span class="p">:</span> <span class="n">charger_routine_thread</span> <span class="n">end</span> <span class="p">,</span> <span class="mi">0</span>
+<span class="p">[</span>    <span class="mf">7.560126</span><span class="p">]</span> <span class="n">i2c_geni</span> <span class="mi">4</span><span class="n">a88000</span><span class="o">.</span><span class="n">i2c</span><span class="p">:</span> <span class="n">I2C</span> <span class="n">gsi</span> <span class="n">xfer</span> <span class="n">timeout</span><span class="p">:</span><span class="mi">126</span> <span class="n">flags</span><span class="p">:</span><span class="mi">0</span> <span class="n">addr</span><span class="p">:</span><span class="mh">0x41</span>
+<span class="p">[</span>    <span class="mf">7.567324</span><span class="p">]</span> <span class="n">i2c_geni</span> <span class="mi">4</span><span class="n">a88000</span><span class="o">.</span><span class="n">i2c</span><span class="p">:</span> <span class="n">GSI</span> <span class="n">QN</span> <span class="n">err</span><span class="p">:</span><span class="mh">0x0</span><span class="p">,</span> <span class="n">status</span><span class="p">:</span><span class="mh">0x644</span><span class="p">,</span> <span class="n">err</span><span class="p">:</span><span class="mi">4</span>
+<span class="p">[</span>    <span class="mf">7.574116</span><span class="p">]</span> <span class="n">ILITEK</span><span class="p">:</span> <span class="p">(</span><span class="n">ilitek_i2c_write</span><span class="p">,</span> <span class="mi">171</span><span class="p">):</span> <span class="n">i2c</span> <span class="n">write</span> <span class="n">error</span><span class="p">,</span> <span class="n">ret</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+<span class="p">[</span>    <span class="mf">7.580684</span><span class="p">]</span> <span class="n">ILITEK</span><span class="p">:</span> <span class="p">(</span><span class="n">ili_i2c_wrapper</span><span class="p">,</span> <span class="mi">280</span><span class="p">):</span> <span class="n">i2c</span><span class="o">-</span><span class="n">wrapper</span> <span class="n">write</span> <span class="n">error</span>
+<span class="p">[</span>    <span class="mf">7.587003</span><span class="p">]</span> <span class="n">ILITEK</span><span class="p">:</span> <span class="p">(</span><span class="n">ili_ice_mode_ctrl</span><span class="p">,</span> <span class="mi">350</span><span class="p">):</span> <span class="n">write</span> <span class="n">ice</span> <span class="n">mode</span> <span class="n">cmd</span> <span class="n">error</span>
+<span class="p">[</span>    <span class="mf">7.593576</span><span class="p">]</span> <span class="n">ILITEK</span><span class="p">:</span> <span class="p">(</span><span class="n">ili_ice_mode_write</span><span class="p">,</span> <span class="mi">267</span><span class="p">):</span> <span class="n">ice</span> <span class="n">mode</span> <span class="ow">not</span> <span class="n">enabled</span>
+<span class="p">[</span>    <span class="mf">7.599871</span><span class="p">]</span> <span class="n">ILITEK</span><span class="p">:</span> <span class="p">(</span><span class="n">ili_ice_mode_ctrl</span><span class="p">,</span> <span class="mi">357</span><span class="p">):</span> <span class="n">Write</span> <span class="n">cs</span> <span class="n">high</span> <span class="n">failed</span>
+<span class="p">[</span>    <span class="mf">7.606085</span><span class="p">]</span> <span class="n">ILITEK</span><span class="p">:</span> <span class="p">(</span><span class="n">ili_ice_mode_ctrl</span><span class="p">,</span> <span class="mi">375</span><span class="p">):</span> <span class="n">Enable</span> <span class="n">ICE</span> <span class="n">mode</span><span class="p">,</span> <span class="n">mcu</span> <span class="n">on</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="p">[</span>    <span class="mf">7.612923</span><span class="p">]</span> <span class="n">ILITEK</span><span class="p">:</span> <span class="p">(</span><span class="n">ili_ic_dummy_check</span><span class="p">,</span> <span class="mi">1264</span><span class="p">):</span> <span class="n">ice</span> <span class="n">mode</span> <span class="n">doesn</span><span class="s1">&#39;t enable</span>
+<span class="p">[</span>    <span class="mf">7.619566</span><span class="p">]</span> <span class="n">ILITEK</span><span class="p">:</span> <span class="p">(</span><span class="n">ili_tddi_init</span><span class="p">,</span> <span class="mi">1207</span><span class="p">):</span> <span class="n">Not</span> <span class="n">found</span> <span class="n">ilitek</span> <span class="n">chip</span>
+<span class="p">[</span>    <span class="mf">7.624941</span><span class="p">]</span> <span class="n">PAX_CHG</span><span class="p">:</span> <span class="n">pax_is_charger_on</span> <span class="n">chr_type</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="p">[</span>    <span class="mf">7.625603</span><span class="p">]</span> <span class="n">ILITEK</span><span class="p">:</span> <span class="p">(</span><span class="n">ilitek_plat_probe</span><span class="p">,</span> <span class="mi">738</span><span class="p">):</span> <span class="n">ILITEK</span> <span class="n">Driver</span> <span class="n">probe</span> <span class="n">failed</span>
+<span class="p">[</span>    <span class="mf">7.630509</span><span class="p">]</span> <span class="n">PAX_CHG</span><span class="p">:</span> <span class="n">disable</span> <span class="n">charging</span> <span class="mi">0</span> <span class="mi">0</span> <span class="mi">0</span>
+<span class="p">[</span>    <span class="mf">7.637314</span><span class="p">]</span> <span class="n">ILITEK</span><span class="p">:</span> <span class="p">(</span><span class="n">ili_dev_remove</span><span class="p">,</span> <span class="mi">1268</span><span class="p">):</span> <span class="n">remove</span> <span class="n">ilitek</span> <span class="n">dev</span>
+</pre></div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, wugn.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+  
+
+<script charset="UTF-8" id="LA_COLLECT" src="//sdk.51.la/js-sdk-pro.min.js"></script>
+<script>LA.init({id: "JjOE14XScyd75b2C",ck: "JjOE14XScyd75b2C"})</script>
+
+<br/>
+<script id="LA-DATA-WIDGET" crossorigin="anonymous" charset="UTF-8" src="https://v6-widget.51.la/v6/JjOE14XScyd75b2C/quote.js?theme=0&f=12&display=1,0,0,0,0,0,1,1"></script>
+
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

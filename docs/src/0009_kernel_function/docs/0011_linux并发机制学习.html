@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>wugn</title>
+
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../index.html" class="icon icon-home"> wugn_note
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">概述</a></li>
+<li><a class="reference internal" href="#id2">参考</a></li>
+<li><a class="reference internal" href="#completion">完成量 Completion</a><ul>
+<li><a class="reference internal" href="#id3">历程</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#wait-event">等待队列(wait_event)</a><ul>
+<li><a class="reference internal" href="#id4">实例</a></li>
+<li><a class="reference internal" href="#id5">演示效果</a></li>
+<li><a class="reference internal" href="#id6">如何支持非阻塞</a></li>
+<li><a class="reference internal" href="#id7">与信息量的不同</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id8">原子操作</a><ul>
+<li><a class="reference internal" href="#api">1)原子整型操作 API</a></li>
+<li><a class="reference internal" href="#id9">2)位操作API</a></li>
+<li><a class="reference internal" href="#id10">3)原子操作实例</a></li>
+</ul>
+</li>
+</ul>
+</div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">wugn_note</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs"> 
+<li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+<li>概述</li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.forward()">Forward</a></li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.back()">Go Back</a> | </li>
+<li style="float: right;margin-left: 10px;"><a href="/index.html">Home</a> | </li>
+
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="id1">
+<h1>概述<a class="headerlink" href="#id1" title="Permalink to this headline"></a></h1>
+<p>内核模块引用CONFIG实例</p>
+</section>
+<section id="id2">
+<h1>参考<a class="headerlink" href="#id2" title="Permalink to this headline"></a></h1>
+<ul class="simple">
+<li><p><a class="reference external" href="https://wu-being.blog.csdn.net/article/details/124861236?spm=1001.2014.3001.5502">Linux 设备驱动的并发控</a></p></li>
+<li><p><a class="reference external" href="https://blog.csdn.net/a3121772305/article/details/106628734?spm=1001.2101.3001.6650.6&amp;utm_medium=distribute.pc_relevant.none-task-blog-2%7Edefault%7EBlogCommendFromBaidu%7Edefault-6-106628734-blog-8490654.pc_relevant_default&amp;depth_1-utm_source=distribute.pc_relevant.none-task-blog-2%7Edefault%7EBlogCommendFromBaidu%7Edefault-6-106628734-blog-8490654.pc_relevant_default&amp;utm_relevant_index=11">Linux complete的使用记录</a></p></li>
+</ul>
+</section>
+<section id="completion">
+<h1>完成量 Completion<a class="headerlink" href="#completion" title="Permalink to this headline"></a></h1>
+<p>Completion 用于执行单元等待另一个执行单元执行完成某事，api如下：</p>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="c1">// 1. 定义完成量</span>
+<span class="k">struct</span><span class="w"> </span><span class="nc">completion</span><span class="w"> </span><span class="n">my_completion</span><span class="p">;</span><span class="w"></span>
+
+<span class="c1">// 2. 初始化完成量为0</span>
+<span class="n">init_completion</span><span class="p">(</span><span class="o">&amp;</span><span class="n">my_completion</span><span class="p">);</span><span class="w"></span>
+<span class="n">reinit_completion</span><span class="p">(</span><span class="o">&amp;</span><span class="n">my_completion</span><span class="p">);</span><span class="w"></span>
+
+<span class="c1">// 3. 等待一个完成量被唤醒</span>
+<span class="kt">void</span><span class="w"> </span><span class="nf">wait_for_completion</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">completion</span><span class="w"> </span><span class="o">*</span><span class="n">c</span><span class="p">);</span><span class="w"></span>
+
+<span class="c1">// 4. 完成量唤醒</span>
+<span class="kt">void</span><span class="w"> </span><span class="nf">complete</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">completion</span><span class="w"> </span><span class="o">*</span><span class="n">c</span><span class="p">);</span><span class="w">    </span><span class="c1">// 只唤醒一个</span>
+<span class="kt">void</span><span class="w"> </span><span class="nf">complete_all</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">completion</span><span class="w"> </span><span class="o">*</span><span class="n">c</span><span class="p">);</span><span class="c1">// 唤醒所有</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>complete实现的函数如下：</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span><span class="w"> </span><span class="nf">complete</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">completion</span><span class="w"> </span><span class="o">*</span><span class="n">x</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">long</span><span class="w"> </span><span class="n">flags</span><span class="p">;</span><span class="w"></span>
+<span class="w"> </span>
+<span class="w">	</span><span class="n">spin_lock_irqsave</span><span class="p">(</span><span class="o">&amp;</span><span class="n">x</span><span class="o">-&gt;</span><span class="n">wait</span><span class="p">.</span><span class="n">lock</span><span class="p">,</span><span class="w"> </span><span class="n">flags</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="n">x</span><span class="o">-&gt;</span><span class="n">done</span><span class="o">++</span><span class="p">;</span><span class="w">            </span><span class="c1">//这个变量很重要</span>
+<span class="w">	</span><span class="n">__wake_up_locked</span><span class="p">(</span><span class="o">&amp;</span><span class="n">x</span><span class="o">-&gt;</span><span class="n">wait</span><span class="p">,</span><span class="w"> </span><span class="n">TASK_NORMAL</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="n">spin_unlock_irqrestore</span><span class="p">(</span><span class="o">&amp;</span><span class="n">x</span><span class="o">-&gt;</span><span class="n">wait</span><span class="p">.</span><span class="n">lock</span><span class="p">,</span><span class="w"> </span><span class="n">flags</span><span class="p">);</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>wait_for_completion实现如下：</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span><span class="w"> </span><span class="n">__sched</span><span class="w"> </span><span class="nf">wait_for_completion</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">completion</span><span class="w"> </span><span class="o">*</span><span class="n">x</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="n">wait_for_common</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">MAX_SCHEDULE_TIMEOUT</span><span class="p">,</span><span class="w"> </span><span class="n">TASK_UNINTERRUPTIBLE</span><span class="p">);</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+<span class="n">EXPORT_SYMBOL</span><span class="p">(</span><span class="n">wait_for_completion</span><span class="p">);</span><span class="w"></span>
+<span class="w"> </span>
+<span class="k">static</span><span class="w"> </span><span class="kt">long</span><span class="w"> </span><span class="n">__sched</span><span class="w"></span>
+<span class="nf">wait_for_common</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">completion</span><span class="w"> </span><span class="o">*</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="kt">long</span><span class="w"> </span><span class="n">timeout</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">state</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="k">return</span><span class="w"> </span><span class="n">__wait_for_common</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">schedule_timeout</span><span class="p">,</span><span class="w"> </span><span class="n">timeout</span><span class="p">,</span><span class="w"> </span><span class="n">state</span><span class="p">);</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+<span class="w"> </span>
+<span class="k">static</span><span class="w"> </span><span class="kr">inline</span><span class="w"> </span><span class="kt">long</span><span class="w"> </span><span class="n">__sched</span><span class="w"></span>
+<span class="nf">__wait_for_common</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">completion</span><span class="w"> </span><span class="o">*</span><span class="n">x</span><span class="p">,</span><span class="w"></span>
+<span class="w">		  </span><span class="kt">long</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="n">action</span><span class="p">)(</span><span class="kt">long</span><span class="p">),</span><span class="w"> </span><span class="kt">long</span><span class="w"> </span><span class="n">timeout</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">state</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="n">might_sleep</span><span class="p">();</span><span class="w"></span>
+<span class="w"> </span>
+<span class="w">	</span><span class="n">spin_lock_irq</span><span class="p">(</span><span class="o">&amp;</span><span class="n">x</span><span class="o">-&gt;</span><span class="n">wait</span><span class="p">.</span><span class="n">lock</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="n">timeout</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">do_wait_for_common</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">action</span><span class="p">,</span><span class="w"> </span><span class="n">timeout</span><span class="p">,</span><span class="w"> </span><span class="n">state</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="n">spin_unlock_irq</span><span class="p">(</span><span class="o">&amp;</span><span class="n">x</span><span class="o">-&gt;</span><span class="n">wait</span><span class="p">.</span><span class="n">lock</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="k">return</span><span class="w"> </span><span class="n">timeout</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+<span class="w"> </span>
+<span class="k">static</span><span class="w"> </span><span class="kr">inline</span><span class="w"> </span><span class="kt">long</span><span class="w"> </span><span class="n">__sched</span><span class="w"></span>
+<span class="nf">do_wait_for_common</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">completion</span><span class="w"> </span><span class="o">*</span><span class="n">x</span><span class="p">,</span><span class="w"></span>
+<span class="w">		   </span><span class="kt">long</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="n">action</span><span class="p">)(</span><span class="kt">long</span><span class="p">),</span><span class="w"> </span><span class="kt">long</span><span class="w"> </span><span class="n">timeout</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">state</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">x</span><span class="o">-&gt;</span><span class="n">done</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="n">DECLARE_WAITQUEUE</span><span class="p">(</span><span class="n">wait</span><span class="p">,</span><span class="w"> </span><span class="n">current</span><span class="p">);</span><span class="w"></span>
+<span class="w"> </span>
+<span class="w">		</span><span class="n">__add_wait_queue_tail_exclusive</span><span class="p">(</span><span class="o">&amp;</span><span class="n">x</span><span class="o">-&gt;</span><span class="n">wait</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">wait</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="k">do</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">			</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">signal_pending_state</span><span class="p">(</span><span class="n">state</span><span class="p">,</span><span class="w"> </span><span class="n">current</span><span class="p">))</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">				</span><span class="n">timeout</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">-</span><span class="n">ERESTARTSYS</span><span class="p">;</span><span class="w"></span>
+<span class="w">				</span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+<span class="w">			</span><span class="p">}</span><span class="w"></span>
+<span class="w">			</span><span class="n">__set_current_state</span><span class="p">(</span><span class="n">state</span><span class="p">);</span><span class="w"></span>
+<span class="w">			</span><span class="n">spin_unlock_irq</span><span class="p">(</span><span class="o">&amp;</span><span class="n">x</span><span class="o">-&gt;</span><span class="n">wait</span><span class="p">.</span><span class="n">lock</span><span class="p">);</span><span class="w"></span>
+<span class="w">			</span><span class="n">timeout</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">action</span><span class="p">(</span><span class="n">timeout</span><span class="p">);</span><span class="w"></span>
+<span class="w">			</span><span class="n">spin_lock_irq</span><span class="p">(</span><span class="o">&amp;</span><span class="n">x</span><span class="o">-&gt;</span><span class="n">wait</span><span class="p">.</span><span class="n">lock</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="p">}</span><span class="w"> </span><span class="k">while</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">x</span><span class="o">-&gt;</span><span class="n">done</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">timeout</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="n">__remove_wait_queue</span><span class="p">(</span><span class="o">&amp;</span><span class="n">x</span><span class="o">-&gt;</span><span class="n">wait</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">wait</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">x</span><span class="o">-&gt;</span><span class="n">done</span><span class="p">)</span><span class="w"></span>
+<span class="w">			</span><span class="k">return</span><span class="w"> </span><span class="n">timeout</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+<span class="w">	</span><span class="n">x</span><span class="o">-&gt;</span><span class="n">done</span><span class="o">--</span><span class="p">;</span><span class="w">            </span><span class="c1">//complete函数里面自加的变量</span>
+<span class="w">	</span><span class="k">return</span><span class="w"> </span><span class="n">timeout</span><span class="w"> </span><span class="o">?:</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<p>发现complete实现的原理是：</p>
+<ul class="simple">
+<li><p>通过判断done的值，来判断complete是否执行，执行了多少次。</p></li>
+<li><p>complete函数执行一次，done就加1</p></li>
+<li><p>wait_for_completion函数执行一次，done就减1</p></li>
+<li><p>如果done等于0，那么wait_for_completion函数将一直等待下去。</p></li>
+</ul>
+<section id="id3">
+<h2>历程<a class="headerlink" href="#id3" title="Permalink to this headline"></a></h2>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="cpf">&lt;linux/wait.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="cpf">&lt;linux/completion.h&gt;</span><span class="cp"></span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">typec_attach_thread</span><span class="p">(</span><span class="kt">void</span><span class="w"> </span><span class="o">*</span><span class="n">data</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="k">struct</span><span class="w"> </span><span class="nc">mp2721</span><span class="w"> </span><span class="o">*</span><span class="n">mp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">data</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="kt">int</span><span class="w"> </span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="kt">bool</span><span class="w"> </span><span class="n">attach</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">pr_info</span><span class="p">(</span><span class="s">&quot;%s: ++</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">__func__</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="k">while</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">kthread_should_stop</span><span class="p">())</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="n">wait_for_completion</span><span class="p">(</span><span class="o">&amp;</span><span class="n">mp</span><span class="o">-&gt;</span><span class="n">chrdet_start</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="n">mutex_lock</span><span class="p">(</span><span class="o">&amp;</span><span class="n">mp</span><span class="o">-&gt;</span><span class="n">attach_lock</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="n">attach</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mp</span><span class="o">-&gt;</span><span class="n">attach</span><span class="p">;</span><span class="w"></span>
+<span class="w">		</span><span class="n">pr_info</span><span class="p">(</span><span class="s">&quot;%s: attach:</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">__func__</span><span class="p">,</span><span class="n">attach</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="n">mutex_unlock</span><span class="p">(</span><span class="o">&amp;</span><span class="n">mp</span><span class="o">-&gt;</span><span class="n">attach_lock</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">		</span><span class="n">power_supply_changed</span><span class="p">(</span><span class="n">mp</span><span class="o">-&gt;</span><span class="n">psy</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+<span class="w">	</span><span class="k">return</span><span class="w"> </span><span class="n">ret</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">handle_typec_attach</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">mp2721</span><span class="w"> </span><span class="o">*</span><span class="n">mp</span><span class="p">,</span><span class="w"></span>
+<span class="w">				</span><span class="kt">bool</span><span class="w"> </span><span class="n">en</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="n">pr_info</span><span class="p">(</span><span class="s">&quot;%s: ++ en:%d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">__func__</span><span class="p">,</span><span class="n">en</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="n">mutex_lock</span><span class="p">(</span><span class="o">&amp;</span><span class="n">mp</span><span class="o">-&gt;</span><span class="n">attach_lock</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="n">mp</span><span class="o">-&gt;</span><span class="n">attach</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">en</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="n">complete</span><span class="p">(</span><span class="o">&amp;</span><span class="n">mp</span><span class="o">-&gt;</span><span class="n">chrdet_start</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="n">mutex_unlock</span><span class="p">(</span><span class="o">&amp;</span><span class="n">mp</span><span class="o">-&gt;</span><span class="n">attach_lock</span><span class="p">);</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">tcpc_notifier_call</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">notifier_block</span><span class="w"> </span><span class="o">*</span><span class="n">nb</span><span class="p">,</span><span class="w">  </span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">long</span><span class="w"> </span><span class="n">action</span><span class="p">,</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="o">*</span><span class="n">noti_data</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="k">struct</span><span class="w"> </span><span class="nc">tcp_notify</span><span class="w"> </span><span class="o">*</span><span class="n">noti</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">noti_data</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="k">struct</span><span class="w"> </span><span class="nc">mp2721</span><span class="w"> </span><span class="o">*</span><span class="n">mp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">mp2721</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="n">container_of</span><span class="p">(</span><span class="n">nb</span><span class="p">,</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">mp2721</span><span class="p">,</span><span class="w"> </span><span class="n">tcpc_nb</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">pr_info</span><span class="p">(</span><span class="s">&quot;mp2721 tcpc_notifier_call, old_state = %s, new_state = %s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"></span>
+<span class="w">			</span><span class="n">typec_status_text</span><span class="p">[</span><span class="n">noti</span><span class="o">-&gt;</span><span class="n">typec_state</span><span class="p">.</span><span class="n">old_state</span><span class="p">],</span><span class="w"></span>
+<span class="w">			</span><span class="n">typec_status_text</span><span class="p">[</span><span class="n">noti</span><span class="o">-&gt;</span><span class="n">typec_state</span><span class="p">.</span><span class="n">new_state</span><span class="p">]);</span><span class="w"></span>
+<span class="w">			</span>
+<span class="w">	</span><span class="k">switch</span><span class="w"> </span><span class="p">(</span><span class="n">action</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="k">case</span><span class="w"> </span><span class="nl">TCP_NOTIFY_TYPEC_STATE</span><span class="p">:</span><span class="w"></span>
+<span class="w">		</span><span class="n">mp</span><span class="o">-&gt;</span><span class="n">typec_state</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">noti</span><span class="o">-&gt;</span><span class="n">typec_state</span><span class="p">.</span><span class="n">new_state</span><span class="p">;</span><span class="w"></span>
+<span class="w">		</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">noti</span><span class="o">-&gt;</span><span class="n">typec_state</span><span class="p">.</span><span class="n">old_state</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">TYPEC_UNATTACHED</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"></span>
+<span class="w">		    </span><span class="p">(</span><span class="n">noti</span><span class="o">-&gt;</span><span class="n">typec_state</span><span class="p">.</span><span class="n">new_state</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">TYPEC_ATTACHED_SNK</span><span class="w"> </span><span class="o">||</span><span class="w"></span>
+<span class="w">		    </span><span class="n">noti</span><span class="o">-&gt;</span><span class="n">typec_state</span><span class="p">.</span><span class="n">new_state</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">TYPEC_ATTACHED_CUSTOM_SRC</span><span class="w"> </span><span class="o">||</span><span class="w"></span>
+<span class="w">		    </span><span class="n">noti</span><span class="o">-&gt;</span><span class="n">typec_state</span><span class="p">.</span><span class="n">new_state</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">TYPEC_ATTACHED_NORP_SRC</span><span class="p">))</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">			</span><span class="n">pr_info</span><span class="p">(</span><span class="s">&quot;%s USB Plug in, pol = %d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">__func__</span><span class="p">,</span><span class="w"></span>
+<span class="w">					</span><span class="n">noti</span><span class="o">-&gt;</span><span class="n">typec_state</span><span class="p">.</span><span class="n">polarity</span><span class="p">);</span><span class="w"></span>
+<span class="w">			</span><span class="n">handle_typec_attach</span><span class="p">(</span><span class="n">mp</span><span class="p">,</span><span class="w"> </span><span class="nb">true</span><span class="p">);</span><span class="w"></span>
+<span class="w">			</span><span class="n">mp2721_set_otg_enable</span><span class="p">(</span><span class="n">mp</span><span class="p">,</span><span class="w"> </span><span class="nb">false</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">noti</span><span class="o">-&gt;</span><span class="n">typec_state</span><span class="p">.</span><span class="n">new_state</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">TYPEC_UNATTACHED</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">			</span><span class="n">pr_info</span><span class="p">(</span><span class="s">&quot;%s USB Plug out</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">__func__</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span>
+<span class="w">			</span><span class="n">handle_typec_attach</span><span class="p">(</span><span class="n">mp</span><span class="p">,</span><span class="w"> </span><span class="nb">false</span><span class="p">);</span><span class="w"></span>
+<span class="w">			</span><span class="n">mp2721_set_otg_enable</span><span class="p">(</span><span class="n">mp</span><span class="p">,</span><span class="w"> </span><span class="nb">true</span><span class="p">);</span><span class="w"></span>
+<span class="w">			</span><span class="n">mp2721_enable_vbus_ovp</span><span class="p">(</span><span class="n">mp</span><span class="p">,</span><span class="w"> </span><span class="nb">true</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">noti</span><span class="o">-&gt;</span><span class="n">typec_state</span><span class="p">.</span><span class="n">old_state</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">TYPEC_ATTACHED_SRC</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"></span>
+<span class="w">			</span><span class="n">noti</span><span class="o">-&gt;</span><span class="n">typec_state</span><span class="p">.</span><span class="n">new_state</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">TYPEC_ATTACHED_SNK</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">			</span><span class="n">pr_info</span><span class="p">(</span><span class="s">&quot;%s Source_to_Sink</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">__func__</span><span class="p">);</span><span class="w"></span>
+<span class="w">			</span><span class="n">handle_typec_attach</span><span class="p">(</span><span class="n">mp</span><span class="p">,</span><span class="w"> </span><span class="nb">true</span><span class="p">);</span><span class="w"></span>
+<span class="w">			</span><span class="n">mp2721_set_otg_enable</span><span class="p">(</span><span class="n">mp</span><span class="p">,</span><span class="w"> </span><span class="nb">false</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="p">}</span><span class="w">  </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">noti</span><span class="o">-&gt;</span><span class="n">typec_state</span><span class="p">.</span><span class="n">old_state</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">TYPEC_ATTACHED_SNK</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"></span>
+<span class="w">			</span><span class="n">noti</span><span class="o">-&gt;</span><span class="n">typec_state</span><span class="p">.</span><span class="n">new_state</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">TYPEC_ATTACHED_SRC</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">			</span><span class="n">pr_info</span><span class="p">(</span><span class="s">&quot;%s Sink_to_Source</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">__func__</span><span class="p">);</span><span class="w"></span>
+<span class="w">			</span><span class="n">handle_typec_attach</span><span class="p">(</span><span class="n">mp</span><span class="p">,</span><span class="w"> </span><span class="nb">false</span><span class="p">);</span><span class="w"></span>
+<span class="w">			</span><span class="n">mp2721_set_otg_enable</span><span class="p">(</span><span class="n">mp</span><span class="p">,</span><span class="w"> </span><span class="nb">true</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="p">}</span><span class="w"></span>
+<span class="w">		</span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="k">case</span><span class="w"> </span><span class="nl">TCP_NOTIFY_PD_STATE</span><span class="p">:</span><span class="w"></span>
+<span class="w">		</span><span class="k">switch</span><span class="w"> </span><span class="p">(</span><span class="n">noti</span><span class="o">-&gt;</span><span class="n">pd_state</span><span class="p">.</span><span class="n">connected</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">			</span><span class="k">case</span><span class="w"> </span><span class="nl">PD_CONNECT_PE_READY_SNK</span><span class="p">:</span><span class="w"></span>
+<span class="w">			</span><span class="k">case</span><span class="w"> </span><span class="nl">PD_CONNECT_PE_READY_SNK_PD30</span><span class="p">:</span><span class="w"></span>
+<span class="w">			</span><span class="k">case</span><span class="w"> </span><span class="nl">PD_CONNECT_PE_READY_SNK_APDO</span><span class="p">:</span><span class="w"></span>
+<span class="w">				</span><span class="n">mp2721_enable_vbus_ovp</span><span class="p">(</span><span class="n">mp</span><span class="p">,</span><span class="w"> </span><span class="nb">false</span><span class="p">);</span><span class="w"></span>
+<span class="w">				</span><span class="n">pr_info</span><span class="p">(</span><span class="s">&quot;%s PD active</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">__func__</span><span class="p">);</span><span class="w"></span>
+<span class="w">				</span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+<span class="w">		</span><span class="p">}</span><span class="w"></span>
+<span class="w">		</span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="k">default</span><span class="o">:</span><span class="w"></span>
+<span class="w">		</span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="p">};</span><span class="w"></span>
+
+<span class="w">	</span><span class="k">return</span><span class="w"> </span><span class="n">NOTIFY_OK</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">mp2721_charger_probe</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">i2c_client</span><span class="w"> </span><span class="o">*</span><span class="n">client</span><span class="p">,</span><span class="w"></span>
+<span class="w">			   </span><span class="k">const</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">i2c_device_id</span><span class="w"> </span><span class="o">*</span><span class="n">id</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="n">init_completion</span><span class="p">(</span><span class="o">&amp;</span><span class="n">mp</span><span class="o">-&gt;</span><span class="n">chrdet_start</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="n">mutex_init</span><span class="p">(</span><span class="o">&amp;</span><span class="n">mp</span><span class="o">-&gt;</span><span class="n">attach_lock</span><span class="p">);</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="wait-event">
+<h1>等待队列(wait_event)<a class="headerlink" href="#wait-event" title="Permalink to this headline"></a></h1>
+<ul class="simple">
+<li><p><a class="reference external" href="https://blog.csdn.net/qq_42611237/article/details/125464142">等待队列和阻塞的实现——wait queue</a></p></li>
+</ul>
+<p>waitqueue（等待队列）就是内核用于管理等待资源的进程，当某个进程获取的资源没有准备好的时候，可以通过调用add_wait_queue()函数把进程添加到waitqueue中，然后切换到其他进程继续执行。</p>
+<p>当资源准备好，由资源提供方通过调用wake_up()函数来唤醒等待的进程。</p>
+<p>对于一个进程”睡眠”意味着什么? 当一个进程被置为睡眠, 它被标识为处于一个特殊的状态并且从调度器的运行队列中去除，这个进程将不被在任何 CPU 上调度，因此将不会运行，直到发生某些事情改变了那个状态。
+睡眠是“自愿调度”，其实就是将当前进程的状态设置为 TASK_INTERRUPTIBLE 等状态，然后schedule() 让出CPU1，让调度器重新选择一个进程来执行。</p>
+<p>堵塞主要就是依赖于等待队列。</p>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span>定义头文件
+#include &lt;linux/wait.h&gt;
+
+定义实例
+wait_queue_head_t wq;
+init_waitqueue_head(&amp;wq);
+
+定义并同时初始化队列
+DECLARE_WAIT_QUEUE_HEAD  (wq);
+
+添加和移除等待队列：
+void add_wait_queue(wait_queue_head_t *q, wait_queue_t *wait);
+void remove_wait_queue(wait_queue_head_t *q, wait_queue_t *wait);
+
+
+等待操作:
+
+wait_event(simple_queue, simple_flag);                                      // 不可被中断的等待函数
+wait_event_interruptible(simple_queue, simple_flag);                        // 可以被中断的等待函数
+wait_event_timeout(simple_queue, simple_flag, timeout);                     // 不可被中断的超时等待函数
+wait_event_interruptible_timeout(simple_queue, simple_flag, timeout);       // 可以被中断的超时等待函数
+
+唤醒操作: 
+wake_up(&amp;simple_queue);                                                    // 唤醒所有simple_queue下面挂载的等待任务
+wake_up_interruptible(&amp;simple_queue);                                       // 唤醒可以中断的等待任务
+</pre></div>
+</div>
+<section id="id4">
+<h2>实例<a class="headerlink" href="#id4" title="Permalink to this headline"></a></h2>
+<p>以字符设备为例，在没有数据的时候，在read函数中实现读堵塞，当向内核写入数据时，则唤醒堵塞在该等待队列的所有认为:
+<img alt="0011_0000.png" src="../../../_images/0011_00001.png" /></p>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span>#include &lt;linux/init.h&gt;
+#include &lt;linux/module.h&gt;
+#include &lt;linux/kdev_t.h&gt;
+#include &lt;linux/fs.h&gt;
+#include &lt;linux/cdev.h&gt;
+#include &lt;linux/uaccess.h&gt;
+#include &lt;linux/wait.h&gt;
+
+static int major = 237;
+static int minor = 0;
+static dev_t devno;
+static struct cdev cdev;
+struct device *class_dev = NULL;
+struct class *cls;
+wait_queue_head_t rwq;
+wait_queue_head_t wwq;
+int havedata = 0; //0：empty  1:full
+
+
+static int hello_open (struct inode *inode, struct file *filep)
+{
+	printk(&quot;hello_open()\n&quot;);
+	return 0;
+}
+static int hello_release (struct inode *inode, struct file *filep)
+{
+	printk(&quot;hello_release()\n&quot;);
+
+	return 0;
+}
+
+#define KMAX_LEN 32
+char kbuf[KMAX_LEN+1] = &quot;kernel&quot;;
+
+
+//read(fd,buff,40);
+
+static ssize_t hello_read (struct file *filep, char __user *buf, size_t size, loff_t *pos)
+{
+	int error;
+	wait_event_interruptible(rwq, havedata == 1);//havedata为1时才执行，不为1时休眠等待，等待havedate等于1
+	
+	if(size &gt; strlen(kbuf))
+	{
+		size = strlen(kbuf);
+	}
+
+	if(copy_to_user(buf,kbuf, size))
+	{
+		error = -EFAULT;
+		return error;
+	}	
+	havedata = 0;  //唤醒写进程
+	wake_up_interruptible(wwq); //唤醒写进程
+	
+	return size;
+}
+//write(fd,buff,40);
+static ssize_t hello_write (struct file *filep, const char __user *buf, size_t size, loff_t *pos)
+{
+	int error;
+
+	wait_event_interruptible(rwq, havedata == 0);//havedata为0才执行
+														//interruptible：可被打断的
+
+	if(size &gt; KMAX_LEN)
+	{
+		size = KMAX_LEN;
+	}
+	
+	memset(kbuf,0,sizeof(kbuf));
+	if(copy_from_user(kbuf, buf, size))
+	{
+		error = -EFAULT;
+		return error;
+	}
+	printk(&quot;%s\n&quot;,kbuf);
+
+	havedata = 1; //唤醒读进程
+	wake_up_interruptible(rwq);//唤醒读进程
+	
+	return size;
+}
+
+
+static struct file_operations hello_ops = 
+{
+	.open = hello_open,
+	.release = hello_release,
+	.read = hello_read,
+	.write = hello_write,
+};
+static int hello_init(void)
+{
+	int result;
+	int error;
+	
+	printk(&quot;hello_init \n&quot;);
+	result = register_chrdev( major, &quot;hello&quot;, &amp;hello_ops);
+	if(result &lt; 0)
+	{
+		printk(&quot;register_chrdev fail \n&quot;);
+		return result;
+	}
+	cls = class_create(THIS_MODULE, &quot;hellocls&quot;);
+	if (IS_ERR(cls)) {
+		printk(KERN_ERR &quot;class_create() failed for cls\n&quot;);
+		result = PTR_ERR(cls);
+		goto out_err_1;
+	}
+	devno = MKDEV(major, minor);
+	
+	class_dev = device_create(cls, NULL, devno, NULL, &quot;hellodev&quot;);
+	if (IS_ERR(class_dev)) {
+		result = PTR_ERR(class_dev);
+		goto out_err_2;
+	}
+
+	init_waitqueue_head(&amp;rwq);
+	init_waitqueue_head(&amp;wwq);
+	
+	return 0;
+
+out_err_2:
+	class_destroy(cls);
+out_err_1:
+	unregister_chrdev(major,&quot;hello&quot;);
+	return 	result;
+}
+static void hello_exit(void)
+{
+	printk(&quot;hello_exit \n&quot;);
+	device_destroy(cls, devno);
+	class_destroy(cls);
+	unregister_chrdev(major,&quot;hello&quot;);
+	return;
+}
+module_init(hello_init);
+module_exit(hello_exit);
+MODULE_LICENSE(&quot;GPL&quot;);
+//proc/devices
+————————————————
+版权声明：本文为CSDN博主「关 峥」的原创文章，遵循CC 4.0 BY-SA版权协议，转载请附上原文出处链接及本声明。
+原文链接：https://blog.csdn.net/qq_49079545/article/details/119871293
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>读进程：</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span>读进程：
+#include &lt;stdio.h&gt;
+#include &lt;sys/types.h&gt;
+#include &lt;sys/stat.h&gt;
+#include &lt;fcntl.h&gt;
+#include &lt;unistd.h&gt;
+main()
+{
+	int fd;
+	int len;
+	char buf[64]={0};
+	char buf2[64+1]=&quot;peng&quot;;
+	
+	
+	fd = open(&quot;/dev/hellodev&quot;,O_RDWR);
+	if(fd&lt;0)
+	{
+		perror(&quot;open fail \n&quot;);
+		return;
+	}
+	printf(&quot;before read\n&quot;);
+	len = read(fd,buf,64);
+	printf(&quot;after read\n&quot;);
+
+	buf[len]=&#39;\0&#39;;
+
+	printf(&quot;read:%s  len = %d\n&quot;,buf,len);
+	close(fd);
+}
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>写进程：</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span>写进程：
+#include &lt;stdio.h&gt;
+#include &lt;sys/types.h&gt;
+#include &lt;sys/stat.h&gt;
+#include &lt;fcntl.h&gt;
+#include &lt;unistd.h&gt;
+main()
+{
+	int fd;
+	int len;
+	char buf[64]={0};
+	char buf2[64+1]=&quot;peng&quot;;
+	
+	
+	fd = open(&quot;/dev/hellodev&quot;,O_RDWR);
+	if(fd&lt;0)
+	{
+		perror(&quot;open fail \n&quot;);
+		return;
+	}	
+	printf(&quot;before write\n&quot;);
+	len = write(fd,buf2,strlen(buf2));
+	printf(&quot;after write\n&quot;);
+	printf(&quot;len = %d\n&quot;,len);
+	
+	 
+	close(fd);
+}
+</pre></div>
+</div>
+</section>
+<section id="id5">
+<h2>演示效果<a class="headerlink" href="#id5" title="Permalink to this headline"></a></h2>
+<p>首先运行read，由于havedata初始为0，所以阻塞休眠</p>
+<p><img alt="0011_0002.png" src="../../../_images/0011_0002.png" /></p>
+<p>运行write，read被唤醒，往下执行：</p>
+<p><img alt="0011_0003.png" src="../../../_images/0011_0003.png" />
+<img alt="0011_0004.png" src="../../../_images/0011_0004.png" /></p>
+</section>
+<section id="id6">
+<h2>如何支持非阻塞<a class="headerlink" href="#id6" title="Permalink to this headline"></a></h2>
+<p>应用层：</p>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="n">fd</span><span class="o">=</span><span class="n">open</span><span class="p">(</span><span class="s">&quot;/dev/hello&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">O_RDONLY</span><span class="o">|</span><span class="n">O_NONBLOCK</span><span class="p">);</span><span class="w"></span>
+<span class="c1">//O_RDONLY、O_NONBLOCK都存在file的f_flags成员里面</span>
+</pre></div>
+</div>
+<p>内核代码：</p>
+<p><img alt="0011_0005.png" src="../../../_images/0011_0005.png" /></p>
+</section>
+<section id="id7">
+<h2>与信息量的不同<a class="headerlink" href="#id7" title="Permalink to this headline"></a></h2>
+<p>信息量下导致的阻塞，是需要当一个程序去释放掉信号量时才能唤醒的；wait_event 它的 阻塞和唤醒是完全可控的，这是因为condition是可控的，唤醒也可以由别的程序 控制的。一个是需要释放掉自动唤醒，可以是可控的选择唤醒。</p>
+</section>
+</section>
+<section id="id8">
+<h1>原子操作<a class="headerlink" href="#id8" title="Permalink to this headline"></a></h1>
+<ul class="simple">
+<li><p><a class="reference external" href="https://blog.csdn.net/WANGYONGZIXUE/article/details/115801274">linux 驱动中并发与竞争</a></p></li>
+</ul>
+<p>原子操作就是指不能再进一步分割的操作，一般原子操作用于变量或者位操作。Linux 内核定义了叫做 atomic_t 的结构体来完成整形数据的原子操作，在使用中用原子变量来代替整形变量。</p>
+<p>适用环境：
+一般适用于变量或者位操作
+如：a=1 给a赋值1 ，在汇编阶段需要好几个操作才能完成赋值工作，在这个阶段中（多核、多线程、三级流水线）容易发生修改。</p>
+<p>1)整形操作 API 函数</p>
+<section id="api">
+<h2>1)原子整型操作 API<a class="headerlink" href="#api" title="Permalink to this headline"></a></h2>
+<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="k">typedef</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="kt">int</span><span class="w"> </span><span class="n">counter</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="n">atomic_t</span><span class="p">;</span><span class="w"></span>
+</pre></div>
+</div>
+<p>函数	|含义
+—|—|—
+ATOMIC_INIT(int i)	|定义原子变量的时候对其初始化
+int atomic_read(atomic_t *v)	|读取 v 的值，并且返回
+void atomic_set(atomic_t *v, int i)	|向 v 写入 i 值。
+void atomic_add(int i, atomic_t *v)	|给 v 加上 i 值。
+void atomic_sub(int i, atomic_t *v)|	从 v 减去 i 值。
+void atomic_inc(atomic_t *v)	|给 v 加 1，也就是自增。
+void atomic_dec(atomic_t *v)	|从 v 减 1，也就是自减
+int atomic_dec_return(atomic_t *v)	|从 v 减 1，并且返回 v 的值。
+int atomic_inc_return(atomic_t *v)	|给 v 加 1，并且返回 v 的值。
+int atomic_sub_and_test(int i, atomic_t *v)|	从 v 减 i，如果结果为 0 就返回真，否则返回假
+int atomic_dec_and_test(atomic_t *v)	|从 v 减 1，如果结果为 0 就返回真，否则返回假
+int atomic_inc_and_test(atomic_t *v)|	给 v 加 1，如果结果为 0 就返回真，否则返回假
+int atomic_add_negative(int i, atomic_t *v)	| 给 v 加 i，如果结果为负就返回真，否则返回假</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="n">atomic_t</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ATOMIC_INIT</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="c1">//定义原子变量 b 并赋初值为 0</span>
+</pre></div>
+</div>
+</section>
+<section id="id9">
+<h2>2)位操作API<a class="headerlink" href="#id9" title="Permalink to this headline"></a></h2>
+<p>函数	|含义
+—|—|—
+void set_bit(int nr, void *p)|	将 p 地址的第 nr 位置 1
+void clear_bit(int nr,void *p)	|将 p 地址的第 nr 位清零
+void change_bit(int nr, void *p)|	将 p 地址的第 nr 位进行翻转
+int test_bit(int nr, void *p)	|获取 p 地址的第 nr 位的值
+int test_and_set_bit(int nr, void *p)	|将 p 地址的第 nr 位置 1，并且返回 nr 位原来的值
+int test_and_clear_bit(int nr, void *p)|	将 p 地址的第 nr 位清零，并且返回 nr 位原来的值
+int test_and_change_bit(int nr, void *p)	|将 p 地址的第 nr 位翻转，并且返回 nr 位原来的值</p>
+</section>
+<section id="id10">
+<h2>3)原子操作实例<a class="headerlink" href="#id10" title="Permalink to this headline"></a></h2>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="k">struct</span><span class="w"> </span><span class="nc">gpioled_dev</span><span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="kt">dev_t</span><span class="w"> </span><span class="n">devid</span><span class="p">;</span><span class="w">	</span>
+<span class="w">	</span><span class="n">atomic_t</span><span class="w"> </span><span class="n">lock</span><span class="p">;</span><span class="w">			</span><span class="cm">/* 原子变量 */</span><span class="w"></span>
+<span class="p">};</span><span class="w"></span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">led_open</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">inode</span><span class="w"> </span><span class="o">*</span><span class="n">inode</span><span class="p">,</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">file</span><span class="w"> </span><span class="o">*</span><span class="n">filp</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">atomic_dec_and_test</span><span class="p">(</span><span class="o">&amp;</span><span class="n">gpioled</span><span class="p">.</span><span class="n">lock</span><span class="p">))</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="n">atomic_inc</span><span class="p">(</span><span class="o">&amp;</span><span class="n">gpioled</span><span class="p">.</span><span class="n">lock</span><span class="p">);</span><span class="w">	</span><span class="cm">/* 小于0的话就加1,使其原子变量等于0 */</span><span class="w"></span>
+<span class="w">		</span><span class="k">return</span><span class="w"> </span><span class="o">-</span><span class="n">EBUSY</span><span class="p">;</span><span class="w">				</span><span class="cm">/* LED被使用，返回忙 */</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+
+<span class="w">	</span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">__init</span><span class="w"> </span><span class="nf">led_init</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="kt">int</span><span class="w"> </span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="n">atomic_set</span><span class="p">(</span><span class="o">&amp;</span><span class="n">gpioled</span><span class="p">.</span><span class="n">lock</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span><span class="w">	</span><span class="cm">/* 原子变量初始值为1 */</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">led_release</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">inode</span><span class="w"> </span><span class="o">*</span><span class="n">inode</span><span class="p">,</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">file</span><span class="w"> </span><span class="o">*</span><span class="n">filp</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="cm">/* 关闭驱动文件的时候释放原子变量 */</span><span class="w"></span>
+<span class="w">	</span><span class="n">atomic_inc</span><span class="p">(</span><span class="o">&amp;</span><span class="n">dev</span><span class="o">-&gt;</span><span class="n">lock</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<p>程序解析：</p>
+<ul class="simple">
+<li><p>1）led_init 驱动入口函数会将 lock 的值设置为 1</p></li>
+<li><p>2）open 函数打开驱动设备的时候先申请 lock，如果申请成功的话就表示LED灯还没有被其他的应用使用，如果申请失败就表示LED灯正在被其他的应用程序使用。</p></li>
+</ul>
+<p>每次打开驱动设备的时先使用 atomic_dec_and_test 函数将 lock 减 1，如果 atomic_dec_and_test函数返回值为真就表示 lock 当前值为 0，说明设备可以使用。
+如果 atomic_dec_and_test 函数返回值为假，就表示 lock 当前值为负数，那就是其他设备正在使用 LED。其他设备正在使用 LED 灯，只能退出了。
+在退出之前调用函数 atomic_inc 将 lock 加 1，因为此时 lock 的值被减成了负数，必须要对其加 1，将 lock 的值变为 0</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, wugn.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+  
+
+<script charset="UTF-8" id="LA_COLLECT" src="//sdk.51.la/js-sdk-pro.min.js"></script>
+<script>LA.init({id: "JjOE14XScyd75b2C",ck: "JjOE14XScyd75b2C"})</script>
+
+<br/>
+<script id="LA-DATA-WIDGET" crossorigin="anonymous" charset="UTF-8" src="https://v6-widget.51.la/v6/JjOE14XScyd75b2C/quote.js?theme=0&f=12&display=1,0,0,0,0,0,1,1"></script>
+
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

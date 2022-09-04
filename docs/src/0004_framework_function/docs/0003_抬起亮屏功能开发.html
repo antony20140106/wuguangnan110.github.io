@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>wugn</title>
+
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../index.html" class="icon icon-home"> wugn_note
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">概述</a><ul>
+<li><a class="reference internal" href="#id2">参考</a></li>
+<li><a class="reference internal" href="#id3">不考虑功耗实现代码</a></li>
+<li><a class="reference internal" href="#id4">界面</a></li>
+<li><a class="reference internal" href="#mtksettings-app">MtkSettings APP</a></li>
+<li><a class="reference internal" href="#wakeup-sensorhub">Wakeup sensorhub功能开发</a></li>
+<li><a class="reference internal" href="#id5">代码分析</a><ul>
+<li><a class="reference internal" href="#sensorhub">1.sensorhub底层</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id6">问题分析</a><ul>
+<li><a class="reference internal" href="#id7">1.有时候抬起亮屏不灵敏</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">wugn_note</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs"> 
+<li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+<li>概述</li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.forward()">Forward</a></li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.back()">Go Back</a> | </li>
+<li style="float: right;margin-left: 10px;"><a href="/index.html">Home</a> | </li>
+
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="id1">
+<h1>概述<a class="headerlink" href="#id1" title="Permalink to this headline"></a></h1>
+<p>本文主要讲解MTK平台抬起亮屏功能实现。</p>
+<section id="id2">
+<h2>参考<a class="headerlink" href="#id2" title="Permalink to this headline"></a></h2>
+<p>不考虑功耗参考：</p>
+<ul class="simple">
+<li><p><a class="reference external" href="https://blog.csdn.net/qq_25804863/article/details/80594772?spm=1001.2101.3001.6650.1&amp;utm_medium=distribute.pc_relevant.none-task-blog-2%7Edefault%7ECTRLIST%7ERate-1.pc_relevant_default&amp;depth_1-utm_source=distribute.pc_relevant.none-task-blog-2%7Edefault%7ECTRLIST%7ERate-1.pc_relevant_default&amp;utm_relevant_index=2">Android加速度传感器 – 抬手亮屏</a></p></li>
+<li><p><a class="reference external" href="https://blog.csdn.net/qq_35379860/article/details/118605026">MTK虚拟sensor梳理</a></p></li>
+<li><p><a class="reference external" href="https://source.android.com/devices/sensors/sensor-types#wake_up_gesture">google传感器类型</a></p></li>
+</ul>
+</section>
+<section id="id3">
+<h2>不考虑功耗实现代码<a class="headerlink" href="#id3" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">frameworks/base/services/core/java/com/android/server/policy/PhoneWindowManager.java</span></code>:</p></li>
+</ul>
+<div class="highlight-diff notranslate"><div class="highlight"><pre><span></span><span class="gd">--- a/frameworks/base/services/core/java/com/android/server/policy/PhoneWindowManager.java</span><span class="w"></span>
+<span class="gi">+++ b/frameworks/base/services/core/java/com/android/server/policy/PhoneWindowManager.java</span><span class="w"></span>
+<span class="gu">@@ -243,6 +243,7 @@ import android.hardware.SensorEventListener;</span><span class="w"></span>
+<span class="w"> </span>import android.hardware.SensorManager;<span class="w"></span>
+<span class="w"> </span>import android.graphics.PixelFormat;<span class="w"></span>
+<span class="w"> </span>import android.view.Gravity;<span class="w"></span>
+<span class="gi">+import android.app.KeyguardManager;</span><span class="w"></span>
+<span class="w"> </span>//[NEW FEATURE]-END by wugangnan@paxsz.com 2021-10-02, for Pocket mode<span class="w"></span>
+
+<span class="w"> </span>/**<span class="w"></span>
+<span class="gu">@@ -696,6 +697,16 @@ public class PhoneWindowManager implements WindowManagerPolicy {</span><span class="w"></span>
+<span class="w"> </span>       private View mProximityView;<span class="w"></span>
+<span class="w"> </span>       private WindowManager.LayoutParams mProximityParams;<span class="w"></span>
+
+<span class="gi">+    private PowerManager.WakeLock mWakelock;</span><span class="w"></span>
+<span class="gi">+    private long shakeTime;</span><span class="w"></span>
+<span class="gi">+    private long showTime;</span><span class="w"></span>
+<span class="gi">+    private Sensor accelerometer;</span><span class="w"></span>
+<span class="gi">+    private KeyguardManager km; //声明键盘管理对象</span><span class="w"></span>
+<span class="gi">+    private static final String PAX_RAISE_TIME_SYSTEMPRO = &quot;pax.raise.time&quot;;  可以根据属性动态设定</span><span class="w"></span>
+<span class="gi">+       private static final int PAX_DEFAULT_RAISE_TIME = 1000;</span><span class="w"></span>
+<span class="gi">+           private static final String PAX_MEDUM_VALUE_SYSTEMPRO = &quot;pax.medum.time&quot;;</span><span class="w"></span>
+<span class="gi">+       private static final int PAX_DEFAULT_MEDUM_VALUE = 8;</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="w"> </span>       boolean isProximityScreenEnabled() {<span class="w"></span>
+<span class="w"> </span>               Log.i(TAG, &quot;isProximityScreenEnabled.&quot;);<span class="w"></span>
+<span class="w"> </span>               return Settings.System.getInt(mContext.getContentResolver(),<span class="w"></span>
+<span class="gu">@@ -709,6 +720,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {</span><span class="w"></span>
+<span class="w"> </span>                               mProximitySensorEnabled = true;<span class="w"></span>
+<span class="w"> </span>                               mSensorManager.registerListener(mProximitySensorListener, mProximitySensor,<span class="w"></span>
+<span class="w"> </span>                                               SensorManager.SENSOR_DELAY_UI, mHandler);<span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="w"> </span>                               mScreenOnTime = SystemClock.uptimeMillis();<span class="w"></span>
+<span class="w"> </span>                       }<span class="w"></span>
+<span class="w"> </span>               } else {<span class="w"></span>
+<span class="gu">@@ -800,6 +812,45 @@ public class PhoneWindowManager implements WindowManagerPolicy {</span><span class="w"></span>
+<span class="w"> </span>                                // Not used.<span class="w"></span>
+<span class="w"> </span>                        }<span class="w"></span>
+<span class="w"> </span>       };<span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+ private SensorEventListener sensorEventListener = new SensorEventListener() { 加速度传感器监听</span><span class="w"></span>
+<span class="gi">+        @Override</span><span class="w"></span>
+<span class="gi">+        public void onSensorChanged(SensorEvent event) {</span><span class="w"></span>
+<span class="gi">+            float[] values = event.values;</span><span class="w"></span>
+<span class="gi">+            float x = values[0];</span><span class="w"></span>
+<span class="gi">+            float y = values[1];</span><span class="w"></span>
+<span class="gi">+            float z = values[2];</span><span class="w"></span>
+<span class="gi">+            int medumValue = SystemProperties.getInt(PAX_MEDUM_VALUE_SYSTEMPRO,PAX_DEFAULT_MEDUM_VALUE);</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+            if (km != null) {</span><span class="w"></span>
+<span class="gi">+                   if (km.isKeyguardLocked()) { //是否锁屏，是的话执行</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+                       if (9 &lt; z &amp;&amp; -2 &lt; x &amp;&amp; x &lt; 2 &amp;&amp; -2 &lt; y &amp;&amp; y &lt; 2) {</span><span class="w"></span>
+<span class="gi">+                           showTime = System.currentTimeMillis();</span><span class="w"></span>
+<span class="gi">+                           Slog.w(TAG,&quot;lay flat time&quot; + showTime);</span><span class="w"></span>
+<span class="gi">+                       }</span><span class="w"></span>
+<span class="gi">+                                       Slog.w(TAG,&quot;raw data x = &quot; + Math.abs(x) + &quot;  y=&quot; + Math.abs(y) + &quot;   z=&quot; +Math.abs(z));</span><span class="w"></span>
+<span class="gi">+                       //if (Math.abs(x) &gt; medumValue || Math.abs(y) &gt; medumValue || Math.abs(z) &gt; medumValue) {</span><span class="w"></span>
+<span class="gi">+                                       if (y &gt; medumValue ) {   抬手亮屏逻辑，只做y轴</span><span class="w"></span>
+<span class="gi">+                           shakeTime = System.currentTimeMillis();</span><span class="w"></span>
+<span class="gi">+                           Slog.w(TAG,&quot;raise hand time&quot; + shakeTime);</span><span class="w"></span>
+<span class="gi">+                           if (0 &lt; shakeTime - showTime &amp;&amp; shakeTime - showTime &lt; SystemProperties.getInt(PAX_RAISE_TIME_SYSTEMPRO,PAX_DEFAULT_RAISE_TIME)) {</span><span class="w"></span>
+<span class="gi">+                               shakeTime = 0;</span><span class="w"></span>
+<span class="gi">+                               mWakelock.acquire();   </span><span class="w"></span>
+<span class="gi">+                               mWakelock.release();</span><span class="w"></span>
+<span class="gi">+                           }</span><span class="w"></span>
+<span class="gi">+                       }</span><span class="w"></span>
+<span class="gi">+                   } else {</span><span class="w"></span>
+<span class="gi">+                       Slog.w(TAG,&quot;no screen lock&quot;);</span><span class="w"></span>
+<span class="gi">+                   }</span><span class="w"></span>
+<span class="gi">+            }</span><span class="w"></span>
+<span class="gi">+        }</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+        @Override</span><span class="w"></span>
+<span class="gi">+        public void onAccuracyChanged(Sensor arg0, int arg1) {</span><span class="w"></span>
+<span class="gi">+        }</span><span class="w"></span>
+<span class="gi">+    };</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="w"> </span>       private void ProximityScreenVolumeDownKeyTriggered(){<span class="w"></span>
+<span class="w"> </span>               if (mScreenshotChordVolumeDownKeyTriggered &amp;&amp; !mA11yShortcutChordVolumeUpKeyTriggered) {<span class="w"></span>
+<span class="w"> </span>                       if (mProximityScreenShown) {<span class="w"></span>
+<span class="gu">@@ -2111,11 +2162,6 @@ public class PhoneWindowManager implements WindowManagerPolicy {</span><span class="w"></span>
+<span class="w"> </span>        mAccessibilityManager = (AccessibilityManager) context.getSystemService(<span class="w"></span>
+<span class="w"> </span>                Context.ACCESSIBILITY_SERVICE);<span class="w"></span>
+
+<span class="w"> </span>        // register for dock events<span class="w"></span>
+<span class="w"> </span>        IntentFilter filter = new IntentFilter();<span class="w"></span>
+<span class="w"> </span>        filter.addAction(UiModeManager.ACTION_ENTER_CAR_MODE);<span class="w"></span>
+<span class="gu">@@ -4606,9 +4652,13 @@ public class PhoneWindowManager implements WindowManagerPolicy {</span><span class="w"></span>
+<span class="w"> </span>                    if (isProximityScreenEnabled()) {<span class="w"></span>
+<span class="w"> </span>                        setProximitySensorEnabled(true);<span class="w"></span>
+<span class="w"> </span>                        mHandler.postDelayed(mPsRunnable, ALS_PS_DELAY);<span class="w"></span>
+<span class="gi">+                                             mSensorManager.unregisterListener(sensorEventListener);  在亮屏后注销</span><span class="w"></span>
+<span class="w"> </span>                    }<span class="w"></span>
+<span class="w"> </span>                }else if(Intent.ACTION_SCREEN_OFF.equals(action)){<span class="w"></span>
+<span class="w"> </span>                    if (isProximityScreenEnabled()) setProximitySensorEnabled(false);<span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+                                             mSensorManager.registerListener(sensorEventListener, accelerometer,  灭屏时注册监听</span><span class="w"></span>
+<span class="gi">+                                                     SensorManager.SENSOR_DELAY_UI, mHandler);</span><span class="w"></span>
+
+<span class="w"> </span>                }<span class="w"></span>
+<span class="w"> </span>            }<span class="w"></span>
+<span class="gu">@@ -5069,6 +5119,17 @@ public class PhoneWindowManager implements WindowManagerPolicy {</span><span class="w"></span>
+<span class="w"> </span>        readCameraLensCoverState();<span class="w"></span>
+<span class="w"> </span>        updateUiMode();<span class="w"></span>
+<span class="w"> </span>        mDefaultDisplayRotation.updateOrientationListener();<span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+               //[NEW FEATURE]-BEGIN by wugangnan@paxsz.com 2021-10-02, for Pocket mode read the value of the distance sensor</span><span class="w"></span>
+<span class="gi">+               km = (KeyguardManager) mContext.getSystemService(Context.KEYGUARD_SERVICE);//&lt;BB&gt;&lt;F1&gt;&lt;B5&gt;&lt;C3&gt;KeyguardManager&lt;B7&gt;&lt;FE&gt;&lt;CE&gt;&lt;F1&gt;</span><span class="w"></span>
+<span class="gi">+        mWakelock = mPowerManager.newWakeLock(PowerManager.ACQUIRE_CAUSES_WAKEUP | PowerManager.SCREEN_BRIGHT_WAKE_LOCK, &quot;bright&quot;);</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+        mSensorManager = (SensorManager) mContext.getSystemService(Context.SENSOR_SERVICE);</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+        accelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);</span><span class="w"></span>
+<span class="gi">+               //[NEW FEATURE]-END by wugangnan@paxsz.com 2021-10-02, for Pocket mode read the value of the distance sensor</span><span class="w"></span>
+</pre></div>
+</div>
+</section>
+<section id="id4">
+<h2>界面<a class="headerlink" href="#id4" title="Permalink to this headline"></a></h2>
+<p><img alt="0003_界面.png" src="src/0004_framework_function/docs/images/0003_%E7%95%8C%E9%9D%A2.png" /></p>
+</section>
+<section id="mtksettings-app">
+<h2>MtkSettings APP<a class="headerlink" href="#mtksettings-app" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">vendor/mediatek/proprietary/packages/apps/MtkSettings/src/com/android/settings/display/LiftToWakePreferenceController.java</span></code>:</p></li>
+</ul>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="kn">package</span> <span class="nn">com.android.settings.display</span><span class="p">;</span>
+
+<span class="kn">import static</span> <span class="nn">android.provider.Settings.Secure.WAKE_GESTURE_ENABLED</span><span class="p">;</span>
+
+<span class="kn">import</span> <span class="nn">android.content.Context</span><span class="p">;</span>
+<span class="kn">import</span> <span class="nn">android.hardware.Sensor</span><span class="p">;</span>
+<span class="kn">import</span> <span class="nn">android.hardware.SensorManager</span><span class="p">;</span>
+<span class="kn">import</span> <span class="nn">android.provider.Settings</span><span class="p">;</span>
+
+<span class="kn">import</span> <span class="nn">androidx.preference.Preference</span><span class="p">;</span>
+<span class="kn">import</span> <span class="nn">androidx.preference.SwitchPreference</span><span class="p">;</span>
+
+<span class="kn">import</span> <span class="nn">com.android.settings.core.PreferenceControllerMixin</span><span class="p">;</span>
+<span class="kn">import</span> <span class="nn">com.android.settingslib.core.AbstractPreferenceController</span><span class="p">;</span>
+
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">LiftToWakePreferenceController</span> <span class="kd">extends</span> <span class="n">AbstractPreferenceController</span> <span class="kd">implements</span>
+        <span class="n">PreferenceControllerMixin</span><span class="p">,</span> <span class="n">Preference</span><span class="p">.</span><span class="na">OnPreferenceChangeListener</span> <span class="p">{</span>
+
+    <span class="kd">private</span> <span class="kd">static</span> <span class="kd">final</span> <span class="n">String</span> <span class="n">KEY_LIFT_TO_WAKE</span> <span class="o">=</span> <span class="s">&quot;lift_to_wake&quot;</span><span class="p">;</span>
+
+    <span class="kd">public</span> <span class="nf">LiftToWakePreferenceController</span><span class="p">(</span><span class="n">Context</span> <span class="n">context</span><span class="p">)</span> <span class="p">{</span>
+        <span class="kd">super</span><span class="p">(</span><span class="n">context</span><span class="p">);</span>
+    <span class="p">}</span>
+
+    <span class="c1">//该Preference是否可用，获取TYPE_WAKE_GESTURE sensor类型</span>
+    <span class="nd">@Override</span>
+    <span class="kd">public</span> <span class="kt">boolean</span> <span class="nf">isAvailable</span><span class="p">()</span> <span class="p">{</span>
+        <span class="n">SensorManager</span> <span class="n">sensors</span> <span class="o">=</span> <span class="p">(</span><span class="n">SensorManager</span><span class="p">)</span> <span class="n">mContext</span><span class="p">.</span><span class="na">getSystemService</span><span class="p">(</span><span class="n">Context</span><span class="p">.</span><span class="na">SENSOR_SERVICE</span><span class="p">);</span>
+        <span class="k">return</span> <span class="n">sensors</span> <span class="o">!=</span> <span class="kc">null</span> <span class="o">&amp;&amp;</span> <span class="n">sensors</span><span class="p">.</span><span class="na">getDefaultSensor</span><span class="p">(</span><span class="n">Sensor</span><span class="p">.</span><span class="na">TYPE_WAKE_GESTURE</span><span class="p">)</span> <span class="o">!=</span> <span class="kc">null</span><span class="p">;</span>
+    <span class="p">}</span>
+
+    <span class="nd">@Override</span>
+    <span class="kd">public</span> <span class="n">String</span> <span class="nf">getPreferenceKey</span><span class="p">()</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="n">KEY_LIFT_TO_WAKE</span><span class="p">;</span>
+    <span class="p">}</span>
+
+    <span class="c1">//当Preference的值发生改变时触发该事件，true则以新值更新控件的状态，false则do noting</span>
+    <span class="nd">@Override</span>
+    <span class="kd">public</span> <span class="kt">boolean</span> <span class="nf">onPreferenceChange</span><span class="p">(</span><span class="n">Preference</span> <span class="n">preference</span><span class="p">,</span> <span class="n">Object</span> <span class="n">newValue</span><span class="p">)</span> <span class="p">{</span>
+        <span class="kt">boolean</span> <span class="n">value</span> <span class="o">=</span> <span class="p">(</span><span class="n">Boolean</span><span class="p">)</span> <span class="n">newValue</span><span class="p">;</span>
+        <span class="n">Settings</span><span class="p">.</span><span class="na">Secure</span><span class="p">.</span><span class="na">putInt</span><span class="p">(</span><span class="n">mContext</span><span class="p">.</span><span class="na">getContentResolver</span><span class="p">(),</span> <span class="n">WAKE_GESTURE_ENABLED</span><span class="p">,</span> <span class="n">value</span> <span class="o">?</span> <span class="mi">1</span> <span class="p">:</span> <span class="mi">0</span><span class="p">);</span>
+        <span class="k">return</span> <span class="kc">true</span><span class="p">;</span>
+    <span class="p">}</span>
+
+    <span class="c1">//每次进入该PreferenceScreen都会调用一次刷新开关状态</span>
+    <span class="nd">@Override</span>
+    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">updateState</span><span class="p">(</span><span class="n">Preference</span> <span class="n">preference</span><span class="p">)</span> <span class="p">{</span>
+        <span class="kt">int</span> <span class="n">value</span> <span class="o">=</span> <span class="n">Settings</span><span class="p">.</span><span class="na">Secure</span><span class="p">.</span><span class="na">getInt</span><span class="p">(</span><span class="n">mContext</span><span class="p">.</span><span class="na">getContentResolver</span><span class="p">(),</span> <span class="n">WAKE_GESTURE_ENABLED</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+        <span class="p">((</span><span class="n">SwitchPreference</span><span class="p">)</span> <span class="n">preference</span><span class="p">).</span><span class="na">setChecked</span><span class="p">(</span><span class="n">value</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">);</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>参考以下，当该传感器被触发时，设备会开启屏幕，所以只需要监听该传感器即可实现亮屏功能。</p></li>
+</ul>
+<div class="highlight-log notranslate"><div class="highlight"><pre><span></span>唤醒手势传感器
+底层物理传感器：未定义（任何低功耗传感器）
+
+报告模式：单次模式
+
+低功耗
+
+仅实现该传感器的唤醒版本。
+
+getDefaultSensor(SENSOR_TYPE_WAKE_GESTURE) 返回唤醒传感器
+
+唤醒手势传感器可以使用特定设备动作来唤醒设备。当该传感器被触发时，设备会开启屏幕，就如同按下电源按钮一样。用户可在设备设置中禁用这种设备行为（当该传感器被触发时开启屏幕）。更改设置不会影响该传感器的行为：仅改变当该传感器被触发时，框架是否会开启屏幕。未指定待感测的实际手势，可由设备制造商进行选择。
+
+该传感器必须具备低功耗特性，因为它可能会全天候启用。
+
+每个传感器事件在 sensors_event_t.data[0] 中报告 1。
+</pre></div>
+</div>
+</section>
+<section id="wakeup-sensorhub">
+<h2>Wakeup sensorhub功能开发<a class="headerlink" href="#wakeup-sensorhub" title="Permalink to this headline"></a></h2>
+<p>1.我们设备需要支持抬起唤醒功能，需要accel sensor一直active的状态。</p>
+<p>sensorhub调通了，但是发现scp这边打印gsensor在灭屏是关闭了，如下打印：</p>
+<div class="highlight-log notranslate"><div class="highlight"><pre><span></span>[345.976]sc7a20 acc1 rawdata x:-38, y:26, z:-1106
+[346.039]sc7a20 acc1 rawdata x:-42, y:25, z:-1105
+[346.102]sc7a20 acc1 rawdata x:-45, y:26, z:-1103
+[346.164]sc7a20 acc1 rawdata x:-41, y:27, z:-1103
+[346.227]sc7a20 acc1 rawdata x:-48, y:23, z:-1101
+[346.289]sc7a20 acc1 rawdata x:-53, y:25, z:-1097
+[346.352]sc7a20 acc1 rawdata x:-51, y:26, z:-1108
+[346.414]sc7a20 acc1 rawdata x:-50, y:24, z:-1112
+[346.435]hostintf: 346435403595, chreType:1, rate:15359, latency:100000000, cmd:0!
+[346.435]sensorPowerAcc on:0, nowOn:1
+[346.435]sc7a20PowerRead
+[346.435]sc7a20PowerDisableWrite: 0x47
+[346.435]acc: disable done
+</pre></div>
+</div>
+<p>2.MTK回复如下：</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>请查收guide文档，抬手亮屏feature具体见6.4.5，打开WAKE_GESTURE及PICK_UP_GESTURE相关宏开关，
+注：包含ProjectConfig.mk、Kernel Config、SCP config三部分，
+测试方法: Settings -&gt; Display -&gt; Lift to wake开关
+</pre></div>
+</div>
+<p>参考文档将如下红色框中的宏打开：</p>
+<p><img alt="0003_4.png" src="../../../_images/0003_4.png" />
+<img alt="0003_3.png" src="../../../_images/0003_3.png" /></p>
+<p>3.调通后scp打印如下：</p>
+<div class="highlight-log notranslate"><div class="highlight"><pre><span></span>1.关屏后acc继续被打开：
+[97653.5587]als: disable done
+[97653.967]hostintf: 97653967164671, chreType:47, rate:4294967042, latency:0, cmd:0!
+[97653.969]hostintf: 97653969452902, chreType:47, rate:4294967042, latency:0, cmd:1!
+[97653.969][Wake] Active wake(1)  //调用WakePower，激活wake sensor 
+[97653.969]LiftDetectPower:1
+[97653.969]Gesture lib version: eec60996
+[97653.969]LIFT INIT DONE
+[97653.969]sensorPowerAcc on:1, nowOn:0
+[97653.969][qmi8658]: Qmi8658AccPowerOn
+[97653.969][Motion] Active anyMotion(1), noMotion(0)
+[97653.969][Motion] configAccel on
+[97653.969]on or upload, type:1, rate:fffffff0, latency:ffffffffffffffff
+[97653.969][Motion] Active anyMotion(1), noMotion(1)
+[97653.969]WAKEUP: SUBSCRIBE LIFT SENSOR DONE   //订阅lift sensor
+[97653.969]acc: enable done
+[97653.969]sensorFirmwareAcc
+[97653.970]sensorRateAcc rate:51200, latency:200000000
+[97653.970]accGyro, delay=19999744, latency:200000000, min_wm=0, final_watermark=10
+[97653.970]accGyro, watermark:10
+[97653.970][qmi8658]: acc_rate = 51200 water_mark=10 fifo_wmk=10 latency=200000000
+[97653.970]acc: ratechg done
+
+2.抬起亮屏触发：
+[97826.377]Gesture lib version: eec60996
+[97826.377]lift notify
+
+[97826.377][Wake] Active wake(0)
+[97826.377]LiftDetectPower:0
+[97826.377][Motion] Active anyMotion(0), noMotion(0)
+[97826.377][Motion] configAccel off
+[97826.377]sensorPowerAcc on:0, nowOn:1
+[97826.377][qmi8658]: Qmi8658AccPowerOff
+[97826.377]acc: disable done
+[97826.381]hostintf: 97826381383774, chreType:47, rate:4294967042, latency:0, cmd:0!
+[97826.468]hostintf: 97826468513621, chreType:12, rate:4096, latency:0, cmd:0!
+[97826.472]hostintf: 97826472051082, chreType:12, rate:4096, latency:0, cmd:1!
+[97826.472]sensorPowerAls on:1, nowOn:0
+[97826.472]als: enable done
+
+3.logcat
+03-06 17:32:43.107   770   799 E Situation: processEvent, handle:22, flush_action:0
+03-06 17:32:43.108   770   799 E Situation: ID_WAKE_GESTURE, handle:22, flush_action:0
+03-06 17:32:43.108   770   799 E SensorManager: autoDisable oneshot sensor 22
+03-06 17:32:43.108   770   799 I SensorManager: activate: connection=0xb4000072cb1415b0, handle=0x00000016, enabled=0, count=1
+03-06 17:32:43.108   770   799 I SensorManager: activate disable index=0
+03-06 17:32:43.108   770   799 I SensorManager:         activate&gt;&gt;&gt; actuating h/w activate handle=22 enabled=0
+03-06 17:32:43.108   770   799 I Situation: enable: handle:22, en:0
+03-06 17:32:43.112  1137  3028 D SensorService: 0xb400006fabd26cd0 removeFd fd=333
+03-06 17:32:43.112   546   546 I android.hardware.vibrator-service.mediatek: Vibrator reporting capabilities
+03-06 17:32:43.112  1137  3028 D SensorService: ~SensorEventConnection(0xb400006fabd26cd0)
+03-06 17:32:43.112  1137  3028 D SensorService: 0 active sensors
+
+02-26 04:47:39.192  1141  1160 D PowerManagerService: wakeUpNoUpdateLocked: eventTime=16090116, uid=1000
+02-26 04:47:39.192  1141  1160 I PowerManagerService: Waking up from Asleep (uid=1000, reason=WAKE_REASON_GESTURE, details=android.policy:GESTURE)...
+02-26 04:47:39.194  1141  1160 D PowerManagerService: Acquiring suspend blocker &quot;PowerManagerService.Broadcasts&quot;.
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>sensorlist如下，其中WAKE_GESTURE和PICK_UP是需要的:</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">PAYTABLETM8</span><span class="p">:</span><span class="o">/</span> <span class="c1"># dumpsys sensorservice</span>
+<span class="n">Captured</span> <span class="n">at</span><span class="p">:</span> <span class="mi">10</span><span class="p">:</span><span class="mi">14</span><span class="p">:</span><span class="mf">25.220</span>
+<span class="n">Sensor</span> <span class="n">Device</span><span class="p">:</span>
+<span class="n">Total</span> <span class="mi">9</span> <span class="n">h</span><span class="o">/</span><span class="n">w</span> <span class="n">sensors</span><span class="p">,</span> <span class="mi">9</span> <span class="n">running</span> <span class="mi">1</span> <span class="n">disabled</span> <span class="n">clients</span><span class="p">:</span>
+<span class="mh">0x00000017</span><span class="p">)</span> <span class="n">active</span><span class="o">-</span><span class="n">count</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span> <span class="n">sampling_period</span><span class="p">(</span><span class="n">ms</span><span class="p">)</span> <span class="o">=</span> <span class="p">{</span><span class="mf">1.0</span><span class="p">},</span> <span class="n">selected</span> <span class="o">=</span> <span class="mf">1.00</span> <span class="n">ms</span><span class="p">;</span> <span class="n">batching_period</span><span class="p">(</span><span class="n">ms</span><span class="p">)</span> <span class="o">=</span> <span class="p">{</span><span class="mf">0.0</span><span class="p">},</span> <span class="n">selected</span> <span class="o">=</span> <span class="mf">0.00</span> <span class="n">ms</span>
+<span class="n">Sensor</span> <span class="n">List</span><span class="p">:</span>
+<span class="mh">0x00000001</span><span class="p">)</span> <span class="n">ACCELEROMETER</span>             <span class="o">|</span> <span class="n">MTK</span>             <span class="o">|</span> <span class="n">ver</span><span class="p">:</span> <span class="mi">1</span> <span class="o">|</span> <span class="nb">type</span><span class="p">:</span> <span class="n">android</span><span class="o">.</span><span class="n">sensor</span><span class="o">.</span><span class="n">accelerometer</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="o">|</span> <span class="n">perm</span><span class="p">:</span> <span class="n">n</span><span class="o">/</span><span class="n">a</span> <span class="o">|</span> <span class="n">flags</span><span class="p">:</span> <span class="mh">0x00000000</span>
+        <span class="n">continuous</span> <span class="o">|</span> <span class="n">minRate</span><span class="o">=</span><span class="mf">5.00</span><span class="n">Hz</span> <span class="o">|</span> <span class="n">maxRate</span><span class="o">=</span><span class="mf">200.00</span><span class="n">Hz</span> <span class="o">|</span> <span class="n">no</span> <span class="n">batching</span> <span class="o">|</span> <span class="n">non</span><span class="o">-</span><span class="n">wakeUp</span> <span class="o">|</span>
+<span class="mh">0x00000002</span><span class="p">)</span> <span class="n">MAGNETOMETER</span>              <span class="o">|</span> <span class="n">MTK</span>             <span class="o">|</span> <span class="n">ver</span><span class="p">:</span> <span class="mi">1</span> <span class="o">|</span> <span class="nb">type</span><span class="p">:</span> <span class="n">android</span><span class="o">.</span><span class="n">sensor</span><span class="o">.</span><span class="n">magnetic_field</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="o">|</span> <span class="n">perm</span><span class="p">:</span> <span class="n">n</span><span class="o">/</span><span class="n">a</span> <span class="o">|</span> <span class="n">flags</span><span class="p">:</span> <span class="mh">0x00000000</span>
+        <span class="n">continuous</span> <span class="o">|</span> <span class="n">minRate</span><span class="o">=</span><span class="mf">5.00</span><span class="n">Hz</span> <span class="o">|</span> <span class="n">maxRate</span><span class="o">=</span><span class="mf">50.00</span><span class="n">Hz</span> <span class="o">|</span> <span class="n">no</span> <span class="n">batching</span> <span class="o">|</span> <span class="n">non</span><span class="o">-</span><span class="n">wakeUp</span> <span class="o">|</span>
+<span class="mh">0x00000003</span><span class="p">)</span> <span class="n">ORIENTATION</span>               <span class="o">|</span> <span class="n">MTK</span>             <span class="o">|</span> <span class="n">ver</span><span class="p">:</span> <span class="mi">1</span> <span class="o">|</span> <span class="nb">type</span><span class="p">:</span> <span class="n">android</span><span class="o">.</span><span class="n">sensor</span><span class="o">.</span><span class="n">orientation</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span> <span class="o">|</span> <span class="n">perm</span><span class="p">:</span> <span class="n">n</span><span class="o">/</span><span class="n">a</span> <span class="o">|</span> <span class="n">flags</span><span class="p">:</span> <span class="mh">0x00000000</span>
+        <span class="n">continuous</span> <span class="o">|</span> <span class="n">minRate</span><span class="o">=</span><span class="mf">50.00</span><span class="n">Hz</span> <span class="o">|</span> <span class="n">maxRate</span><span class="o">=</span><span class="mf">200.00</span><span class="n">Hz</span> <span class="o">|</span> <span class="n">no</span> <span class="n">batching</span> <span class="o">|</span> <span class="n">non</span><span class="o">-</span><span class="n">wakeUp</span> <span class="o">|</span>
+<span class="mh">0x00000011</span><span class="p">)</span> <span class="n">SIGNIFICANT_MOTION</span>        <span class="o">|</span> <span class="n">MTK</span>             <span class="o">|</span> <span class="n">ver</span><span class="p">:</span> <span class="mi">1</span> <span class="o">|</span> <span class="nb">type</span><span class="p">:</span> <span class="n">android</span><span class="o">.</span><span class="n">sensor</span><span class="o">.</span><span class="n">significant_motion</span><span class="p">(</span><span class="mi">17</span><span class="p">)</span> <span class="o">|</span> <span class="n">perm</span><span class="p">:</span> <span class="n">n</span><span class="o">/</span><span class="n">a</span> <span class="o">|</span> <span class="n">flags</span><span class="p">:</span> <span class="mh">0x00000005</span>
+        <span class="n">one</span><span class="o">-</span><span class="n">shot</span> <span class="o">|</span> <span class="n">maxDelay</span><span class="o">=</span><span class="mi">0</span><span class="n">us</span> <span class="o">|</span> <span class="n">minDelay</span><span class="o">=-</span><span class="mi">1</span><span class="n">us</span> <span class="o">|</span> <span class="n">no</span> <span class="n">batching</span> <span class="o">|</span> <span class="n">wakeUp</span> <span class="o">|</span>
+<span class="mh">0x00000012</span><span class="p">)</span> <span class="n">STEP_DETECTOR</span>             <span class="o">|</span> <span class="n">MTK</span>             <span class="o">|</span> <span class="n">ver</span><span class="p">:</span> <span class="mi">1</span> <span class="o">|</span> <span class="nb">type</span><span class="p">:</span> <span class="n">android</span><span class="o">.</span><span class="n">sensor</span><span class="o">.</span><span class="n">step_detector</span><span class="p">(</span><span class="mi">18</span><span class="p">)</span> <span class="o">|</span> <span class="n">perm</span><span class="p">:</span> <span class="n">android</span><span class="o">.</span><span class="n">permission</span><span class="o">.</span><span class="n">ACTIVITY_RECOGNITION</span> <span class="o">|</span> <span class="n">flags</span><span class="p">:</span> <span class="mh">0x00000006</span>
+        <span class="n">special</span><span class="o">-</span><span class="n">trigger</span> <span class="o">|</span> <span class="n">maxDelay</span><span class="o">=</span><span class="mi">0</span><span class="n">us</span> <span class="o">|</span> <span class="n">minDelay</span><span class="o">=</span><span class="mi">0</span><span class="n">us</span> <span class="o">|</span> <span class="n">FIFO</span> <span class="p">(</span><span class="nb">max</span><span class="p">,</span><span class="n">reserved</span><span class="p">)</span> <span class="o">=</span> <span class="p">(</span><span class="mi">4500</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span> <span class="n">events</span> <span class="o">|</span> <span class="n">non</span><span class="o">-</span><span class="n">wakeUp</span> <span class="o">|</span>
+<span class="mh">0x00000013</span><span class="p">)</span> <span class="n">STEP_COUNTER</span>              <span class="o">|</span> <span class="n">MTK</span>             <span class="o">|</span> <span class="n">ver</span><span class="p">:</span> <span class="mi">1</span> <span class="o">|</span> <span class="nb">type</span><span class="p">:</span> <span class="n">android</span><span class="o">.</span><span class="n">sensor</span><span class="o">.</span><span class="n">step_counter</span><span class="p">(</span><span class="mi">19</span><span class="p">)</span> <span class="o">|</span> <span class="n">perm</span><span class="p">:</span> <span class="n">android</span><span class="o">.</span><span class="n">permission</span><span class="o">.</span><span class="n">ACTIVITY_RECOGNITION</span> <span class="o">|</span> <span class="n">flags</span><span class="p">:</span> <span class="mh">0x00000002</span>
+        <span class="n">on</span><span class="o">-</span><span class="n">change</span> <span class="o">|</span> <span class="n">minRate</span><span class="o">=</span><span class="mf">1.00</span><span class="n">Hz</span> <span class="o">|</span> <span class="n">minDelay</span><span class="o">=</span><span class="mi">0</span><span class="n">us</span> <span class="o">|</span> <span class="n">no</span> <span class="n">batching</span> <span class="o">|</span> <span class="n">non</span><span class="o">-</span><span class="n">wakeUp</span> <span class="o">|</span>
+<span class="mh">0x00000017</span><span class="p">)</span> <span class="n">WAKE_GESTURE</span>              <span class="o">|</span> <span class="n">MTK</span>             <span class="o">|</span> <span class="n">ver</span><span class="p">:</span> <span class="mi">1</span> <span class="o">|</span> <span class="nb">type</span><span class="p">:</span> <span class="n">android</span><span class="o">.</span><span class="n">sensor</span><span class="o">.</span><span class="n">wake_gesture</span><span class="p">(</span><span class="mi">23</span><span class="p">)</span> <span class="o">|</span> <span class="n">perm</span><span class="p">:</span> <span class="n">n</span><span class="o">/</span><span class="n">a</span> <span class="o">|</span> <span class="n">flags</span><span class="p">:</span> <span class="mh">0x00000005</span>
+        <span class="n">one</span><span class="o">-</span><span class="n">shot</span> <span class="o">|</span> <span class="n">maxDelay</span><span class="o">=</span><span class="mi">0</span><span class="n">us</span> <span class="o">|</span> <span class="n">minDelay</span><span class="o">=-</span><span class="mi">1</span><span class="n">us</span> <span class="o">|</span> <span class="n">no</span> <span class="n">batching</span> <span class="o">|</span> <span class="n">wakeUp</span> <span class="o">|</span>
+<span class="mh">0x00000019</span><span class="p">)</span> <span class="n">PICK_UP</span>                   <span class="o">|</span> <span class="n">MTK</span>             <span class="o">|</span> <span class="n">ver</span><span class="p">:</span> <span class="mi">1</span> <span class="o">|</span> <span class="nb">type</span><span class="p">:</span> <span class="n">android</span><span class="o">.</span><span class="n">sensor</span><span class="o">.</span><span class="n">pick_up_gesture</span><span class="p">(</span><span class="mi">25</span><span class="p">)</span> <span class="o">|</span> <span class="n">perm</span><span class="p">:</span> <span class="n">n</span><span class="o">/</span><span class="n">a</span> <span class="o">|</span> <span class="n">flags</span><span class="p">:</span> <span class="mh">0x00000005</span>
+        <span class="n">one</span><span class="o">-</span><span class="n">shot</span> <span class="o">|</span> <span class="n">maxDelay</span><span class="o">=</span><span class="mi">0</span><span class="n">us</span> <span class="o">|</span> <span class="n">minDelay</span><span class="o">=-</span><span class="mi">1</span><span class="n">us</span> <span class="o">|</span> <span class="n">no</span> <span class="n">batching</span> <span class="o">|</span> <span class="n">wakeUp</span> <span class="o">|</span>
+<span class="mh">0x00000065</span><span class="p">)</span> <span class="n">STEP_DETECTOR_WAKEUP</span>      <span class="o">|</span> <span class="n">MTK</span>             <span class="o">|</span> <span class="n">ver</span><span class="p">:</span> <span class="mi">1</span> <span class="o">|</span> <span class="nb">type</span><span class="p">:</span> <span class="n">android</span><span class="o">.</span><span class="n">sensor</span><span class="o">.</span><span class="n">step_detector</span><span class="p">(</span><span class="mi">18</span><span class="p">)</span> <span class="o">|</span> <span class="n">perm</span><span class="p">:</span> <span class="n">android</span><span class="o">.</span><span class="n">permission</span><span class="o">.</span><span class="n">ACTIVITY_RECOGNITION</span> <span class="o">|</span> <span class="n">flags</span><span class="p">:</span> <span class="mh">0x00000007</span>
+        <span class="n">special</span><span class="o">-</span><span class="n">trigger</span> <span class="o">|</span> <span class="n">maxDelay</span><span class="o">=</span><span class="mi">0</span><span class="n">us</span> <span class="o">|</span> <span class="n">minDelay</span><span class="o">=</span><span class="mi">0</span><span class="n">us</span> <span class="o">|</span> <span class="n">FIFO</span> <span class="p">(</span><span class="nb">max</span><span class="p">,</span><span class="n">reserved</span><span class="p">)</span> <span class="o">=</span> <span class="p">(</span><span class="mi">4500</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span> <span class="n">events</span> <span class="o">|</span> <span class="n">wakeUp</span> <span class="o">|</span>
+<span class="mh">0x5f67656f</span><span class="p">)</span> <span class="n">GeoMag</span> <span class="n">Rotation</span> <span class="n">Vector</span> <span class="n">Sensor</span> <span class="o">|</span> <span class="n">AOSP</span>            <span class="o">|</span> <span class="n">ver</span><span class="p">:</span> <span class="mi">3</span> <span class="o">|</span> <span class="nb">type</span><span class="p">:</span> <span class="n">android</span><span class="o">.</span><span class="n">sensor</span><span class="o">.</span><span class="n">geomagnetic_rotation_vector</span><span class="p">(</span><span class="mi">20</span><span class="p">)</span> <span class="o">|</span> <span class="n">perm</span><span class="p">:</span> <span class="n">n</span><span class="o">/</span><span class="n">a</span> <span class="o">|</span> <span class="n">flags</span><span class="p">:</span> <span class="mh">0x00000000</span>
+        <span class="n">continuous</span> <span class="o">|</span> <span class="n">maxDelay</span><span class="o">=</span><span class="mi">0</span><span class="n">us</span> <span class="o">|</span> <span class="n">maxRate</span><span class="o">=</span><span class="mf">200.00</span><span class="n">Hz</span> <span class="o">|</span> <span class="n">no</span> <span class="n">batching</span> <span class="o">|</span> <span class="n">non</span><span class="o">-</span><span class="n">wakeUp</span> <span class="o">|</span>
+</pre></div>
+</div>
+</section>
+<section id="id5">
+<h2>代码分析<a class="headerlink" href="#id5" title="Permalink to this headline"></a></h2>
+<section id="sensorhub">
+<h3>1.sensorhub底层<a class="headerlink" href="#sensorhub" title="Permalink to this headline"></a></h3>
+<ul class="simple">
+<li><p>逻辑图如下：</p></li>
+</ul>
+<p><img alt="0003_12312.png" src="../../../_images/0003_12312.png" /></p>
+<ul class="simple">
+<li><p>配置如下：</p></li>
+</ul>
+<div class="highlight-diff notranslate"><div class="highlight"><pre><span></span><span class="gd">--- a/vendor/mediatek/proprietary/tinysys/freertos/source/project/CM4_A/mt6765/k62v1_64_pax/ProjectConfig.mk</span><span class="w"></span>
+<span class="gi">+++ b/vendor/mediatek/proprietary/tinysys/freertos/source/project/CM4_A/mt6765/k62v1_64_pax/ProjectConfig.mk</span><span class="w"></span>
+<span class="gu">@@ -16,13 +16,19 @@ CFG_CHRE_SUPPORT = yes</span><span class="w"></span>
+<span class="gi">+CFG_PICKUP_SUPPORT = yes</span><span class="w"></span>
+<span class="gi">+CFG_WAKEUP_SUPPORT = yes</span><span class="w"></span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">project/CM4_A/mt6765/platform/feature_config/chre.mk</span></code>关联文件，发现抬起亮屏相关的算法都是在wakeup_gesture里面的<code class="docutils literal notranslate"><span class="pre">libwakeupgesture.a</span></code>库:</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span>######## pickup ########
+ifeq ($(CFG_PICKUP_SUPPORT),yes)
+C_FILES  += $(SOURCE_DIR)/middleware/contexthub/VIRT_Driver/pickup.c
+endif
+
+######## wakeup ########
+ifeq ($(CFG_WAKEUP_SUPPORT),yes)
+C_FILES  += $(SOURCE_DIR)/middleware/contexthub/VIRT_Driver/wakeup.c
+endif
+
+######## gestureRecognition--LIFT ########
+ifeq ($(CFG_LIFT_SUPPORT),yes)
+INCLUDES += -I$(SOURCE_DIR)/middleware/contexthub/algo/wakeup_gesture
+INCLUDES += -I$(SOURCE_DIR)/middleware/contexthub/VIRT_Driver
+C_FILES  += $(SOURCE_DIR)/middleware/contexthub/VIRT_Driver/liftDetect.c
+C_FILES  += $(SOURCE_DIR)/middleware/contexthub/VIRT_Driver/algoDataResample.c
+LIBFLAGS += -L$(SOURCE_DIR)/middleware/contexthub/algo/wakeup_gesture -lwakeupgesture
+endif
+
+wugn@jcrj-tf-compile:wakeup_gesture$ cat README
+NOTICE:
+This library contains the Gesture feature that can detect user gesture (lift/glance/put down/flip) in real-time.
+The library, libwakeupgesture.a is built and can be linked already.
+For people who may like to use these APIs, just includes gesture.h and see the definitions in header file.
+
+gesture.h:
+#include &lt;math.h&gt;
+#include &quot;gesture.h&quot;
+#include &quot;gesture_util.h&quot;
+#include &quot;gesture_setting.h&quot;
+
+typedef struct gesture_output {
+    bool lift_result;
+    bool original_glance_result;
+    bool extended_glance_result;
+    bool put_result;
+} gesture_output_t;
+
+void reinit_gesture(mtk_gesture_config_t *, gesture_output_t);
+gesture_output_t gesture_enter_point(uint32_t, int32_t, int32_t, int32_t);
+void set_gesture_transition(gesture_trans_t);
+void ut_gesture_read_config(mtk_gesture_config_t *);
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>根据log分析，感觉抬起亮屏只和<code class="docutils literal notranslate"><span class="pre">wakeup.c</span></code>及<code class="docutils literal notranslate"><span class="pre">liftDetect.c</span></code>两个有关系。</p></li>
+</ul>
+<div class="highlight-log notranslate"><div class="highlight"><pre><span></span>提取重要打印：
+[98765.851][Wake] Active wake(1)
+[98765.851]LiftDetectPower:1
+[98765.851]Gesture lib version: eec60996
+[98765.851]LIFT INIT DONE
+[98765.851]sensorPowerAcc on:1, nowOn:0
+
+[98765.851][Motion] Active anyMotion(1), noMotion(0)
+[98765.851][Motion] configAccel on
+[98765.851]on or upload, type:1, rate:fffffff0, latency:ffffffffffffffff
+[98765.851][Motion] Active anyMotion(1), noMotion(1)
+
+[98765.851]WAKEUP: SUBSCRIBE LIFT SENSOR DONE
+[98765.851]acc: enable done
+
+[98765.851]sensorRateAcc rate:51200, latency:200000000
+</pre></div>
+</div>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">wakeup.c</span></code>:关屏后wake_sensor代码流程，这里主要是订阅<code class="docutils literal notranslate"><span class="pre">EVT_SENSOR_LIFT</span></code>事件，而lift sensor又主要是订阅了acc sensor和any/no motion sensor,any/no motion sensor主要是配置acc rate，让功耗更低：</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span>* .sensorPower = WakePower,
+  ├── osLog(LOG_INFO, &quot;[Wake] Active wake(%d)\n&quot;, on);
+  └── configLift(true);
+      └── sensorFind(SENS_TYPE_LIFT, i, &amp;mTask.liftHandle) //找lift sensor
+          ├── sensorRequest(mTask.taskId, mTask.liftHandle, SENSOR_RATE_ONCHANGE, 0)
+          │   └── sensorReconfig(s, newSensorRate, sensorCalcHwLatency(s));/* update actual sensor if needed */
+          │       └── if (sensorCallFuncPower(s, true)) {
+          │           └── osEnqueuePrivateEvt(EVT_APP_SENSOR_POWER, &amp;evt-&gt;externalPowerEvt, //这里是打开lift sensor相当于调用LiftDetectPower
+          │               └── .sensorPower = liftDetectPower,//以下全部都是liftDetect.c
+          │                   ├── liftInit(); 
+          │                   │   └── reinit_gesture(&amp;config, (gesture_output_t) {1, 0, 0, 0}); //重要，这里是gesture.h 手势库里面的函数，config是gesture_settings.h里，我们都看不到
+          │                   ├── configAccel(true, NORMAL_ACC_WINDOW);
+          │                   │   ├── sensorRequest(mTask.taskId, mTask.accelHandle, ACCEL_MIN_RATE, mTask.accel_normal_latency) //mTask.accel_normal_latency = 50000000ull; 50HZ
+          │                   │   │   └── sensorReconfig(s, newSensorRate, sensorCalcHwLatency(s));
+          │                   │   │       ├── if (sensorCallFuncPower(s, true)) {
+          │                   │   │       │   └── osEnqueuePrivateEvt(EVT_APP_SENSOR_POWER, &amp;evt-&gt;externalPowerEvt, //这里是打开acc sensorPowerAcc
+          │                   │   │       └── sensorCallFuncSetRate(s, newHwRate, newHwLatency); 
+          │                   │   │           └── osEnqueuePrivateEvt(EVT_APP_SENSOR_SET_RATE, &amp;evt-&gt;externalSetRateEvt, //调用acc sc7a20gRate
+          │                   │   └── osEventSubscribe(mTask.taskId, EVT_SENSOR_ACCEL); //订阅acc sensor
+          │                   ├── configAnyMotion(true); //关屏的情况下订阅Motion sensor，
+          │                   │   └── osEventSubscribe(mTask.taskId, EVT_SENSOR_ANY_MOTION);
+          │                   │       └── liftDetectHandleEvent(uint32_t evtType, const void* evtData)
+          │                   │           ├── case EVT_SENSOR_ANY_MOTION: //如果移动了设备，则配置50HZ acc rate
+          │                   │           │   └── configAccel(true, NORMAL_ACC_WINDOW); //如果手机移动了，触发Motion sensor，
+          │                   │           │       ├── if (acc_class == NORMAL_ACC_WINDOW) {
+          │                   │           │       │   ├── sensorRequest(mTask.taskId, mTask.accelHandle, ACCEL_MIN_RATE, mTask.accel_normal_latency) ////mTask.accel_normal_latency = 50000000ull; 50HZ
+          │                   │           │       │   └── osEventSubscribe(mTask.taskId, EVT_SENSOR_ACCEL);
+          │                   │           │       └── else {
+          │                   │           │           ├── sensorRequest(mTask.taskId, mTask.accelHandle, ACCEL_MIN_RATE, ACCEL_EXTENDED_LATENCY) //define ACCEL_EXTENDED_LATENCY          2000000000ull   // 2000 ms
+          │                   │           │           └── osEventSubscribe(mTask.taskId, EVT_SENSOR_ACCEL);
+          │                   │           └── case EVT_SENSOR_NO_MOTION: //如果没有移动设备，则配置取消订阅acc
+          │                   │                 * configAccel(false, NORMAL_ACC_WINDOW);
+          │                   └── configNoMotion(true); //订阅No Motion sensor
+          │                       └── osEventSubscribe(mTask.taskId, EVT_SENSOR_NO_MOTION);
+          └── osEventSubscribe(mTask.taskId, EVT_SENSOR_LIFT); //该驱动订阅lift sensor事件
+</pre></div>
+</div>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">liftdetect.c</span></code>:抬起亮屏触发，具体处理函数是MTK封装的看不到，以下是sensorhub处理：</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span>* liftDetectHandleEvent(uint32_t evtType, const void* evtData) //事件处理函数
+  ├── case EVT_SENSOR_ACC: //有acc事件上来了，后台一般都是一直上报的
+  └── liftDetectAlgo((struct TripleAxisDataEvent *)evtData); //acc数据分析
+      ├── sensor_input_data_resampling_preparation(&amp;mResample, input_time_stamp_ms, EVT_SENSOR_ACCEL); //acc采样
+      ├── algo_input_data_generation(&amp;mResample, EVT_SENSOR_ACCEL); //数据整理，暂时没分析是在干嘛
+      └── gesture_output_t gesture_alg_output = gesture_enter_point(mResample.algo_time_stamp, mResample.algoAccData.x, //重要，这里是gesture.h 手势库里的数据处理，具体怎么处理的看不到
+          ├── if (gesture_alg_output.lift_result) {
+          ├── osEnqueueEvt(sensorGetMyEventType(SENS_TYPE_LIFT), sample.vptr, NULL); //上报SENS_TYPE_LIFT event事件，
+          │   ├── wakeup.c
+          │   └── WakeHandleEvent(uint32_t evtType, const void* evtData)
+          │       ├── case EVT_SENSOR_LIFT:
+          │       └── osEnqueueEvt(EVT_SENSOR_WAKE_UP, sample.vptr, NULL); //重要，上报SENS_TYPE_WAKE_UP事件，这里主要是唤醒屏幕
+          └── osLog(LOG_INFO, &quot;lift notify\n\n&quot;);
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>另外因为监听了Motion Sensor，当有左翻、右翻、下翻事件后，将触发一次，但是这里hal没打印任何信息，没做什么事情，打印如下：</p></li>
+</ul>
+<div class="highlight-log notranslate"><div class="highlight"><pre><span></span>[2148.179][Motion] Active anyMotion(1), noMotion(1)
+[2148.179][Motion] Active anyMotion(1), noMotion(0)
+[2148.179]sensorRateAcc rate:51200, latency:2000 ms
+[2148.179]accRateCalculate pending by:0
+[2148.179]sensorRateAcc rate:51200, latency:2000 ms
+[2148.179]sensorRateAcc pending by:0
+[2148.180]sensorRateAcc rate:51200, latency:2000 ms
+[2148.180]accGyro, delay=19999744, latency:20000000, min_wm=0, final_watermark=1
+[2148.180]accGyro, watermark:1
+[2148.180]sc7a20gRate: 51100, minAccGyroDelay:1, water_mark:243464
+[2148.180]acc: ratechg done
+</pre></div>
+</div>
+</section>
+</section>
+<section id="id6">
+<h2>问题分析<a class="headerlink" href="#id6" title="Permalink to this headline"></a></h2>
+<section id="id7">
+<h3>1.有时候抬起亮屏不灵敏<a class="headerlink" href="#id7" title="Permalink to this headline"></a></h3>
+<ul class="simple">
+<li><p>1.查看log，发现设置的报点间隔有点长，足足2s，一般设置51200 rate，扫描周期应该是20ms才对：</p></li>
+</ul>
+<div class="highlight-log notranslate"><div class="highlight"><pre><span></span>1.关机时，一开始设置200ms，5HZ，还行
+sensorRateAcc rate:51200, latency:200000000
+2.之后又设置了2s，不知道为什么系统要做这么设置，很明显
+sensorRateAcc rate:51200, latency:2000000000
+
+[98765.435]ps: disable done
+[98765.846]hostintf: 98765846611706, chreType:47, rate:4294967042, latency:0, cmd:0!
+[98765.851]hostintf: 98765851186168, chreType:47, rate:4294967042, latency:0, cmd:1!
+[98765.851][Wake] Active wake(1)
+[98765.851]LiftDetectPower:1
+[98765.851]Gesture lib version: eec60996
+[98765.851]LIFT INIT DONE
+[98765.851]sensorPowerAcc on:1, nowOn:0
+[98765.851][qmi8658]: Qmi8658AccPowerOn
+[98765.851][Motion] Active anyMotion(1), noMotion(0)
+[98765.851][Motion] configAccel on
+[98765.851]on or upload, type:1, rate:fffffff0, latency:ffffffffffffffff
+[98765.851][Motion] Active anyMotion(1), noMotion(1)
+[98765.851]WAKEUP: SUBSCRIBE LIFT SENSOR DONE
+[98765.851]acc: enable done
+[98765.851]sensorFirmwareAcc
+[98765.851]sensorRateAcc rate:51200, latency:200000000
+[98765.851]accGyro, delay=19999744, latency:200000000, min_wm=0, final_watermark=10
+[98765.851]accGyro, watermark:10
+[98765.851][qmi8658]: acc_rate = 51200 water_mark=10 fifo_wmk=10 latency=200000000
+[98765.852]acc: ratechg done
+[98766.052][qmi8658]: Qmi8658Sample status 0x3
+[98766.053][qmi8658]: Qmi8658Convert
+[98766.053][qmi8658]: accGetCalibration cali x:-15, y:-157, z:182
+[98766.053][qmi8658]: gyroGetCalibration cali x:0, y:0, z:0
+[98766.252][qmi8658]: Qmi8658Sample status 0x3
+[98766.253][qmi8658]: Qmi8658Convert
+[98766.253][qmi8658]: accGetCalibration cali x:-15, y:-157, z:182
+[98766.253][qmi8658]: gyroGetCalibration cali x:0, y:0, z:0
+[98766.452][qmi8658]: Qmi8658Sample status 0x3
+[98766.453][qmi8658]: Qmi8658Convert
+[98766.453][qmi8658]: accGetCalibration cali x:-15, y:-157, z:182
+[98766.453][qmi8658]: gyroGetCalibration cali x:0, y:0, z:0
+[98766.652][qmi8658]: Qmi8658Sample status 0x3
+[98766.653][qmi8658]: Qmi8658Convert
+[98766.653][qmi8658]: accGetCalibration cali x:-15, y:-157, z:182
+[98766.653][qmi8658]: gyroGetCalibration cali x:0, y:0, z:0
+[98766.654][Motion] Active anyMotion(0), noMotion(1)
+[98766.654]sensorRateAcc rate:51200, latency:2000000000
+[98766.654][qmi8658]: Qmi8658Sample status 0x0
+[98766.654]accRateCalculate pending by:0
+[98766.654][qmi8658]: Qmi8658Convert
+[98766.654][qmi8658]: accGetCalibration cali x:-15, y:-157, z:182
+[98766.654][qmi8658]: gyroGetCalibration cali x:0, y:0, z:0
+[98766.655]sensorRateAcc rate:51200, latency:2000000000
+[98766.655]accGyro, delay=19999744, latency:2000000000, min_wm=0, final_watermark=100
+[98766.655]accGyro, watermark:100
+[98766.655][qmi8658]: acc_rate = 51200 water_mark=100 fifo_wmk=100 latency=2000000000
+[98766.655]acc: ratechg done
+[98768.655][qmi8658]: Qmi8658Sample status 0x3
+[98768.656][qmi8658]: Qmi8658Convert
+[98768.656][qmi8658]: accGetCalibration cali x:-15, y:-157, z:182
+[98768.656][qmi8658]: gyroGetCalibration cali x:0, y:0, z:0
+[98770.655][qmi8658]: Qmi8658Sample status 0x3
+[98770.656][qmi8658]: Qmi8658Convert
+[98770.656][qmi8658]: accGetCalibration cali x:-15, y:-157, z:182
+[98770.656][qmi8658]: gyroGetCalibration cali x:0, y:0, z:0
+[98772.343]sync time scp:98772343929722, ap:98773769117413, offset:1425813614
+[98772.655][qmi8658]: Qmi8658Sample status 0x3
+[98772.656][qmi8658]: Qmi8658Convert
+[98772.656][qmi8658]: accGetCalibration cali x:-15, y:-157, z:182
+[98772.656][qmi8658]: gyroGetCalibration cali x:0, y:0, z:0
+[98774.655][qmi8658]: Qmi8658Sample status 0x3
+[98774.656][qmi8658]: Qmi8658Convert
+[98774.656][qmi8658]: accGetCalibration cali x:-15, y:-157, z:182
+[98774.656][qmi8658]: gyroGetCalibration cali x:0, y:0, z:0
+[98776.655][qmi8658]: Qmi8658Sample status 0x3
+[98776.656][qmi8658]: Qmi8658Convert
+[98776.656][qmi8658]: accGetCalibration cali x:-15, y:-157, z:182
+[98776.656][qmi8658]: gyroGetCalibration cali x:0, y:0, z:0
+[98778.655][qmi8658]: Qmi8658Sample status 0x3
+[98778.656][qmi8658]: Qmi8658Convert
+[98778.656][qmi8658]: accGetCalibration cali x:-15, y:-157, z:182
+[98778.656][qmi8658]: gyroGetCalibration cali x:0, y:0, z:0
+[98780.655][qmi8658]: Qmi8658Sample status 0x3
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>2.跟进一下scp如何设置acc rate的，如下：</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="o">*</span><span class="w"> </span><span class="n">accSensorRegister</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="o">*</span><span class="w"> </span><span class="n">sensorRegister</span><span class="p">(</span><span class="o">&amp;</span><span class="n">mSensorInfo</span><span class="p">[</span><span class="n">ACC</span><span class="p">],</span><span class="w"> </span><span class="o">&amp;</span><span class="n">mSensorOps</span><span class="p">[</span><span class="n">ACC</span><span class="p">],</span><span class="w"> </span><span class="nb">NULL</span><span class="p">,</span><span class="w"> </span><span class="nb">false</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="o">*</span><span class="w"> </span><span class="k">static</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">SensorOps</span><span class="w"> </span><span class="n">mSensorOps</span><span class="p">[</span><span class="n">MAX_HANDLE</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="c1">//sensorRateAcc就是设置acc上报速率函数</span>
+<span class="w">    </span><span class="o">*</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">DEC_OPS_ALL</span><span class="p">(</span><span class="n">sensorPowerAcc</span><span class="p">,</span><span class="w"> </span><span class="n">sensorFirmwareAcc</span><span class="p">,</span><span class="w"> </span><span class="n">sensorRateAcc</span><span class="p">,</span><span class="w"> </span><span class="n">sensorFlushAcc</span><span class="p">,</span><span class="w"> </span><span class="n">sensorCaliAcc</span><span class="p">,</span><span class="w"> </span><span class="n">sensorCfgAcc</span><span class="p">,</span><span class="w"> </span><span class="n">sensorSelfTestAcc</span><span class="p">)</span><span class="w"> </span><span class="p">},</span><span class="w"></span>
+<span class="w">      </span><span class="o">*</span><span class="w"> </span><span class="n">accRateCalculate</span><span class="p">(</span><span class="n">rate</span><span class="p">,</span><span class="w"> </span><span class="n">latency</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="o">*</span><span class="w"> </span><span class="k">case</span><span class="w"> </span><span class="n">ACC_GYRO_FIFO_UNINTERRUPTIBLE</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="c1">//registerAccGyroInterruptMode(ACC_GYRO_FIFO_UNINTERRUPTIBLE); qmi在Qmi8658Init设置的</span>
+<span class="w">          </span><span class="o">*</span><span class="w"> </span><span class="n">setAccHwRate</span><span class="p">(</span><span class="n">rate</span><span class="p">,</span><span class="w"> </span><span class="n">waterMark</span><span class="p">,</span><span class="w"> </span><span class="n">latency</span><span class="p">);</span><span class="w"></span>
+<span class="w">            </span><span class="o">*</span><span class="w"> </span><span class="n">sensorFsmRunState</span><span class="p">(</span><span class="o">&amp;</span><span class="n">dataInfo</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">mTask</span><span class="p">.</span><span class="n">fsm</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="n">CHIP_ACC_RATECHG</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">i2cCallback</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">spiCallback</span><span class="p">);</span><span class="w"></span>
+<span class="w">              </span><span class="o">*</span><span class="w"> </span><span class="n">Qmi8658AccRate</span><span class="p">(</span><span class="n">I2cCallbackF</span><span class="w"> </span><span class="n">i2cCallBack</span><span class="p">,</span><span class="w"> </span><span class="n">SpiCbkF</span><span class="w"> </span><span class="n">spiCallBack</span><span class="p">,</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="o">*</span><span class="n">next_state</span><span class="p">,</span><span class="w"></span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>3.发现accRateCalculate传入rate和delay参数时有如下代码：</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span>以下rate和latency是一一对应的：
+static const uint32_t accSupportedRates[] = {
+    SENSOR_HZ(5.0f),
+    SENSOR_HZ(10.0f),
+    SENSOR_HZ(15.0f),
+    SENSOR_HZ(50.0f),
+    SENSOR_HZ(100.0f),
+    SENSOR_HZ(200.0f),
+    SENSOR_HZ(400.0f),
+    0
+};
+static const uint64_t rateTimerValsAcc[] = {
+//should match &quot;supported rates in length&quot; and be the timer length for that rate in nanosecs
+    1000000000ULL / 5,
+    1000000000ULL / 10,
+    1000000000ULL / 15,
+    1000000000ULL / 50,
+    1000000000ULL / 100,
+    1000000000ULL / 200,
+    1000000000ULL / 400,
+};
+static bool sensorRateAcc(uint32_t rate, uint64_t latency, void *cookie)
+{
+    uint32_t latency_temp = latency/1000000;
+    osLog(LOG_INFO, &quot;sensorRateAcc rate:%lu, latency:%lld ms\n&quot;, rate, latency_temp);
+
+    if (mTask.nowState == CHIP_IDLE) {
+        mTask.mSensorPerUnit[ACC].configed = true;
+        if (!mTask.pendingFlushFifo)
+            flushFifo();
+    #ifdef CFG_ACC_NO_FIFO
+        accRateCalculate(rate, sensorTimerLookupCommon(accSupportedRates, rateTimerValsAcc, rate)); //这里会对传入的rate和latency作对比，看看是否符合支持列表
+    #else
+        accRateCalculate(rate, latency);
+    #endif
+   ...省略...
+}
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>4.那就得打开宏<code class="docutils literal notranslate"><span class="pre">CFG_ACC_NO_FIFO</span></code>进行测试了,发现还是有效果的，上层设置2000ms下来，通过<code class="docutils literal notranslate"><span class="pre">sensorTimerLookupCommon</span></code>对比，直接过滤成20ms，之前sensorbox acc数据卡顿的问题应该也是这里可以修复。</p></li>
+</ul>
+<div class="highlight-log notranslate"><div class="highlight"><pre><span></span>[455.491]sensorRateAcc rate:51200, latency:2000 ms
+[455.491]accRateCalculate pending by:0
+[455.491]sensorRateAcc rate:51200, latency:2000 ms
+[455.491]sensorRateAcc pending by:0
+[455.491]sc7a20 acc1 rawdata x:2, y:0, z:-956
+[455.491]sensorRateAcc rate:51200, latency:2000 ms
+[455.491]accGyro, delay=19999744, latency:20000000, min_wm=0, final_watermark=1 //直接设置20ms
+[455.491]accGyro, watermark:1
+[455.491]accRateCalculate rate:51200 waterMark:1 latency:0
+[455.491]sc7a20gRate: 51100, minAccGyroDelay:1, water_mark:243560
+[455.491]acc: ratechg done
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, wugn.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+  
+
+<script charset="UTF-8" id="LA_COLLECT" src="//sdk.51.la/js-sdk-pro.min.js"></script>
+<script>LA.init({id: "JjOE14XScyd75b2C",ck: "JjOE14XScyd75b2C"})</script>
+
+<br/>
+<script id="LA-DATA-WIDGET" crossorigin="anonymous" charset="UTF-8" src="https://v6-widget.51.la/v6/JjOE14XScyd75b2C/quote.js?theme=0&f=12&display=1,0,0,0,0,0,1,1"></script>
+
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

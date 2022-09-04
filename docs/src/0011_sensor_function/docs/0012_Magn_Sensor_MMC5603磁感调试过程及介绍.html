@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>wugn</title>
+
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../index.html" class="icon icon-home"> wugn_note
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">概述</a><ul>
+<li><a class="reference internal" href="#id2">硬件</a></li>
+<li><a class="reference internal" href="#id3">1.校准库获取流程</a><ul>
+<li><a class="reference internal" href="#id4">校准库获取优化</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id5">2.数据不准分析</a><ul>
+<li><a class="reference internal" href="#id6">1.原始数据上报单位确认</a></li>
+<li><a class="reference internal" href="#hal">2.hal层单位获取情况</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">wugn_note</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs"> 
+<li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+<li>概述</li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.forward()">Forward</a></li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.back()">Go Back</a> | </li>
+<li style="float: right;margin-left: 10px;"><a href="/index.html">Home</a> | </li>
+
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="id1">
+<h1>概述<a class="headerlink" href="#id1" title="Permalink to this headline"></a></h1>
+<p>磁感sensor MMC5603 sensorhub调试记录</p>
+<section id="id2">
+<h2>硬件<a class="headerlink" href="#id2" title="Permalink to this headline"></a></h2>
+<p>目前kernel端是通的，sensorhub通了，但是校准有问题。</p>
+<table class="colwidths-auto docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>ITEM</p></th>
+<th class="head"><p>MMC5603NJL</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>I2C总线及地址</p></td>
+<td><p>i2c1 0x30</p></td>
+</tr>
+<tr class="row-odd"><td><p>供电</p></td>
+<td><p>VIO18_PUM</p></td>
+</tr>
+</tbody>
+</table>
+<p><img alt="0005_磁力计原理图.png" src="src/0011_sensor_function/docs/images/0005_%E7%A3%81%E5%8A%9B%E8%AE%A1%E5%8E%9F%E7%90%86%E5%9B%BE.png" /></p>
+</section>
+<section id="id3">
+<h2>1.校准库获取流程<a class="headerlink" href="#id3" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p>Hal层通过maglibinfo节点绑定进入到驱动层寻找库，并返回相应字符串，通过字符串找到对应的libxxx.so</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="c1">//vendor\mediatek\proprietary\hardware\sensor\sensors-1.0\VendorInterface.cpp</span>
+<span class="n">VendorInterface</span><span class="o">::</span><span class="n">VendorInterface</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">fd</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">-1</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">len</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="kt">char</span><span class="w"> </span><span class="n">buf</span><span class="p">[</span><span class="mi">64</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="mi">0</span><span class="p">};</span><span class="w"></span>
+<span class="w">    </span><span class="k">struct</span><span class="w"> </span><span class="nc">mag_libinfo_t</span><span class="w"> </span><span class="n">libinfo</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="k">struct</span><span class="w"> </span><span class="nc">magChipInfo</span><span class="w"> </span><span class="n">chipinfo</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="n">SensorList</span><span class="w"> </span><span class="o">*</span><span class="n">mSensorList</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">nullptr</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">    </span><span class="n">ALOGI</span><span class="p">(</span><span class="s">&quot;VendorInterface constructor.&quot;</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">    </span><span class="n">lib_interface</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">NULL</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="n">lib_handle</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">NULL</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="n">memset</span><span class="p">(</span><span class="o">&amp;</span><span class="n">libinfo</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="k">sizeof</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">mag_libinfo_t</span><span class="p">));</span><span class="w"></span>
+<span class="w">    </span><span class="n">memset</span><span class="p">(</span><span class="o">&amp;</span><span class="n">chipinfo</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="k">sizeof</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">magChipInfo</span><span class="p">));</span><span class="w"></span>
+
+<span class="w">    </span><span class="n">fd</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">TEMP_FAILURE_RETRY</span><span class="p">(</span><span class="n">open</span><span class="p">(</span><span class="s">&quot;/sys/class/sensor/m_mag_misc/maglibinfo&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">O_RDWR</span><span class="p">));</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">fd</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="n">len</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">TEMP_FAILURE_RETRY</span><span class="p">(</span><span class="n">read</span><span class="p">(</span><span class="n">fd</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">libinfo</span><span class="p">,</span><span class="w"> </span><span class="k">sizeof</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">mag_libinfo_t</span><span class="p">)));</span><span class="w"></span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">len</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">            </span><span class="n">ALOGE</span><span class="p">(</span><span class="s">&quot;read libinfo err, len = %d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">len</span><span class="p">);</span><span class="w"></span>
+<span class="w">            </span><span class="n">close</span><span class="p">(</span><span class="n">fd</span><span class="p">);</span><span class="w"></span>
+<span class="w">            </span><span class="k">return</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="n">close</span><span class="p">(</span><span class="n">fd</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="n">ALOGE</span><span class="p">(</span><span class="s">&quot;open vendor libinfo fail</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="k">return</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="n">libinfo</span><span class="p">.</span><span class="n">libname</span><span class="p">[</span><span class="n">LIB_NAME_LENGTH</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="sc">&#39;\0&#39;</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">isValidLibName</span><span class="p">(</span><span class="n">libinfo</span><span class="p">.</span><span class="n">libname</span><span class="p">))</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="n">ALOGE</span><span class="p">(</span><span class="s">&quot;invalid libname, length too long</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="k">return</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="n">strlcpy</span><span class="p">(</span><span class="n">buf</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;lib&quot;</span><span class="p">,</span><span class="w"> </span><span class="k">sizeof</span><span class="p">(</span><span class="n">buf</span><span class="p">));</span><span class="w"></span>
+<span class="w">    </span><span class="n">strlcat</span><span class="p">(</span><span class="n">buf</span><span class="p">,</span><span class="w"> </span><span class="n">libinfo</span><span class="p">.</span><span class="n">libname</span><span class="p">,</span><span class="w"> </span><span class="k">sizeof</span><span class="p">(</span><span class="n">buf</span><span class="p">));</span><span class="w"></span>
+<span class="w">    </span><span class="n">strlcat</span><span class="p">(</span><span class="n">buf</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;.so&quot;</span><span class="p">,</span><span class="w"> </span><span class="k">sizeof</span><span class="p">(</span><span class="n">buf</span><span class="p">));</span><span class="w"></span>
+
+<span class="w">    </span><span class="n">lib_handle</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">dlopen</span><span class="p">(</span><span class="n">buf</span><span class="p">,</span><span class="w"> </span><span class="n">RTLD_NOW</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">lib_handle</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="n">ALOGE</span><span class="p">(</span><span class="s">&quot;get lib_interface fail dlopen operation.</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="n">lib_handle</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">NULL</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="k">return</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="n">dlerror</span><span class="p">();</span><span class="w"></span>
+<span class="w">    </span><span class="n">lib_interface</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">mag_lib_interface_t</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="n">dlsym</span><span class="p">(</span><span class="n">lib_handle</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;MAG_LIB_API_INTERFACE&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">lib_interface</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="n">ALOGE</span><span class="p">(</span><span class="s">&quot;get lib_interface fail dlsym operation.</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="n">dlclose</span><span class="p">(</span><span class="n">lib_handle</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="n">lib_handle</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">NULL</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="k">return</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="n">ALOGI</span><span class="p">(</span><span class="s">&quot;get lib_interface success.&quot;</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">    </span><span class="n">mSensorList</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">SensorList</span><span class="o">::</span><span class="n">getInstance</span><span class="p">();</span><span class="w"></span>
+<span class="w">    </span><span class="n">chipinfo</span><span class="p">.</span><span class="n">hwGyro</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mSensorList</span><span class="o">-&gt;</span><span class="n">hwGyroSupported</span><span class="p">();</span><span class="w"></span>
+<span class="w">    </span><span class="n">chipinfo</span><span class="p">.</span><span class="n">deviceid</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">libinfo</span><span class="p">.</span><span class="n">deviceid</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="n">chipinfo</span><span class="p">.</span><span class="n">layout</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">libinfo</span><span class="p">.</span><span class="n">layout</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="n">lib_interface</span><span class="o">-&gt;</span><span class="n">initLib</span><span class="p">(</span><span class="o">&amp;</span><span class="n">chipinfo</span><span class="p">);</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>内核驱动通过判断不同机型设置相应的校正库名称</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="c1">// kernel-4.19/drivers/misc/mediatek/sensors-1.0/magnetometer/mmc5603/mmc5603x.c</span>
+<span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">get_terminal_type</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="kt">int</span><span class="w"> </span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="kt">char</span><span class="w"> </span><span class="n">boot</span><span class="p">[</span><span class="n">BUFFER_LENGTH</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="sc">&#39;\0&#39;</span><span class="p">};</span><span class="w"></span>
+
+<span class="w">	</span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">match</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="n">strnstr</span><span class="p">(</span><span class="n">saved_command_line</span><span class="p">,</span><span class="w"></span>
+<span class="w">				</span><span class="s">&quot;androidboot.boardid=&quot;</span><span class="p">,</span><span class="w"></span>
+<span class="w">				</span><span class="n">strlen</span><span class="p">(</span><span class="n">saved_command_line</span><span class="p">));</span><span class="w"></span>
+
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">match</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="n">memcpy</span><span class="p">(</span><span class="n">boot</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">match</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">strlen</span><span class="p">(</span><span class="s">&quot;androidboot.boardid=&quot;</span><span class="p">)),</span><span class="w"> </span><span class="n">BUFFER_LENGTH</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">		</span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">BUFFER_LENGTH</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">			</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="w"> </span><span class="n">ISDIGIT</span><span class="p">(</span><span class="n">boot</span><span class="p">[</span><span class="n">i</span><span class="p">]))</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">				</span><span class="n">boot</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="sc">&#39;\0&#39;</span><span class="p">;</span><span class="w"></span>
+<span class="w">				</span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+<span class="w">			</span><span class="p">}</span><span class="w"></span>
+<span class="w">		</span><span class="p">}</span><span class="w"></span>
+<span class="w">		</span><span class="n">boot</span><span class="p">[</span><span class="n">BUFFER_LENGTH</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="sc">&#39;\0&#39;</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">		</span><span class="n">MEMSIC_INFO</span><span class="p">(</span><span class="s">&quot;%s: androidboot.boardid string is %s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">__func__</span><span class="p">,</span><span class="w"> </span><span class="n">boot</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">kstrtoint</span><span class="p">(</span><span class="n">boot</span><span class="p">,</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">ret</span><span class="p">)</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"></span>
+<span class="w">			</span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+<span class="w">	</span><span class="n">MEMSIC_INFO</span><span class="p">(</span><span class="s">&quot;%s: androidboot.boardid is %d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">__func__</span><span class="p">,</span><span class="w"> </span><span class="n">ret</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">	</span><span class="k">return</span><span class="w"> </span><span class="n">ret</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">mmc5603x_i2c_probe</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">i2c_client</span><span class="w"> </span><span class="o">*</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">i2c_device_id</span><span class="w"> </span><span class="o">*</span><span class="n">id</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="p">...</span><span class="w"></span>
+<span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">terminal_type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">get_terminal_type</span><span class="p">();</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(((</span><span class="n">terminal_type</span><span class="w"> </span><span class="o">&gt;&gt;</span><span class="w"> </span><span class="mi">3</span><span class="p">)</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="mh">0x03</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">TERMINAL_M50</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">((</span><span class="n">terminal_type</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="mh">0x07</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">TERMINAL_M50_PLASTIC</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">            </span><span class="n">strlcpy</span><span class="p">(</span><span class="n">ctl</span><span class="p">.</span><span class="n">libinfo</span><span class="p">.</span><span class="n">libname</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;memsic9axis&quot;</span><span class="p">,</span><span class="w"> </span><span class="k">sizeof</span><span class="p">(</span><span class="n">ctl</span><span class="p">.</span><span class="n">libinfo</span><span class="p">.</span><span class="n">libname</span><span class="p">));</span><span class="w"></span>
+<span class="w">            </span><span class="n">MEMSIC_INFO</span><span class="p">(</span><span class="s">&quot;%s: M50 memsic 6 axis plastic lib</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">            </span><span class="n">strlcpy</span><span class="p">(</span><span class="n">ctl</span><span class="p">.</span><span class="n">libinfo</span><span class="p">.</span><span class="n">libname</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;memsic9axismetal&quot;</span><span class="p">,</span><span class="w"> </span><span class="k">sizeof</span><span class="p">(</span><span class="n">ctl</span><span class="p">.</span><span class="n">libinfo</span><span class="p">.</span><span class="n">libname</span><span class="p">));</span><span class="w"></span>
+<span class="w">            </span><span class="n">MEMSIC_INFO</span><span class="p">(</span><span class="s">&quot;%s: M50 memsic 6 axis metal lib</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="n">strlcpy</span><span class="p">(</span><span class="n">ctl</span><span class="p">.</span><span class="n">libinfo</span><span class="p">.</span><span class="n">libname</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;memsic&quot;</span><span class="p">,</span><span class="w"> </span><span class="k">sizeof</span><span class="p">(</span><span class="n">ctl</span><span class="p">.</span><span class="n">libinfo</span><span class="p">.</span><span class="n">libname</span><span class="p">));</span><span class="w"></span>
+<span class="w">        </span><span class="n">MEMSIC_INFO</span><span class="p">(</span><span class="s">&quot;%s: M8 memsic 6 axis lib</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="n">ctl</span><span class="p">.</span><span class="n">libinfo</span><span class="p">.</span><span class="n">deviceid</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">MMC5603x_DEVICE_ID</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="n">err</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mag_register_control_path</span><span class="p">(</span><span class="o">&amp;</span><span class="n">ctl</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="p">...</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="c1">// kernel-4.19/drivers/misc/mediatek/sensors-1.0/magnetometer/mag.c</span>
+<span class="k">static</span><span class="w"> </span><span class="kt">ssize_t</span><span class="w"> </span><span class="nf">maglibinfo_show</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w"> </span><span class="o">*</span><span class="n">dev</span><span class="p">,</span><span class="w"></span>
+<span class="w">				</span><span class="k">struct</span><span class="w"> </span><span class="nc">device_attribute</span><span class="w"> </span><span class="o">*</span><span class="n">attr</span><span class="p">,</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">buf</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="k">struct</span><span class="w"> </span><span class="nc">mag_context</span><span class="w"> </span><span class="o">*</span><span class="n">cxt</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mag_context_obj</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">buf</span><span class="p">)</span><span class="w"></span>
+<span class="w">		</span><span class="k">return</span><span class="w"> </span><span class="mi">-1</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="n">memcpy</span><span class="p">(</span><span class="n">buf</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">cxt</span><span class="o">-&gt;</span><span class="n">mag_ctl</span><span class="p">.</span><span class="n">libinfo</span><span class="p">,</span><span class="w"> </span><span class="k">sizeof</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">mag_libinfo_t</span><span class="p">));</span><span class="w"></span>
+<span class="w">	</span><span class="k">return</span><span class="w"> </span><span class="k">sizeof</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">mag_libinfo_t</span><span class="p">);</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>SDK校正库文件路径：</p>
+<ul>
+<li><p>vendor/mediatek/proprietary/hardware/sensor/sensors-1.0/algorithm/calibration/6axis/M8/lib64/libmemsic.so</p></li>
+<li><p>vendor/mediatek/proprietary/hardware/sensor/sensors-1.0/algorithm/calibration/6axis/M50_metal/libmemsic9axismetal.so</p></li>
+<li><p>vendor/mediatek/proprietary/hardware/sensor/sensors-1.0/algorithm/calibration/6axis/M50_plastic/libmemsic9axis.so</p></li>
+</ul>
+</li>
+<li><p>设备中的校正库文件路径：</p>
+<ul>
+<li><p>vendor/lib64/libmemsic.so</p></li>
+<li><p>vendor/lib64/libmemsic9axis.so</p></li>
+<li><p>vendor/lib64/libmemsic9axismetal.so</p></li>
+</ul>
+</li>
+</ul>
+<section id="id4">
+<h3>校准库获取优化<a class="headerlink" href="#id4" title="Permalink to this headline"></a></h3>
+<ul class="simple">
+<li><p>1.校准库兼容M50/M8直接通过读取设备节点，这样做的弊端就是，kernel磁感5603驱动关闭了或者更换型号，就无法通过节点read的方式获取校准库名称了，应该直接在hal层做兼容工作，优化如下：</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="n">VendorInterface</span><span class="o">::</span><span class="n">VendorInterface</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+
+<span class="w">  </span><span class="n">memset</span><span class="p">(</span><span class="o">&amp;</span><span class="n">libinfo</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="k">sizeof</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">mag_libinfo_t</span><span class="p">));</span><span class="w"></span>
+<span class="w">    </span><span class="n">memset</span><span class="p">(</span><span class="o">&amp;</span><span class="n">chipinfo</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="k">sizeof</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">magChipInfo</span><span class="p">));</span><span class="w"></span>
+
+<span class="w">    </span><span class="n">fd</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">TEMP_FAILURE_RETRY</span><span class="p">(</span><span class="n">open</span><span class="p">(</span><span class="s">&quot;/sys/class/sensor/m_mag_misc/maglibinfo&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">O_RDWR</span><span class="p">));</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">fd</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="n">len</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">TEMP_FAILURE_RETRY</span><span class="p">(</span><span class="n">read</span><span class="p">(</span><span class="n">fd</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">libinfo</span><span class="p">,</span><span class="w"> </span><span class="k">sizeof</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">mag_libinfo_t</span><span class="p">)));</span><span class="w"></span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">len</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">            </span><span class="n">ALOGE</span><span class="p">(</span><span class="s">&quot;read libinfo err, len = %d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">len</span><span class="p">);</span><span class="w"></span>
+<span class="w">            </span><span class="n">close</span><span class="p">(</span><span class="n">fd</span><span class="p">);</span><span class="w"></span>
+<span class="w">            </span><span class="k">return</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="n">close</span><span class="p">(</span><span class="n">fd</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="n">ALOGE</span><span class="p">(</span><span class="s">&quot;open vendor libinfo fail</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="k">return</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">    </span><span class="n">property_get</span><span class="p">(</span><span class="s">&quot;ro.boot.boardid&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">strcmp</span><span class="p">(</span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;0&quot;</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="n">strlcpy</span><span class="p">(</span><span class="n">libinfo</span><span class="p">.</span><span class="n">libname</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;memsic9axis&quot;</span><span class="p">,</span><span class="w"> </span><span class="k">sizeof</span><span class="p">(</span><span class="n">libinfo</span><span class="p">.</span><span class="n">libname</span><span class="p">));</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="w">	</span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">strcmp</span><span class="p">(</span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;2&quot;</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="n">strcmp</span><span class="p">(</span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;4&quot;</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="n">strlcpy</span><span class="p">(</span><span class="n">libinfo</span><span class="p">.</span><span class="n">libname</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;memsic9axismetal&quot;</span><span class="p">,</span><span class="w"> </span><span class="k">sizeof</span><span class="p">(</span><span class="n">libinfo</span><span class="p">.</span><span class="n">libname</span><span class="p">));</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+<span class="w">	</span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="n">strlcpy</span><span class="p">(</span><span class="n">libinfo</span><span class="p">.</span><span class="n">libname</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;memsic&quot;</span><span class="p">,</span><span class="w"> </span><span class="k">sizeof</span><span class="p">(</span><span class="n">libinfo</span><span class="p">.</span><span class="n">libname</span><span class="p">));</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+
+<span class="w">    </span><span class="n">libinfo</span><span class="p">.</span><span class="n">libname</span><span class="p">[</span><span class="n">LIB_NAME_LENGTH</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="sc">&#39;\0&#39;</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">isValidLibName</span><span class="p">(</span><span class="n">libinfo</span><span class="p">.</span><span class="n">libname</span><span class="p">))</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="n">ALOGE</span><span class="p">(</span><span class="s">&quot;invalid libname, length too long</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="k">return</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="n">strlcpy</span><span class="p">(</span><span class="n">buf</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;lib&quot;</span><span class="p">,</span><span class="w"> </span><span class="k">sizeof</span><span class="p">(</span><span class="n">buf</span><span class="p">));</span><span class="w"></span>
+<span class="w">    </span><span class="n">strlcat</span><span class="p">(</span><span class="n">buf</span><span class="p">,</span><span class="w"> </span><span class="n">libinfo</span><span class="p">.</span><span class="n">libname</span><span class="p">,</span><span class="w"> </span><span class="k">sizeof</span><span class="p">(</span><span class="n">buf</span><span class="p">));</span><span class="w"></span>
+<span class="w">    </span><span class="n">strlcat</span><span class="p">(</span><span class="n">buf</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;.so&quot;</span><span class="p">,</span><span class="w"> </span><span class="k">sizeof</span><span class="p">(</span><span class="n">buf</span><span class="p">));</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">ALOGI</span><span class="p">(</span><span class="s">&quot;wugn test get libname %s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">buf</span><span class="p">);</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>2.另外一种方法是将驱动中兼容功能移到common驱动中来：</p></li>
+</ul>
+<div class="highlight-diff notranslate"><div class="highlight"><pre><span></span><span class="gd">--- a/kernel-4.19/drivers/misc/mediatek/sensors-1.0/magnetometer/mag.c</span><span class="w"></span>
+<span class="gi">+++ b/kernel-4.19/drivers/misc/mediatek/sensors-1.0/magnetometer/mag.c</span><span class="w"></span>
+<span class="gu">@@ -590,11 +590,65 @@ int mag_register_data_path(struct mag_data_path *data)</span><span class="w"></span>
+<span class="w"> </span>       return 0;<span class="w"></span>
+<span class="w"> </span>}<span class="w"></span>
+
+<span class="gi">+// [NEW FEATURE]-BEGIN by wugangnan@paxsz.com 2022-02-22, put Calibration library compatible Function in the common driver</span><span class="w"></span>
+<span class="gi">+#define ISDIGIT(c)  ((c) &gt;= &#39;0&#39; &amp;&amp; (c) &lt;= &#39;9&#39;)</span><span class="w"></span>
+<span class="gi">+#define BUFFER_LENGTH 6</span><span class="w"></span>
+<span class="gi">+#define TERMINAL_M50         0x00</span><span class="w"></span>
+<span class="gi">+#define TERMINAL_M50_PLASTIC 0x00</span><span class="w"></span>
+<span class="gi">+static int get_terminal_type(void)</span><span class="w"></span>
+<span class="gi">+{</span><span class="w"></span>
+<span class="gi">+       int i = 0;</span><span class="w"></span>
+<span class="gi">+       int ret = 0;</span><span class="w"></span>
+<span class="gi">+       char boot[BUFFER_LENGTH] = {&#39;\0&#39;};</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+       char *match = (char *) strnstr(saved_command_line,</span><span class="w"></span>
+<span class="gi">+                               &quot;androidboot.boardid=&quot;,</span><span class="w"></span>
+<span class="gi">+                               strlen(saved_command_line));</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+       if (match) {</span><span class="w"></span>
+<span class="gi">+               memcpy(boot, (match + strlen(&quot;androidboot.boardid=&quot;)), BUFFER_LENGTH);</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+               for (i = 0; i &lt; BUFFER_LENGTH; i++) {</span><span class="w"></span>
+<span class="gi">+                       if (! ISDIGIT(boot[i])) {</span><span class="w"></span>
+<span class="gi">+                               boot[i] = &#39;\0&#39;;</span><span class="w"></span>
+<span class="gi">+                               break;</span><span class="w"></span>
+<span class="gi">+                       }</span><span class="w"></span>
+<span class="gi">+               }</span><span class="w"></span>
+<span class="gi">+               boot[BUFFER_LENGTH - 1] = &#39;\0&#39;;</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+               pr_err(&quot;%s: androidboot.boardid string is %s\n&quot;, __func__, boot);</span><span class="w"></span>
+<span class="gi">+               if (kstrtoint(boot, 10, &amp;ret) != 0)</span><span class="w"></span>
+<span class="gi">+                       ret = 0;</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+       }</span><span class="w"></span>
+<span class="gi">+       pr_err(&quot;%s: androidboot.boardid is %d\n&quot;, __func__, ret);</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+       return ret;</span><span class="w"></span>
+<span class="gi">+}</span><span class="w"></span>
+<span class="gi">+// [NEW FEATURE]-END by wugangnan@paxsz.com 2022-02-22, put Calibration library compatible Function in the common driver</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="w"> </span>int mag_register_control_path(struct mag_control_path *ctl)<span class="w"></span>
+<span class="w"> </span>{<span class="w"></span>
+<span class="w"> </span>       struct mag_context *cxt = NULL;<span class="w"></span>
+<span class="w"> </span>       int err = 0;<span class="w"></span>
+<span class="gd">-</span><span class="w"></span>
+<span class="gi">+       // [NEW FEATURE]-BEGIN by wugangnan@paxsz.com 2022-02-22, put Calibration library compatible Function in the common driver</span><span class="w"></span>
+<span class="gi">+       int terminal_type = get_terminal_type();</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+       if (((terminal_type &gt;&gt; 3) &amp; 0x03) == TERMINAL_M50) {</span><span class="w"></span>
+<span class="gi">+               if ((terminal_type &amp; 0x07) == TERMINAL_M50_PLASTIC) {</span><span class="w"></span>
+<span class="gi">+                       strlcpy(ctl-&gt;libinfo.libname, &quot;memsic9axis&quot;, sizeof(ctl-&gt;libinfo.libname));</span><span class="w"></span>
+<span class="gi">+                       pr_err(&quot;%s: M50 memsic 6 axis plastic lib\n&quot;);</span><span class="w"></span>
+<span class="gi">+               } else {</span><span class="w"></span>
+<span class="gi">+                       strlcpy(ctl-&gt;libinfo.libname, &quot;memsic9axismetal&quot;, sizeof(ctl-&gt;libinfo.libname));</span><span class="w"></span>
+<span class="gi">+                       pr_err(&quot;%s: M50 memsic 6 axis metal lib\n&quot;);</span><span class="w"></span>
+<span class="gi">+               }</span><span class="w"></span>
+<span class="gi">+       } else {</span><span class="w"></span>
+<span class="gi">+               strlcpy(ctl-&gt;libinfo.libname, &quot;memsic&quot;, sizeof(ctl-&gt;libinfo.libname));</span><span class="w"></span>
+<span class="gi">+               pr_err(&quot;%s: M8 memsic 6 axis lib\n&quot;);</span><span class="w"></span>
+<span class="gi">+       }</span><span class="w"></span>
+<span class="gi">+       printk(&quot;wugn test libname = %s\n&quot;,ctl-&gt;libinfo.libname);</span><span class="w"></span>
+<span class="gi">+    // [NEW FEATURE]-END by wugangnan@paxsz.com 2022-02-22, put Calibration library compatible Function in the common driver</span><span class="w"></span>
+
+
+<span class="gd">--- a/kernel-4.19/drivers/misc/mediatek/sensors-1.0/magnetometer/mmc5603/mmc5603x.c</span><span class="w"></span>
+<span class="gi">+++ b/kernel-4.19/drivers/misc/mediatek/sensors-1.0/magnetometer/mmc5603/mmc5603x.c</span><span class="w"></span>
+<span class="gu">@@ -999,41 +999,6 @@ static int mmc5603x_config(int en)</span><span class="w"></span>
+<span class="w"> </span>       return 1;<span class="w"></span>
+<span class="w"> </span>}<span class="w"></span>
+
+<span class="gd">-#define ISDIGIT(c)  ((c) &gt;= &#39;0&#39; &amp;&amp; (c) &lt;= &#39;9&#39;)</span><span class="w"></span>
+<span class="gd">-#define BUFFER_LENGTH 6</span><span class="w"></span>
+<span class="gd">-#define TERMINAL_M50         0x00</span><span class="w"></span>
+<span class="gd">-#define TERMINAL_M50_PLASTIC 0x00</span><span class="w"></span>
+<span class="gd">-static int get_terminal_type(void)</span><span class="w"></span>
+<span class="gd">-{</span><span class="w"></span>
+<span class="gd">-       int i = 0;</span><span class="w"></span>
+<span class="gd">-       int ret = 0;</span><span class="w"></span>
+<span class="gd">-       char boot[BUFFER_LENGTH] = {&#39;\0&#39;};</span><span class="w"></span>
+<span class="gd">-</span><span class="w"></span>
+<span class="gd">-       char *match = (char *) strnstr(saved_command_line,</span><span class="w"></span>
+<span class="gd">-                               &quot;androidboot.boardid=&quot;,</span><span class="w"></span>
+<span class="gd">-                               strlen(saved_command_line));</span><span class="w"></span>
+<span class="gd">-</span><span class="w"></span>
+<span class="gd">-       if (match) {</span><span class="w"></span>
+<span class="gd">-               memcpy(boot, (match + strlen(&quot;androidboot.boardid=&quot;)), BUFFER_LENGTH);</span><span class="w"></span>
+<span class="gd">-</span><span class="w"></span>
+<span class="gd">-               for (i = 0; i &lt; BUFFER_LENGTH; i++) {</span><span class="w"></span>
+<span class="gd">-                       if (! ISDIGIT(boot[i])) {</span><span class="w"></span>
+<span class="gd">-                               boot[i] = &#39;\0&#39;;</span><span class="w"></span>
+<span class="gd">-                               break;</span><span class="w"></span>
+<span class="gd">-                       }</span><span class="w"></span>
+<span class="gd">-                       }</span><span class="w"></span>
+<span class="gd">-               }</span><span class="w"></span>
+<span class="gd">-               boot[BUFFER_LENGTH - 1] = &#39;\0&#39;;</span><span class="w"></span>
+<span class="gd">-</span><span class="w"></span>
+<span class="gd">-               MEMSIC_INFO(&quot;%s: androidboot.boardid string is %s\n&quot;, __func__, boot);</span><span class="w"></span>
+<span class="gd">-               if (kstrtoint(boot, 10, &amp;ret) != 0)</span><span class="w"></span>
+<span class="gd">-                       ret = 0;</span><span class="w"></span>
+<span class="gd">-</span><span class="w"></span>
+<span class="gd">-       }</span><span class="w"></span>
+<span class="gd">-       MEMSIC_INFO(&quot;%s: androidboot.boardid is %d\n&quot;, __func__, ret);</span><span class="w"></span>
+<span class="gd">-</span><span class="w"></span>
+<span class="gd">-       return ret;</span><span class="w"></span>
+<span class="gd">-}</span><span class="w"></span>
+<span class="gd">-</span><span class="w"></span>
+<span class="w"> </span>static int mmc5603x_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id)<span class="w"></span>
+<span class="w"> </span>{<span class="w"></span>
+<span class="w"> </span>       struct i2c_client *new_client;<span class="w"></span>
+<span class="gu">@@ -1041,7 +1006,6 @@ static int mmc5603x_i2c_probe(struct i2c_client *client, const struct i2c_device</span><span class="w"></span>
+<span class="w"> </span>       int err = 0;<span class="w"></span>
+<span class="w"> </span>       struct mag_control_path ctl={0};<span class="w"></span>
+<span class="w"> </span>       struct mag_data_path mag_data={0};<span class="w"></span>
+<span class="gd">-       int terminal_type = get_terminal_type();</span><span class="w"></span>
+
+<span class="w"> </span>       MEMSIC_INFO(&quot;%s: enter probe,driver version=%s\n&quot;, __func__,DRIVER_VERSION);<span class="w"></span>
+
+<span class="gu">@@ -1120,25 +1084,8 @@ static int mmc5603x_i2c_probe(struct i2c_client *client, const struct i2c_device</span><span class="w"></span>
+<span class="w"> </span>       ctl.flush = mmc5603x_flush;<span class="w"></span>
+<span class="w"> </span>       ctl.is_report_input_direct = false;<span class="w"></span>
+<span class="w"> </span>       ctl.is_support_batch = data-&gt;hw-&gt;is_batch_supported;<span class="w"></span>
+<span class="gd">-       #if 1 //vsun,wzd modify</span><span class="w"></span>
+<span class="gd">-       // strlcpy(ctl.libinfo.libname, &quot;memsicd5603x&quot;, sizeof(ctl.libinfo.libname));</span><span class="w"></span>
+<span class="gd">-       if (((terminal_type &gt;&gt; 3) &amp; 0x03) == TERMINAL_M50) {</span><span class="w"></span>
+<span class="gd">-               if ((terminal_type &amp; 0x07) == TERMINAL_M50_PLASTIC) {</span><span class="w"></span>
+<span class="gd">-                       strlcpy(ctl.libinfo.libname, &quot;memsic9axis&quot;, sizeof(ctl.libinfo.libname));</span><span class="w"></span>
+<span class="gd">-                       MEMSIC_INFO(&quot;%s: M50 memsic 6 axis plastic lib\n&quot;);</span><span class="w"></span>
+<span class="gd">-               } else {</span><span class="w"></span>
+<span class="gd">-                       strlcpy(ctl.libinfo.libname, &quot;memsic9axismetal&quot;, sizeof(ctl.libinfo.libname));</span><span class="w"></span>
+<span class="gd">-                       MEMSIC_INFO(&quot;%s: M50 memsic 6 axis metal lib\n&quot;);</span><span class="w"></span>
+<span class="gd">-               }</span><span class="w"></span>
+<span class="gd">-       } else {</span><span class="w"></span>
+<span class="gd">-               strlcpy(ctl.libinfo.libname, &quot;memsic&quot;, sizeof(ctl.libinfo.libname));</span><span class="w"></span>
+<span class="gd">-               MEMSIC_INFO(&quot;%s: M8 memsic 6 axis lib\n&quot;);</span><span class="w"></span>
+<span class="gd">-       }</span><span class="w"></span>
+<span class="gd">-       //ctl.libinfo.layout = AKECS_SetCert();</span><span class="w"></span>
+<span class="gd">-       ctl.libinfo.deviceid = MMC5603x_DEVICE_ID; //akm_device;</span><span class="w"></span>
+<span class="gd">-       #else</span><span class="w"></span>
+<span class="gd">-       ctl.lib_name = &quot;memsicd5603x&quot;;</span><span class="w"></span>
+<span class="gd">-       #endif</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+       strlcpy(ctl.libinfo.libname, &quot;memsicd5603x&quot;, sizeof(ctl.libinfo.libname));</span><span class="w"></span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>校准库打印：</p></li>
+</ul>
+<div class="highlight-log notranslate"><div class="highlight"><pre><span></span>M8 main log打印：
+02-17 13:03:49.277654   724   724 I VendorInterface: VendorInterface constructor.
+02-17 13:03:49.277847   724   724 I VendorInterface: wugn test get libname libmemsic.so
+
+02-17 13:03:49.293986   724   724 I VendorInterface: get lib_interface success. name = memsic
+02-17 13:03:49.294223   724   724 E android.hardware.sensors@2.0-service-mediatek: MEMSIC_Init @line:84,  magChipInfo-&gt;layout = 0, magChipInfo-&gt;deviceid = 16 hwGyro=0 
+02-17 13:03:49.294311   724   724 E android.hardware.sensors@2.0-service-mediatek:  memsic memsicpara config.c ReadCalpara_FromFile: fail to open /vendor/etc/magpara
+02-17 13:03:49.294333   724   724 E android.hardware.sensors@2.0-service-mediatek: memsic fail to load the calibration file use the default calpara
+02-17 13:03:49.294366   724   724 E android.hardware.sensors@2.0-service-mediatek: memsic Soft magnetic parameters si[0][0]=0.997940 
+02-17 13:03:49.294388   724   724 E android.hardware.sensors@2.0-service-mediatek: memsic Soft magnetic parameters si[0][1]=0.007920 
+02-17 13:03:49.294408   724   724 E android.hardware.sensors@2.0-service-mediatek: memsic Soft magnetic parameters si[0][2]=-0.034510 
+02-17 13:03:49.294429   724   724 E android.hardware.sensors@2.0-service-mediatek: memsic Soft magnetic parameters si[1][0]=-0.001610 
+02-17 13:03:49.294436   736   736 I thermal_repeater: START+++++++++ 736
+02-17 13:03:49.294450   724   724 E android.hardware.sensors@2.0-service-mediatek: memsic Soft magnetic parameters si[1][1]=1.032520 
+02-17 13:03:49.294470   724   724 E android.hardware.sensors@2.0-service-mediatek: memsic Soft magnetic parameters si[1][2]=-0.039050 
+02-17 13:03:49.294636   424   424 I wmt_launcher: cmd(srh_rom_patch) resp(ok)
+02-17 13:03:49.294707   424   424 I wmt_launcher: (persist.vendor.connsys.fwlog.status) is not supported
+02-17 13:03:49.294878   736   736 I thermal_repeater: Success to write 736 to /proc/driver/thermal/clwmt_pid
+02-17 13:03:49.295020   736   736 I thermal_repeater: Success to write 736 to /proc/driver/thermal/clmutt_tm_pid
+02-17 13:03:49.295722   724   724 E android.hardware.sensors@2.0-service-mediatek: memsic Soft magnetic parameters si[2][0]=0.064170 
+02-17 13:03:49.295784   724   724 E android.hardware.sensors@2.0-service-mediatek: memsic Soft magnetic parameters si[2][1]=0.023310 
+02-17 13:03:49.295818   724   724 E android.hardware.sensors@2.0-service-mediatek: memsic Soft magnetic parameters si[2][2]=1.045070 
+02-17 13:03:49.295839   724   724 E android.hardware.sensors@2.0-service-mediatek: memsic iniAccuracy=0
+02-17 13:03:49.295860   724   724 E android.hardware.sensors@2.0-service-mediatek: memsic ts=0.020000 
+02-17 13:03:49.295902   724   724 E android.hardware.sensors@2.0-service-mediatek: FusionAlgoVersion: MEMSIC_CALI_20210907 Accuracy= 0 
+02-17 13:03:49.295927   724   724 E android.hardware.sensors@2.0-service-mediatek: CaliAlgoVersion: MEMSIC_CALI_20210907
+02-17 13:03:49.295956   724   724 E android.hardware.sensors@2.0-service-mediatek: SI Matrix: 0.9979 0.0079 -0.0345 -0.0016 1.0325 -0.0391 0.0642 0.0233 1.0451
+02-17 13:03:49.296075   724   724 I SensorManager: createSensorConnection connection=0xb40000710315ac70, moudle=1.
+
+M50金属版本打印：
+02-23 17:05:36.079951   708   708 I VendorInterface: VendorInterface constructor.
+02-23 17:05:36.080303   708   708 I VendorInterface: wugn test get libname libmemsic9axismetal.so
+02-23 17:05:36.082824   476   476 I ServiceManager: Waiting for service &#39;statscompanion&#39; on &#39;/dev/binder&#39;...
+02-23 17:05:36.095942   708   708 I VendorInterface: get lib_interface success. name = memsic9axismetal
+02-23 17:05:36.096126   708   708 D android.hardware.sensors@2.0-service-mediatek: MEMSIC_Init @line:58,  magChipInfo-&gt;layout = 0, magChipInfo-&gt;deviceid = 16
+02-23 17:05:36.096179   708   708 E android.hardware.sensors@2.0-service-mediatek: MMCKJ6a initial start 01 0
+02-23 17:05:36.096280   708   708 I SensorManager: createSensorConnection connection=0xb40000764e831cc0, moudle=1.
+
+M50塑胶版本打印：
+02-23 17:37:14.840610   726   726 I VendorInterface: VendorInterface constructor.
+02-23 17:37:14.840800   726   726 I VendorInterface: wugn test get libname libmemsic9axis.so
+02-23 17:37:14.841730   717   732 I ServiceManager: Waiting for service &#39;package_native&#39; on &#39;/dev/binder&#39;...
+02-23 17:37:14.845868   542   542 I BufferQueueProducer: [FramebufferSurface](id:21e00000000,api:1,p:501,c:542) connect(): api=1 producerControlledByApp=false
+02-23 17:37:14.846839   365   844 W libc    : Unable to set property &quot;ctl.interface_start&quot; to &quot;vendor.hardware.betterlife.fingerprint@1.0::IBtlFingerprint/default&quot;: error code: 0x20
+02-23 17:37:14.852451   646   705 W mnld    : thread_adc_capture_init: open_port: Unable to open /dev/gps_emi, retry:2
+02-23 17:37:14.852536   500   500 E ion     : ioctl c0044901 failed with code -1: Invalid argument
+02-23 17:37:14.852707   500   500 E ion     : ioctl c0204900 failed with code -1: No such device
+02-23 17:37:14.853545   726   726 I VendorInterface: get lib_interface success. name = memsic9axis
+02-23 17:37:14.853703   726   726 D android.hardware.sensors@2.0-service-mediatek: MEMSIC_Init @line:58,  magChipInfo-&gt;layout = 0, magChipInfo-&gt;deviceid = 16
+02-23 17:37:14.853752   726   726 E android.hardware.sensors@2.0-service-mediatek: MMCKJ6a initial start 01 0
+02-23 17:37:14.853902   726   726 I SensorManager: createSensorConnection connection=0xb400007824fe7370, moudle=1.
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>但是由于某些问题，将校准库兼容改到hal层处理：</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span>--- a/vendor/mediatek/proprietary/hardware/sensor/sensors-1.0/VendorInterface.cpp
++++ b/vendor/mediatek/proprietary/hardware/sensor/sensors-1.0/VendorInterface.cpp
+@@ -43,6 +43,8 @@
+ #include &quot;SensorList.h&quot;
+
+ #include &quot;VendorInterface.h&quot;
++#include &lt;cutils/properties.h&gt;
++
+
+ #undef LOG_TAG
+ #define LOG_TAG &quot;VendorInterface&quot;
+@@ -81,6 +83,7 @@ VendorInterface::VendorInterface() {
+     struct mag_libinfo_t libinfo;
+     struct magChipInfo chipinfo;
+     SensorList *mSensorList = nullptr;
++       char value[PROPERTY_VALUE_MAX];
+
+     ALOGI(&quot;VendorInterface constructor.&quot;);
+
+@@ -102,6 +105,20 @@ VendorInterface::VendorInterface() {
+         ALOGE(&quot;open vendor libinfo fail\n&quot;);
+         return;
+     }
++
++       // [NEW FEATURE]-BEGIN by wugangnan@paxsz.com 2022-02-24, put Calibration library compatible Function in hal,not in kernel driver
++    property_get(&quot;ro.boot.boardid&quot;, value, &quot;&quot;);
++    if (strcmp(value, &quot;0&quot;) == 0) {
++        strlcpy(libinfo.libname, &quot;memsic9axis&quot;, sizeof(libinfo.libname));
++    }
++       else if (strcmp(value, &quot;2&quot;) == 0 || strcmp(value, &quot;4&quot;) == 0) {
++               strlcpy(libinfo.libname, &quot;memsic9axismetal&quot;, sizeof(libinfo.libname));
++       }
++       else {
++               strlcpy(libinfo.libname, &quot;memsic&quot;, sizeof(libinfo.libname));
++       }
++       // [NEW FEATURE]-END by wugangnan@paxsz.com 2022-02-24, put Calibration library compatible Function in hal,not in kernel driver
+</pre></div>
+</div>
+</section>
+</section>
+<section id="id5">
+<h2>2.数据不准分析<a class="headerlink" href="#id5" title="Permalink to this headline"></a></h2>
+<p>单位：</p>
+<p>微特斯拉（micro-Tesla），用uT表示。 单位也可以是高斯（Gauss），1Tesla=10000Gauss。1Gauss = 100uT，六轴入口单位是Gauss，九轴是uT。</p>
+<section id="id6">
+<h3>1.原始数据上报单位确认<a class="headerlink" href="#id6" title="Permalink to this headline"></a></h3>
+<ul class="simple">
+<li><p>首先分析kernel和sensorhub里面原始数据上报的单位：</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">freertos/source/middleware/contexthub/MEMS_Driver/magnetometer/mmc5603.c</span></code>寄存器原始数据是16bit，范围是<code class="docutils literal notranslate"><span class="pre">0~65535</span></code>。第一步是减去32768的偏移值，变成<code class="docutils literal notranslate"><span class="pre">-32768</span> <span class="pre">~</span> <span class="pre">+32768</span></code>量程。第二步是确定方向，得到数组remap_data。第三步除以1024后得到的单位是uT，再乘以100得到单位是Gauss，也就是说sensorhub上传的数据的高斯:</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">mmc5603Convert</span><span class="p">(</span><span class="n">I2cCallbackF</span><span class="w"> </span><span class="n">i2cCallBack</span><span class="p">,</span><span class="w"> </span><span class="n">SpiCbkF</span><span class="w"> </span><span class="n">spiCallBack</span><span class="p">,</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="o">*</span><span class="n">next_state</span><span class="p">,</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">idata</span><span class="p">[</span><span class="n">AXIS_X</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="p">)((</span><span class="kt">uint16_t</span><span class="p">)((</span><span class="n">mTask</span><span class="p">.</span><span class="n">rxBuf</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="mi">8</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="p">(</span><span class="kt">uint16_t</span><span class="p">)(</span><span class="n">mTask</span><span class="p">.</span><span class="n">rxBuf</span><span class="p">[</span><span class="mi">1</span><span class="p">])));</span><span class="w"></span>
+<span class="w">    </span><span class="n">idata</span><span class="p">[</span><span class="n">AXIS_Y</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="p">)((</span><span class="kt">uint16_t</span><span class="p">)((</span><span class="n">mTask</span><span class="p">.</span><span class="n">rxBuf</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="mi">8</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="p">(</span><span class="kt">uint16_t</span><span class="p">)(</span><span class="n">mTask</span><span class="p">.</span><span class="n">rxBuf</span><span class="p">[</span><span class="mi">3</span><span class="p">])));</span><span class="w"></span>
+<span class="w">    </span><span class="n">idata</span><span class="p">[</span><span class="n">AXIS_Z</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="p">)((</span><span class="kt">uint16_t</span><span class="p">)((</span><span class="n">mTask</span><span class="p">.</span><span class="n">rxBuf</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="mi">8</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="p">(</span><span class="kt">uint16_t</span><span class="p">)(</span><span class="n">mTask</span><span class="p">.</span><span class="n">rxBuf</span><span class="p">[</span><span class="mi">5</span><span class="p">])));</span><span class="w"></span>
+
+<span class="w">    </span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">idata</span><span class="p">[</span><span class="n">AXIS_X</span><span class="p">];</span><span class="w"></span>
+<span class="w">    </span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">idata</span><span class="p">[</span><span class="n">AXIS_Y</span><span class="p">];</span><span class="w"></span>
+<span class="w">    </span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="n">z</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">idata</span><span class="p">[</span><span class="n">AXIS_Z</span><span class="p">];</span><span class="w"></span>
+<span class="w">    </span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="n">x</span><span class="w"> </span><span class="o">-=</span><span class="w"> </span><span class="mi">32768</span><span class="p">;</span><span class="w">    </span>
+<span class="w">    </span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="n">y</span><span class="w"> </span><span class="o">-=</span><span class="w"> </span><span class="mi">32768</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="n">z</span><span class="w"> </span><span class="o">-=</span><span class="w"> </span><span class="mi">32768</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">    </span><span class="n">remap_data</span><span class="p">[</span><span class="n">mTask</span><span class="p">.</span><span class="n">cvt</span><span class="p">.</span><span class="n">map</span><span class="p">[</span><span class="n">AXIS_X</span><span class="p">]]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mTask</span><span class="p">.</span><span class="n">cvt</span><span class="p">.</span><span class="n">sign</span><span class="p">[</span><span class="n">AXIS_X</span><span class="p">]</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="n">x</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="n">remap_data</span><span class="p">[</span><span class="n">mTask</span><span class="p">.</span><span class="n">cvt</span><span class="p">.</span><span class="n">map</span><span class="p">[</span><span class="n">AXIS_Y</span><span class="p">]]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mTask</span><span class="p">.</span><span class="n">cvt</span><span class="p">.</span><span class="n">sign</span><span class="p">[</span><span class="n">AXIS_Y</span><span class="p">]</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="n">y</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="n">remap_data</span><span class="p">[</span><span class="n">mTask</span><span class="p">.</span><span class="n">cvt</span><span class="p">.</span><span class="n">map</span><span class="p">[</span><span class="n">AXIS_Z</span><span class="p">]]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mTask</span><span class="p">.</span><span class="n">cvt</span><span class="p">.</span><span class="n">sign</span><span class="p">[</span><span class="n">AXIS_Z</span><span class="p">]</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="n">z</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span>
+<span class="w">    </span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">remap_data</span><span class="p">[</span><span class="n">AXIS_X</span><span class="p">]</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mf">100.0f</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">1024</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">remap_data</span><span class="p">[</span><span class="n">AXIS_Y</span><span class="p">]</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mf">100.0f</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">1024</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="n">z</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">remap_data</span><span class="p">[</span><span class="n">AXIS_Z</span><span class="p">]</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mf">100.0f</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">1024</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;%s:: remaped: %f %f %f;;;raw: %f %f %f</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="n">__func__</span><span class="p">,(</span><span class="kt">double</span><span class="p">)</span><span class="n">remap_data</span><span class="p">[</span><span class="mi">0</span><span class="p">],(</span><span class="kt">double</span><span class="p">)</span><span class="n">remap_data</span><span class="p">[</span><span class="mi">1</span><span class="p">],(</span><span class="kt">double</span><span class="p">)</span><span class="n">remap_data</span><span class="p">[</span><span class="mi">2</span><span class="p">],(</span><span class="kt">double</span><span class="p">)</span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="n">x</span><span class="p">,(</span><span class="kt">double</span><span class="p">)</span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="n">y</span><span class="p">,(</span><span class="kt">double</span><span class="p">)</span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="n">z</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">drivers/misc/mediatek/sensors-1.0/magnetometer/mmc5603/mmc5603x.c</span></code>可以看到，驱动中只是将原始数据变换量程和方向，所以并没有单位:</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="n">mmc5603x_i2c_probe</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">i2c_client</span><span class="w"> </span><span class="o">*</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">i2c_device_id</span><span class="w"> </span><span class="o">*</span><span class="n">id</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">mag_data</span><span class="p">.</span><span class="n">get_data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mmc5603x_get_data</span><span class="p">;</span><span class="w"></span>
+<span class="w">      </span><span class="o">*</span><span class="w"> </span><span class="n">ECS_GetRawData</span><span class="p">(</span><span class="n">data</span><span class="p">);</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">ECS_GetRawData</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">data</span><span class="p">[</span><span class="mi">3</span><span class="p">])</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="kt">int</span><span class="w"> </span><span class="n">err</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">data_temp</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="mi">0</span><span class="p">};</span><span class="w"></span>
+
+<span class="w">	</span><span class="k">struct</span><span class="w"> </span><span class="nc">mmc5603x_i2c_data</span><span class="w"> </span><span class="o">*</span><span class="n">obj</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">i2c_get_clientdata</span><span class="p">(</span><span class="n">this_client</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="k">if</span><span class="p">(</span><span class="nb">NULL</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">obj</span><span class="p">)</span><span class="w"></span>
+<span class="w">	</span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="n">MEMSIC_ERR</span><span class="p">(</span><span class="s">&quot;mmc5603x_i2c_data is null!!</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">err</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ECS_ReadXYZData</span><span class="p">(</span><span class="n">data</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="k">if</span><span class="p">(</span><span class="n">err</span><span class="w"> </span><span class="o">!=</span><span class="mi">0</span><span class="w"> </span><span class="p">)</span><span class="w"></span>
+<span class="w">	</span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="n">MEMSIC_ERR</span><span class="p">(</span><span class="s">&quot;MMC5603X_IOC_TM failed</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="k">return</span><span class="w"> </span><span class="mi">-1</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="n">data_temp</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">32768</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="n">data_temp</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">data</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">32768</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="n">data_temp</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">data</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">32768</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">    </span><span class="n">data</span><span class="p">[</span><span class="n">obj</span><span class="o">-&gt;</span><span class="n">cvt</span><span class="p">.</span><span class="n">map</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">obj</span><span class="o">-&gt;</span><span class="n">cvt</span><span class="p">.</span><span class="n">sign</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">data_temp</span><span class="p">[</span><span class="mi">0</span><span class="p">];</span><span class="w"></span>
+<span class="w">    </span><span class="n">data</span><span class="p">[</span><span class="n">obj</span><span class="o">-&gt;</span><span class="n">cvt</span><span class="p">.</span><span class="n">map</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">obj</span><span class="o">-&gt;</span><span class="n">cvt</span><span class="p">.</span><span class="n">sign</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">data_temp</span><span class="p">[</span><span class="mi">1</span><span class="p">];</span><span class="w"></span>
+<span class="w">    </span><span class="n">data</span><span class="p">[</span><span class="n">obj</span><span class="o">-&gt;</span><span class="n">cvt</span><span class="p">.</span><span class="n">map</span><span class="p">[</span><span class="mi">2</span><span class="p">]]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">obj</span><span class="o">-&gt;</span><span class="n">cvt</span><span class="p">.</span><span class="n">sign</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">data_temp</span><span class="p">[</span><span class="mi">2</span><span class="p">];</span><span class="w"></span>
+
+<span class="w">	</span><span class="k">return</span><span class="w"> </span><span class="n">err</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+</section>
+<section id="hal">
+<h3>2.hal层单位获取情况<a class="headerlink" href="#hal" title="Permalink to this headline"></a></h3>
+<ul class="simple">
+<li><p>1.经过分析，得知sensorhub上传的数据的高斯，而kernel则还是原始数据，看看hal层如何处理,主要关注<code class="docutils literal notranslate"><span class="pre">processEvent</span></code>函数中的<code class="docutils literal notranslate"><span class="pre">DATA_ACTION</span></code>：</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">vendor/mediatek/proprietary/hardware/sensor/sensors-0.1/Magnetic.cpp</span></code>:</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span>void MagneticSensor::processEvent(struct sensor_event const *event) {
+
+#ifndef MAG_CALIBRATION_IN_SENSORHUB
+    struct sensorData inputData;
+    struct sensorData outputData;
+    static int32_t lastStatus = 0;
+
+    memset(&amp;inputData, 0, sizeof(struct sensorData));
+    memset(&amp;outputData, 0, sizeof(struct sensorData));
+#endif
+
+    if (event-&gt;flush_action == DATA_ACTION) {
+        mPendingEvent.version = sizeof(sensors_event_t);
+        mPendingEvent.sensor = ID_MAGNETIC;
+        mPendingEvent.type = SENSOR_TYPE_MAGNETIC_FIELD;
+        mPendingEvent.timestamp = event-&gt;time_stamp;
+        mPendingEvent.magnetic.status = event-&gt;status;
+        1.sensorhub或者kernel上传的数据首先除以10，发现这里被剑锋改过，原始除数是(float)mDataDiv。
+        mPendingEvent.magnetic.x = (float)event-&gt;word[0] / 10.0;   
+        mPendingEvent.magnetic.y = (float)event-&gt;word[1] / 10.0;
+        mPendingEvent.magnetic.z = (float)event-&gt;word[2] / 10.0;
+
+        2.如果不是在sensorhub中完成校准，首先调用magRunCalibration完成磁场校准，如果两次status不一样，算出bias，这里不关心。
+#ifndef MAG_CALIBRATION_IN_SENSORHUB
+        inputData.data[0] = mPendingEvent.magnetic.x;
+        inputData.data[1] = mPendingEvent.magnetic.y;
+        inputData.data[2] = mPendingEvent.magnetic.z;
+        inputData.status = mPendingEvent.magnetic.status;
+        inputData.timeStamp = mPendingEvent.timestamp;
+        mSensorCalibration-&gt;magRunCalibration(&amp;inputData, &amp;outputData);
+        mPendingEvent.magnetic.x = outputData.data[0];
+        mPendingEvent.magnetic.y = outputData.data[1];
+        mPendingEvent.magnetic.z = outputData.data[2];
+        mPendingEvent.magnetic.status = outputData.status;
+        if (mPendingEvent.magnetic.status != lastStatus) {
+            mSensorCalibration-&gt;magGetCalibration(&amp;outputData);
+            magBias[0] = outputData.data[0];
+            magBias[1] = outputData.data[1];
+            magBias[2] = outputData.data[2];
+            mSensorSaved.saveCalibrationFloat(MAG_BIAS_SAVED_DIR, MAG_TAG_BIAS, magBias, 3);
+            ALOGI(&quot;write bias: [%f, %f, %f]\n&quot;, magBias[0], magBias[1], magBias[2]);
+        }
+        lastStatus = mPendingEvent.magnetic.status;
+#else
+        mPendingEvent.magnetic.status = magAccuracyUpdate(mPendingEvent.magnetic.x,
+            mPendingEvent.magnetic.y, mPendingEvent.magnetic.z, event-&gt;status);
+#endif
+#ifdef DEBUG_PERFORMANCE
+        if(1 == event-&gt;reserved) {
+            mPendingEvent.gyro.status = event-&gt;reserved;
+            mark_timestamp(ID_MAGNETIC, android::elapsedRealtimeNano(), mPendingEvent.timestamp);
+        }
+#endif
+    } 
+}
+
+补上剑锋修改：
+Author: zengjf &lt;zengjianfeng@paxsz.com&gt;
+Date:   Sun Apr 11 14:44:00 2021 +0800
+
+    移植传感器驱动及地磁9轴校正库
+
+    [Summary]:
+            1. 移植加速度、陀螺仪、地磁、光感、近距传感器Linux驱动；
+            2. 修改Sensor HAL层满足数据转换关系；
+            3. 移植地磁9轴校正库；
+            4. Android方向传感器分为未校正和有校正过两种，需要注意二选一；
+
+    [Test Plan]: NO
+
+    [Module]: Sensor
+
+    [Model]: M8
+
+    [author]: zengjianfeng@paxsz.com
+
+    [date]: 2021-04-11
+
+-        mPendingEvent.magnetic.x = (float)event-&gt;word[0] / (float)mDataDiv;
+-        mPendingEvent.magnetic.y = (float)event-&gt;word[1] / (float)mDataDiv;
+-        mPendingEvent.magnetic.z = (float)event-&gt;word[2] / (float)mDataDiv;
++        mPendingEvent.magnetic.x = (float)event-&gt;word[0] / 10.0;
++        mPendingEvent.magnetic.y = (float)event-&gt;word[1] / 10.0;
++        mPendingEvent.magnetic.z = (float)event-&gt;word[2] / 10.0;
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>2.再看看<code class="docutils literal notranslate"><span class="pre">mDataDiv</span></code>是怎么得出来的，在MagneticSensor类的构造函数(构造函数是类的一种特殊的成员函数，它会在每次创建类的新对象时执行)中读取节点获取，通过log看是sensorhub代码是100：</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span>log打印：
+02-17 13:03:49.271349   724   724 D Magnetic: misc path =/sys/class/sensor/m_mag_misc/
+02-17 13:03:49.271782   724   724 I Magnetic: read div buf(/sys/class/sensor/m_mag_misc/magactive), mdiv_M 100
+02-17 13:03:49.273001   745   745 D ipsec_policy_mont: threaid priority -20,result:0
+02-17 13:03:49.274959   724   724 I Magnetic: read bias: [31.359375, 533.406250, -206.000000]
+02-17 13:03:49.275105   724   724 E SensorSaved: settings file(/mnt/vendor/nvcfg/sensor/mag_cali.json) open failed: -2 (No such file or directory)
+02-17 13:03:49.275154   724   724 I Magnetic: read cali parameter: [0, 0, 0, 0, 0, 0]
+
+MagneticSensor::MagneticSensor()
+{
+    mDataDiv = 1;
+    if (mSensorReader.selectSensorEventFd(DEVICE_PATH) &gt;= 0) {
+        strlcpy(input_sysfs_path, &quot;/sys/class/sensor/m_mag_misc/&quot;, sizeof(input_sysfs_path));
+        input_sysfs_path_len = strlen(input_sysfs_path);
+    } else {
+        ALOGE(&quot;couldn&#39;t find input device\n&quot;);
+    }
+    ALOGD(&quot;misc path =%s&quot;, input_sysfs_path);
+
+    fd = TEMP_FAILURE_RETRY(open(datapath1, O_RDWR));
+    if (fd &gt;= 0) {
+        len = TEMP_FAILURE_RETRY(read(fd, buf, sizeof(buf) - 1));
+        if (len &lt;= 0) {
+            ALOGE(&quot;read div err, len = %d&quot;, len);
+        } else {
+            buf[len] = &#39;\0&#39;;
+            sscanf(buf, &quot;%d&quot;, &amp;mDataDiv);
+            ALOGI(&quot;read div buf(%s), mdiv_M %d\n&quot;, datapath1, mDataDiv);
+        }
+        close(fd);
+    } else {
+        ALOGE(&quot;open misc path %s fail\n&quot;, datapath1);
+    }   
+}
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>3.继续跟进kernel驱动和sensorhub驱动，两个驱动是二选一的：</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="n">mag</span><span class="p">.</span><span class="n">c</span><span class="o">:</span><span class="w"></span>
+<span class="k">static</span><span class="w"> </span><span class="kt">ssize_t</span><span class="w"> </span><span class="n">magactive_show</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w"> </span><span class="o">*</span><span class="n">dev</span><span class="p">,</span><span class="w"></span>
+<span class="w">			       </span><span class="k">struct</span><span class="w"> </span><span class="nc">device_attribute</span><span class="w"> </span><span class="o">*</span><span class="n">attr</span><span class="p">,</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">buf</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="k">struct</span><span class="w"> </span><span class="nc">mag_context</span><span class="w"> </span><span class="o">*</span><span class="n">cxt</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">NULL</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="kt">int</span><span class="w"> </span><span class="n">div</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">cxt</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mag_context_obj</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="n">div</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cxt</span><span class="o">-&gt;</span><span class="n">mag_dev_data</span><span class="p">.</span><span class="n">div</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="n">pr_debug</span><span class="p">(</span><span class="s">&quot;mag mag_dev_data m_div value: %d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">div</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="k">return</span><span class="w"> </span><span class="n">snprintf</span><span class="p">(</span><span class="n">buf</span><span class="p">,</span><span class="w"> </span><span class="n">PAGE_SIZE</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;%d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">div</span><span class="p">);</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="n">mmc5603x</span><span class="p">.</span><span class="n">c</span><span class="o">:</span><span class="w"></span>
+<span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">mmc5603x_i2c_probe</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">i2c_client</span><span class="w"> </span><span class="o">*</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">i2c_device_id</span><span class="w"> </span><span class="o">*</span><span class="n">id</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">mag_data</span><span class="p">.</span><span class="n">div</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">CONVERT_M_DIV</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="n">mmc5603x</span><span class="p">.</span><span class="n">h</span><span class="o">:</span><span class="w"></span>
+<span class="cp">#define CONVERT_M_DIV			1024</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>sensorhub驱动：</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="n">maghub</span><span class="p">.</span><span class="n">c</span><span class="o">:</span><span class="w"></span>
+<span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">maghub_probe</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">platform_device</span><span class="w"> </span><span class="o">*</span><span class="n">pdev</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">mag_data</span><span class="p">.</span><span class="n">div</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">CONVERT_M_DIV</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="n">maghub</span><span class="p">.</span><span class="n">h</span><span class="o">:</span><span class="w"></span>
+<span class="cp">#define CONVERT_M_DIV			100</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>4.以上代码可以得出结论就是，sensorhub传上来的是高斯单位，原始代码是除以<code class="docutils literal notranslate"><span class="pre">CONVERT_M_DIV</span></code>（100），hal层单位转换为微特斯拉uT，而现在改为除以10，数据不对，fae说大了10倍就是这个原因，需要将hal代码改回去，用定义好的<code class="docutils literal notranslate"><span class="pre">CONVERT_M_DIV</span></code>。</p></li>
+</ul>
+<p>有个疑问，不知道为什么kernel上报需要单位是高斯，而sensorhub的是uT？</p>
+<div class="highlight-log notranslate"><div class="highlight"><pre><span></span>sensorhub公式：
+sensorhub_data = raw_data / 1024 * 100  单位高斯
+CONVERT_M_DIV = 100
+
+kernel公式：
+kernel_data = raw_data
+CONVERT_M_DIV = 1024
+
+hal层处理：
+data/div
+kernel相当于raw_data/1024，单位是uT
+hub相当于高斯/100，单位是uT
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, wugn.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+  
+
+<script charset="UTF-8" id="LA_COLLECT" src="//sdk.51.la/js-sdk-pro.min.js"></script>
+<script>LA.init({id: "JjOE14XScyd75b2C",ck: "JjOE14XScyd75b2C"})</script>
+
+<br/>
+<script id="LA-DATA-WIDGET" crossorigin="anonymous" charset="UTF-8" src="https://v6-widget.51.la/v6/JjOE14XScyd75b2C/quote.js?theme=0&f=12&display=1,0,0,0,0,0,1,1"></script>
+
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>wugn</title>
+
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../index.html" class="icon icon-home"> wugn_note
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">概述</a><ul>
+<li><a class="reference internal" href="#wifi">1.压力测试连接断开wifi，无法重连</a><ul>
+<li><a class="reference internal" href="#id2">测试步骤</a></li>
+<li><a class="reference internal" href="#id3">问题原因</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id4">2.修改路由器信道，压力测试连接断开wifi，</a><ul>
+<li><a class="reference internal" href="#id5">测试步骤</a></li>
+<li><a class="reference internal" href="#id6">问题原因</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#sn">3.修改蓝牙默认名称为机型_SN后四位</a></li>
+</ul>
+</li>
+</ul>
+</div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">wugn_note</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs"> 
+<li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+<li>概述</li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.forward()">Forward</a></li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.back()">Go Back</a> | </li>
+<li style="float: right;margin-left: 10px;"><a href="/index.html">Home</a> | </li>
+
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="id1">
+<h1>概述<a class="headerlink" href="#id1" title="Permalink to this headline"></a></h1>
+<p>wifi各种bug分析</p>
+<section id="wifi">
+<h2>1.压力测试连接断开wifi，无法重连<a class="headerlink" href="#wifi" title="Permalink to this headline"></a></h2>
+<section id="id2">
+<h3>测试步骤<a class="headerlink" href="#id2" title="Permalink to this headline"></a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>【测试步骤】
+1.打开Wi-Fi
+2.扫描周围的AP，检查扫描列表
+3.连接步骤2扫描到的AP
+4.连接成功后，创建TCP连接
+5.TCP通讯size大小
+6.断开TCP连接
+7.断开Wi-Fi连接
+8.关闭Wi-Fi
+9.循环步骤1-8共cnt次
+
+【测试环境】
+2.4G/5G AP
+
+【预期结果】
+9.每次全流程测试均正常
+
+【实际结果】
+V1.03版本，6台机器，有5台pos出现WIFI连接连续失败问题
+V1.02版本，4台机器，有3台pos出现WIFI连接连续失败问题
+V1.03版本，关闭wifi后延时3s测试，4台机器，有3台pos出现WIFI连接连续失败问题
+其中测试成功是同一台pos（4号机器） SN:2210000586
+
+【测试用例】
+WiFi_WholeProcess_STR1,WiFi_WholeProcess_5G_STR1
+</pre></div>
+</div>
+</section>
+<section id="id3">
+<h3>问题原因<a class="headerlink" href="#id3" title="Permalink to this headline"></a></h3>
+<ol class="arabic simple">
+<li><p>出问题的机器都是WiFi采用了随机MAC，导致路由器的IP池被用完了导致。</p></li>
+<li><p>因该路由器有个最大支持mac数，当到达最大mac数时，再重新连接新的设备就连接不上了，前面你的机器连接的上，是路由器已经存在你的mac地址了。</p></li>
+<li><p>主要是没有写入MAC导致，正常写入MAC的机器测试正常。</p></li>
+</ol>
+</section>
+</section>
+<section id="id4">
+<h2>2.修改路由器信道，压力测试连接断开wifi，<a class="headerlink" href="#id4" title="Permalink to this headline"></a></h2>
+<section id="id5">
+<h3>测试步骤<a class="headerlink" href="#id5" title="Permalink to this headline"></a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>测试步骤
+1.打开Wi-Fi
+2.将2.4G AP的Channel设置测试数据中channel，并扫描AP
+3.检查扫描结果，查看能否扫描到步骤2设置的AP
+4.连接步骤3扫描到的AP，检查是否连接成功
+5.成功后进行TCP通讯
+6.循环步骤2-5覆盖测试数据中Channel测试
+7.关闭Wi-Fi
+
+实际结果：
+后台修改路由器信道，M8概率性无法自动重连成功，需要手动点击下才能连接成功。
+测试荣耀和水星两种路由器，均有此问题
+
+期望结果：
+没有忘记网络时，改变信道后，机器可以自动连接WiFi
+</pre></div>
+</div>
+</section>
+<section id="id6">
+<h3>问题原因<a class="headerlink" href="#id6" title="Permalink to this headline"></a></h3>
+<p>AP频繁更改Channel会导致Android系统判定该AP不稳定，从而ban掉这个AP</p>
+<p><img alt="0005_0000.png" src="../../../_images/0005_0000.png" /></p>
+</section>
+</section>
+<section id="sn">
+<h2>3.修改蓝牙默认名称为机型_SN后四位<a class="headerlink" href="#sn" title="Permalink to this headline"></a></h2>
+<div class="highlight-diff notranslate"><div class="highlight"><pre><span></span><span class="gd">--- a/device/generic/common/bluetooth/bdroid_buildcfg.h</span><span class="w"></span>
+<span class="gi">+++ b/device/generic/common/bluetooth/bdroid_buildcfg.h</span><span class="w"></span>
+<span class="gu">@@ -17,6 +17,6 @@</span><span class="w"></span>
+<span class="w"> </span>#ifndef _BDROID_BUILDCFG_H<span class="w"></span>
+<span class="w"> </span>#define _BDROID_BUILDCFG_H<span class="w"></span>
+
+<span class="gd">-#define BTM_DEF_LOCAL_NAME   &quot;Android Bluedroid&quot;</span><span class="w"></span>
+<span class="gi">+//#define BTM_DEF_LOCAL_NAME   &quot;Android Bluedroid&quot;</span><span class="w"></span>
+
+<span class="w"> </span>#endif<span class="w"></span>
+<span class="gh">diff --git a/system/bt/btif/src/btif_dm.cc b/system/bt/btif/src/btif_dm.cc</span><span class="w"></span>
+<span class="w">old mode 100644</span>
+<span class="w">new mode 100755</span>
+<span class="gh">index e122936ce32..3390b2f8103</span><span class="w"></span>
+<span class="gd">--- a/system/bt/btif/src/btif_dm.cc</span><span class="w"></span>
+<span class="gi">+++ b/system/bt/btif/src/btif_dm.cc</span><span class="w"></span>
+<span class="gu">@@ -115,6 +115,10 @@ const Uuid UUID_HEARING_AID = Uuid::FromString(&quot;FDF0&quot;);</span><span class="w"></span>
+<span class="w"> </span>#ifndef PROPERTY_PRODUCT_MODEL<span class="w"></span>
+<span class="w"> </span>#define PROPERTY_PRODUCT_MODEL &quot;ro.product.model&quot;<span class="w"></span>
+<span class="w"> </span>#endif<span class="w"></span>
+<span class="gi">+#define SET_BT_NAME_WITH_SN</span><span class="w"></span>
+<span class="gi">+#ifndef PROPERTY_PRODUCT_SN</span><span class="w"></span>
+<span class="gi">+#define PROPERTY_PRODUCT_SN &quot;ro.boot.bt.serialno&quot;</span><span class="w"></span>
+<span class="gi">+#endif</span><span class="w"></span>
+<span class="w"> </span>#define DEFAULT_LOCAL_NAME_MAX 31<span class="w"></span>
+<span class="w"> </span>#if (DEFAULT_LOCAL_NAME_MAX &gt; BTM_MAX_LOC_BD_NAME_LEN)<span class="w"></span>
+<span class="w"> </span>#error &quot;default btif local name size exceeds stack supported length&quot;<span class="w"></span>
+<span class="gu">@@ -3400,12 +3404,34 @@ static char* btif_get_default_local_name() {</span><span class="w"></span>
+<span class="w"> </span>    if (BTM_DEF_LOCAL_NAME[0] != &#39;\0&#39;) {<span class="w"></span>
+<span class="w"> </span>      strncpy(btif_default_local_name, BTM_DEF_LOCAL_NAME, max_len);<span class="w"></span>
+<span class="w"> </span>    } else {<span class="w"></span>
+<span class="gi">+//[FEATURE]-Mod-BEGIN by (qumy@paxsz.com), 2020/8/13,for bt feature</span><span class="w"></span>
+<span class="gi">+#ifndef SET_BT_NAME_WITH_SN</span><span class="w"></span>
+<span class="w"> </span>      char prop_model[PROPERTY_VALUE_MAX];<span class="w"></span>
+<span class="w"> </span>      osi_property_get(PROPERTY_PRODUCT_MODEL, prop_model, &quot;&quot;);<span class="w"></span>
+<span class="w"> </span>      strncpy(btif_default_local_name, prop_model, max_len);<span class="w"></span>
+<span class="gi">+#else</span><span class="w"></span>
+<span class="gi">+      int len = 0;</span><span class="w"></span>
+<span class="gi">+      char sn[5] = {0};</span><span class="w"></span>
+<span class="gi">+      char prop_model[PROPERTY_VALUE_MAX];</span><span class="w"></span>
+<span class="gi">+      char prop_sn[PROPERTY_VALUE_MAX];</span><span class="w"></span>
+<span class="gi">+      osi_property_get(PROPERTY_PRODUCT_MODEL,prop_model,&quot;&quot;);</span><span class="w"></span>
+<span class="gi">+      osi_property_get(PROPERTY_PRODUCT_SN,prop_sn,&quot;&quot;);</span><span class="w"></span>
+<span class="gi">+      len = strlen(prop_sn);</span><span class="w"></span>
+<span class="gi">+      if (len &gt;= 4)</span><span class="w"></span>
+<span class="gi">+      {</span><span class="w"></span>
+<span class="gi">+          memcpy(sn, (prop_sn + len) - 4, 4);</span><span class="w"></span>
+<span class="gi">+      }</span><span class="w"></span>
+<span class="gi">+      else</span><span class="w"></span>
+<span class="gi">+      {</span><span class="w"></span>
+<span class="gi">+          memcpy(sn, &quot;NULL&quot;, 4);</span><span class="w"></span>
+<span class="gi">+      }</span><span class="w"></span>
+<span class="gi">+      snprintf(btif_default_local_name, max_len, &quot;%s_%s&quot;, prop_model, sn);</span><span class="w"></span>
+<span class="gi">+      LOG_INFO(LOG_TAG, &quot;%s prop_model is %s, sn is %s&quot;, __func__, prop_model,sn);</span><span class="w"></span>
+<span class="gi">+#endif</span><span class="w"></span>
+<span class="w"> </span>    }<span class="w"></span>
+<span class="w"> </span>    btif_default_local_name[max_len] = &#39;\0&#39;;<span class="w"></span>
+<span class="w"> </span>  }<span class="w"></span>
+<span class="gi">+//[FEATURE]-Mod-BEGIN by (qumy@paxsz.com), 2020/8/13,for bt feature</span><span class="w"></span>
+<span class="w"> </span>  return btif_default_local_name;<span class="w"></span>
+<span class="w"> </span>}<span class="w"></span>
+</pre></div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, wugn.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+  
+
+<script charset="UTF-8" id="LA_COLLECT" src="//sdk.51.la/js-sdk-pro.min.js"></script>
+<script>LA.init({id: "JjOE14XScyd75b2C",ck: "JjOE14XScyd75b2C"})</script>
+
+<br/>
+<script id="LA-DATA-WIDGET" crossorigin="anonymous" charset="UTF-8" src="https://v6-widget.51.la/v6/JjOE14XScyd75b2C/quote.js?theme=0&f=12&display=1,0,0,0,0,0,1,1"></script>
+
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,1661 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>wugn</title>
+
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../index.html" class="icon icon-home"> wugn_note
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">概述</a></li>
+<li><a class="reference internal" href="#id2">参考</a></li>
+<li><a class="reference internal" href="#id3">架构图</a></li>
+<li><a class="reference internal" href="#battery">一、电池及充放电信息，通过接收Battery广播来获取</a></li>
+<li><a class="reference internal" href="#bms">二、充放电控制BMS服务</a><ul>
+<li><a class="reference internal" href="#id4">工作模式介绍</a></li>
+<li><a class="reference internal" href="#id5">电池模式切换</a></li>
+<li><a class="reference internal" href="#id6">使用方法</a></li>
+<li><a class="reference internal" href="#id7">自动模式</a></li>
+<li><a class="reference internal" href="#id8">工作流程图</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#app-batterywarning">三、异常信息广播APP batterywarning</a><ul>
+<li><a class="reference internal" href="#id9">1.异常信息定义</a></li>
+<li><a class="reference internal" href="#id10">2.BMS轮询上报</a></li>
+<li><a class="reference internal" href="#batterywarning-cepoll">3.batterywarning C应用epoll检测并发送广播上报</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id11">四、底层BMS功能接口提供</a><ul>
+<li><a class="reference internal" href="#hal">HAL层接口实现</a><ul>
+<li><a class="reference internal" href="#hw-module-t-pax-bms-c">hw_module_t pax_bms.c</a></li>
+<li><a class="reference internal" href="#hw-device-t-paxbms-cpp">hw_device_t PaxBMS.cpp</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#hidl-arch">HIDL Arch</a><ul>
+<li><a class="reference internal" href="#hidl">注册HIDL服务</a></li>
+<li><a class="reference internal" href="#id12">添加HIDL服务编译选项</a></li>
+<li><a class="reference internal" href="#hidl-manifest">添加HIDL manifest</a></li>
+<li><a class="reference internal" href="#id13">启动HIDL服务</a></li>
+<li><a class="reference internal" href="#id14">查看HIDL服务进程</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">wugn_note</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs"> 
+<li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+<li>概述</li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.forward()">Forward</a></li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.back()">Go Back</a> | </li>
+<li style="float: right;margin-left: 10px;"><a href="/index.html">Home</a> | </li>
+
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="id1">
+<h1>概述<a class="headerlink" href="#id1" title="Permalink to this headline"></a></h1>
+<p>BMS功能介绍</p>
+</section>
+<section id="id2">
+<h1>参考<a class="headerlink" href="#id2" title="Permalink to this headline"></a></h1>
+<ul class="simple">
+<li><p><span class="xref myst">0009_patch</span></p></li>
+<li><p><span class="xref myst">bms_driver</span></p></li>
+<li><p><a class="reference external" href="https://www.cnblogs.com/xuewangkai/p/11158576.html">epoll使用详解：epoll_create、epoll_ctl、epoll_wait、close</a></p></li>
+<li><p><a class="reference external" href="https://www.jianshu.com/p/9236ad3b9d40">Android JNI 使用方法总结及原理分析</a></p></li>
+<li><p><a class="reference external" href="https://www.jianshu.com/p/6bf03e3cb097">Android Service详解</a></p></li>
+<li><p><a class="reference external" href="https://www.jianshu.com/p/f972f1a8f7dc">HIDL服务编写实现</a></p></li>
+<li><p><a class="reference external" href="https://blog.csdn.net/qq_37858386/article/details/121501400">Android C++语言 通过Binder通信调用activity: [android.app.IActivityManager] 服务发广播</a></p></li>
+</ul>
+</section>
+<section id="id3">
+<h1>架构图<a class="headerlink" href="#id3" title="Permalink to this headline"></a></h1>
+<p><img alt="0009_0000.png" src="../../../_images/0009_0000.png" /></p>
+<p><img alt="0009_0014.png" src="../../../_images/0009_0014.png" /></p>
+<ul class="simple">
+<li><p>上面架构图有两个改进点：</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">PaxBmsService.java</span></code>和<code class="docutils literal notranslate"><span class="pre">PaxBatteryManagerService.java</span></code>都是系统服务，都是在<code class="docutils literal notranslate"><span class="pre">system_server</span></code>里面，所以不需要binder通信，最好的做法是在<code class="docutils literal notranslate"><span class="pre">PaxBatteryManagerService.java</span></code>直接调用JNI方法。</p></li>
+<li><p>HIDL中还是采用传统HAL方式，即module/device模型，这种需要将HAL编译成so库，其实是可以在HIDL中直接ioctrl驱动的，更加方便。</p></li>
+</ul>
+</li>
+</ul>
+<p>上图是BMS新的架构图，注意以下几点：</p>
+<ul class="simple">
+<li><ol class="arabic simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">mSystemServiceManager.startService</span></code>方法主要就是调用service的onstart方法。</p></li>
+</ol>
+</li>
+<li><ol class="arabic simple" start="2">
+<li><p><code class="docutils literal notranslate"><span class="pre">ServiceManager.addService(&quot;paxbms&quot;,</span> <span class="pre">mPaxBmsService)</span></code>方法是将服务加入到binder，作为binder sercice。</p></li>
+</ol>
+</li>
+<li><ol class="arabic simple" start="3">
+<li><p><code class="docutils literal notranslate"><span class="pre">PaxBmsService</span></code>是<code class="docutils literal notranslate"><span class="pre">binder</span> <span class="pre">server</span></code>端，<code class="docutils literal notranslate"><span class="pre">PaxBmsManager</span></code>是服务于<code class="docutils literal notranslate"><span class="pre">PaxBmsService</span></code>的<code class="docutils literal notranslate"><span class="pre">binder</span> <span class="pre">client</span></code>端，并给外部提供接口的。</p></li>
+</ol>
+</li>
+<li><ol class="arabic simple" start="4">
+<li><p><code class="docutils literal notranslate"><span class="pre">PaxBmsManager</span></code>调用方式一般都是在<code class="docutils literal notranslate"><span class="pre">SystemServiceRegistry.java</span></code>中先注册一个静态系统服务(不是四大件中的服务)，应用通过<code class="docutils literal notranslate"><span class="pre">getSystemService(Context.PAXBMS_SERVICE)</span></code>调用，两个函数就是put和get操作。</p></li>
+</ol>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">base/services/java/com/android/server/SystemServer.java</span></code>第一点说明:</p></li>
+</ul>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span>private SystemServiceManager mSystemServiceManager;
+                        t.traceBegin(&quot;PaxBatteryManagerService &quot;);
+                        mSystemServiceManager.startService(PaxBatteryManagerService.class);
+                        t.traceEnd();
+
+将调用以下方法：
+base/services/core/java/com/android/server/SystemServiceManager.java：
+   public void startService(@NonNull final SystemService service) {
+        // Register it.
+        mServices.add(service);
+        // Start it.
+        long time = SystemClock.elapsedRealtime();
+        try {
+            service.onStart();
+        } catch (RuntimeException ex) {
+            throw new RuntimeException(&quot;Failed to start service &quot; + service.getClass().getName()
+                    + &quot;: onStart threw an exception&quot;, ex);
+        }
+        warnIfTooLong(SystemClock.elapsedRealtime() - time, service, &quot;onStart&quot;);
+    }
+主要功能是注册systemserver和执行onstart方法。
+</pre></div>
+</div>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">base/core/java/android/os/ServiceManager.java</span></code>第二点，<code class="docutils literal notranslate"><span class="pre">PaxBmsService</span></code>通过addService注册为binder服务端:</p></li>
+</ul>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span>    <span class="nd">@UnsupportedAppUsage</span>
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">addService</span><span class="p">(</span><span class="n">String</span> <span class="n">name</span><span class="p">,</span> <span class="n">IBinder</span> <span class="n">service</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">addService</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">service</span><span class="p">,</span> <span class="kc">false</span><span class="p">,</span> <span class="n">IServiceManager</span><span class="p">.</span><span class="na">DUMP_FLAG_PRIORITY_DEFAULT</span><span class="p">);</span>
+    <span class="p">}</span>
+
+    <span class="cm">/**</span>
+<span class="cm">     * Place a new @a service called @a name into the service</span>
+<span class="cm">     * manager.</span>
+<span class="cm">     *</span>
+<span class="cm">     * @param name the name of the new service</span>
+<span class="cm">     * @param service the service object</span>
+<span class="cm">     * @param allowIsolated set to true to allow isolated sandboxed processes</span>
+<span class="cm">     * to access this service</span>
+<span class="cm">     */</span>
+    <span class="nd">@UnsupportedAppUsage</span>
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">addService</span><span class="p">(</span><span class="n">String</span> <span class="n">name</span><span class="p">,</span> <span class="n">IBinder</span> <span class="n">service</span><span class="p">,</span> <span class="kt">boolean</span> <span class="n">allowIsolated</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">addService</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">service</span><span class="p">,</span> <span class="n">allowIsolated</span><span class="p">,</span> <span class="n">IServiceManager</span><span class="p">.</span><span class="na">DUMP_FLAG_PRIORITY_DEFAULT</span><span class="p">);</span>
+    <span class="p">}</span>
+
+    <span class="cm">/**</span>
+<span class="cm">     * Place a new @a service called @a name into the service</span>
+<span class="cm">     * manager.</span>
+<span class="cm">     *</span>
+<span class="cm">     * @param name the name of the new service</span>
+<span class="cm">     * @param service the service object</span>
+<span class="cm">     * @param allowIsolated set to true to allow isolated sandboxed processes</span>
+<span class="cm">     * @param dumpPriority supported dump priority levels as a bitmask</span>
+<span class="cm">     * to access this service</span>
+<span class="cm">     */</span>
+    <span class="nd">@UnsupportedAppUsage</span>
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">addService</span><span class="p">(</span><span class="n">String</span> <span class="n">name</span><span class="p">,</span> <span class="n">IBinder</span> <span class="n">service</span><span class="p">,</span> <span class="kt">boolean</span> <span class="n">allowIsolated</span><span class="p">,</span>
+            <span class="kt">int</span> <span class="n">dumpPriority</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">try</span> <span class="p">{</span>
+            <span class="n">getIServiceManager</span><span class="p">().</span><span class="na">addService</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">service</span><span class="p">,</span> <span class="n">allowIsolated</span><span class="p">,</span> <span class="n">dumpPriority</span><span class="p">);</span> <span class="c1">//加入到binder sevice</span>
+        <span class="p">}</span> <span class="k">catch</span> <span class="p">(</span><span class="n">RemoteException</span> <span class="n">e</span><span class="p">)</span> <span class="p">{</span>
+            <span class="n">Log</span><span class="p">.</span><span class="na">e</span><span class="p">(</span><span class="n">TAG</span><span class="p">,</span> <span class="s">&quot;error in addService&quot;</span><span class="p">,</span> <span class="n">e</span><span class="p">);</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">base/core/java/android/os/ServiceManager.java</span></code>第三点，<code class="docutils literal notranslate"><span class="pre">PaxBmsManager</span></code>通过getServiceOrThrow获取<code class="docutils literal notranslate"><span class="pre">PaxBmsService</span></code> binder服务:</p></li>
+</ul>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span>    <span class="cm">/**</span>
+<span class="cm">     * Returns a reference to a service with the given name, or throws</span>
+<span class="cm">     * {@link ServiceNotFoundException} if none is found.</span>
+<span class="cm">     *</span>
+<span class="cm">     * @hide</span>
+<span class="cm">     */</span>
+    <span class="kd">public</span> <span class="kd">static</span> <span class="n">IBinder</span> <span class="nf">getServiceOrThrow</span><span class="p">(</span><span class="n">String</span> <span class="n">name</span><span class="p">)</span> <span class="kd">throws</span> <span class="n">ServiceNotFoundException</span> <span class="p">{</span>
+        <span class="kd">final</span> <span class="n">IBinder</span> <span class="n">binder</span> <span class="o">=</span> <span class="n">getService</span><span class="p">(</span><span class="n">name</span><span class="p">);</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">binder</span> <span class="o">!=</span> <span class="kc">null</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">return</span> <span class="n">binder</span><span class="p">;</span>
+        <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+            <span class="k">throw</span> <span class="k">new</span> <span class="n">ServiceNotFoundException</span><span class="p">(</span><span class="n">name</span><span class="p">);</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">base/core/java/android/app/SystemServiceRegistry.java</span></code>第四点说明，可以看到以下通过put和get调用:</p></li>
+</ul>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span>                <span class="n">registerService</span><span class="p">(</span><span class="n">Context</span><span class="p">.</span><span class="na">PAXBMS_SERVICE</span><span class="p">,</span> <span class="n">PaxBmsManager</span><span class="p">.</span><span class="na">class</span><span class="p">,</span>
+                <span class="k">new</span> <span class="n">CachedServiceFetcher</span><span class="o">&lt;</span><span class="n">PaxBmsManager</span><span class="o">&gt;</span><span class="p">()</span> <span class="p">{</span>
+                    <span class="nd">@Override</span>
+                    <span class="kd">public</span> <span class="n">PaxBmsManager</span> <span class="nf">createService</span><span class="p">(</span><span class="n">ContextImpl</span> <span class="n">ctx</span><span class="p">)</span>
+                            <span class="kd">throws</span> <span class="n">ServiceNotFoundException</span> <span class="p">{</span>
+                        <span class="cm">/*IBinder b = ServiceManager.getService(&quot;paxbms&quot;);</span>
+<span class="cm">                        IPaxBms service = IPaxBms.Stub.asInterface(b);*/</span>
+                        <span class="k">return</span> <span class="n">PaxBmsManager</span><span class="p">.</span><span class="na">getInstance</span><span class="p">();</span>
+                    <span class="p">}});</span>
+
+    <span class="cm">/**</span>
+<span class="cm">     * Statically registers a system service with the context.</span>
+<span class="cm">     * This method must be called during static initialization only.</span>
+<span class="cm">     */</span>
+    <span class="kd">private</span> <span class="kd">static</span> <span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="kt">void</span> <span class="nf">registerService</span><span class="p">(</span><span class="nd">@NonNull</span> <span class="n">String</span> <span class="n">serviceName</span><span class="p">,</span>
+            <span class="nd">@NonNull</span> <span class="n">Class</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="n">serviceClass</span><span class="p">,</span> <span class="nd">@NonNull</span> <span class="n">ServiceFetcher</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="n">serviceFetcher</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">SYSTEM_SERVICE_NAMES</span><span class="p">.</span><span class="na">put</span><span class="p">(</span><span class="n">serviceClass</span><span class="p">,</span> <span class="n">serviceName</span><span class="p">);</span>
+        <span class="n">SYSTEM_SERVICE_FETCHERS</span><span class="p">.</span><span class="na">put</span><span class="p">(</span><span class="n">serviceName</span><span class="p">,</span> <span class="n">serviceFetcher</span><span class="p">);</span>
+        <span class="n">SYSTEM_SERVICE_CLASS_NAMES</span><span class="p">.</span><span class="na">put</span><span class="p">(</span><span class="n">serviceName</span><span class="p">,</span> <span class="n">serviceClass</span><span class="p">.</span><span class="na">getSimpleName</span><span class="p">());</span>
+    <span class="p">}</span>
+
+    <span class="kd">public</span> <span class="kd">static</span> <span class="n">Object</span> <span class="nf">getSystemService</span><span class="p">(</span><span class="n">ContextImpl</span> <span class="n">ctx</span><span class="p">,</span> <span class="n">String</span> <span class="n">name</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">name</span> <span class="o">==</span> <span class="kc">null</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">return</span> <span class="kc">null</span><span class="p">;</span>
+        <span class="p">}</span>
+        <span class="kd">final</span> <span class="n">ServiceFetcher</span><span class="o">&lt;?&gt;</span> <span class="n">fetcher</span> <span class="o">=</span> <span class="n">SYSTEM_SERVICE_FETCHERS</span><span class="p">.</span><span class="na">get</span><span class="p">(</span><span class="n">name</span><span class="p">);</span>
+        <span class="p">...</span><span class="na">省略</span><span class="p">...</span>
+    <span class="p">}</span>
+</pre></div>
+</div>
+<p>后续应用层不直接访问driver或设备节点，主要通过Framework层PaxBatteryService和BatteryService来设置/获取相关BMS信息</p>
+<p>这样设计主要是2点考虑：</p>
+<ul class="simple">
+<li><p>1.不同平台的通用性和易移植性</p></li>
+<li><p>2.安全</p></li>
+</ul>
+</section>
+<section id="battery">
+<h1>一、电池及充放电信息，通过接收Battery广播来获取<a class="headerlink" href="#battery" title="Permalink to this headline"></a></h1>
+<p>在android原生的基础上增加了下面几个广播信息</p>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="kd">public</span> <span class="kd">static</span> <span class="kd">final</span> <span class="n">String</span> <span class="n">EXTRA_CHARGER_VOLTAGE</span> <span class="o">=</span> <span class="s">&quot;android.os.extra.CHARGER_VOLTAGE&quot;</span><span class="p">;</span>     <span class="c1">//充电器电压</span>
+<span class="kd">public</span> <span class="kd">static</span> <span class="kd">final</span> <span class="n">String</span> <span class="n">EXTRA_CHARGER_CURRENT</span> <span class="o">=</span> <span class="s">&quot;android.os.extra.CHARGER_CURRENT&quot;</span><span class="p">;</span>     <span class="c1">//充电器电流</span>
+<span class="kd">public</span> <span class="kd">static</span> <span class="kd">final</span> <span class="n">String</span> <span class="n">EXTRA_SOH</span> <span class="o">=</span> <span class="s">&quot;android.os.extra.SOH&quot;</span><span class="p">;</span>                                                      <span class="c1">//电池健康信息</span>
+<span class="kd">public</span> <span class="kd">static</span> <span class="kd">final</span> <span class="n">String</span> <span class="n">EXTRA_MANUFACTURER</span> <span class="o">=</span> <span class="s">&quot;android.os.extra.MANUFACTURER&quot;</span><span class="p">;</span>                <span class="c1">//电池厂商信息</span>
+<span class="kd">public</span> <span class="kd">static</span> <span class="kd">final</span> <span class="n">String</span> <span class="n">EXTRA_SERIAL_NUMBER</span> <span class="o">=</span> <span class="s">&quot;android.os.extra.SERIAL_NUMBER&quot;</span><span class="p">;</span>                 <span class="c1">//电池序列号</span>
+</pre></div>
+</div>
+<p>Healthd是对接power supply 驱动的hal层实现，主要是监听power supply 驱动通过uevent上报的事件，并将power supply信息分发给framework层BatteryService
+下面的表格为pax要提供power supply信息。</p>
+<table class="colwidths-auto docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>类型</p></th>
+<th class="head"><p>节点</p></th>
+<th class="head"><p>值类型</p></th>
+<th class="head"><p>单位</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>电池是否在位</p></td>
+<td><p>present</p></td>
+<td><p>int</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p>类型</p></td>
+<td><p>type</p></td>
+<td><p>int</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p>电压</p></td>
+<td><p>voltage_now</p></td>
+<td><p>int</p></td>
+<td><p>uV</p></td>
+</tr>
+<tr class="row-odd"><td><p>开路电压</p></td>
+<td><p>voltage_ocv</p></td>
+<td><p>int</p></td>
+<td><p>uV</p></td>
+</tr>
+<tr class="row-even"><td><p>电流</p></td>
+<td><p>current_now</p></td>
+<td><p>int</p></td>
+<td><p>uA</p></td>
+</tr>
+<tr class="row-odd"><td><p>电量</p></td>
+<td><p>capacity</p></td>
+<td><p>int</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p>设计容量</p></td>
+<td><p>charge_full_design</p></td>
+<td><p>int</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p>温度</p></td>
+<td><p>temp</p></td>
+<td><p>int</p></td>
+<td><p>10*C</p></td>
+</tr>
+<tr class="row-even"><td><p>当前状态</p></td>
+<td><p>Status</p></td>
+<td><p>int</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p>健康状态</p></td>
+<td><p>health</p></td>
+<td><p>str</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p>电池工艺</p></td>
+<td><p>technology</p></td>
+<td><p>str</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p>健康信息</p></td>
+<td><p>soh</p></td>
+<td><p>int</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p>充放电周期</p></td>
+<td><p>cycle_count</p></td>
+<td><p>int</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p>厂商信息</p></td>
+<td><p>manufacturer</p></td>
+<td><p>str</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p>序列号</p></td>
+<td><p>serial_number</p></td>
+<td><p>str</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p>充电器是否在</p></td>
+<td><p>位	online</p></td>
+<td><p>int</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p>类型</p></td>
+<td><p>type</p></td>
+<td><p>int</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p>电压</p></td>
+<td><p>voltage_now</p></td>
+<td><p>int</p></td>
+<td><p>uV</p></td>
+</tr>
+<tr class="row-even"><td><p>电流</p></td>
+<td><p>current_now</p></td>
+<td><p>int</p></td>
+<td><p>uA</p></td>
+</tr>
+<tr class="row-odd"><td><p>最大输入电压</p></td>
+<td><p>voltage_max</p></td>
+<td><p>int</p></td>
+<td><p>uV</p></td>
+</tr>
+<tr class="row-even"><td><p>最大输入电流</p></td>
+<td><p>current_max</p></td>
+<td><p>str</p></td>
+<td><p>uA</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="bms">
+<h1>二、充放电控制BMS服务<a class="headerlink" href="#bms" title="Permalink to this headline"></a></h1>
+<p>PaxBmsService.java和PaxBatteryManagerService.java都是系统服务，都是在<code class="docutils literal notranslate"><span class="pre">system_server</span></code>里面，区别就是PaxBatteryManagerService.java跑了onstart方法。
+关联文件：</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>frameworks/base/services/core/java/com/android/server/paxbms/OWNERS
+frameworks/base/core/java/android/app/PaxBmsManager.java //代理PaxBmsService方法，供PaxBatteryManagerService调用
+frameworks/base/services/core/java/com/android/server/paxbms/PaxBmsService.java //system bms service 主要实现打开/关闭 充电及power path功能
+frameworks/base/services/core/java/com/pax/server/BatteryTermInfo.java
+frameworks/base/services/core/java/com/pax/server/DatabaseHelper.java
+frameworks/base/services/core/java/com/pax/server/PaxBatteryManagerService.java //system BatteryManager service 
+frameworks/base/services/core/java/com/pax/util/OsPaxApiInternal.java
+frameworks/base/services/core/jni/com_android_server_paxbms_PaxBmsService.cpp //jni封装
+</pre></div>
+</div>
+<p>接口定义：</p>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="n">frameworks</span><span class="o">/</span><span class="n">base</span><span class="o">/</span><span class="n">services</span><span class="o">/</span><span class="n">core</span><span class="o">/</span><span class="n">java</span><span class="o">/</span><span class="n">com</span><span class="o">/</span><span class="n">android</span><span class="o">/</span><span class="n">server</span><span class="o">/</span><span class="n">paxbms</span><span class="o">/</span><span class="n">PaxBmsService</span><span class="p">.</span><span class="na">java</span><span class="p">:</span>
+    <span class="kd">static</span> <span class="kd">native</span> <span class="kt">void</span> <span class="nf">enableCharge_native</span><span class="p">();</span>
+    <span class="kd">static</span> <span class="kd">native</span> <span class="kt">void</span> <span class="nf">disableCharge_native</span><span class="p">();</span>
+    <span class="kd">static</span> <span class="kd">native</span> <span class="kt">void</span> <span class="nf">enablePowerPath_native</span><span class="p">();</span>
+    <span class="kd">static</span> <span class="kd">native</span> <span class="kt">void</span> <span class="nf">disablePowerPath_native</span><span class="p">();</span>
+</pre></div>
+</div>
+<p>PaxBatteryService提供相关接口给测试程序，</p>
+<section id="id4">
+<h2>工作模式介绍<a class="headerlink" href="#id4" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p>从电池的续航能力及电池安全两方面定义了2个电池工作模式：</p>
+<ul>
+<li><p>移动模式（Mobile Mode）：</p>
+<ul>
+<li><p>用户终端长期由电池供电为主</p></li>
+</ul>
+</li>
+<li><p>桌面模式（Counter-Top Mode）：</p>
+<ul>
+<li><p>用户终端长期由外部供电为主</p></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<table class="colwidths-auto docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>工作模式</p></th>
+<th class="head"><p>满充电量</p></th>
+<th class="head"><p>回充电量</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>移动模式</p></td>
+<td><p>100</p></td>
+<td><p>85</p></td>
+</tr>
+<tr class="row-odd"><td><p>桌面模式</p></td>
+<td><p>80</p></td>
+<td><p>65</p></td>
+</tr>
+</tbody>
+</table>
+<p>在表格中，满充电量表示电池充电到某个电量后停止充电，由于存在适配器供电不足以满足系统供电场景和有些模块由电池直接供电，因此电量会缓慢下降，当电量下降至回充电量时，重新使能充电。</p>
+</section>
+<section id="id5">
+<h2>电池模式切换<a class="headerlink" href="#id5" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p>主动切换模式
+用户可以根据自己的喜好主动切换BMS工作模式</p></li>
+<li><p>通过属性设置
+可通过写”persist.sys.battery.type”属性设定电池工作模式，立即生效。</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>persist.sys.battery.type = 0；自动模式
+persist.sys.battery.type = 1；移动模式
+persist.sys.battery.type = 2；桌面模式
+</pre></div>
+</div>
+<p>如果客户能够明确设备的应用场景，即可在设备出厂前要求设置为适合设备应用场景的模式。
+例如：“POS终端+售卖机”的场景，由于这种场景下设备会始终连接电源，可设置其工作模式为桌面模式；在移动办公场景的设备，则可以设置为移动模式。</p>
+</section>
+<section id="id6">
+<h2>使用方法<a class="headerlink" href="#id6" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p>在应用中进行设置，第一步：打开设置应用</p></li>
+</ul>
+<p><img alt="0009_0004.png" src="../../../_images/0009_0004.png" /></p>
+<ul class="simple">
+<li><p>第二步：点击 Battery -&gt; Battery Manager</p></li>
+</ul>
+<p><img alt="0009_0005.png" src="../../../_images/0009_0005.png" />
+<img alt="0009_0006.png" src="../../../_images/0009_0006.png" /></p>
+<ul class="simple">
+<li><p>第三步：点击Select Charge Mode -&gt; 选择模式</p></li>
+</ul>
+<p><img alt="0009_0007.png" src="../../../_images/0009_0007.png" />
+<img alt="0009_0008.png" src="../../../_images/0009_0008.png" /></p>
+</section>
+<section id="id7">
+<h2>自动模式<a class="headerlink" href="#id7" title="Permalink to this headline"></a></h2>
+<p>自动工作模式是指根据用户使用设备的习惯预测电池充电模式。比如：通过前7天同一时间后的6个小时的使用习惯预测充电模式。</p>
+<ol class="arabic simple">
+<li><p>设备开机后默认是Mobile Mode;</p></li>
+<li><p>电池管理服务PaxBatteryManagerService负责记录一个星期内的充电状态，每隔30s记录一次，设备只保留7天的数据，PaxBatteryManagerService每24小时删除一次过期的数据。关机的时间段，数据库中会填充4。</p></li>
+<li><p>PaxBatteryManagerService每30分钟查询一次当前时间+1~+（1+n）小时时间段的历史数据， n = 6。
+当样本数据至少有PREDICTED_DAYS_MIN天的数据量时（取3天,设置了0.05的误差，即当数据量多于3<em>0.95天的数据量），查询充电状态的数据量，如果充电状态数据量多余非充电状态的数据量时，则切换当前模式为桌面模式（Counter-topMode），否则是移动模式（Mobile Mode）；有效数据量的计算方法：预测时间为7</em>6h-数据库中4的个数*30s。</p></li>
+<li><p>切换模式后，设置满充电量和回充电量。</p></li>
+</ol>
+</section>
+<section id="id8">
+<h2>工作流程图<a class="headerlink" href="#id8" title="Permalink to this headline"></a></h2>
+<p><img alt="0009_0009.png" src="../../../_images/0009_0009.png" /></p>
+<p>系统记录电池状态的写数据库的相关操作如下：</p>
+<p><img alt="0009_0010.png" src="../../../_images/0009_0010.png" />
+BMS记录设备连接电源线及关机的状态和时间，保存在/data/system/batterylog.db</p>
+</section>
+</section>
+<section id="app-batterywarning">
+<h1>三、异常信息广播APP batterywarning<a class="headerlink" href="#app-batterywarning" title="Permalink to this headline"></a></h1>
+<p>广播通知节点改为<code class="docutils literal notranslate"><span class="pre">/sys/class/pax/bms/bms_notify</span></code>：</p>
+<div class="highlight-diff notranslate"><div class="highlight"><pre><span></span><span class="gd">--- a/device/mediatek/sepolicy/bsp/plat_private/genfs_contexts</span><span class="w"></span>
+<span class="gi">+++ b/device/mediatek/sepolicy/bsp/plat_private/genfs_contexts</span><span class="w"></span>
+<span class="gu">@@ -32,6 +32,7 @@ genfscon sysfs /devices/platform/11270000.usb3/musb-hdrc/udc/musb-hdrc u:object_</span><span class="w"></span>
+<span class="w"> </span>#path=&quot;/sys/devices/platform/(charger|mt-battery)/BatteryNotify&quot;<span class="w"></span>
+<span class="w"> </span>genfscon sysfs /devices/platform/charger/BatteryNotify u:object_r:sysfs_battery_warning:s0<span class="w"></span>
+<span class="w"> </span>genfscon sysfs /devices/platform/mt-battery/BatteryNotify u:object_r:sysfs_battery_warning:s0<span class="w"></span>
+<span class="gi">+genfscon sysfs /devices/platform/pax_bms/pax/bms/bms_notify u:object_r:sysfs_battery_warning:s0</span><span class="w"></span>
+
+<span class="w"> </span># Purpose : Camera need read cl_cam_status<span class="w"></span>
+<span class="w"> </span># Package: com.mediatek.camera<span class="w"></span>
+<span class="gh">diff --git a/vendor/mediatek/proprietary/frameworks/opt/batterywarning/batterywarning.cpp b/vendor/mediatek/proprietary/frameworks/opt/batterywarning/batterywarning.cpp</span><span class="w"></span>
+<span class="gh">index d4bae84dee9..434e2b197c2 100644</span><span class="w"></span>
+<span class="gd">--- a/vendor/mediatek/proprietary/frameworks/opt/batterywarning/batterywarning.cpp</span><span class="w"></span>
+<span class="gi">+++ b/vendor/mediatek/proprietary/frameworks/opt/batterywarning/batterywarning.cpp</span><span class="w"></span>
+<span class="gu">@@ -152,8 +152,9 @@ bool sendBroadcastMessage(String8 action, int value)</span><span class="w"></span>
+
+
+<span class="w"> </span>static const char *charger_file_path[] = {<span class="w"></span>
+<span class="gd">-    &quot;/sys/devices/platform/charger/BatteryNotify&quot;,</span><span class="w"></span>
+<span class="gd">-    &quot;/sys/devices/platform/mt-battery/BatteryNotify&quot;,</span><span class="w"></span>
+<span class="gi">+    //&quot;/sys/devices/platform/charger/BatteryNotify&quot;,</span><span class="w"></span>
+<span class="gi">+    //&quot;/sys/devices/platform/mt-battery/BatteryNotify&quot;,</span><span class="w"></span>
+<span class="gi">+       &quot;/sys/class/pax/bms/bms_notify&quot;,</span><span class="w"></span>
+<span class="w"> </span>};<span class="w"></span>
+
+<span class="w"> </span>static int read_from_file(const char* path) {<span class="w"></span>
+<span class="gu">@@ -238,7 +239,7 @@ static void uevent_event(uint32_t /*epevents*/) {</span><span class="w"></span>
+
+<span class="w"> </span>    while (*cp) {<span class="w"></span>
+
+<span class="gd">-        if (!strncmp(cp, &quot;CHGSTAT=&quot;, strlen(&quot;CHGSTAT=&quot;))) { // This CHGSTAT value will be provided by kernel driver</span><span class="w"></span>
+<span class="gi">+        if (!strncmp(cp, &quot;BMS_STAT=&quot;, strlen(&quot;BMS_STAT=&quot;))) { // This CHGSTAT value will be provided by kernel driver</span><span class="w"></span>
+<span class="w"> </span>            readType(buffer);<span class="w"></span>
+<span class="w"> </span>            break;<span class="w"></span>
+<span class="w"> </span>        }<span class="w"></span>
+</pre></div>
+</div>
+<section id="id9">
+<h2>1.异常信息定义<a class="headerlink" href="#id9" title="Permalink to this headline"></a></h2>
+<ol class="arabic simple">
+<li><p>坏电池异常: 系统开机时会先检测电池是否损坏，当连续5次读取电池电压低于阈值（单电芯为2V， 双电芯为4V），系统显示坏电池logo，提示用户电池损坏，需更换电池才能开机</p></li>
+<li><p>充电器过压异常:  5s检测一次，当连续12次检测到充电器电压高于过压阈值（最大输入电压的1.3倍），则上报异常信息，并停止充电，当读取充电器电压连续12次恢复至正常范围内，则恢复充电</p></li>
+<li><p>充电超时异常:  当单次充电总时长超过最大允许时长（一般为12小时），则上报异常信息，并停止充电，一旦出现该异常，后续不允许充电，重启才能恢复充电</p></li>
+<li><p>电池过压异常： 5s检测一次，当连续12次检测到电池电压高于过压阈值（额定电压的1.03倍），则上报异常信息，并停止充电，一旦出现该异常，后续不允许充电，重启才能恢复充电</p></li>
+<li><p>电池低压异常： 5s检测一次，当连续12次检测到电池电压低于低压阈值（单电芯为3.4V, 双电芯为6.6V），则上报异常信息，应该层收到该异常，启动关机流程</p></li>
+<li><p>电池高温异常：5s检测一次，当连续12次检测到电池温度高于最大充电温度（45度），则上报异常信息，并停止充电， 当连续12次检测到电池温度恢复至正常范围，则恢复充电</p></li>
+<li><p>电池低温异常：5s检测一次，当连续12次检测到电池温度低于最低充电温度（0度），则上报异常信息，并停止充电， 当连续12次检测到电池温度恢复至正常范围，则恢复充电</p></li>
+<li><p>充电IC通讯异常：当联系60次出现IC通讯异常，则上报异常信息，并停止充电，一旦出现该异常，后续不允许充电，重启才能恢复充电</p></li>
+<li><p>电量计IC通讯异常：处理机制同充电IC通讯异常</p></li>
+<li><p>thermal温度监控并设置电流限制。</p></li>
+</ol>
+</section>
+<section id="id10">
+<h2>2.BMS轮询上报<a class="headerlink" href="#id10" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">bms.c</span></code>以下为工作队列轮询状态:</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="w"> </span><span class="n">bms_probe</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">platform_device</span><span class="w"> </span><span class="o">*</span><span class="n">pdev</span><span class="p">)</span><span class="w"></span>
+<span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w"> 	</span><span class="n">INIT_DELAYED_WORK</span><span class="p">(</span><span class="o">&amp;</span><span class="n">g_bms_data</span><span class="p">.</span><span class="n">dwork</span><span class="p">,</span><span class="w"> </span><span class="n">bms_dwork</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="n">schedule_delayed_work</span><span class="p">(</span><span class="o">&amp;</span><span class="n">g_bms_data</span><span class="p">.</span><span class="n">dwork</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span><span class="w">   </span>
+<span class="w"> </span><span class="p">}</span><span class="w"></span>
+
+<span class="w"> </span><span class="k">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">bms_dwork</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">work_struct</span><span class="w"> </span><span class="o">*</span><span class="n">work</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="n">bms_info_update</span><span class="p">();</span><span class="w"></span>
+<span class="w">	</span><span class="n">bms_chg_vol_check</span><span class="p">();</span><span class="w"></span>
+<span class="w">	</span><span class="n">bms_bat_cur_check</span><span class="p">();</span><span class="w"></span>
+<span class="w">	</span><span class="n">bms_bat_vol_check</span><span class="p">();</span><span class="w"></span>
+<span class="w">	</span><span class="n">bms_bat_temp_check</span><span class="p">();</span><span class="w"></span>
+<span class="w">	</span><span class="n">bms_chg_time_check</span><span class="p">();</span><span class="w"></span>
+<span class="w">	</span><span class="n">bms_chg_ic_check</span><span class="p">();</span><span class="w"></span>
+<span class="w">	</span><span class="n">bms_gauge_ic_check</span><span class="p">();</span><span class="w"></span>
+<span class="w">	</span><span class="n">bms_thermal_check</span><span class="p">(</span><span class="o">&amp;</span><span class="n">g_bms_data</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="n">bms_dump</span><span class="p">();</span><span class="w"></span>
+<span class="w">	</span><span class="n">wait_event_timeout</span><span class="p">(</span><span class="n">g_bms_data</span><span class="p">.</span><span class="n">bms_wait_q</span><span class="p">,</span><span class="w"></span>
+<span class="w">			</span><span class="p">(</span><span class="n">g_bms_data</span><span class="p">.</span><span class="n">bms_wait_timeout</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="nb">true</span><span class="p">),</span><span class="w"> </span><span class="n">msecs_to_jiffies</span><span class="p">(</span><span class="n">BMS_POLL_INTERVAL</span><span class="p">));</span><span class="w"> </span><span class="c1">//阻塞5s，继续执行</span>
+<span class="w">	</span><span class="n">g_bms_data</span><span class="p">.</span><span class="n">bms_wait_timeout</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">false</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="n">schedule_delayed_work</span><span class="p">(</span><span class="o">&amp;</span><span class="n">g_bms_data</span><span class="p">.</span><span class="n">dwork</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>异常状态上报是通过uevent时间上报，上层通过epoll检测到并查看<code class="docutils literal notranslate"><span class="pre">/sys/class/pax/bms/bms_notify</span></code>节点设置值，判断是哪种异常并发送广播上报给App处理：</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span>bms_notify格式，数字表示第几个bit：
+/*start: notify code, should compatible with A800 */
+#define NC_CHG_OV				(0)
+#define NC_BAT_OT				(1)
+#define NC_BAT_OC				(2)
+#define NC_BAT_OV				(3)
+#define NC_BAT_UT				(5)
+#define NC_CHG_IBUS_OCP         (7)
+#define NC_CHG_I2C_ERR          (8)
+
+#define NC_CHG_TMO				(13)
+#define NC_BAT_I2C_ERR          (14)
+#define NC_BAT_UV				(18)
+
+#define NC_DISABLE_CHG_BY_USER  (63)
+#define NC_MAX					(64)
+#define DISABLE_ALL             0xFFFFFFFFFFFFFFFF
+/*end: notify code */
+
+比如电压异常：
+bms_chg_vol_check()
+{
+    bms_set_notify_code(NC_CHG_OV, true, true);
+}
+
+static int bms_set_notify_code(int type, bool set, bool update_vote)
+{
+	if (type &gt;= NC_MAX)
+		return 0;
+
+	pr_info(&quot;notify_code: 0x%x\n&quot;, g_bms_data.notify_code);
+
+	if (set) {
+		g_bms_data.notify_code |= (1 &lt;&lt; type);
+	}
+	else {
+		g_bms_data.notify_code &amp;= ~(1 &lt;&lt; type);
+	}
+
+	pr_info(&quot;type: %s, set: %d, notify_code: 0x%x\n&quot;, notify_type_name[type], set, g_bms_data.notify_code);
+
+	if (update_vote) {
+		bms_chg_vote(type, set);
+	}
+
+	bms_status_notify();
+
+	return 0;
+}
+
+static void bms_status_notify()
+{
+	char *env[2] = { &quot;BMS_STAT=1&quot;, NULL };
+
+	kobject_uevent_env(&amp;g_bms_data.dev-&gt;kobj, KOBJ_CHANGE, env);
+}
+</pre></div>
+</div>
+<p>主要来看一下thermal如何检测，原理是用电池、CPU、PMIC三个温度根据60%、30%、10%的权重组成一个新的温度值，该值可理解为手机表面温度，根据此温度区别，设置一个电流区间，实时进行限流。</p>
+<p>温度(℃)| 0|0~15|15~35|35~38|38~42|42~45|45~50
+—|—|—|—|—|—|—|—|—
+电流限制(ma)| 0|1300|4000|3000|2000|1000|0</p>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="nl">dts</span><span class="p">:</span><span class="w"></span>
+<span class="w">    </span><span class="n">thermal_names</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;mtktsbattery&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;mtktsAP&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;mtktspmic&quot;</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="n">thermal_weights</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">&lt;</span><span class="mi">60</span><span class="w"> </span><span class="mi">30</span><span class="w"> </span><span class="mi">10</span><span class="o">&gt;</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="n">chg_skin_temps</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">&lt;</span><span class="mi">0</span><span class="w"> </span><span class="mi">15000</span><span class="w"> </span><span class="mi">35000</span><span class="w"> </span><span class="mi">38000</span><span class="w"> </span><span class="mi">42000</span><span class="w"> </span><span class="mi">45000</span><span class="w"> </span><span class="mi">50000</span><span class="o">&gt;</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="n">chg_currents</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">&lt;</span><span class="mi">0</span><span class="w"> </span><span class="mi">1300000</span><span class="w"> </span><span class="mi">4000000</span><span class="w"> </span><span class="mi">3000000</span><span class="w"> </span><span class="mi">2000000</span><span class="w"> </span><span class="mi">1000000</span><span class="w"> </span><span class="mi">0</span><span class="o">&gt;</span><span class="p">;</span><span class="w"></span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">get_skin_temp</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">bms_data</span><span class="w"> </span><span class="o">*</span><span class="n">data</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="kt">int</span><span class="w"> </span><span class="n">skin_temp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="kt">int</span><span class="w"> </span><span class="n">temp</span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="kt">int</span><span class="w"> </span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="kt">int</span><span class="w"> </span><span class="n">total_weight</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">	</span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">data</span><span class="o">-&gt;</span><span class="n">tinfo_cnt</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">IS_ERR_OR_NULL</span><span class="p">(</span><span class="n">data</span><span class="o">-&gt;</span><span class="n">tinfo</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">name</span><span class="p">)</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="p">(</span><span class="n">data</span><span class="o">-&gt;</span><span class="n">tinfo</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">weight</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="mi">0</span><span class="p">))</span><span class="w"></span>
+<span class="w">			</span><span class="k">continue</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">		</span><span class="n">data</span><span class="o">-&gt;</span><span class="n">tinfo</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">tz</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">thermal_zone_get_zone_by_name</span><span class="p">(</span><span class="n">data</span><span class="o">-&gt;</span><span class="n">tinfo</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">name</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">IS_ERR_OR_NULL</span><span class="p">(</span><span class="n">data</span><span class="o">-&gt;</span><span class="n">tinfo</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">tz</span><span class="p">))</span><span class="w"></span>
+<span class="w">			</span><span class="k">continue</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">		</span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">thermal_zone_get_temp</span><span class="p">(</span><span class="n">data</span><span class="o">-&gt;</span><span class="n">tinfo</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">tz</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">temp</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ret</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">			</span><span class="k">continue</span><span class="p">;</span><span class="w"></span>
+<span class="w">		</span><span class="p">}</span><span class="w"></span>
+
+<span class="w">		</span><span class="n">pr_debug</span><span class="p">(</span><span class="s">&quot;%s: %p: %s: %d: %d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">__func__</span><span class="p">,</span><span class="w"> </span><span class="n">data</span><span class="o">-&gt;</span><span class="n">tinfo</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">tz</span><span class="p">,</span><span class="w"> </span><span class="n">data</span><span class="o">-&gt;</span><span class="n">tinfo</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="n">data</span><span class="o">-&gt;</span><span class="n">tinfo</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">weight</span><span class="p">,</span><span class="w"> </span><span class="n">temp</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">temp</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">INVALID_TEMP</span><span class="p">)</span><span class="w"></span>
+<span class="w">			</span><span class="k">continue</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">		</span><span class="n">skin_temp</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="n">temp</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">data</span><span class="o">-&gt;</span><span class="n">tinfo</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">weight</span><span class="p">;</span><span class="w"></span>
+<span class="w">		</span><span class="n">total_weight</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="n">data</span><span class="o">-&gt;</span><span class="n">tinfo</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">weight</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">total_weight</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"></span>
+<span class="w">		</span><span class="n">skin_temp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">skin_temp</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">total_weight</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="k">else</span><span class="w"></span>
+<span class="w">		</span><span class="n">skin_temp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">25000</span><span class="p">;</span><span class="w"></span>
+
+<span class="cp">#ifdef BMS_DEBUG</span>
+<span class="w">	</span><span class="n">skin_temp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">skin_temp</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">data</span><span class="o">-&gt;</span><span class="n">skin_temp_ratio</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">100</span><span class="p">;</span><span class="w"></span>
+<span class="cp">#endif</span>
+
+<span class="w">	</span><span class="n">data</span><span class="o">-&gt;</span><span class="n">skin_temp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">skin_temp</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">100</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="n">pr_debug</span><span class="p">(</span><span class="s">&quot;%s: skin_temp: %d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">__func__</span><span class="p">,</span><span class="w"> </span><span class="n">skin_temp</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">	</span><span class="k">return</span><span class="w"> </span><span class="n">skin_temp</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="kt">int</span><span class="w"> </span><span class="nf">bms_thermal_check</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">bms_data</span><span class="w"> </span><span class="o">*</span><span class="n">data</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="kt">int</span><span class="w"> </span><span class="n">skin_temp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">25000</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="kt">int</span><span class="w"> </span><span class="n">cur_index</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">last_index</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">-1</span><span class="p">;</span><span class="w">    </span><span class="c1">//should reset to -1, when charge start</span>
+<span class="w">	</span><span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">stable_cnt</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="kt">int</span><span class="w"> </span><span class="n">update_flag</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="kt">int</span><span class="w"> </span><span class="n">delta_temp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1000</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">data</span><span class="o">-&gt;</span><span class="n">bms_thermal_support</span><span class="p">)</span><span class="w"></span>
+<span class="w">		</span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">data</span><span class="o">-&gt;</span><span class="n">bat_info</span><span class="p">.</span><span class="n">status</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">POWER_SUPPLY_STATUS_CHARGING</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="n">last_index</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">-1</span><span class="p">;</span><span class="w"></span>
+<span class="w">		</span><span class="n">stable_cnt</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="w">		</span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">skin_temp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">get_skin_temp</span><span class="p">(</span><span class="n">data</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="n">cur_index</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">get_temp_range_index</span><span class="p">(</span><span class="n">data</span><span class="p">,</span><span class="w"> </span><span class="n">skin_temp</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="n">pr_debug</span><span class="p">(</span><span class="s">&quot;%s: origin last_index: %d, cur_index: %d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">__func__</span><span class="p">,</span><span class="w"> </span><span class="n">last_index</span><span class="p">,</span><span class="w"> </span><span class="n">cur_index</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">last_index</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">-1</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="n">last_index</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cur_index</span><span class="p">;</span><span class="w"></span>
+<span class="w">		</span><span class="n">update_flag</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+<span class="w">	</span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">((</span><span class="n">last_index</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">cur_index</span><span class="p">))</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">last_index</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">cur_index</span><span class="p">)</span><span class="w"></span>
+<span class="w">			</span><span class="n">delta_temp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">delta_temp</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">		</span><span class="n">cur_index</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">get_temp_range_index</span><span class="p">(</span><span class="n">data</span><span class="p">,</span><span class="w"> </span><span class="n">skin_temp</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">delta_temp</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="n">pr_debug</span><span class="p">(</span><span class="s">&quot;%s: actrual last_index: %d, cur_index: %d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">__func__</span><span class="p">,</span><span class="w"> </span><span class="n">last_index</span><span class="p">,</span><span class="w"> </span><span class="n">cur_index</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">last_index</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">cur_index</span><span class="p">)</span><span class="w"></span>
+<span class="w">			</span><span class="n">stable_cnt</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">		</span><span class="n">stable_cnt</span><span class="o">++</span><span class="p">;</span><span class="w"></span>
+<span class="w">		</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">stable_cnt</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="n">TEMP_STABLE_CNT</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">			</span><span class="n">stable_cnt</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="w">			</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">last_index</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">cur_index</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">				</span><span class="n">last_index</span><span class="w"> </span><span class="o">++</span><span class="p">;</span><span class="w"></span>
+<span class="w">				</span><span class="n">update_flag</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span><span class="w"></span>
+<span class="w">			</span><span class="p">}</span><span class="w"></span>
+<span class="w">			</span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">last_index</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">cur_index</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">				</span><span class="n">last_index</span><span class="w"> </span><span class="o">--</span><span class="p">;</span><span class="w"></span>
+<span class="w">				</span><span class="n">update_flag</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span><span class="w"></span>
+<span class="w">			</span><span class="p">}</span><span class="w"></span>
+<span class="w">		</span><span class="p">}</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+<span class="w">	</span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="n">stable_cnt</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">update_flag</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">data</span><span class="o">-&gt;</span><span class="n">usb_psy</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">			</span><span class="k">union</span><span class="w"> </span><span class="nc">power_supply_propval</span><span class="w"> </span><span class="n">val</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="mi">0</span><span class="p">};</span><span class="w"></span>
+<span class="w">			</span><span class="n">val</span><span class="p">.</span><span class="n">intval</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">data</span><span class="o">-&gt;</span><span class="n">tchg_info</span><span class="p">[</span><span class="n">last_index</span><span class="p">].</span><span class="n">max_chg_current</span><span class="p">;</span><span class="w"></span>
+<span class="w">			</span><span class="n">power_supply_set_property</span><span class="p">(</span><span class="n">data</span><span class="o">-&gt;</span><span class="n">usb_psy</span><span class="p">,</span><span class="w"> </span><span class="n">POWER_SUPPLY_PROP_CURRENT_MAX</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">val</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="p">}</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+
+<span class="w">	</span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+</section>
+<section id="batterywarning-cepoll">
+<h2>3.batterywarning C应用epoll检测并发送广播上报<a class="headerlink" href="#batterywarning-cepoll" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">vendor/mediatek/proprietary/frameworks/opt/batterywarning/batterywarning.cpp</span></code>:</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="cp">#define LOG_TAG &quot;batterywarning&quot;</span>
+
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;stdio.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;stdlib.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;utils/Log.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;utils/String16.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;binder/BinderService.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;binder/Parcel.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;cutils/uevent.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;sys/epoll.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;errno.h&gt;</span><span class="cp"></span>
+
+<span class="cp">#define MAX_CHAR 100</span>
+<span class="c1">//M: Currently disabling battery path.. in later stage we will update in code to check path by order. @{</span>
+<span class="c1">//#ifdef MTK_GM_30</span>
+<span class="c1">//#define FILE_NAME &quot;/sys/devices/platform/charger/BatteryNotify&quot;</span>
+<span class="c1">//#else</span>
+<span class="c1">//#define FILE_NAME &quot;/sys/devices/platform/mt-battery/BatteryNotify&quot;</span>
+<span class="c1">//#endif</span>
+<span class="c1">//M: @}</span>
+<span class="cp">#define ACTION &quot;pax.intent.action.BATTERY_ABNORMAL&quot;</span>
+<span class="cp">#define NORMAL_ACTION &quot;pax.intent.action.BATTERY_NORMAL&quot;</span>
+<span class="cp">#define TYPE &quot;type&quot;</span>
+<span class="cp">#define ARRAY_SIZE(a) (sizeof (a) / sizeof ((a)[0]))</span>
+<span class="k">using</span><span class="w"> </span><span class="k">namespace</span><span class="w"> </span><span class="nn">android</span><span class="p">;</span><span class="w"></span>
+
+<span class="cp">#define MAX_EPOLL_EVENTS 40</span>
+<span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">uevent_fd</span><span class="p">;</span><span class="w"></span>
+<span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">epollfd</span><span class="p">;</span><span class="w"></span>
+<span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">eventct</span><span class="p">;</span><span class="w"></span>
+
+<span class="kt">bool</span><span class="w"> </span><span class="nf">sendBroadcastMessage</span><span class="p">(</span><span class="n">String8</span><span class="w"> </span><span class="n">action</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">value</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">ALOGD</span><span class="p">(</span><span class="s">&quot;sendBroadcastMessage(): Action: %s, Value: %d &quot;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="p">)(</span><span class="n">action</span><span class="p">.</span><span class="n">string</span><span class="p">()),</span><span class="w"> </span><span class="n">value</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="n">sp</span><span class="o">&lt;</span><span class="n">IServiceManager</span><span class="o">&gt;</span><span class="w"> </span><span class="n">sm</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">defaultServiceManager</span><span class="p">();</span><span class="w"></span>
+<span class="w">    </span><span class="n">sp</span><span class="o">&lt;</span><span class="n">IBinder</span><span class="o">&gt;</span><span class="w"> </span><span class="n">am</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sm</span><span class="o">-&gt;</span><span class="n">getService</span><span class="p">(</span><span class="n">String16</span><span class="p">(</span><span class="s">&quot;activity&quot;</span><span class="p">));</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">am</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="nb">NULL</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="n">Parcel</span><span class="w"> </span><span class="n">data</span><span class="p">,</span><span class="w"> </span><span class="n">reply</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="n">data</span><span class="p">.</span><span class="n">writeInterfaceToken</span><span class="p">(</span><span class="n">String16</span><span class="p">(</span><span class="s">&quot;android.app.IActivityManager&quot;</span><span class="p">));</span><span class="w"></span>
+<span class="w">        </span><span class="n">data</span><span class="p">.</span><span class="n">writeStrongBinder</span><span class="p">(</span><span class="nb">NULL</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="c1">// Add for match AMS change on O</span>
+<span class="w">        </span><span class="n">data</span><span class="p">.</span><span class="n">writeInt32</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="c1">// intent begin</span>
+<span class="w">        </span><span class="n">data</span><span class="p">.</span><span class="n">writeString8</span><span class="p">(</span><span class="n">action</span><span class="p">);</span><span class="w"> </span><span class="c1">// action</span>
+<span class="w">        </span><span class="n">data</span><span class="p">.</span><span class="n">writeInt32</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span><span class="w"> </span><span class="c1">// URI data type</span>
+<span class="w">        </span><span class="n">data</span><span class="p">.</span><span class="n">writeString8</span><span class="p">(</span><span class="nb">NULL</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span><span class="w"> </span><span class="c1">// type</span>
+<span class="w">        </span><span class="n">data</span><span class="p">.</span><span class="n">writeString8</span><span class="p">(</span><span class="nb">NULL</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span><span class="w"> </span><span class="c1">// mIdentifier</span>
+<span class="w">        </span><span class="n">data</span><span class="p">.</span><span class="n">writeInt32</span><span class="p">(</span><span class="mh">0x04000000</span><span class="p">);</span><span class="w"> </span><span class="c1">// flags: FLAG_RECEIVER_REGISTERED_ONLY_BEFORE_BOOT</span>
+<span class="w">        </span><span class="n">data</span><span class="p">.</span><span class="n">writeString8</span><span class="p">(</span><span class="nb">NULL</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span><span class="w"> </span><span class="c1">// package name</span>
+<span class="w">        </span><span class="n">data</span><span class="p">.</span><span class="n">writeString8</span><span class="p">(</span><span class="nb">NULL</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span><span class="w"> </span><span class="c1">// component name</span>
+<span class="w">        </span><span class="n">data</span><span class="p">.</span><span class="n">writeInt32</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span><span class="w"> </span><span class="c1">// source bound - size</span>
+<span class="w">        </span><span class="n">data</span><span class="p">.</span><span class="n">writeInt32</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span><span class="w"> </span><span class="c1">// categories - size</span>
+<span class="w">        </span><span class="n">data</span><span class="p">.</span><span class="n">writeInt32</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span><span class="w"> </span><span class="c1">// selector - size</span>
+<span class="w">        </span><span class="n">data</span><span class="p">.</span><span class="n">writeInt32</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span><span class="w"> </span><span class="c1">// clipData - size</span>
+<span class="w">        </span><span class="n">data</span><span class="p">.</span><span class="n">writeInt32</span><span class="p">(</span><span class="mi">-2</span><span class="p">);</span><span class="w"> </span><span class="c1">// contentUserHint: -2 -&gt; UserHandle.USER_CURRENT</span>
+<span class="w">        </span><span class="n">data</span><span class="p">.</span><span class="n">writeInt32</span><span class="p">(</span><span class="mi">-1</span><span class="p">);</span><span class="w"> </span><span class="c1">// bundle extras length</span>
+<span class="w">        </span><span class="n">data</span><span class="p">.</span><span class="n">writeInt32</span><span class="p">(</span><span class="mh">0x4C444E42</span><span class="p">);</span><span class="w"> </span><span class="c1">// &#39;B&#39; &#39;N&#39; &#39;D&#39; &#39;L&#39;</span>
+<span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="n">oldPos</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">data</span><span class="p">.</span><span class="n">dataPosition</span><span class="p">();</span><span class="w"></span>
+<span class="w">        </span><span class="n">data</span><span class="p">.</span><span class="n">writeInt32</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span><span class="w">  </span><span class="c1">// size</span>
+<span class="w">        </span><span class="c1">// data.writeInt32(0); // VAL_STRING, need to remove because of analyze common intent</span>
+<span class="w">        </span><span class="n">data</span><span class="p">.</span><span class="n">writeString16</span><span class="p">(</span><span class="n">String16</span><span class="p">(</span><span class="n">TYPE</span><span class="p">));</span><span class="w"></span>
+<span class="w">        </span><span class="n">data</span><span class="p">.</span><span class="n">writeInt32</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span><span class="w"> </span><span class="c1">// VAL_INTEGER</span>
+<span class="w">        </span><span class="n">data</span><span class="p">.</span><span class="n">writeInt32</span><span class="p">(</span><span class="n">value</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="n">newPos</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">data</span><span class="p">.</span><span class="n">dataPosition</span><span class="p">();</span><span class="w"></span>
+<span class="w">        </span><span class="n">data</span><span class="p">.</span><span class="n">setDataPosition</span><span class="p">(</span><span class="n">oldPos</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">8</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="n">data</span><span class="p">.</span><span class="n">writeInt32</span><span class="p">(</span><span class="n">newPos</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">oldPos</span><span class="p">);</span><span class="w"> </span><span class="c1">// refill bundle extras length</span>
+<span class="w">        </span><span class="n">data</span><span class="p">.</span><span class="n">setDataPosition</span><span class="p">(</span><span class="n">newPos</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="c1">// intent end</span>
+<span class="w">        </span><span class="n">data</span><span class="p">.</span><span class="n">writeString8</span><span class="p">(</span><span class="nb">NULL</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span><span class="w"> </span><span class="c1">// resolvedType</span>
+<span class="w">        </span><span class="n">data</span><span class="p">.</span><span class="n">writeStrongBinder</span><span class="p">(</span><span class="nb">NULL</span><span class="p">);</span><span class="w"> </span><span class="c1">// resultTo</span>
+<span class="w">        </span><span class="n">data</span><span class="p">.</span><span class="n">writeInt32</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span><span class="w"> </span><span class="c1">// resultCode</span>
+<span class="w">        </span><span class="n">data</span><span class="p">.</span><span class="n">writeString8</span><span class="p">(</span><span class="nb">NULL</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span><span class="w"> </span><span class="c1">// resultData</span>
+<span class="w">        </span><span class="n">data</span><span class="p">.</span><span class="n">writeInt32</span><span class="p">(</span><span class="mi">-1</span><span class="p">);</span><span class="w"> </span><span class="c1">// resultExtras</span>
+<span class="w">        </span><span class="n">data</span><span class="p">.</span><span class="n">writeString8</span><span class="p">(</span><span class="nb">NULL</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span><span class="w"> </span><span class="c1">// permission</span>
+<span class="w">        </span><span class="n">data</span><span class="p">.</span><span class="n">writeInt32</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span><span class="w"> </span><span class="c1">// appOp</span>
+<span class="w">        </span><span class="n">data</span><span class="p">.</span><span class="n">writeInt32</span><span class="p">(</span><span class="mi">-1</span><span class="p">);</span><span class="w"> </span><span class="c1">// option</span>
+<span class="w">        </span><span class="n">data</span><span class="p">.</span><span class="n">writeInt32</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span><span class="w"> </span><span class="c1">// serialized: != 0 -&gt; ordered</span>
+<span class="w">        </span><span class="n">data</span><span class="p">.</span><span class="n">writeInt32</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span><span class="w"> </span><span class="c1">// sticky</span>
+<span class="w">        </span><span class="n">data</span><span class="p">.</span><span class="n">writeInt32</span><span class="p">(</span><span class="mi">-2</span><span class="p">);</span><span class="w"> </span><span class="c1">// userId: -2 -&gt; UserHandle.USER_CURRENT</span>
+
+<span class="w">        </span><span class="n">status_t</span><span class="w"> </span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">am</span><span class="o">-&gt;</span><span class="n">transact</span><span class="p">(</span><span class="n">IBinder</span><span class="o">::</span><span class="n">FIRST_CALL_TRANSACTION</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">13</span><span class="p">,</span><span class="w"> </span><span class="n">data</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">reply</span><span class="p">);</span><span class="w"> </span><span class="c1">// BROADCAST_INTENT_TRANSACTION</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ret</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">NO_ERROR</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">            </span><span class="kt">int</span><span class="w"> </span><span class="n">exceptionCode</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">reply</span><span class="p">.</span><span class="n">readExceptionCode</span><span class="p">();</span><span class="w"></span>
+<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">exceptionCode</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="n">ALOGE</span><span class="p">(</span><span class="s">&quot;sendBroadcastMessage(%s) caught exception %d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"></span>
+<span class="w">                        </span><span class="p">(</span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="p">)(</span><span class="n">action</span><span class="p">.</span><span class="n">string</span><span class="p">()),</span><span class="w"> </span><span class="n">exceptionCode</span><span class="p">);</span><span class="w"></span>
+<span class="w">                </span><span class="k">return</span><span class="w"> </span><span class="nb">false</span><span class="p">;</span><span class="w"></span>
+<span class="w">            </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">            </span><span class="k">return</span><span class="w"> </span><span class="nb">false</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="n">ALOGE</span><span class="p">(</span><span class="s">&quot;getService() couldn&#39;t find activity service!</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="nb">false</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="nb">true</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+
+<span class="k">static</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">charger_file_path</span><span class="p">[]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="c1">//&quot;/sys/devices/platform/charger/BatteryNotify&quot;,</span>
+<span class="w">    </span><span class="c1">//&quot;/sys/devices/platform/mt-battery/BatteryNotify&quot;,</span>
+<span class="w">        </span><span class="s">&quot;/sys/class/pax/bms/bms_notify&quot;</span><span class="p">,</span><span class="w"></span>
+<span class="p">};</span><span class="w"></span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">read_from_file</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">path</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="n">path</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">     </span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
+<span class="w">  </span><span class="kt">int</span><span class="w"> </span><span class="n">fd</span><span class="w"> </span><span class="o">=</span><span class="n">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span><span class="n">O_RDONLY</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">  </span><span class="k">if</span><span class="p">(</span><span class="n">fd</span><span class="o">&lt;</span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">      </span><span class="n">close</span><span class="p">(</span><span class="n">fd</span><span class="p">);</span><span class="w"></span>
+<span class="w">      </span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
+<span class="w">  </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">      </span><span class="n">close</span><span class="p">(</span><span class="n">fd</span><span class="p">);</span><span class="w"></span>
+<span class="w">      </span><span class="k">return</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="kt">int</span><span class="w"> </span><span class="nf">get_charger_file_path</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="k">for</span><span class="p">(</span><span class="n">i</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span><span class="n">i</span><span class="o">&lt;</span><span class="n">ARRAY_SIZE</span><span class="p">(</span><span class="n">charger_file_path</span><span class="p">);</span><span class="n">i</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">      </span><span class="k">if</span><span class="p">(</span><span class="n">read_from_file</span><span class="p">(</span><span class="n">charger_file_path</span><span class="p">[</span><span class="n">i</span><span class="p">]))</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">         </span><span class="k">return</span><span class="w"> </span><span class="n">i</span><span class="p">;</span><span class="w"></span>
+<span class="w">      </span><span class="p">}</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="kt">void</span><span class="w"> </span><span class="nf">readType</span><span class="p">(</span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">buffer</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="kt">FILE</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">pFile</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">file_index</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="n">file_index</span><span class="o">=</span><span class="n">get_charger_file_path</span><span class="p">();</span><span class="w"></span>
+<span class="w">    </span><span class="n">ALOGD</span><span class="p">(</span><span class="s">&quot;Inside file_index value : %d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">file_index</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="n">pFile</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fopen</span><span class="p">(</span><span class="n">charger_file_path</span><span class="p">[</span><span class="n">file_index</span><span class="p">],</span><span class="w"> </span><span class="s">&quot;r&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">pFile</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="nb">NULL</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="n">ALOGE</span><span class="p">(</span><span class="s">&quot;error opening file&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="k">return</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">fgets</span><span class="p">(</span><span class="n">buffer</span><span class="p">,</span><span class="w"> </span><span class="n">MAX_CHAR</span><span class="p">,</span><span class="w"> </span><span class="n">pFile</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="nb">NULL</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">            </span><span class="n">fclose</span><span class="p">(</span><span class="n">pFile</span><span class="p">);</span><span class="w"></span>
+<span class="w">            </span><span class="n">ALOGE</span><span class="p">(</span><span class="s">&quot;can not get the string from the file&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">            </span><span class="k">return</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="n">fclose</span><span class="p">(</span><span class="n">pFile</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">atoi</span><span class="p">(</span><span class="n">buffer</span><span class="p">);</span><span class="w"></span>
+
+
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">type</span><span class="o">==</span><span class="mi">0</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="n">ALOGD</span><span class="p">(</span><span class="s">&quot;start activity by send intent to BatteryWarningReceiver to remove notification, type = %d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">type</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="n">sendBroadcastMessage</span><span class="p">(</span><span class="n">String8</span><span class="p">(</span><span class="n">NORMAL_ACTION</span><span class="p">),</span><span class="w"> </span><span class="n">type</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">type</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="n">ALOGD</span><span class="p">(</span><span class="s">&quot;start activity by send intent to BatteryWarningReceiver, type = %d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">type</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="n">sendBroadcastMessage</span><span class="p">(</span><span class="n">String8</span><span class="p">(</span><span class="n">ACTION</span><span class="p">),</span><span class="w"> </span><span class="n">type</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="cp">#define UEVENT_MSG_LEN 2048</span>
+<span class="k">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">uevent_event</span><span class="p">(</span><span class="kt">uint32_t</span><span class="w"> </span><span class="cm">/*epevents*/</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="kt">char</span><span class="w"> </span><span class="n">msg</span><span class="p">[</span><span class="n">UEVENT_MSG_LEN</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">2</span><span class="p">];</span><span class="w"></span>
+<span class="w">    </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">cp</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">status</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">n</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">buffer</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="kt">char</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="n">malloc</span><span class="p">(</span><span class="n">MAX_CHAR</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">sizeof</span><span class="p">(</span><span class="kt">char</span><span class="p">));</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">buffer</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="nb">NULL</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="n">ALOGD</span><span class="p">(</span><span class="s">&quot;malloc memory failed&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">uevent_kernel_multicast_recv</span><span class="p">(</span><span class="n">uevent_fd</span><span class="p">,</span><span class="w"> </span><span class="n">msg</span><span class="p">,</span><span class="w"> </span><span class="n">UEVENT_MSG_LEN</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">n</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">return</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">n</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="n">UEVENT_MSG_LEN</span><span class="p">)</span><span class="w"> </span><span class="cm">/* overflow -- discard */</span><span class="w"></span>
+<span class="w">        </span><span class="k">return</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">    </span><span class="n">msg</span><span class="p">[</span><span class="n">n</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="sc">&#39;\0&#39;</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="n">msg</span><span class="p">[</span><span class="n">n</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="sc">&#39;\0&#39;</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="n">cp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">msg</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">    </span><span class="k">while</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="n">cp</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">strncmp</span><span class="p">(</span><span class="n">cp</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;BMS_STAT=&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">strlen</span><span class="p">(</span><span class="s">&quot;BMS_STAT=&quot;</span><span class="p">)))</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="c1">// This CHGSTAT value will be provided by kernel driver</span>
+<span class="w">            </span><span class="n">readType</span><span class="p">(</span><span class="n">buffer</span><span class="p">);</span><span class="w"></span>
+<span class="w">            </span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">        </span><span class="cm">/* advance to after the next \0 */</span><span class="w"></span>
+<span class="w">        </span><span class="k">while</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="n">cp</span><span class="o">++</span><span class="p">)</span><span class="w"></span>
+<span class="w">            </span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="n">free</span><span class="p">(</span><span class="n">buffer</span><span class="p">);</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="kt">int</span><span class="w"> </span><span class="nf">batterywarn_register_event</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">fd</span><span class="p">,</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="n">handler</span><span class="p">)(</span><span class="kt">uint32_t</span><span class="p">))</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="k">struct</span><span class="w"> </span><span class="nc">epoll_event</span><span class="w"> </span><span class="n">ev</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="n">ev</span><span class="p">.</span><span class="n">events</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">EPOLLIN</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">    </span><span class="c1">//if (wakeup == EVENT_WAKEUP_FD) ev.events |= EPOLLWAKEUP;</span>
+
+<span class="w">    </span><span class="n">ev</span><span class="p">.</span><span class="n">data</span><span class="p">.</span><span class="n">ptr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="kt">void</span><span class="o">*</span><span class="p">)</span><span class="n">handler</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">epoll_ctl</span><span class="p">(</span><span class="n">epollfd</span><span class="p">,</span><span class="w"> </span><span class="n">EPOLL_CTL_ADD</span><span class="p">,</span><span class="w"> </span><span class="n">fd</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">ev</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">-1</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="n">ALOGD</span><span class="p">(</span><span class="s">&quot;epoll_ctl failed; errno=%d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">errno</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="mi">-1</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+
+<span class="k">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">uevent_init</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">uevent_fd</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">uevent_open_socket</span><span class="p">(</span><span class="mi">64</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">1024</span><span class="p">,</span><span class="w"> </span><span class="nb">true</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">uevent_fd</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="n">ALOGD</span><span class="p">(</span><span class="s">&quot;uevent_init: uevent_open_socket failed</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="k">return</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">    </span><span class="n">fcntl</span><span class="p">(</span><span class="n">uevent_fd</span><span class="p">,</span><span class="w"> </span><span class="n">F_SETFL</span><span class="p">,</span><span class="w"> </span><span class="n">O_NONBLOCK</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">batterywarn_register_event</span><span class="p">(</span><span class="n">uevent_fd</span><span class="p">,</span><span class="w"> </span><span class="n">uevent_event</span><span class="p">))</span><span class="w"></span>
+<span class="w">        </span><span class="n">ALOGD</span><span class="p">(</span><span class="s">&quot;register for uevent events failed</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+<span class="k">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">batterywarn_mainloop</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">nevents</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="k">while</span><span class="w"> </span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="k">struct</span><span class="w"> </span><span class="nc">epoll_event</span><span class="w"> </span><span class="n">events</span><span class="p">[</span><span class="mi">1</span><span class="p">];</span><span class="w"></span>
+<span class="w">        </span><span class="n">nevents</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">epoll_wait</span><span class="p">(</span><span class="n">epollfd</span><span class="p">,</span><span class="w"> </span><span class="n">events</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">-1</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">nevents</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">-1</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">errno</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">EINTR</span><span class="p">)</span><span class="w"> </span><span class="k">continue</span><span class="p">;</span><span class="w"></span>
+<span class="w">            </span><span class="n">ALOGD</span><span class="p">(</span><span class="s">&quot;batterywarn_mainloop: epoll_wait failed</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">            </span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">        </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">nevents</span><span class="p">;</span><span class="w"> </span><span class="o">++</span><span class="n">n</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">events</span><span class="p">[</span><span class="n">n</span><span class="p">].</span><span class="n">data</span><span class="p">.</span><span class="n">ptr</span><span class="p">)</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="p">(</span><span class="kt">void</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="p">)(</span><span class="kt">int</span><span class="p">))</span><span class="n">events</span><span class="p">[</span><span class="n">n</span><span class="p">].</span><span class="n">data</span><span class="p">.</span><span class="n">ptr</span><span class="p">)(</span><span class="n">events</span><span class="p">[</span><span class="n">n</span><span class="p">].</span><span class="n">events</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">    </span><span class="k">return</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+<span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">batterywarn_init</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">epollfd</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">epoll_create</span><span class="p">(</span><span class="n">MAX_EPOLL_EVENTS</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">epollfd</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">-1</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="n">ALOGD</span><span class="p">(</span><span class="s">&quot;epoll_create failed; errno=%d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">errno</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="mi">-1</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="n">uevent_init</span><span class="p">();</span><span class="w"></span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+
+<span class="p">}</span><span class="w"></span>
+<span class="kt">int</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">buffer</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="kt">char</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="n">malloc</span><span class="p">(</span><span class="n">MAX_CHAR</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">sizeof</span><span class="p">(</span><span class="kt">char</span><span class="p">));</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">buffer</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="nb">NULL</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="n">ALOGD</span><span class="p">(</span><span class="s">&quot;malloc memory failed&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="w">  </span><span class="kt">int</span><span class="w"> </span><span class="n">ret</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">  </span><span class="cm">/* Read the status to catch the event when batterywarning is not started */</span><span class="w"></span>
+<span class="w">  </span><span class="n">readType</span><span class="p">(</span><span class="n">buffer</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">  </span><span class="n">ret</span><span class="o">=</span><span class="w"> </span><span class="n">batterywarn_init</span><span class="p">();</span><span class="w"></span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ret</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">      </span><span class="n">ALOGD</span><span class="p">(</span><span class="s">&quot;Initialization failed, exiting</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">      </span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
+<span class="w">  </span><span class="n">batterywarn_mainloop</span><span class="p">();</span><span class="w"></span>
+<span class="w">  </span><span class="n">free</span><span class="p">(</span><span class="n">buffer</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<p>epoll机制暂时不说，我们看看C程序时如何发送广播的，原理是通过Binder通信调用activity: [android.app.IActivityManager] 服务发广播,提到<code class="docutils literal notranslate"><span class="pre">am-&gt;transact(IBinder::FIRST_CALL_TRANSACTION</span> <span class="pre">+</span> <span class="pre">13,</span> <span class="pre">data,</span> <span class="pre">&amp;reply);</span></code> 这个会调用哪个函数呢？上面的13是如何而来的呢？这个得分析一下,frameworks\base\core\java\android\app\IActivityManager.aidl，可以知道函数<code class="docutils literal notranslate"><span class="pre">broadcastIntent</span></code>对应第13项。仔细观察会发现transact后面的data参数跟broadcastIntent是对应的，这个是调用的核心的。</p>
+<p><img alt="0009_0012.png" src="../../../_images/0009_0012.png" /></p>
+<p>另外根据编译生成的文件<code class="docutils literal notranslate"><span class="pre">out/soong/.intermediates/frameworks/base/framework-minus-apex/android_common/javac/shard30/classes/android/app/IActivityManager$Stub.class</span></code>，反编译也可以看到对应函数：</p>
+<p><img alt="0009_0013.png" src="../../../_images/0009_0013.png" /></p>
+<p>参考：</p>
+<ul class="simple">
+<li><p><a class="reference external" href="https://blog.csdn.net/qq_37858386/article/details/121501400">Android C++语言 通过Binder通信调用activity: [android.app.IActivityManager] 服务发广播</a></p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="kt">bool</span><span class="w"> </span><span class="nf">sendBroadcastMessage</span><span class="p">(</span><span class="n">String8</span><span class="w"> </span><span class="n">action</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">value</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">ALOGD</span><span class="p">(</span><span class="s">&quot;sendBroadcastMessage(): Action: %s, Value: %d &quot;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="p">)(</span><span class="n">action</span><span class="p">.</span><span class="n">string</span><span class="p">()),</span><span class="w"> </span><span class="n">value</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="n">sp</span><span class="o">&lt;</span><span class="n">IServiceManager</span><span class="o">&gt;</span><span class="w"> </span><span class="n">sm</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">defaultServiceManager</span><span class="p">();</span><span class="w"></span>
+<span class="w">    </span><span class="n">sp</span><span class="o">&lt;</span><span class="n">IBinder</span><span class="o">&gt;</span><span class="w"> </span><span class="n">am</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sm</span><span class="o">-&gt;</span><span class="n">getService</span><span class="p">(</span><span class="n">String16</span><span class="p">(</span><span class="s">&quot;activity&quot;</span><span class="p">));</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">am</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="nb">NULL</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="n">Parcel</span><span class="w"> </span><span class="n">data</span><span class="p">,</span><span class="w"> </span><span class="n">reply</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="n">data</span><span class="p">.</span><span class="n">writeInterfaceToken</span><span class="p">(</span><span class="n">String16</span><span class="p">(</span><span class="s">&quot;android.app.IActivityManager&quot;</span><span class="p">));</span><span class="w"></span>
+<span class="w">        </span><span class="n">data</span><span class="p">.</span><span class="n">writeStrongBinder</span><span class="p">(</span><span class="nb">NULL</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="c1">// Add for match AMS change on O</span>
+<span class="w">        </span><span class="n">data</span><span class="p">.</span><span class="n">writeInt32</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="c1">// intent begin</span>
+<span class="w">        </span><span class="n">data</span><span class="p">.</span><span class="n">writeString8</span><span class="p">(</span><span class="n">action</span><span class="p">);</span><span class="w"> </span><span class="c1">// action</span>
+<span class="w">        </span><span class="n">data</span><span class="p">.</span><span class="n">writeInt32</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span><span class="w"> </span><span class="c1">// URI data type</span>
+<span class="w">        </span><span class="n">data</span><span class="p">.</span><span class="n">writeString8</span><span class="p">(</span><span class="nb">NULL</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span><span class="w"> </span><span class="c1">// type</span>
+<span class="w">        </span><span class="n">data</span><span class="p">.</span><span class="n">writeString8</span><span class="p">(</span><span class="nb">NULL</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span><span class="w"> </span><span class="c1">// mIdentifier</span>
+<span class="w">        </span><span class="n">data</span><span class="p">.</span><span class="n">writeInt32</span><span class="p">(</span><span class="mh">0x04000000</span><span class="p">);</span><span class="w"> </span><span class="c1">// flags: FLAG_RECEIVER_REGISTERED_ONLY_BEFORE_BOOT</span>
+<span class="w">        </span><span class="n">data</span><span class="p">.</span><span class="n">writeString8</span><span class="p">(</span><span class="nb">NULL</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span><span class="w"> </span><span class="c1">// package name</span>
+<span class="w">        </span><span class="n">data</span><span class="p">.</span><span class="n">writeString8</span><span class="p">(</span><span class="nb">NULL</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span><span class="w"> </span><span class="c1">// component name</span>
+<span class="w">        </span><span class="n">data</span><span class="p">.</span><span class="n">writeInt32</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span><span class="w"> </span><span class="c1">// source bound - size</span>
+<span class="w">        </span><span class="n">data</span><span class="p">.</span><span class="n">writeInt32</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span><span class="w"> </span><span class="c1">// categories - size</span>
+<span class="w">        </span><span class="n">data</span><span class="p">.</span><span class="n">writeInt32</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span><span class="w"> </span><span class="c1">// selector - size</span>
+<span class="w">        </span><span class="n">data</span><span class="p">.</span><span class="n">writeInt32</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span><span class="w"> </span><span class="c1">// clipData - size</span>
+<span class="w">        </span><span class="n">data</span><span class="p">.</span><span class="n">writeInt32</span><span class="p">(</span><span class="mi">-2</span><span class="p">);</span><span class="w"> </span><span class="c1">// contentUserHint: -2 -&gt; UserHandle.USER_CURRENT</span>
+<span class="w">        </span><span class="n">data</span><span class="p">.</span><span class="n">writeInt32</span><span class="p">(</span><span class="mi">-1</span><span class="p">);</span><span class="w"> </span><span class="c1">// bundle extras length</span>
+<span class="w">        </span><span class="n">data</span><span class="p">.</span><span class="n">writeInt32</span><span class="p">(</span><span class="mh">0x4C444E42</span><span class="p">);</span><span class="w"> </span><span class="c1">// &#39;B&#39; &#39;N&#39; &#39;D&#39; &#39;L&#39;</span>
+<span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="n">oldPos</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">data</span><span class="p">.</span><span class="n">dataPosition</span><span class="p">();</span><span class="w"></span>
+<span class="w">        </span><span class="n">data</span><span class="p">.</span><span class="n">writeInt32</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span><span class="w">  </span><span class="c1">// size</span>
+<span class="w">        </span><span class="c1">// data.writeInt32(0); // VAL_STRING, need to remove because of analyze common intent</span>
+<span class="w">        </span><span class="n">data</span><span class="p">.</span><span class="n">writeString16</span><span class="p">(</span><span class="n">String16</span><span class="p">(</span><span class="n">TYPE</span><span class="p">));</span><span class="w"></span>
+<span class="w">        </span><span class="n">data</span><span class="p">.</span><span class="n">writeInt32</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span><span class="w"> </span><span class="c1">// VAL_INTEGER</span>
+<span class="w">        </span><span class="n">data</span><span class="p">.</span><span class="n">writeInt32</span><span class="p">(</span><span class="n">value</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="n">newPos</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">data</span><span class="p">.</span><span class="n">dataPosition</span><span class="p">();</span><span class="w"></span>
+<span class="w">        </span><span class="n">data</span><span class="p">.</span><span class="n">setDataPosition</span><span class="p">(</span><span class="n">oldPos</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">8</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="n">data</span><span class="p">.</span><span class="n">writeInt32</span><span class="p">(</span><span class="n">newPos</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">oldPos</span><span class="p">);</span><span class="w"> </span><span class="c1">// refill bundle extras length</span>
+<span class="w">        </span><span class="n">data</span><span class="p">.</span><span class="n">setDataPosition</span><span class="p">(</span><span class="n">newPos</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="c1">// intent end</span>
+<span class="w">        </span><span class="n">data</span><span class="p">.</span><span class="n">writeString8</span><span class="p">(</span><span class="nb">NULL</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span><span class="w"> </span><span class="c1">// resolvedType</span>
+<span class="w">        </span><span class="n">data</span><span class="p">.</span><span class="n">writeStrongBinder</span><span class="p">(</span><span class="nb">NULL</span><span class="p">);</span><span class="w"> </span><span class="c1">// resultTo</span>
+<span class="w">        </span><span class="n">data</span><span class="p">.</span><span class="n">writeInt32</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span><span class="w"> </span><span class="c1">// resultCode</span>
+<span class="w">        </span><span class="n">data</span><span class="p">.</span><span class="n">writeString8</span><span class="p">(</span><span class="nb">NULL</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span><span class="w"> </span><span class="c1">// resultData</span>
+<span class="w">        </span><span class="n">data</span><span class="p">.</span><span class="n">writeInt32</span><span class="p">(</span><span class="mi">-1</span><span class="p">);</span><span class="w"> </span><span class="c1">// resultExtras</span>
+<span class="w">        </span><span class="n">data</span><span class="p">.</span><span class="n">writeString8</span><span class="p">(</span><span class="nb">NULL</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span><span class="w"> </span><span class="c1">// permission</span>
+<span class="w">        </span><span class="n">data</span><span class="p">.</span><span class="n">writeInt32</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span><span class="w"> </span><span class="c1">// appOp</span>
+<span class="w">        </span><span class="n">data</span><span class="p">.</span><span class="n">writeInt32</span><span class="p">(</span><span class="mi">-1</span><span class="p">);</span><span class="w"> </span><span class="c1">// option</span>
+<span class="w">        </span><span class="n">data</span><span class="p">.</span><span class="n">writeInt32</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span><span class="w"> </span><span class="c1">// serialized: != 0 -&gt; ordered</span>
+<span class="w">        </span><span class="n">data</span><span class="p">.</span><span class="n">writeInt32</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span><span class="w"> </span><span class="c1">// sticky</span>
+<span class="w">        </span><span class="n">data</span><span class="p">.</span><span class="n">writeInt32</span><span class="p">(</span><span class="mi">-2</span><span class="p">);</span><span class="w"> </span><span class="c1">// userId: -2 -&gt; UserHandle.USER_CURRENT</span>
+
+<span class="w">        </span><span class="n">status_t</span><span class="w"> </span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">am</span><span class="o">-&gt;</span><span class="n">transact</span><span class="p">(</span><span class="n">IBinder</span><span class="o">::</span><span class="n">FIRST_CALL_TRANSACTION</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">13</span><span class="p">,</span><span class="w"> </span><span class="n">data</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">reply</span><span class="p">);</span><span class="w"> </span><span class="c1">// BROADCAST_INTENT_TRANSACTION</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ret</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">NO_ERROR</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">            </span><span class="kt">int</span><span class="w"> </span><span class="n">exceptionCode</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">reply</span><span class="p">.</span><span class="n">readExceptionCode</span><span class="p">();</span><span class="w"></span>
+<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">exceptionCode</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="n">ALOGE</span><span class="p">(</span><span class="s">&quot;sendBroadcastMessage(%s) caught exception %d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"></span>
+<span class="w">                        </span><span class="p">(</span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="p">)(</span><span class="n">action</span><span class="p">.</span><span class="n">string</span><span class="p">()),</span><span class="w"> </span><span class="n">exceptionCode</span><span class="p">);</span><span class="w"></span>
+<span class="w">                </span><span class="k">return</span><span class="w"> </span><span class="nb">false</span><span class="p">;</span><span class="w"></span>
+<span class="w">            </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">            </span><span class="k">return</span><span class="w"> </span><span class="nb">false</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="n">ALOGE</span><span class="p">(</span><span class="s">&quot;getService() couldn&#39;t find activity service!</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="nb">false</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="nb">true</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="id11">
+<h1>四、底层BMS功能接口提供<a class="headerlink" href="#id11" title="Permalink to this headline"></a></h1>
+<p>为了减少bms与charge、guage及平台的耦合性，BMS不和Charge、Guage直接交互，在他们中间增加了BMS Notify，BMS driver调用power_supply_get_property和power_supply_reg_notifier方法通过PSY core来获取Charger和Guage相关信息，同时可通过BMS Notify调bms_notify_call_chain向Charge发送相关指令.</p>
+<p><img alt="0009_0011.png" src="../../../_images/0009_0011.png" /></p>
+<section id="hal">
+<h2>HAL层接口实现<a class="headerlink" href="#hal" title="Permalink to this headline"></a></h2>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span>/home/wugn/M8-project/vendor/mediatek/proprietary/hardware/libpax_bms
+wugn@jcrj-tf-compile:libpax_bms$ tree
+.
+├── 1.0
+│   └── default
+│       ├── android.hardware.pax_bms@1.0-service-lazy.rc
+│       ├── android.hardware.pax_bms@1.0-service.rc //rc is for launch HAL service，将调用service.cpp main函数
+│       ├── Android.mk
+│       ├── PaxBMS.cpp
+│       ├── PaxBMS.h
+│       ├── service.cpp //defaultPassthroughServiceImplementation&lt;IPaxBMS&gt;(); Hal启动进程android.hardware.pax_bms@1.0-service
+│       └── serviceLazy.cpp
+├── Android.mk
+├── pax_bms.c
+└── pax_bms_test.c
+</pre></div>
+</div>
+<p>hal层是采用传统的HAL架构，device调用module方式，关系图如下：</p>
+<p><img alt="0009_0003.png" src="../../../_images/0009_0003.png" /></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">pax_bms.c</span></code>作为<code class="docutils literal notranslate"><span class="pre">hw_module_t</span></code>为<code class="docutils literal notranslate"><span class="pre">hw_device_t</span></code>提供pax_bms_ctl(ioctrl)和close_pax_bms方法，主要是实现填充<code class="docutils literal notranslate"><span class="pre">hw_device_t</span></code>结构体中的方法。</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">PaxBMS.cpp</span></code>主要在构造函数中调用<code class="docutils literal notranslate"><span class="pre">getPaxBMSDevice</span></code>函数，函数中<code class="docutils literal notranslate"><span class="pre">hw_get_module</span></code>获取并调用hwModule的open方法，open方法会返回<code class="docutils literal notranslate"><span class="pre">hw_device_t</span></code>结构体指针<code class="docutils literal notranslate"><span class="pre">pax_bmsDevice</span></code>，其中就是<code class="docutils literal notranslate"><span class="pre">hw_module_t</span></code>的方法，这样就可以调用<code class="docutils literal notranslate"><span class="pre">hw_get_module</span></code>封装的pax_bms_ctl(ioctrl)和close_pax_bms方法了。</p></li>
+</ul>
+<section id="hw-module-t-pax-bms-c">
+<h3>hw_module_t pax_bms.c<a class="headerlink" href="#hw-module-t-pax-bms-c" title="Permalink to this headline"></a></h3>
+<p>pax_bms.c作为hw_module_t为hw_device_t提供pax_bms_ctl(ioctrl)和close_pax_bms方法。</p>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="n">vendor</span><span class="o">/</span><span class="n">mediatek</span><span class="o">/</span><span class="n">proprietary</span><span class="o">/</span><span class="n">hardware</span><span class="o">/</span><span class="n">libpax_bms</span><span class="o">/</span><span class="n">pax_bms</span><span class="p">.</span><span class="n">c</span><span class="w"></span>
+<span class="cp">#define LOG_TAG &quot;bms&quot;</span>
+
+
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;log/log.h&gt;</span><span class="cp"></span>
+
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;stdint.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;string.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;unistd.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;errno.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;fcntl.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;pthread.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;time.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;stdlib.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;sys/ioctl.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;sys/types.h&gt;</span><span class="cp"></span>
+
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;hardware/pax_bms.h&gt;</span><span class="cp"></span>
+
+<span class="cm">/******************************************************************************/</span><span class="w"></span>
+
+<span class="k">static</span><span class="w"> </span><span class="n">pthread_once_t</span><span class="w"> </span><span class="n">g_init</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">PTHREAD_ONCE_INIT</span><span class="p">;</span><span class="w"></span>
+<span class="k">static</span><span class="w"> </span><span class="n">pthread_mutex_t</span><span class="w"> </span><span class="n">g_lock</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">PTHREAD_MUTEX_INITIALIZER</span><span class="p">;</span><span class="w"></span>
+
+<span class="cp">#define PAX_BMS_DEV			&quot;/dev/pax_bms&quot;</span>
+
+<span class="cm">/**</span>
+<span class="cm"> * device methods</span>
+<span class="cm"> */</span><span class="w"></span>
+
+<span class="kt">void</span><span class="w"> </span><span class="nf">init_globals</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="c1">// init the mutex</span>
+<span class="w">    </span><span class="n">pthread_mutex_init</span><span class="p">(</span><span class="o">&amp;</span><span class="n">g_lock</span><span class="p">,</span><span class="w"> </span><span class="nb">NULL</span><span class="p">);</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">open_pax_bms_dev</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="kt">int</span><span class="w"> </span><span class="n">fd</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">-1</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">fd</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">open</span><span class="p">(</span><span class="n">PAX_BMS_DEV</span><span class="p">,</span><span class="w"> </span><span class="n">O_RDWR</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">	</span><span class="k">return</span><span class="w"> </span><span class="n">fd</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="cm">/** Close the pax bms device */</span><span class="w"></span>
+<span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"></span>
+<span class="nf">close_pax_bms</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">pax_bms_dev_t</span><span class="w"> </span><span class="o">*</span><span class="n">dev</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">dev</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="n">free</span><span class="p">(</span><span class="n">dev</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">pax_bms_ctl</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">pax_bms_dev_t</span><span class="w"> </span><span class="o">*</span><span class="n">dev</span><span class="p">,</span><span class="w"> </span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">long</span><span class="w"> </span><span class="n">cmd</span><span class="p">,</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="o">*</span><span class="n">data</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">pax_bms_fd</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">-1</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="kt">int</span><span class="w"> </span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">-1</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">dev</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="nb">NULL</span><span class="p">)</span><span class="w"></span>
+<span class="w">		</span><span class="k">return</span><span class="w"> </span><span class="mi">-1</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">pax_bms_fd</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="n">pax_bms_fd</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">open_pax_bms_dev</span><span class="p">();</span><span class="w"></span>
+
+<span class="w">		</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">pax_bms_fd</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">			</span><span class="k">return</span><span class="w"> </span><span class="o">-</span><span class="n">ENODEV</span><span class="p">;</span><span class="w"></span>
+<span class="w">		</span><span class="p">}</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+
+<span class="w">    </span><span class="n">pthread_mutex_lock</span><span class="p">(</span><span class="o">&amp;</span><span class="n">g_lock</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">	</span><span class="k">switch</span><span class="p">(</span><span class="n">cmd</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="k">case</span><span class="w"> </span><span class="nl">SET_CHG_EN</span><span class="p">:</span><span class="w"></span>
+<span class="w">		</span><span class="k">case</span><span class="w"> </span><span class="nl">SET_POWER_PATH</span><span class="p">:</span><span class="w"></span>
+<span class="w">			</span><span class="p">{</span><span class="w"></span>
+<span class="w">				</span><span class="kt">int</span><span class="w"> </span><span class="n">en</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">*</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="n">data</span><span class="p">;</span><span class="w"></span>
+<span class="w">				</span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ioctl</span><span class="p">(</span><span class="n">pax_bms_fd</span><span class="p">,</span><span class="w"> </span><span class="n">cmd</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">en</span><span class="p">);</span><span class="w"></span>
+<span class="w">			</span><span class="p">}</span><span class="w"></span>
+<span class="w">			</span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+<span class="w">		</span><span class="k">default</span><span class="o">:</span><span class="w"></span>
+<span class="w">			</span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="p">};</span><span class="w"></span>
+
+<span class="w">    </span><span class="n">pthread_mutex_unlock</span><span class="p">(</span><span class="o">&amp;</span><span class="n">g_lock</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">	</span><span class="k">return</span><span class="w"> </span><span class="n">ret</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="cm">/******************************************************************************/</span><span class="w"></span>
+
+<span class="cm">/**</span>
+<span class="cm"> * module methods</span>
+<span class="cm"> */</span><span class="w"></span>
+
+<span class="cm">/** Open a new instance of a device using name */</span><span class="w"></span>
+<span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">open_pax_bms</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">hw_module_t</span><span class="o">*</span><span class="w"> </span><span class="k">module</span><span class="p">,</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="k">const</span><span class="o">*</span><span class="w"> </span><span class="n">name</span><span class="p">,</span><span class="w"></span>
+<span class="w">        </span><span class="k">struct</span><span class="w"> </span><span class="nc">hw_device_t</span><span class="o">**</span><span class="w"> </span><span class="n">device</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">pthread_once</span><span class="p">(</span><span class="o">&amp;</span><span class="n">g_init</span><span class="p">,</span><span class="w"> </span><span class="n">init_globals</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">strcmp</span><span class="p">(</span><span class="n">PAX_BMS_HARDWARE_MODULE_ID</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="p">)</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"></span>
+<span class="w">		</span><span class="k">return</span><span class="w"> </span><span class="mi">-1</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">    </span><span class="k">struct</span><span class="w"> </span><span class="nc">pax_bms_dev_t</span><span class="w"> </span><span class="o">*</span><span class="n">dev</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">malloc</span><span class="p">(</span><span class="k">sizeof</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">pax_bms_dev_t</span><span class="p">));</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">dev</span><span class="p">)</span><span class="w"></span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="o">-</span><span class="n">ENOMEM</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">    </span><span class="n">memset</span><span class="p">(</span><span class="n">dev</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="k">sizeof</span><span class="p">(</span><span class="o">*</span><span class="n">dev</span><span class="p">));</span><span class="w"></span>
+
+<span class="w">    </span><span class="n">dev</span><span class="o">-&gt;</span><span class="n">common</span><span class="p">.</span><span class="n">tag</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">HARDWARE_DEVICE_TAG</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="n">dev</span><span class="o">-&gt;</span><span class="n">common</span><span class="p">.</span><span class="n">version</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="n">dev</span><span class="o">-&gt;</span><span class="n">common</span><span class="p">.</span><span class="k">module</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">hw_module_t</span><span class="o">*</span><span class="p">)</span><span class="k">module</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="n">dev</span><span class="o">-&gt;</span><span class="n">common</span><span class="p">.</span><span class="n">close</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="p">)(</span><span class="k">struct</span><span class="w"> </span><span class="nc">hw_device_t</span><span class="o">*</span><span class="p">))</span><span class="n">close_pax_bms</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="n">dev</span><span class="o">-&gt;</span><span class="n">bms_ctl</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pax_bms_ctl</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">    </span><span class="o">*</span><span class="n">device</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">hw_device_t</span><span class="o">*</span><span class="p">)</span><span class="n">dev</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+
+<span class="k">static</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">hw_module_methods_t</span><span class="w"> </span><span class="n">pax_bms_module_methods</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="p">.</span><span class="n">open</span><span class="w"> </span><span class="o">=</span><span class="w">  </span><span class="n">open_pax_bms</span><span class="p">,</span><span class="w"></span>
+<span class="p">};</span><span class="w"></span>
+
+<span class="cm">/*</span>
+<span class="cm"> * The pax bms Module</span>
+<span class="cm"> */</span><span class="w"></span>
+<span class="k">struct</span><span class="w"> </span><span class="nc">hw_module_t</span><span class="w"> </span><span class="n">HAL_MODULE_INFO_SYM</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="p">.</span><span class="n">tag</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">HARDWARE_MODULE_TAG</span><span class="p">,</span><span class="w"></span>
+<span class="w">    </span><span class="c1">//.version_major = 1,</span>
+<span class="w">    </span><span class="c1">//.version_minor = 0,</span>
+<span class="w">    </span><span class="p">.</span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">PAX_BMS_HARDWARE_MODULE_ID</span><span class="p">,</span><span class="w"></span>
+<span class="w">    </span><span class="p">.</span><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;pax_bms Module&quot;</span><span class="p">,</span><span class="w"></span>
+<span class="w">    </span><span class="p">.</span><span class="n">author</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;pax&quot;</span><span class="p">,</span><span class="w"></span>
+<span class="w">    </span><span class="p">.</span><span class="n">methods</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">&amp;</span><span class="n">pax_bms_module_methods</span><span class="p">,</span><span class="w"></span>
+<span class="p">};</span><span class="w"></span>
+</pre></div>
+</div>
+</section>
+<section id="hw-device-t-paxbms-cpp">
+<h3>hw_device_t PaxBMS.cpp<a class="headerlink" href="#hw-device-t-paxbms-cpp" title="Permalink to this headline"></a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">PaxBMS.cpp</span></code>主要调用<code class="docutils literal notranslate"><span class="pre">hw_get_module</span></code>获取并调用hwModule的open方法，open方法会返回hw_device_t结构体指针<code class="docutils literal notranslate"><span class="pre">pax_bmsDevice</span></code>，这样就可以调用<code class="docutils literal notranslate"><span class="pre">hw_get_module</span></code>封装的ioctrl方法了。</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">vendor</span><span class="o">/</span><span class="n">mediatek</span><span class="o">/</span><span class="n">proprietary</span><span class="o">/</span><span class="n">hardware</span><span class="o">/</span><span class="n">libpax_bms</span><span class="o">/</span><span class="mf">1.0</span><span class="o">/</span><span class="k">default</span><span class="o">/</span><span class="n">PaxBMS</span><span class="p">.</span><span class="n">cpp</span><span class="w"></span>
+<span class="cm">/*</span>
+<span class="cm"> * Copyright (C) 2016 The Android Open Source Project</span>
+<span class="cm"> *</span>
+<span class="cm"> * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span class="cm"> * you may not use this file except in compliance with the License.</span>
+<span class="cm"> * You may obtain a copy of the License at</span>
+<span class="cm"> *</span>
+<span class="cm"> *      http://www.apache.org/licenses/LICENSE-2.0</span>
+<span class="cm"> *</span>
+<span class="cm"> * Unless required by applicable law or agreed to in writing, software</span>
+<span class="cm"> * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span class="cm"> * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
+<span class="cm"> * See the License for the specific language governing permissions and</span>
+<span class="cm"> * limitations under the License.</span>
+<span class="cm"> */</span><span class="w"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&quot;PaxBMS.h&quot;</span><span class="cp"></span>
+
+<span class="k">namespace</span><span class="w"> </span><span class="nn">android</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="k">namespace</span><span class="w"> </span><span class="nn">hardware</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="k">namespace</span><span class="w"> </span><span class="nn">pax_bms</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="k">namespace</span><span class="w"> </span><span class="nn">V1_0</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="k">namespace</span><span class="w"> </span><span class="nn">implementation</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+
+<span class="n">pax_bms_dev_t</span><span class="o">*</span><span class="w"> </span><span class="nf">getPaxBMSDevice</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">pax_bms_dev_t</span><span class="o">*</span><span class="w"> </span><span class="n">pax_bmsDevice</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">NULL</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="n">hw_module_t</span><span class="o">*</span><span class="w"> </span><span class="n">hwModule</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">NULL</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">hw_get_module</span><span class="w"> </span><span class="p">(</span><span class="n">PAX_BMS_HARDWARE_MODULE_ID</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">hwModule</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ret</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">hwModule</span><span class="o">-&gt;</span><span class="n">methods</span><span class="o">-&gt;</span><span class="n">open</span><span class="p">(</span><span class="n">hwModule</span><span class="p">,</span><span class="w"> </span><span class="n">PAX_BMS_HARDWARE_MODULE_ID</span><span class="p">,</span><span class="w"></span>
+<span class="w">            </span><span class="k">reinterpret_cast</span><span class="o">&lt;</span><span class="n">hw_device_t</span><span class="o">**&gt;</span><span class="p">(</span><span class="o">&amp;</span><span class="n">pax_bmsDevice</span><span class="p">));</span><span class="w"></span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ret</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">            </span><span class="n">ALOGE</span><span class="p">(</span><span class="s">&quot;pax_bms_open %s failed: %d&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">PAX_BMS_HARDWARE_MODULE_ID</span><span class="p">,</span><span class="w"> </span><span class="n">ret</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="n">ALOGE</span><span class="p">(</span><span class="s">&quot;hw_get_module %s failed: %d&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">PAX_BMS_HARDWARE_MODULE_ID</span><span class="p">,</span><span class="w"> </span><span class="n">ret</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ret</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">pax_bmsDevice</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="n">ALOGE</span><span class="p">(</span><span class="s">&quot;PaxBMS passthrough failed to load legacy HAL.&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="k">nullptr</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="n">PaxBMS</span><span class="o">::</span><span class="n">PaxBMS</span><span class="p">()</span><span class="w"></span>
+<span class="w">  </span><span class="o">:</span><span class="w"> </span><span class="n">mPaxBMS</span><span class="p">(</span><span class="nb">NULL</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">	  </span><span class="n">mPaxBMS</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">getPaxBMSDevice</span><span class="p">();</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="n">PaxBMS</span><span class="o">::~</span><span class="n">PaxBMS</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mPaxBMS</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="n">mPaxBMS</span><span class="o">-&gt;</span><span class="n">common</span><span class="p">.</span><span class="n">close</span><span class="p">(</span><span class="k">reinterpret_cast</span><span class="o">&lt;</span><span class="n">hw_device_t</span><span class="o">*&gt;</span><span class="p">(</span><span class="n">mPaxBMS</span><span class="p">));</span><span class="w"></span>
+<span class="w">		</span><span class="n">mPaxBMS</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">NULL</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="c1">// Methods from ::android::hardware::pax_bms::V1_0::IPaxBMS follow.</span>
+<span class="n">Return</span><span class="o">&lt;</span><span class="kt">int32_t</span><span class="o">&gt;</span><span class="w"> </span><span class="n">PaxBMS</span><span class="o">::</span><span class="n">EnableCharge</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="kt">int</span><span class="w"> </span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="kt">int</span><span class="w"> </span><span class="n">en</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mPaxBMS</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mPaxBMS</span><span class="o">-&gt;</span><span class="n">bms_ctl</span><span class="p">(</span><span class="n">mPaxBMS</span><span class="p">,</span><span class="w"> </span><span class="n">SET_CHG_EN</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">en</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+
+<span class="w">	</span><span class="k">return</span><span class="w"> </span><span class="n">ret</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="c1">// Methods from ::android::hardware::pax_bms::V1_0::IPaxBMS follow.</span>
+<span class="n">Return</span><span class="o">&lt;</span><span class="kt">int32_t</span><span class="o">&gt;</span><span class="w"> </span><span class="n">PaxBMS</span><span class="o">::</span><span class="n">DisableCharge</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="kt">int</span><span class="w"> </span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="kt">int</span><span class="w"> </span><span class="n">en</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mPaxBMS</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mPaxBMS</span><span class="o">-&gt;</span><span class="n">bms_ctl</span><span class="p">(</span><span class="n">mPaxBMS</span><span class="p">,</span><span class="w"> </span><span class="n">SET_CHG_EN</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">en</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+
+<span class="w">	</span><span class="k">return</span><span class="w"> </span><span class="n">ret</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="c1">// Methods from ::android::hardware::pax_bms::V1_0::IPaxBMS follow.</span>
+<span class="n">Return</span><span class="o">&lt;</span><span class="kt">int32_t</span><span class="o">&gt;</span><span class="w"> </span><span class="n">PaxBMS</span><span class="o">::</span><span class="n">EnablePowerPath</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="kt">int</span><span class="w"> </span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="kt">int</span><span class="w"> </span><span class="n">en</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mPaxBMS</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mPaxBMS</span><span class="o">-&gt;</span><span class="n">bms_ctl</span><span class="p">(</span><span class="n">mPaxBMS</span><span class="p">,</span><span class="w"> </span><span class="n">SET_POWER_PATH</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">en</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+
+<span class="w">	</span><span class="k">return</span><span class="w"> </span><span class="n">ret</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="c1">// Methods from ::android::hardware::pax_bms::V1_0::IPaxBMS follow.</span>
+<span class="n">Return</span><span class="o">&lt;</span><span class="kt">int32_t</span><span class="o">&gt;</span><span class="w"> </span><span class="n">PaxBMS</span><span class="o">::</span><span class="n">DisablePowerPath</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="kt">int</span><span class="w"> </span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="kt">int</span><span class="w"> </span><span class="n">en</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mPaxBMS</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mPaxBMS</span><span class="o">-&gt;</span><span class="n">bms_ctl</span><span class="p">(</span><span class="n">mPaxBMS</span><span class="p">,</span><span class="w"> </span><span class="n">SET_POWER_PATH</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">en</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+
+<span class="w">	</span><span class="k">return</span><span class="w"> </span><span class="n">ret</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="n">IPaxBMS</span><span class="o">*</span><span class="w"> </span><span class="n">HIDL_FETCH_IPaxBMS</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="cm">/* name */</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">PaxBMS</span><span class="p">();</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="p">}</span><span class="w"> </span><span class="c1">// namespace implementation</span>
+<span class="p">}</span><span class="w">  </span><span class="c1">// namespace V1_0</span>
+<span class="p">}</span><span class="w">  </span><span class="c1">// namespace pax_bms</span>
+<span class="p">}</span><span class="w">  </span><span class="c1">// namespace hardware</span>
+<span class="p">}</span><span class="w">  </span><span class="c1">// namespace android</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="hidl-arch">
+<h2>HIDL Arch<a class="headerlink" href="#hidl-arch" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p>HIDL层接口定义：</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span>/home/wugn/M8-project/hardware/interfaces/pax_bms
+
+wugn@jcrj-tf-compile:pax_bms$ tree
+.
+└── 1.0
+    ├── Android.bp
+    ├── IPaxBMS.hal
+    └── types.hal
+
+IPaxBMS.hal:
+package android.hardware.pax_bms@1.0;
+
+interface IPaxBMS {
+    EnableCharge() generates (int32_t res);
+    DisableCharge() generates (int32_t res);
+    EnablePowerPath() generates (int32_t res);
+    DisablePowerPath() generates (int32_t res);
+};
+</pre></div>
+</div>
+<section id="hidl">
+<h3>注册HIDL服务<a class="headerlink" href="#hidl" title="Permalink to this headline"></a></h3>
+<div class="highlight-diff notranslate"><div class="highlight"><pre><span></span><span class="gh">diff --git a/vendor/mediatek/proprietary/hardware/mtk-hidl-service/Android.mk b/vendor/mediatek/proprietary/hardware/mtk-hidl-service/Android.mk</span><span class="w"></span>
+<span class="gh">index d8e5e306de1..d8f5f70318e 100644</span><span class="w"></span>
+<span class="gd">--- a/vendor/mediatek/proprietary/hardware/mtk-hidl-service/Android.mk</span><span class="w"></span>
+<span class="gi">+++ b/vendor/mediatek/proprietary/hardware/mtk-hidl-service/Android.mk</span><span class="w"></span>
+<span class="gu">@@ -30,6 +30,11 @@ LOCAL_SHARED_LIBRARIES += \</span><span class="w"></span>
+<span class="w"> </span>    android.hardware.graphics.allocator@2.0 \<span class="w"></span>
+<span class="w"> </span>    vendor.mediatek.hardware.gpu@1.0 \<span class="w"></span>
+<span class="w"> </span>
+<span class="gi">+#ADD BEGIN by shanliangliang@paxsz.com, add for BMS 2021/07/12</span><span class="w"></span>
+<span class="gi">+LOCAL_SHARED_LIBRARIES += \</span><span class="w"></span>
+<span class="gi">+    android.hardware.pax_bms@1.0 \</span><span class="w"></span>
+<span class="gi">+#ADD END by shanliangliang@paxsz.com, add for BMS 2021/07/12</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="w"> </span>    LOCAL_REQUIRED_MODULES := \<span class="w"></span>
+<span class="w"> </span>        android.hardware.thermal@2.0-impl<span class="w"></span>
+<span class="w"> </span>
+<span class="gh">diff --git a/vendor/mediatek/proprietary/hardware/mtk-hidl-service/service.cpp b/vendor/mediatek/proprietary/hardware/mtk-hidl-service/service.cpp</span><span class="w"></span>
+<span class="gh">index be73b5d2be9..0461dbd9a22 100644</span><span class="w"></span>
+<span class="gd">--- a/vendor/mediatek/proprietary/hardware/mtk-hidl-service/service.cpp</span><span class="w"></span>
+<span class="gi">+++ b/vendor/mediatek/proprietary/hardware/mtk-hidl-service/service.cpp</span><span class="w"></span>
+<span class="gu">@@ -27,6 +27,10 @@</span><span class="w"></span>
+<span class="w"> </span>#include &lt;android/hardware/gnss/2.1/IGnss.h&gt;<span class="w"></span>
+<span class="w"> </span>#endif<span class="w"></span>
+<span class="w"> </span>
+<span class="gi">+//ADD BEGIN by shanliangliang@paxsz.com, add for BMS 2021/07/12</span><span class="w"></span>
+<span class="gi">+#include &lt;android/hardware/pax_bms/1.0/IPaxBMS.h&gt;</span><span class="w"></span>
+<span class="gi">+//ADD END by shanliangliang@paxsz.com, add for BMS 2021/07/12</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="w"> </span>using ::android::OK;<span class="w"></span>
+<span class="w"> </span>using ::android::status_t;<span class="w"></span>
+<span class="w"> </span>using ::android::hardware::configureRpcThreadpool;<span class="w"></span>
+<span class="gu">@@ -40,6 +44,10 @@ using ::vendor::mediatek::hardware::gpu::V1_0::IGraphicExt;</span><span class="w"></span>
+<span class="w"> </span>using ::android::hardware::gnss::V2_1::IGnss;<span class="w"></span>
+<span class="w"> </span>#endif<span class="w"></span>
+<span class="w"> </span>
+<span class="gi">+//ADD BEGIN by shanliangliang@paxsz.com, add for BMS 2021/07/12</span><span class="w"></span>
+<span class="gi">+using ::android::hardware::pax_bms::V1_0::IPaxBMS;</span><span class="w"></span>
+<span class="gi">+//ADD END by shanliangliang@paxsz.com, add for BMS 2021/07/12</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="w"> </span>#define register(service) do { \<span class="w"></span>
+<span class="w"> </span>    status_t err = registerPassthroughServiceImplementation&lt;service&gt;(); \<span class="w"></span>
+<span class="w"> </span>    if (err != OK) { \<span class="w"></span>
+<span class="gu">@@ -59,6 +67,10 @@ void* mtkHidlService(void *data)</span><span class="w"></span>
+<span class="w"> </span>    register(IAllocator);<span class="w"></span>
+<span class="w"> </span>    register(IGraphicExt);<span class="w"></span>
+<span class="w"> </span>
+<span class="gi">+//ADD BEGIN by shanliangliang@paxsz.com, add for BMS 2021/07/12</span><span class="w"></span>
+<span class="gi">+    register(IPaxBMS);</span><span class="w"></span>
+<span class="gi">+//ADD END by shanliangliang@paxsz.com, add for BMS 2021/07/12</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="w"> </span>#ifdef MTK_GPS_SUPPORT<span class="w"></span>
+<span class="w"> </span>    register(IGnss);<span class="w"></span>
+<span class="w"> </span>    ::vendor::mediatek::hardware::lbs::V1_0::implementation::cpp_main();<span class="w"></span>
+<span class="gd">-- </span><span class="w"></span>
+<span class="w">2.17.1</span>
+</pre></div>
+</div>
+</section>
+<section id="id12">
+<h3>添加HIDL服务编译选项<a class="headerlink" href="#id12" title="Permalink to this headline"></a></h3>
+<div class="highlight-DIFF notranslate"><div class="highlight"><pre><span></span><span class="gd">--- a/device/mediatek/mt6765/device.mk</span><span class="w"></span>
+<span class="gi">+++ b/device/mediatek/mt6765/device.mk</span><span class="w"></span>
+<span class="gu">@@ -1051,6 +1051,14 @@ PRODUCT_PACKAGES += \</span><span class="w"></span>
+<span class="w"> </span>PRODUCT_PACKAGES += \<span class="w"></span>
+<span class="w"> </span>    android.hardware.lights-service.mediatek<span class="w"></span>
+<span class="w"> </span>
+<span class="gi">+#Added BEGIN by shanliangliang@paxsz.com for BMS @2021-07-12</span><span class="w"></span>
+<span class="gi">+PRODUCT_PACKAGES += pax_bms.mt6765</span><span class="w"></span>
+<span class="gi">+#PRODUCT_PACKAGES += pax_bms_test</span><span class="w"></span>
+<span class="gi">+PRODUCT_PACKAGES += android.hardware.pax_bms@1.0-impl</span><span class="w"></span>
+<span class="gi">+PRODUCT_PACKAGES += android.hardware.pax_bms@1.0-service-lazy</span><span class="w"></span>
+<span class="gi">+PRODUCT_PACKAGES += android.hardware.pax_bms@1.0-service</span><span class="w"></span>
+<span class="gi">+#Added END by shanliangliang@paxsz.com for BMS @2021-07-12</span><span class="w"></span>
+</pre></div>
+</div>
+</section>
+<section id="hidl-manifest">
+<h3>添加HIDL manifest<a class="headerlink" href="#hidl-manifest" title="Permalink to this headline"></a></h3>
+<div class="highlight-diff notranslate"><div class="highlight"><pre><span></span><span class="gd">--- a/device/mediatek/mt6765/manifest.xml</span><span class="w"></span>
+<span class="gi">+++ b/device/mediatek/mt6765/manifest.xml</span><span class="w"></span>
+<span class="gu">@@ -143,4 +143,16 @@</span><span class="w"></span>
+<span class="w"> </span>            &lt;instance&gt;default&lt;/instance&gt;<span class="w"></span>
+<span class="w"> </span>        &lt;/interface&gt;<span class="w"></span>
+<span class="w"> </span>    &lt;/hal&gt;<span class="w"></span>
+<span class="gi">+	&lt;!--ADD BEGIN by shanliangliang@paxsz.com add for BMS 2021/07/12 --&gt;</span><span class="w"></span>
+<span class="gi">+    &lt;hal format=&quot;hidl&quot;&gt;</span><span class="w"></span>
+<span class="gi">+        &lt;name&gt;android.hardware.pax_bms&lt;/name&gt;</span><span class="w"></span>
+<span class="gi">+        &lt;transport&gt;hwbinder&lt;/transport&gt;</span><span class="w"></span>
+<span class="gi">+        &lt;impl level=&quot;generic&quot;&gt;&lt;/impl&gt;</span><span class="w"></span>
+<span class="gi">+        &lt;version&gt;1.0&lt;/version&gt;</span><span class="w"></span>
+<span class="gi">+        &lt;interface&gt;</span><span class="w"></span>
+<span class="gi">+            &lt;name&gt;IPaxBMS&lt;/name&gt;</span><span class="w"></span>
+<span class="gi">+            &lt;instance&gt;default&lt;/instance&gt;</span><span class="w"></span>
+<span class="gi">+        &lt;/interface&gt;</span><span class="w"></span>
+<span class="gi">+    &lt;/hal&gt;</span><span class="w"></span>
+<span class="gi">+	&lt;!--ADD END by shanliangliang@paxsz.com add for BMS 2021/07/12 --&gt;</span><span class="w"></span>
+<span class="w"> </span>&lt;/manifest&gt;<span class="w"></span>
+</pre></div>
+</div>
+</section>
+<section id="id13">
+<h3>启动HIDL服务<a class="headerlink" href="#id13" title="Permalink to this headline"></a></h3>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span>vendor/mediatek/proprietary/hardware/libpax_bms/1.0/default/android.hardware.pax_bms@1.0-service.rc
+@ -0,0 +1,9 @@
+service pax_bms-hal-1-0 /vendor/bin/hw/android.hardware.pax_bms@1.0-service
+    interface android.hardware.pax_bms@1.0::IPaxBMS default
+    oneshot
+    class hal
+    user system
+    group system
+    # shutting off pax bms while powering-off
+    shutdown critical
+
+vendor/mediatek/proprietary/hardware/libpax_bms/1.0/default/service.cpp
+@ -0,0 +1,28 @@
+/*
+ * Copyright 2016 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#define NDEBUG 1
+#define LOG_TAG &quot;android.hardware.pax_bms@2.0-service-mediatek&quot;
+
+#include &lt;android/hardware/pax_bms/1.0/IPaxBMS.h&gt;
+#include &lt;hidl/LegacySupport.h&gt;
+
+using android::hardware::pax_bms::V1_0::IPaxBMS;
+using android::hardware::defaultPassthroughServiceImplementation;
+
+int main() {
+    return defaultPassthroughServiceImplementation&lt;IPaxBMS&gt;();
+}
+</pre></div>
+</div>
+</section>
+<section id="id14">
+<h3>查看HIDL服务进程<a class="headerlink" href="#id14" title="Permalink to this headline"></a></h3>
+<p>实际上是一个<code class="docutils literal notranslate"><span class="pre">binder_ioctl_write_read</span></code>的进程。</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">PAYTABLETM8</span><span class="p">:</span><span class="o">/</span> <span class="c1"># ps -A | grep bms</span>
+<span class="n">system</span>          <span class="mi">479</span>      <span class="mi">1</span> <span class="mi">10776264</span>  <span class="mi">5036</span> <span class="n">binder_ioctl_write_read</span> <span class="mi">0</span> <span class="n">S</span> <span class="n">android</span><span class="o">.</span><span class="n">hardware</span><span class="o">.</span><span class="n">pax_bms</span><span class="o">@</span><span class="mf">1.0</span><span class="o">-</span><span class="n">service</span>
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, wugn.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+  
+
+<script charset="UTF-8" id="LA_COLLECT" src="//sdk.51.la/js-sdk-pro.min.js"></script>
+<script>LA.init({id: "JjOE14XScyd75b2C",ck: "JjOE14XScyd75b2C"})</script>
+
+<br/>
+<script id="LA-DATA-WIDGET" crossorigin="anonymous" charset="UTF-8" src="https://v6-widget.51.la/v6/JjOE14XScyd75b2C/quote.js?theme=0&f=12&display=1,0,0,0,0,0,1,1"></script>
+
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

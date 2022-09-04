@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>wugn</title>
+
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../index.html" class="icon icon-home"> wugn_note
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">传感器原理</a><ul>
+<li><a class="reference internal" href="#id2">参考</a></li>
+<li><a class="reference internal" href="#id3">软件架构图</a></li>
+<li><a class="reference internal" href="#hidl">HIDL层架构</a><ul>
+<li><a class="reference internal" href="#id4">平台与相关文件</a></li>
+<li><a class="reference internal" href="#id5">相关编译配置</a></li>
+<li><a class="reference internal" href="#id6">HIDL启动流程</a><ul>
+<li><a class="reference internal" href="#sensorpoll">1.sensor数据流poll机制</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#open-sensors-open">2.open_sensors()函数了解open工作流程</a></li>
+<li><a class="reference internal" href="#sensors-event-t">sensors_event_t数据格式</a></li>
+<li><a class="reference internal" href="#sensor-handle">上层的传下来的sensor_handle与对应传感器的转换关系</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#kernel-hub">kernel hub层架构</a><ul>
+<li><a class="reference internal" href="#sensor">驱动获取物理sensor数据流程分析</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">wugn_note</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs"> 
+<li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+<li>传感器原理</li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.forward()">Forward</a></li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.back()">Go Back</a> | </li>
+<li style="float: right;margin-left: 10px;"><a href="/index.html">Home</a> | </li>
+
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="id1">
+<h1>传感器原理<a class="headerlink" href="#id1" title="Permalink to this headline"></a></h1>
+<p>Sensor架构介绍</p>
+<section id="id2">
+<h2>参考<a class="headerlink" href="#id2" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p><a class="reference download internal" download="" href="../../../_downloads/7b882f8dc8aa83621a1aa96549bdfa54/sensor_all_in_one.pdf"><span class="xref download myst">0007_sensor_all_in_one.pdf</span></a></p></li>
+<li><p><a class="reference external" href="https://www.jianshu.com/p/8cd91b71709a">嵌入式Linux驱动开发（五）——poll机制原理以及驱动实现</a></p></li>
+<li><p><a class="reference external" href="https://cloud.tencent.com/developer/article/1708996">韦东山：Linux驱动基石之POLL机制</a></p></li>
+<li><p><a class="reference external" href="https://blog.csdn.net/wh2526422/article/details/120786350">MTK Sensor框架 及信息传递详解</a></p></li>
+</ul>
+</section>
+<section id="id3">
+<h2>软件架构图<a class="headerlink" href="#id3" title="Permalink to this headline"></a></h2>
+<p><img alt="0007_软件架构1.png" src="src/0011_sensor_function/docs/images/0007_%E8%BD%AF%E4%BB%B6%E6%9E%B6%E6%9E%841.png" /></p>
+<p><img alt="0007_架构2.png" src="src/0011_sensor_function/docs/images/0007_%E6%9E%B6%E6%9E%842.png" /></p>
+<p>新架构中的每个sensor都对应于一个CPP file：</p>
+<p><img alt="0007_每个.png" src="src/0011_sensor_function/docs/images/0007_%E6%AF%8F%E4%B8%AA.png" /></p>
+</section>
+<section id="hidl">
+<h2>HIDL层架构<a class="headerlink" href="#hidl" title="Permalink to this headline"></a></h2>
+<p><img alt="0007_HIDL.png" src="../../../_images/0007_HIDL.png" /></p>
+<section id="id4">
+<h3>平台与相关文件<a class="headerlink" href="#id4" title="Permalink to this headline"></a></h3>
+<ul class="simple">
+<li><p>平台：M8 MT6765 Android11 sensor-1.0</p></li>
+<li><p>相关文件:</p>
+<ul>
+<li><p>vendor\mediatek\proprietary\hardware\sensor\sensors-1.0，最终编译成vendor/lib64/hw/sensors.mt6765.so，不同硬件平台可能保存的名称和路径不一致</p></li>
+<li><p>vendor\mediatek\proprietary\hardware\sensor\hidl\2.0，最终编译成vendor/bin/hw/android.hardware.sensors&#64;2.0-service-mediatek</p></li>
+<li><p>hardware\interfaces\sensors\2.0\ISensors.hal，google HIDL接口定义</p></li>
+</ul>
+</li>
+</ul>
+</section>
+<section id="id5">
+<h3>相关编译配置<a class="headerlink" href="#id5" title="Permalink to this headline"></a></h3>
+<ul class="simple">
+<li><p>HIDL 编译配置</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">vendor\mediatek\proprietary\hardware\sensor\hidl\2.0\Android.mk</span></code>:</p></li>
+</ul>
+<div class="highlight-Makefile notranslate"><div class="highlight"><pre><span></span><span class="nv">LOCAL_PATH</span><span class="o">:=</span> <span class="k">$(</span>call my-dir<span class="k">)</span>
+
+<span class="cp">include $(CLEAR_VARS)</span>
+<span class="nv">LOCAL_MODULE</span> <span class="o">:=</span> android.hardware.sensors@2.0-service-mediatek
+<span class="nv">LOCAL_INIT_RC</span> <span class="o">:=</span> android.hardware.sensors@2.0-service-mediatek.rc
+<span class="nv">LOCAL_PROPRIETARY_MODULE</span> <span class="o">:=</span> <span class="nb">true</span>
+<span class="nv">LOCAL_MODULE_RELATIVE_PATH</span> <span class="o">:=</span> hw
+<span class="nv">LOCAL_MODULE_OWNER</span> <span class="o">:=</span> mtk
+<span class="nv">LOCAL_SRC_FILES</span> <span class="o">:=</span> <span class="se">\</span>
+    Sensors.cpp <span class="se">\</span>
+    service.cpp 
+
+<span class="nv">LOCAL_SHARED_LIBRARIES</span> <span class="o">:=</span> <span class="se">\</span>
+    liblog <span class="se">\</span>
+    libcutils <span class="se">\</span>
+    libhardware <span class="se">\</span>
+    libhwbinder <span class="se">\</span>
+    libbase <span class="se">\</span>
+    libutils <span class="se">\</span>
+    libhidlbase <span class="se">\</span>
+    libhidltransport <span class="se">\</span>
+    android.hardware.sensors@1.0 <span class="se">\</span>
+    android.hardware.sensors@2.0 <span class="se">\</span>
+    libfmq <span class="se">\</span>
+    libpower 
+
+<span class="nv">LOCAL_STATIC_LIBRARIES</span> <span class="o">:=</span> <span class="se">\</span>
+    android.hardware.sensors@1.0-convert <span class="se">\</span>
+    multihal 
+
+<span class="nv">LOCAL_REQUIRED_MODULES</span> <span class="o">+=</span> <span class="se">\</span>
+    sensors.<span class="k">$(</span>TARGET_BOARD_PLATFORM<span class="k">)</span> 
+
+<span class="cp">include $(BUILD_EXECUTABLE)</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">device/mediatek/vendor/common/device.mk</span></code>:</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">PRODUCT_PACKAGES</span> <span class="o">+=</span> \
+        <span class="n">android</span><span class="o">.</span><span class="n">hardware</span><span class="o">.</span><span class="n">sensors</span><span class="o">@</span><span class="mf">2.0</span><span class="o">-</span><span class="n">service</span><span class="o">-</span><span class="n">mediatek</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">device/mediatek/vendor/common/project_manifest/manifest_sensor_hidl_v2.xml</span></code>:</p></li>
+</ul>
+<div class="highlight-xml notranslate"><div class="highlight"><pre><span></span><span class="nt">&lt;manifest</span> <span class="na">version=</span><span class="s">&quot;1.0&quot;</span> <span class="na">type=</span><span class="s">&quot;device&quot;</span><span class="nt">&gt;</span>
+    <span class="nt">&lt;hal</span> <span class="na">format=</span><span class="s">&quot;hidl&quot;</span><span class="nt">&gt;</span>
+        <span class="nt">&lt;name&gt;</span>android.hardware.sensors<span class="nt">&lt;/name&gt;</span>
+        <span class="nt">&lt;transport&gt;</span>hwbinder<span class="nt">&lt;/transport&gt;</span>
+        <span class="nt">&lt;impl</span> <span class="na">level=</span><span class="s">&quot;generic&quot;</span><span class="nt">&gt;&lt;/impl&gt;</span>
+        <span class="nt">&lt;version&gt;</span>2.0<span class="nt">&lt;/version&gt;</span>
+        <span class="nt">&lt;interface&gt;</span>
+            <span class="nt">&lt;name&gt;</span>ISensors<span class="nt">&lt;/name&gt;</span>
+            <span class="nt">&lt;instance&gt;</span>default<span class="nt">&lt;/instance&gt;</span>
+        <span class="nt">&lt;/interface&gt;</span>
+    <span class="nt">&lt;/hal&gt;</span>
+<span class="nt">&lt;/manifest&gt;</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>device目录下相关宏配置</p></li>
+</ul>
+<p>主要是device/mediateksample/$project/ProjectConfig.mk文件</p>
+<div class="highlight-log notranslate"><div class="highlight"><pre><span></span>device/mediateksample/k62v1_64_pax/ProjectConfig.mk
+MTK_SENSOR_ARCHITECTURE = 1.0
+MTK_SENSORS_1_0 = yes
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>hal层SensorList对应传感器类型添加</p></li>
+</ul>
+</section>
+<section id="id6">
+<h3>HIDL启动流程<a class="headerlink" href="#id6" title="Permalink to this headline"></a></h3>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">vendor/mediatek/proprietary/hardware/sensor/hidl/2.0/android.hardware.sensors&#64;2.0-service-mediatek.rc</span></code>系统起来后init进程会加载vendor/etc/init里的rc文件:</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>启动详情请参考：
+https://www.jianshu.com/p/769c58285c22?utm_source=oschina-app
+
+文件系统地址：
+vendor/etc/init/android.hardware.sensors@2.0-service-mediatek.rc
+
+service vendor.sensors-hal-2-0 /vendor/bin/hw/android.hardware.sensors@2.0-service-mediatek
+    class main
+    user system
+    group system
+    rlimit rtprio 10 10
+</pre></div>
+</div>
+<section id="sensorpoll">
+<h4>1.sensor数据流poll机制<a class="headerlink" href="#sensorpoll" title="Permalink to this headline"></a></h4>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>* vendor\mediatek\proprietary\hardware\sensor\hidl\2.0\service.cpp
+  * main()
+    * android::sp&lt;ISensors&gt; sensors = new Sensors()          //进入HIDL Seneors.cpp中的构造函数
+      * Sensors::Sensors()                                 //构造函数
+        * //hw_get_module会通过SENSORS_HARDWARE_MODULE_ID找到对应HAL模块sensors-1.0/sensor.cpp  -&gt;  /vendor/lib64/hw/sensors.mt6765.so
+          * hw_get_module(SENSORS_HARDWARE_MODULE_ID,(hw_module_t const **)&amp;mSensorModule)
+            * sensors_open_1()                           //打开sensor,调用Hal层sensors-1.0/sensors.cpp里面的open_sensors()函数，这里就从HIDL层进入到snesor Hal层
+              * mRunThread = std::thread(startThread, this)    //启动poll线程(这里可以知道其实sensor还没有打开，poll线程就已经启动在源源不断获取数据)
+                * Sensors::startThread()
+                  * Sensors::poll()
+                    * while(mRunThreadEnable.load())     //while()循环持续得去获取Hal层传递上来的数据 
+                      * mSensorDevice-&gt;poll            //进入Hal层调用sensors.cpp里面的poll__poll函数去获取数据
+                      * convertFromSensorEvents()
+                      * postEvents()
+                        * while (1)                                       
+                          * mEventQueue-&gt;writeBlocking()//通过while死循环将event数据源源不断写入到FMQ(快速消息队列)
+    * sensors-&gt;registerAsService()       //注册sensor service
+</pre></div>
+</div>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">hardware/interfaces/sensors/1.0/ISensors.hal</span></code>:其他关键方法：</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>Sensors::initialize()
+Sensors::getSensorsList()       //获取sensor列表，通过mSensorModule-&gt;get_sensors_list()进入Hal层的sensors.cpp-&gt;sensors__get_sensors_list()方法
+Sensors::batch(int32_t sensor_handle, int64_t sampling_period_ns, int64_t max_report_latency_ns)    //通过mSensorDevice-&gt;batch进入Hal层sensors.cpp-&gt;poll__batch()方法
+Sensors::activate(int32_t sensor_handle, bool enabled)      //通过mSensorDevice-&gt;activate进入Hal层sensors.cpp-&gt;poll__activate()方法
+Sensors::flush(int32_t sensor_handle)                       //通过mSensorDevice-&gt;flush进入Hal层sensors.cpp-&gt;poll__flush()方法
+</pre></div>
+</div>
+</section>
+</section>
+<section id="open-sensors-open">
+<h3>2.open_sensors()函数了解open工作流程<a class="headerlink" href="#open-sensors-open" title="Permalink to this headline"></a></h3>
+<ul class="simple">
+<li><p>流程分析：</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span>//由上面HIDL层工作流程分析中的sensors_open_1()可知，会调用Hal层sensors.cpp  .open = open_sensors, 由此入口正式进入到Hal层
+* open = open_sensors
+    * open_sensors()
+        * init_sensors()
+            * mSensorList = SensorList::getInstance();
+                * SensorList *mInterface = new SensorList
+                    * SensorList::SensorList()
+                        * SensorList::initSensorList()         //初始化sensor列表，这里通过相关宏配置来实现是否需要添加对应传感器到SensorList
+            * mSensorList-&gt;getSensorList(&amp;list)
+                * SensorList::getSensorList
+            * dev = sensors_poll_context_t::getInstance()                   //获取sensors_poll_context_t实例，sensors_poll_context_t的作用是统一相关操作snesor的接口
+                * getInstance()---&gt;new sensors_poll_context_t               //SensorContext.cpp,创建sensors_poll_context_t对象
+                    * sensors_poll_context_t::sensors_poll_context_t()      //开始创建各个sensor的实例对象
+                        * mSensors[accel] = new AccelerationSensor();
+                            * AccelerationSensor::AccelerationSensor()      //Acceleration.cpp
+
+            * dev-&gt;device.activate        = poll__activate; //使用及禁止
+            * dev-&gt;device.setDelay        = poll__setDelay; //设置上报频率，这里是设置poll delay值
+            * dev-&gt;device.poll            = poll__poll;                     //HIDL层进入到Hal层 mSensorDevice相关调用接口 poll数据
+            * dev-&gt;device.batch           = poll__batch;  //
+            * dev-&gt;device.flush           = poll__flush;  //刷新数据
+
+            * mSensorManager = SensorManager::getInstance();                //获取SensorManager实例对象
+                * SensorManager *sensors = new SensorManager
+                    * SensorManager::SensorManager()
+            * mSensorManager-&gt;addSensorsList(list, count);                  //将获取到的sensor列表添加到mSensorList容器里面
+                * SensorManager::addSensorsList()
+            * mNativeConnection = mSensorManager-&gt;createSensorConnection(numFds);
+                * SensorManager::createSensorConnection()
+            * mSensorManager-&gt;setNativeConnection(mNativeConnection);       //将本地sensor连接保存到SensorManager
+                * SensorManager::setNativeConnection()
+            * mSensorManager-&gt;setSensorContext(dev);
+                * SensorManager::setSensorContext()                         //设置sensor上下文
+            * mVendorInterface = VendorInterface::getInstance();            //这些应该是进入校正库的相关调用接口
+                * VendorInterface *mInterface = new VendorInterface
+                    * VendorInterface::VendorInterface()
+                        * fd = TEMP_FAILURE_RETRY(open(&quot;/sys/class/sensor/m_mag_misc/maglibinfo&quot;, O_RDWR))  //通过maglibinfo节点绑定的fops去找到校正库
+                        * len = TEMP_FAILURE_RETRY(read(fd, &amp;libinfo, sizeof(struct mag_libinfo_t)))
+            * mMtkInterface = MtkInterface::getInstance();
+            * mSensorCalibration = SensorCalibration::getInstance();        //sensor校正相关
+            * mDirectChannelManager = DirectChannelManager::getInstance();
+                            
+//思考：sensors.cpp只是定义了poll__batch()函数，那么是在哪里调用的？？？
+//---&gt;framework-native-services-sensorservice-SensorService.cpp:  SensorService::enable()  sensor-&gt;batch()会通过hidl调用到Hal层的poll__batch() 
+sensors.cpp：
+* poll__batch()                          
+    * SensorManager::batch()
+        * sensors_poll_context_t::batch()
+            * AccelerationSensor::batch()    //操作/sys/class/sensor/m_acc_misc/accbatch节点,进入到内核空间调用驱动accel.c-&gt;accbatch_store()函数
+
+//---&gt;framework-native-services-sensorservice-SensorService.cpp:  SensorService::enable()  sensor-&gt;activate()会通过hidl调用到Hal层的poll__activate()
+sensors.cpp：                     
+* poll__activate()                           //sensor使能函数
+    * SensorManager::activate()
+        * sensors_poll_context_t::activate()
+            * AccelerationSensor::enable()   //操作/sys/class/sensor/m_acc_misc/accactive节点，进入到内核空间调用驱动accel.c-&gt;accactive_store()函数
+
+//启动poll线程后就一直在循环读取数据
+sensors.cpp                     
+* poll__poll()           //AccelerationSensor::enable打开加速度传感器后，上层就一直在循环调用poll__poll()获取传感器数据
+    * SensorManager::pollEvent()
+        * sensors_poll_context_t::pollEvent()                       //轮询事件,启动轮询机制，监听sensorlist[]中文件描述符，等待事件上报 
+            * AccelerationSensor::readEvents()                      //读取事件
+                * SensorEventCircularReader::fill()                 //将下方read(mReadFd,..)读取到的数据保存在mBuffer
+                    * read(mReadFd,..)   //mReadFd就是/dev/m_acc_misc文件描述符，m_acc_misc设备节点绑定了fops,通过read()进入到内核空间调用驱动accel_read()
+                * SensorEventCircularReader::readEvent()    //将上面mBuffer里面的数据保存在 *event
+            * AccelerationSensor::processEvent()                //事件处理与校正，上面获取到的*event数据,将(sensor_event *event)转换成(sensors_event_t mPendingEvent)
+                * SensorEventCircularReader::next()             //获取下一次的数据
+
+poll__setDelay:  //HIDL
+  * poll__setDelay()
+    * mSensorManager-&gt;batch(mNativeConnection, handle - ID_OFFSET, ns, 0);
+      * SensorManager::batch(SensorConnection *connection, int32_t sensor_handle, //Sensor.cpp
+        * mSensorContext-&gt;batch(sensor_handle,0, info.bestBatchParams.batchDelay, info.bestBatchParams.batchTimeout); //SensorManager.cpp
+          * sensors_poll_context_t::batch(int handle, int flags,
+            * mSensors[index]-&gt;batch(handle, flags, samplingPeriodNs, maxBatchReportLatencyNs);//SensorContext.cpp
+              * strlcpy(&amp;input_sysfs_path[input_sysfs_path_len], &quot;gyrobatch&quot;, sizeof(input_sysfs_path) - input_sysfs_path_len); //Gyroscope.cpp从input_sysfs_path数组中匹配gyrobatch的节点
+              * int err = TEMP_FAILURE_RETRY(write(fd, buf, sizeof(buf))); //write sys节点
+                * DEVICE_ATTR_RW(gyrobatch);  //kernel节点
+                  * static ssize_t gyrobatch_store(struct device *dev,   //store函数
+                    * #ifdef CONFIG_NANOHUB //Gyrpscope.c 开启sensorhub
+                      * err = cxt-&gt;gyro_ctl.batch(0, cxt-&gt;delay_ns, cxt-&gt;latency_ns); 
+                        * static int gyrohub_batch(int flag, int64_t samplingPeriodNs, //gyrohub.c gyrohub_probe中定义ctl.batch = gyrohub_batch;
+                          * sensor_batch_to_hub(ID_GYROSCOPE,flag, samplingPeriodNs, maxBatchReportLatencyNs); 
+                            * SCP_sensorHub_batch(handle,flag, samplingPeriodNs, maxBatchReportLatencyNs); //SCP_nanoHub.c
+                              * nanohub_external_write((const uint8_t *)&amp;cmd, //IPI通信
+                                * static bool sensorRateAcc(uint32_t rate, uint64_t latency, void *cookie) //sensorhub  accgyro.c
+                                  * accRateCalculate(rate, latency);
+                                    * setAccHwRate(rate, waterMark, latency);
+                                      * sensorFsmRunState(&amp;dataInfo, &amp;mTask.fsm, (const void *)CHIP_ACC_RATECHG, &amp;i2cCallback, &amp;spiCallback); //执行FSM驱动CHIP_ACC_RATECHG函数
+                                        * sc7a20gRate(I2cCallbackF i2cCallBack, SpiCbkF spiCallBack, void *next_state, // sc7a20.c
+                    * gyro_enable_and_batch(); //非sensorhub驱动
+                      * cxt-&gt;gyro_ctl.batch(0, cxt-&gt;delay_ns,cxt-&gt;latency_ns); //调用真实driver里面的batch函数
+                        * static int sc7a20_batch(int flag, int64_t samplingPeriodNs, int64_t maxBatchReportLaten
+                          * SC7A20_SetBWRate(obj_i2c_data-&gt;client, sample_delay); //操作真实sensor i2c
+                      * atomic_set(&amp;cxt-&gt;delay, mdelay); //同时设置timer延时，因为sensor工作队列中INIT_WORK(&amp;obj-&gt;report, gyro_work_func);定义了startTimer(&amp;cxt-&gt;hrTimer, atomic_read(&amp;cxt-&gt;delay), false);
+</pre></div>
+</div>
+</section>
+<section id="sensors-event-t">
+<h3>sensors_event_t数据格式<a class="headerlink" href="#sensors-event-t" title="Permalink to this headline"></a></h3>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="c1">//上面分析到AccelerationSensor::processEvent()数据处理过程中会将(sensor_event *event)转换成(sensors_event_t mPendingEvent)，我们可以看看sensors_event_t类型的数据是什么样的？</span>
+<span class="c1">// hardware/libhardware/include/hardware/sensors.h</span>
+
+<span class="cm">/**</span>
+<span class="cm"> * Union of the various types of sensor data</span>
+<span class="cm"> * that can be returned.</span>
+<span class="cm"> */</span><span class="w"></span>
+<span class="k">typedef</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">sensors_event_t</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="cm">/* must be sizeof(struct sensors_event_t) */</span><span class="w"></span>
+<span class="w">    </span><span class="kt">int32_t</span><span class="w"> </span><span class="n">version</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">    </span><span class="cm">/* sensor identifier */</span><span class="w"></span>
+<span class="w">    </span><span class="kt">int32_t</span><span class="w"> </span><span class="n">sensor</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">    </span><span class="cm">/* sensor type */</span><span class="w"></span>
+<span class="w">    </span><span class="kt">int32_t</span><span class="w"> </span><span class="n">type</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">    </span><span class="cm">/* reserved */</span><span class="w"></span>
+<span class="w">    </span><span class="kt">int32_t</span><span class="w"> </span><span class="n">reserved0</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">    </span><span class="cm">/* time is in nanosecond */</span><span class="w"></span>
+<span class="w">    </span><span class="kt">int64_t</span><span class="w"> </span><span class="n">timestamp</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">    </span><span class="k">union</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="k">union</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">            </span><span class="kt">float</span><span class="w">           </span><span class="n">data</span><span class="p">[</span><span class="mi">16</span><span class="p">];</span><span class="w"></span>
+
+<span class="w">            </span><span class="cm">/* acceleration values are in meter per second per second (m/s^2) */</span><span class="w"></span>
+<span class="w">            </span><span class="n">sensors_vec_t</span><span class="w">   </span><span class="n">acceleration</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">            </span><span class="cm">/* magnetic vector values are in micro-Tesla (uT) */</span><span class="w"></span>
+<span class="w">            </span><span class="n">sensors_vec_t</span><span class="w">   </span><span class="n">magnetic</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">            </span><span class="cm">/* orientation values are in degrees */</span><span class="w"></span>
+<span class="w">            </span><span class="n">sensors_vec_t</span><span class="w">   </span><span class="n">orientation</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">            </span><span class="cm">/* gyroscope values are in rad/s */</span><span class="w"></span>
+<span class="w">            </span><span class="n">sensors_vec_t</span><span class="w">   </span><span class="n">gyro</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">            </span><span class="cm">/* temperature is in degrees centigrade (Celsius) */</span><span class="w"></span>
+<span class="w">            </span><span class="kt">float</span><span class="w">           </span><span class="n">temperature</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">            </span><span class="cm">/* distance in centimeters */</span><span class="w"></span>
+<span class="w">            </span><span class="kt">float</span><span class="w">           </span><span class="n">distance</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">            </span><span class="cm">/* light in SI lux units */</span><span class="w"></span>
+<span class="w">            </span><span class="kt">float</span><span class="w">           </span><span class="n">light</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">            </span><span class="cm">/* pressure in hectopascal (hPa) */</span><span class="w"></span>
+<span class="w">            </span><span class="kt">float</span><span class="w">           </span><span class="n">pressure</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">            </span><span class="cm">/* relative humidity in percent */</span><span class="w"></span>
+<span class="w">            </span><span class="kt">float</span><span class="w">           </span><span class="n">relative_humidity</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">            </span><span class="cm">/* uncalibrated gyroscope values are in rad/s */</span><span class="w"></span>
+<span class="w">            </span><span class="n">uncalibrated_event_t</span><span class="w"> </span><span class="n">uncalibrated_gyro</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">            </span><span class="cm">/* uncalibrated magnetometer values are in micro-Teslas */</span><span class="w"></span>
+<span class="w">            </span><span class="n">uncalibrated_event_t</span><span class="w"> </span><span class="n">uncalibrated_magnetic</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">            </span><span class="cm">/* uncalibrated accelerometer values are in  meter per second per second (m/s^2) */</span><span class="w"></span>
+<span class="w">            </span><span class="n">uncalibrated_event_t</span><span class="w"> </span><span class="n">uncalibrated_accelerometer</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">            </span><span class="cm">/* heart rate data containing value in bpm and status */</span><span class="w"></span>
+<span class="w">            </span><span class="n">heart_rate_event_t</span><span class="w"> </span><span class="n">heart_rate</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">            </span><span class="cm">/* this is a special event. see SENSOR_TYPE_META_DATA above.</span>
+<span class="cm">             * sensors_meta_data_event_t events are all reported with a type of</span>
+<span class="cm">             * SENSOR_TYPE_META_DATA. The handle is ignored and must be zero.</span>
+<span class="cm">             */</span><span class="w"></span>
+<span class="w">            </span><span class="n">meta_data_event_t</span><span class="w"> </span><span class="n">meta_data</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">            </span><span class="cm">/* dynamic sensor meta event. See SENSOR_TYPE_DYNAMIC_SENSOR_META type for details */</span><span class="w"></span>
+<span class="w">            </span><span class="n">dynamic_sensor_meta_event_t</span><span class="w"> </span><span class="n">dynamic_sensor_meta</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">            </span><span class="cm">/*</span>
+<span class="cm">             * special additional sensor information frame, see</span>
+<span class="cm">             * SENSOR_TYPE_ADDITIONAL_INFO for details.</span>
+<span class="cm">             */</span><span class="w"></span>
+<span class="w">            </span><span class="n">additional_info_event_t</span><span class="w"> </span><span class="n">additional_info</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="p">};</span><span class="w"></span>
+
+<span class="w">        </span><span class="k">union</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">            </span><span class="kt">uint64_t</span><span class="w">        </span><span class="n">data</span><span class="p">[</span><span class="mi">8</span><span class="p">];</span><span class="w"></span>
+
+<span class="w">            </span><span class="cm">/* step-counter */</span><span class="w"></span>
+<span class="w">            </span><span class="kt">uint64_t</span><span class="w">        </span><span class="n">step_counter</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="n">u64</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="p">};</span><span class="w"></span>
+
+<span class="w">    </span><span class="cm">/* Reserved flags for internal use. Set to zero. */</span><span class="w"></span>
+<span class="w">    </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">flags</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">    </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">reserved1</span><span class="p">[</span><span class="mi">3</span><span class="p">];</span><span class="w"></span>
+<span class="p">}</span><span class="w"> </span><span class="n">sensors_event_t</span><span class="p">;</span><span class="w"></span>
+</pre></div>
+</div>
+</section>
+<section id="sensor-handle">
+<h3>上层的传下来的sensor_handle与对应传感器的转换关系<a class="headerlink" href="#sensor-handle" title="Permalink to this headline"></a></h3>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="k">private</span><span class="o">:</span><span class="w"></span>
+<span class="w">    </span><span class="k">enum</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="n">accel</span><span class="p">,</span><span class="w"></span>
+<span class="w">        </span><span class="n">magnetic</span><span class="p">,</span><span class="w"></span>
+<span class="w">        </span><span class="n">gyro</span><span class="p">,</span><span class="w"></span>
+<span class="w">        </span><span class="n">light</span><span class="p">,</span><span class="w"></span>
+<span class="w">        </span><span class="n">proximity</span><span class="p">,</span><span class="w"></span>
+<span class="w">        </span><span class="n">pressure</span><span class="p">,</span><span class="w"></span>
+<span class="w">        </span><span class="n">humidity</span><span class="p">,</span><span class="w"></span>
+<span class="w">        </span><span class="n">stepcounter</span><span class="p">,</span><span class="w"></span>
+<span class="w">        </span><span class="n">pedometer</span><span class="p">,</span><span class="w"></span>
+<span class="w">        </span><span class="n">activity</span><span class="p">,</span><span class="w"></span>
+<span class="w">        </span><span class="n">situation</span><span class="p">,</span><span class="w"></span>
+<span class="w">        </span><span class="n">fusion</span><span class="p">,</span><span class="w"></span>
+<span class="w">        </span><span class="n">bio</span><span class="p">,</span><span class="w"></span>
+<span class="w">        </span><span class="n">numFds</span><span class="p">,</span><span class="w"></span>
+<span class="w">    </span><span class="p">};</span><span class="w"></span>
+
+<span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="nf">handleToDriver</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">handle</span><span class="p">)</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="k">switch</span><span class="w"> </span><span class="p">(</span><span class="n">handle</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">            </span><span class="k">case</span><span class="w"> </span><span class="nl">ID_ACCELEROMETER</span><span class="p">:</span><span class="w"></span>
+<span class="w">                 </span><span class="k">return</span><span class="w"> </span><span class="n">accel</span><span class="p">;</span><span class="w"></span>
+<span class="w">            </span><span class="k">case</span><span class="w"> </span><span class="nl">ID_MAGNETIC</span><span class="p">:</span><span class="w"></span>
+<span class="w">                 </span><span class="k">return</span><span class="w"> </span><span class="n">magnetic</span><span class="p">;</span><span class="w"></span>
+<span class="w">            </span><span class="k">case</span><span class="w"> </span><span class="nl">ID_PROXIMITY</span><span class="p">:</span><span class="w"></span>
+<span class="w">                 </span><span class="k">return</span><span class="w"> </span><span class="n">proximity</span><span class="p">;</span><span class="w"></span>
+<span class="w">            </span><span class="k">case</span><span class="w"> </span><span class="nl">ID_LIGHT</span><span class="p">:</span><span class="w"></span>
+<span class="w">            </span><span class="k">case</span><span class="w"> </span><span class="nl">ID_RGBW</span><span class="p">:</span><span class="w"></span>
+<span class="w">                 </span><span class="k">return</span><span class="w"> </span><span class="n">light</span><span class="p">;</span><span class="w"></span>
+<span class="w">            </span><span class="k">case</span><span class="w"> </span><span class="nl">ID_GYROSCOPE</span><span class="p">:</span><span class="w"></span>
+<span class="w">                 </span><span class="k">return</span><span class="w"> </span><span class="n">gyro</span><span class="p">;</span><span class="w"></span>
+<span class="w">            </span><span class="k">case</span><span class="w"> </span><span class="nl">ID_PRESSURE</span><span class="p">:</span><span class="w"></span>
+<span class="w">                 </span><span class="k">return</span><span class="w"> </span><span class="n">pressure</span><span class="p">;</span><span class="w"></span>
+<span class="w">            </span><span class="k">case</span><span class="w"> </span><span class="nl">ID_RELATIVE_HUMIDITY</span><span class="p">:</span><span class="w"></span>
+<span class="w">                 </span><span class="k">return</span><span class="w"> </span><span class="n">humidity</span><span class="p">;</span><span class="w"></span>
+<span class="w">            </span><span class="k">case</span><span class="w"> </span><span class="nl">ID_STEP_COUNTER</span><span class="p">:</span><span class="w"></span>
+<span class="w">            </span><span class="k">case</span><span class="w"> </span><span class="nl">ID_STEP_DETECTOR</span><span class="p">:</span><span class="w"></span>
+<span class="w">            </span><span class="k">case</span><span class="w"> </span><span class="nl">ID_SIGNIFICANT_MOTION</span><span class="p">:</span><span class="w"></span>
+<span class="w">            </span><span class="k">case</span><span class="w"> </span><span class="nl">ID_FLOOR_COUNTER</span><span class="p">:</span><span class="w"></span>
+<span class="w">                 </span><span class="k">return</span><span class="w"> </span><span class="n">stepcounter</span><span class="p">;</span><span class="w"></span>
+<span class="w">            </span><span class="k">case</span><span class="w"> </span><span class="nl">ID_PEDOMETER</span><span class="p">:</span><span class="w"></span>
+<span class="w">                 </span><span class="k">return</span><span class="w"> </span><span class="n">pedometer</span><span class="p">;</span><span class="w"></span>
+<span class="w">            </span><span class="k">case</span><span class="w"> </span><span class="nl">ID_ACTIVITY</span><span class="p">:</span><span class="w"></span>
+<span class="w">                 </span><span class="k">return</span><span class="w"> </span><span class="n">activity</span><span class="p">;</span><span class="w"></span>
+<span class="w">            </span><span class="k">case</span><span class="w"> </span><span class="nl">ID_LINEAR_ACCELERATION</span><span class="p">:</span><span class="w"></span>
+<span class="w">            </span><span class="k">case</span><span class="w"> </span><span class="nl">ID_ROTATION_VECTOR</span><span class="p">:</span><span class="w"></span>
+<span class="w">            </span><span class="k">case</span><span class="w"> </span><span class="nl">ID_GAME_ROTATION_VECTOR</span><span class="p">:</span><span class="w"></span>
+<span class="w">            </span><span class="k">case</span><span class="w"> </span><span class="nl">ID_GRAVITY</span><span class="p">:</span><span class="w"></span>
+<span class="w">            </span><span class="k">case</span><span class="w"> </span><span class="nl">ID_GEOMAGNETIC_ROTATION_VECTOR</span><span class="p">:</span><span class="w"></span>
+<span class="w">            </span><span class="k">case</span><span class="w"> </span><span class="nl">ID_ORIENTATION</span><span class="p">:</span><span class="w"></span>
+<span class="w">            </span><span class="k">case</span><span class="w"> </span><span class="nl">ID_PDR</span><span class="p">:</span><span class="w"></span>
+<span class="w">            </span><span class="k">case</span><span class="w"> </span><span class="nl">ID_GYROSCOPE_UNCALIBRATED</span><span class="p">:</span><span class="w"></span>
+<span class="w">            </span><span class="k">case</span><span class="w"> </span><span class="nl">ID_MAGNETIC_UNCALIBRATED</span><span class="p">:</span><span class="w"></span>
+<span class="w">                 </span><span class="k">return</span><span class="w"> </span><span class="n">fusion</span><span class="p">;</span><span class="w"></span>
+<span class="w">            </span><span class="k">case</span><span class="w"> </span><span class="nl">ID_FACE_DOWN</span><span class="p">:</span><span class="w"></span>
+<span class="w">            </span><span class="k">case</span><span class="w"> </span><span class="nl">ID_SHAKE</span><span class="p">:</span><span class="w"></span>
+<span class="w">            </span><span class="k">case</span><span class="w"> </span><span class="nl">ID_ANSWER_CALL</span><span class="p">:</span><span class="w"></span>
+<span class="w">            </span><span class="k">case</span><span class="w"> </span><span class="nl">ID_IN_POCKET</span><span class="p">:</span><span class="w"></span>
+<span class="w">            </span><span class="k">case</span><span class="w"> </span><span class="nl">ID_STATIONARY_DETECT</span><span class="p">:</span><span class="w"></span>
+<span class="w">            </span><span class="k">case</span><span class="w"> </span><span class="nl">ID_MOTION_DETECT</span><span class="p">:</span><span class="w"></span>
+<span class="w">            </span><span class="k">case</span><span class="w"> </span><span class="nl">ID_DEVICE_ORIENTATION</span><span class="p">:</span><span class="w"></span>
+<span class="w">            </span><span class="k">case</span><span class="w"> </span><span class="nl">ID_WAKE_GESTURE</span><span class="p">:</span><span class="w"></span>
+<span class="w">            </span><span class="k">case</span><span class="w"> </span><span class="nl">ID_PICK_UP_GESTURE</span><span class="p">:</span><span class="w"></span>
+<span class="w">            </span><span class="k">case</span><span class="w"> </span><span class="nl">ID_GLANCE_GESTURE</span><span class="p">:</span><span class="w"></span>
+<span class="w">            </span><span class="k">case</span><span class="w"> </span><span class="nl">ID_TILT_DETECTOR</span><span class="p">:</span><span class="w"></span>
+<span class="w">                  </span><span class="k">return</span><span class="w"> </span><span class="n">situation</span><span class="p">;</span><span class="w"></span>
+<span class="w">            </span><span class="k">case</span><span class="w"> </span><span class="nl">ID_EKG</span><span class="p">:</span><span class="w"></span>
+<span class="w">            </span><span class="k">case</span><span class="w"> </span><span class="nl">ID_PPG1</span><span class="p">:</span><span class="w"></span>
+<span class="w">            </span><span class="k">case</span><span class="w"> </span><span class="nl">ID_PPG2</span><span class="p">:</span><span class="w"></span>
+<span class="w">                  </span><span class="k">return</span><span class="w"> </span><span class="n">bio</span><span class="p">;</span><span class="w"></span>
+<span class="w">            </span><span class="k">default</span><span class="o">:</span><span class="w"></span>
+<span class="w">                </span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="o">-</span><span class="n">EINVAL</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+
+<span class="c1">//vendor\mediatek\proprietary\hardware\sensor\sensors-1.0\SensorContext.cpp</span>
+<span class="kt">int</span><span class="w"> </span><span class="nf">sensors_poll_context_t::activate</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">handle</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">enabled</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">err</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">index</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">handleToDriver</span><span class="p">(</span><span class="n">handle</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">((</span><span class="n">index</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="n">numFds</span><span class="p">)</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="p">(</span><span class="n">index</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="p">))</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="n">ALOGE</span><span class="p">(</span><span class="s">&quot;activate error index = %d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">index</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="mi">-1</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">NULL</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">mSensors</span><span class="p">[</span><span class="n">index</span><span class="p">])</span><span class="w"></span>
+<span class="w">        </span><span class="n">err</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mSensors</span><span class="p">[</span><span class="n">index</span><span class="p">]</span><span class="o">-&gt;</span><span class="n">enable</span><span class="p">(</span><span class="n">handle</span><span class="p">,</span><span class="w"> </span><span class="n">enabled</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">err</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="kernel-hub">
+<h2>kernel hub层架构<a class="headerlink" href="#kernel-hub" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p>kernel文件节点关系：</p></li>
+</ul>
+<p><img alt="0007_文件节点.png" src="src/0011_sensor_function/docs/images/0007_%E6%96%87%E4%BB%B6%E8%8A%82%E7%82%B9.png" /></p>
+<ul class="simple">
+<li><p>驱动架构图</p></li>
+</ul>
+<p><img alt="0007_驱动架构图.png" src="src/0011_sensor_function/docs/images/0007_%E9%A9%B1%E5%8A%A8%E6%9E%B6%E6%9E%84%E5%9B%BE.png" /></p>
+<section id="sensor">
+<h3>驱动获取物理sensor数据流程分析<a class="headerlink" href="#sensor" title="Permalink to this headline"></a></h3>
+<p>每个sensor都会在驱动层创建工作队列和定时器，当上层需要数据时，将启动定时器去循环调用工作队列获取数据。且注册一个等待队列的buffer，大小是2048byte，通过poll读取。poll机制每次只有当一个进程写入了一个数据之后本进程或其它进程才可以读取该数据，否则一直阻塞。</p>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="n">accel</span><span class="p">.</span><span class="n">c</span><span class="o">-&gt;*</span><span class="n">late_initcall</span><span class="p">(</span><span class="n">acc_init</span><span class="p">);</span><span class="w"></span>
+<span class="o">*</span><span class="w"> </span><span class="n">acc_init</span><span class="w"></span>
+<span class="w">  </span><span class="o">*</span><span class="w"> </span><span class="n">acc_probe</span><span class="w"></span>
+<span class="w">    </span><span class="o">*</span><span class="w"> </span><span class="n">acc_context_alloc_object</span><span class="p">()</span><span class="w">     </span><span class="c1">//函数返回一个accel 驱动上下文对象</span>
+<span class="w">      </span><span class="o">*</span><span class="w"> </span><span class="n">INIT_WORK</span><span class="p">(</span><span class="o">&amp;</span><span class="n">obj</span><span class="o">-&gt;</span><span class="n">report</span><span class="p">,</span><span class="w"> </span><span class="n">acc_work_func</span><span class="p">);</span><span class="w">    </span><span class="c1">//初始化工作队列</span>
+<span class="w">        </span><span class="o">*</span><span class="w"> </span><span class="n">initTimer</span><span class="p">(</span><span class="o">&amp;</span><span class="n">obj</span><span class="o">-&gt;</span><span class="n">hrTimer</span><span class="p">,</span><span class="w"> </span><span class="n">acc_poll</span><span class="p">)</span><span class="w">     </span><span class="c1">//初始化定时器，并指定超时回调函数为acc_poll</span>
+
+<span class="w">                    </span><span class="c1">//由上面的i2c driver probe流程可知，probe时创建了misc设备节点以及相关的sysfs接口</span>
+<span class="w">                    </span><span class="c1">//用户层操作sys/class/sensor/m_acc_misc/accbatch和accactive接口进入以下流程:</span>
+<span class="w">   </span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>由上面的driver probe流程可知，probe时创建了misc设备节点以及相关的sysfs接口，用户层操作sys/class/sensor/m_acc_misc/accbatch和accactive接口进入以下流程:</p></li>
+<li><p>accactive_store流程：</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="o">*</span><span class="w"> </span><span class="n">accactive_store</span><span class="w"></span>
+<span class="w">    </span><span class="o">*</span><span class="w"> </span><span class="n">acc_enable_and_batch</span><span class="w">           </span><span class="c1">//第二次进入这个函数，accel已经完成上电且采样率?发生变化后，才会启动定时器</span>
+<span class="w">    </span><span class="o">*</span><span class="w"> </span><span class="n">startTimer</span><span class="w">                 </span><span class="c1">//第一次启动定时器，调acc_poll函数</span>
+<span class="w">        </span><span class="o">*</span><span class="w"> </span><span class="n">acc_poll</span><span class="w"></span>
+<span class="w">        </span><span class="o">*</span><span class="w"> </span><span class="n">queue_work</span><span class="p">(</span><span class="n">obj</span><span class="o">-&gt;</span><span class="n">accel_workqueue</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">obj</span><span class="o">-&gt;</span><span class="n">report</span><span class="p">);</span><span class="w">         </span><span class="c1">//将acc_work_func任务提交到工作队列,并唤醒工作队列处理线程进行处理</span>
+<span class="w">            </span><span class="o">*</span><span class="n">acc_work_func</span><span class="c1">//主要工作是调用获取sensor数据的接口，将数据转换成acc_date,并将数据上报，同时如果poll已运行，则重新启动启动定时器开始循环读取数据</span>
+<span class="w">            </span><span class="o">*</span><span class="n">cxt</span><span class="o">-&gt;</span><span class="n">acc_data</span><span class="p">.</span><span class="n">get_data</span><span class="p">(</span><span class="o">&amp;</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">y</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">z</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">status</span><span class="p">);</span><span class="w"></span>
+<span class="w">                </span><span class="o">*</span><span class="n">bmi160_acc</span><span class="p">.</span><span class="n">c</span><span class="o">-&gt;</span><span class="n">bmi160_acc_get_data</span><span class="p">()</span><span class="w"></span>
+<span class="w">                </span><span class="o">*</span><span class="n">bmi160_acc_read_sensor_data</span><span class="w"></span>
+<span class="w">                    </span><span class="o">*</span><span class="n">bmi160_acc_read_data</span><span class="w"></span>
+<span class="w">                    </span><span class="o">*</span><span class="n">bma_i2c_read_block</span><span class="w"></span>
+<span class="w">                        </span><span class="o">*</span><span class="n">i2c_transfer</span><span class="w">                   </span><span class="c1">//正式进入到驱动通过i2c总线往sensor硬件读取指定寄存器原始数据的流程</span>
+<span class="w">                        </span><span class="o">*</span><span class="n">acc_data_report</span><span class="w">            </span><span class="c1">//sensor数据上报</span>
+<span class="w">                            </span><span class="o">*</span><span class="n">sensor_input_event</span><span class="w">     </span><span class="c1">//将传进来的sensor_event保存在对应event_obj-&gt;client-&gt;buffer[]下等待用户读取</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>accbatch_store流程：</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="o">*</span><span class="w"> </span><span class="n">accbatch_store</span><span class="w"></span>
+<span class="w">  </span><span class="o">*</span><span class="w"> </span><span class="n">cxt</span><span class="o">-&gt;</span><span class="n">acc_ctl</span><span class="p">.</span><span class="n">batch</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">cxt</span><span class="o">-&gt;</span><span class="n">delay_ns</span><span class="p">,</span><span class="w"> </span><span class="n">cxt</span><span class="o">-&gt;</span><span class="n">latency_ns</span><span class="p">);</span><span class="w">       </span>
+<span class="w">    </span><span class="o">*</span><span class="w"> </span><span class="n">gsensor_batch</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">flag</span><span class="p">,</span><span class="w"> </span><span class="kt">int64_t</span><span class="w"> </span><span class="n">samplingPeriodNs</span><span class="p">,</span><span class="w"> </span><span class="c1">//Accelhub.c</span>
+<span class="w">      </span><span class="o">*</span><span class="w"> </span><span class="n">sensor_batch_to_hub</span><span class="p">(</span><span class="n">ID_ACCELEROMETER</span><span class="p">,</span><span class="w"> </span><span class="n">flag</span><span class="p">,</span><span class="w"> </span><span class="n">samplingPeriodNs</span><span class="p">,</span><span class="w">  </span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>accel_read流程</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="o">*</span><span class="w"> </span><span class="n">accel_rea</span><span class="w"></span>
+<span class="w">  </span><span class="o">*</span><span class="w"> </span><span class="n">sensor_event_read</span><span class="p">(</span><span class="n">acc_context_obj</span><span class="o">-&gt;</span><span class="n">mdev</span><span class="p">.</span><span class="n">minor</span><span class="p">,</span><span class="w"> </span><span class="n">file</span><span class="p">,</span><span class="w"> </span><span class="n">buffer</span><span class="p">,</span><span class="w"></span>
+<span class="w">    </span><span class="o">*</span><span class="w"> </span><span class="n">copy_to_user</span><span class="p">(</span><span class="n">buffer</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">read</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">event</span><span class="p">,</span><span class="w"> </span><span class="k">sizeof</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">sensor_event</span><span class="p">))</span><span class="w"> </span><span class="c1">// poll机制读取</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>accel_poll流程</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="o">*</span><span class="w"> </span><span class="n">accel_poll</span><span class="w"></span>
+<span class="w">  </span><span class="o">*</span><span class="w"> </span><span class="n">sensor_event_poll</span><span class="p">(</span><span class="n">acc_context_obj</span><span class="o">-&gt;</span><span class="n">mdev</span><span class="p">.</span><span class="n">minor</span><span class="p">,</span><span class="w"> </span><span class="n">file</span><span class="p">,</span><span class="w"> </span><span class="n">wait</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="o">*</span><span class="w"> </span><span class="n">poll_wait</span><span class="p">(</span><span class="n">file</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">client</span><span class="o">-&gt;</span><span class="n">wait</span><span class="p">,</span><span class="w"> </span><span class="n">wait</span><span class="p">);</span><span class="w"> </span><span class="c1">// poll机制读取</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>poll简单应用历程,程序不会一直阻塞，而是阻塞一段时间，如果没有变化就先让它返回，不要一直阻塞在那里。：</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="n">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="c1">//循环查询</span>
+<span class="w">    </span><span class="k">while</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="w">  </span>
+<span class="w">    </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="c1">//  int poll(struct pollfd *fds, nfds_t nfds, int timeout); </span>
+<span class="w">    </span><span class="cm">/*  </span>
+<span class="cm">            fds：struct pollfd 数组，其中管理了文件描述以及输入参数</span>
+<span class="cm">            ndfs: 需要通过 poll 机制管理的文件描述符数量</span>
+<span class="cm">            timeout：超时时间，单位为毫秒</span>
+<span class="cm">        */</span><span class="w"></span>
+<span class="w">                </span><span class="c1">//调用 poll 函数</span>
+<span class="w">        </span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">poll</span><span class="p">(</span><span class="n">fds</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">5000</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">                </span><span class="c1">//如果返回值为0，打印超时</span>
+<span class="w">        </span><span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="n">ret</span><span class="p">)</span><span class="w"></span>
+<span class="w">                        </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;timeout.....%d</span><span class="se">\n\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">ret</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="k">else</span><span class="p">{</span><span class="w"></span>
+<span class="w">                        </span><span class="c1">//返回值不为0，说明有数据可以读取，通过 read 来读取数据并打印</span>
+<span class="w">            </span><span class="n">read</span><span class="p">(</span><span class="n">fd</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span><span class="w"></span>
+<span class="w">            </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;value: %x</span><span class="se">\t</span><span class="s"> ret: %d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="n">ret</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<p><img alt="0007_poll机制原理.png" src="src/0011_sensor_function/docs/images/0007_poll%E6%9C%BA%E5%88%B6%E5%8E%9F%E7%90%86.png" /></p>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, wugn.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+  
+
+<script charset="UTF-8" id="LA_COLLECT" src="//sdk.51.la/js-sdk-pro.min.js"></script>
+<script>LA.init({id: "JjOE14XScyd75b2C",ck: "JjOE14XScyd75b2C"})</script>
+
+<br/>
+<script id="LA-DATA-WIDGET" crossorigin="anonymous" charset="UTF-8" src="https://v6-widget.51.la/v6/JjOE14XScyd75b2C/quote.js?theme=0&f=12&display=1,0,0,0,0,0,1,1"></script>
+
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

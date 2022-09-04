@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>wugn</title>
+
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../index.html" class="icon icon-home"> wugn_note
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">概述</a><ul>
+<li><a class="reference internal" href="#id2">原理</a></li>
+<li><a class="reference internal" href="#id3">参考</a></li>
+<li><a class="reference internal" href="#id4">校准流程</a></li>
+<li><a class="reference internal" href="#id5">流程图</a></li>
+<li><a class="reference internal" href="#id6">程序流程图</a></li>
+<li><a class="reference internal" href="#id7">问题分习</a><ul>
+<li><a class="reference internal" href="#sensorhub">1.sensorhub方式无法进行校准</a></li>
+<li><a class="reference internal" href="#gyro0">2.gyro校准数据都是0</a><ul>
+<li><a class="reference internal" href="#id8">2.静态校准参数误差大</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">wugn_note</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs"> 
+<li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+<li>概述</li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.forward()">Forward</a></li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.back()">Go Back</a> | </li>
+<li style="float: right;margin-left: 10px;"><a href="/index.html">Home</a> | </li>
+
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="id1">
+<h1>概述<a class="headerlink" href="#id1" title="Permalink to this headline"></a></h1>
+<p>SensorHub工厂模式下校准流程分析。</p>
+<section id="id2">
+<h2>原理<a class="headerlink" href="#id2" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p>重力传感器acc：</p></li>
+<li><p>平放取20次平均，（{0,0,9.8}-平均值）=校准值 (float型)</p>
+<ul>
+<li><p>写入Driver：校准值×1000         //JNI再IOCTL  Driver中的GSENSOR_IOCTL_SET_CALI，只写nvram而不写入driver的话需要重启后才能生效。开机过程中的nvram_daemon会去读取nvram中的值写入driver，从而生效</p></li>
+<li><p>写入Nvram：校准值×65536/9.80665   （ 有做round处理，所以可能写进去的和读出来的稍微不一样，小数点被舍掉了）</p></li>
+<li><p>所以上层APK读取和写入Nvram的值时都需要处理</p></li>
+</ul>
+</li>
+<li><p>陀螺仪gyro:</p>
+<ul>
+<li><p>平放取20次平均，（{0,0,0}-平均值）=校准值  (float型)</p></li>
+<li><p>写入Driver：校准值       //JNI再IOCTL  Driver中的GYROSCOPE_IOCTL_SET_CALI，只写nvram而不写入driver的话需要重启后才能生效。开机过程中的nvram_daemon会去读取nvram中的值写入driver，从而生效</p></li>
+<li><p>写入Nvram：校准值×1000</p></li>
+<li><p>所以上层APK读取和写入Nvram的值时都需要处理</p></li>
+</ul>
+</li>
+</ul>
+<p>注：写入Nvram的校准值都是3个INT型的，重力传感器和陀螺仪都是</p>
+</section>
+<section id="id3">
+<h2>参考<a class="headerlink" href="#id3" title="Permalink to this headline"></a></h2>
+<div class="highlight-log notranslate"><div class="highlight"><pre><span></span>陀螺仪选型相关参数
+陀螺仪选型需要主要两个主要的参数，一个是角度随机游走，另外一个是零偏不稳定性。
+陀螺仪手册说明：
+（1）Initial Zero Rate Output Tolerance: +/-40 °/s
+当陀螺仪静止的时候，陀螺会给出在−40∘/s到+40∘/s之间的一个输出值，也就是初始的零漂值，值得注意的是每次启动的零漂值是不相同的。
+（2）ZRO Variation Over Temperature
+陀螺的零漂对于温度的敏感性
+（3）Power-Supply Sensitivity
+电磁的正弦信号的影响对于陀螺零偏的影响
+（4）Linear Acceleration Sensitivity
+线性加速度对于陀螺角速度的影响
+（5）RMS噪声
+多次采集的数据的均方根误差，相关的频率是低通滤波的频率，大小和采集的频率也有关系
+（6）Rate Noise Spectral Density
+速率噪声密度谱，感觉是角度随机游走相关的参数
+</pre></div>
+</div>
+</section>
+<section id="id4">
+<h2>校准流程<a class="headerlink" href="#id4" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p>根据打印，因为只有acc校准，所以只做了acc的<code class="docutils literal notranslate"><span class="pre">sensorCaliAcc</span></code>函数，其他的都未执行，先了解一下acc校准方法：</p></li>
+</ul>
+<p>1.点击Item Test进入如下界面， 按音量下键选择相应的sensor测试类型，即可对相应sensor进行校准测试：</p>
+<p><img alt="0004_12312.png" src="../../../_images/0004_12312.png" /></p>
+<p>2.例如选择G-sensor Cali，首先clear cali data，然后做20%或者40%测试，若显示Cali done则表示校准成功：</p>
+<p><img alt="0004_123.png" src="../../../_images/0004_123.png" /></p>
+<p>3.选择G-sensor 测试项测试，看校准后数据是否OK，若为pass则表示通过：</p>
+<p><img alt="0004_123123.png" src="../../../_images/0004_123123.png" /></p>
+<p>4.校准流程：</p>
+<p><img alt="0004_流程.png" src="src/0011_sensor_function/docs/images/0004_%E6%B5%81%E7%A8%8B.png" /></p>
+<ul class="simple">
+<li><p>开机读取校准数据logcat 打印如下：</p></li>
+</ul>
+<div class="highlight-log notranslate"><div class="highlight"><pre><span></span>02-17 13:03:49.250078   724   724 D Accelerometer: misc path =/sys/class/sensor/m_acc_misc/
+02-17 13:03:49.250491   724   724 I Accelerometer: read div buf(/sys/class/sensor/m_acc_misc/accactive), mdiv 1000
+02-17 13:03:49.268059   724   724 I Accelerometer: read bias: [0.000000, 0.000000, 0.000000]
+02-17 13:03:49.268944   724   724 I Accelerometer: read cali: [240, -111, 199]
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>校准数据读取节点：</p></li>
+</ul>
+<div class="highlight-log notranslate"><div class="highlight"><pre><span></span>130|PAYPHONEM50:/ # cat /mnt/vendor/nvcfg/sensor/gyro_temp.json
+{
+  &quot;gyro_temp&quot;: [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+</pre></div>
+</div>
+</section>
+<section id="id5">
+<h2>流程图<a class="headerlink" href="#id5" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p>简易流程图如下：</p></li>
+</ul>
+<p><img alt="123123.png" src="../../../_images/123123.png" /></p>
+</section>
+<section id="id6">
+<h2>程序流程图<a class="headerlink" href="#id6" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">factory/src/test/ftm_gyro_cali.c</span></code>以陀螺仪为例:</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span>参数说明：
+校准显示界面有20%和40%，以下是两种的参数配置：
+       case ITEM_DO20:
+            pthread_mutex_lock(&amp;dat-&gt;gyroc.evtmutex);
+            dat-&gt;gyroc.pending_op = GYRO_OP_CALI_PRE;
+            dat-&gt;gyroc.cali_delay = 50;   //每次采样延时
+            dat-&gt;gyroc.cali_num   = 20; //20次采样
+            dat-&gt;gyroc.cali_tolerance = 20*10; //
+            GSCLOGD(&quot;chosen DO20\n&quot;);
+            pthread_mutex_unlock(&amp;dat-&gt;gyroc.evtmutex);
+            break;
+        case ITEM_DO40:
+            pthread_mutex_lock(&amp;dat-&gt;gyroc.evtmutex);
+            dat-&gt;gyroc.pending_op = GYRO_OP_CALI_PRE;
+            dat-&gt;gyroc.cali_delay = 50;
+            dat-&gt;gyroc.cali_num   = 20;
+            dat-&gt;gyroc.cali_tolerance = 40*10;
+            GSCLOGD(&quot;chosen DO40\n&quot;);
+            pthread_mutex_unlock(&amp;dat-&gt;gyroc.evtmutex);
+
+
+pthread_create(&amp;dat-&gt;update_thd, NULL, gyro_cali_update_iv_thread, priv);
+</pre></div>
+</div>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="o">*</span><span class="w"> </span><span class="n">程序流程</span><span class="w"></span>
+<span class="w">  </span><span class="o">*</span><span class="w"> </span><span class="n">gyroscope_calibration</span><span class="p">(</span><span class="n">gyroc</span><span class="o">-&gt;</span><span class="n">fd</span><span class="p">,</span><span class="w"> </span><span class="n">dat</span><span class="o">-&gt;</span><span class="n">gyroc</span><span class="p">.</span><span class="n">cali_delay</span><span class="p">,</span><span class="w"> </span><span class="n">dat</span><span class="o">-&gt;</span><span class="n">gyroc</span><span class="p">.</span><span class="n">cali_num</span><span class="p">,</span><span class="n">dat</span><span class="o">-&gt;</span><span class="n">gyroc</span><span class="p">.</span><span class="n">cali_tolerance</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">cali</span><span class="p">)</span><span class="w"> </span><span class="c1">//执行校准</span>
+<span class="w">    </span><span class="o">*</span><span class="w"> </span><span class="n">external</span><span class="o">/</span><span class="n">sensor</span><span class="o">-</span><span class="n">tools</span><span class="o">/</span><span class="n">libhwm</span><span class="p">.</span><span class="n">c</span><span class="w"></span>
+<span class="w">    </span><span class="o">*</span><span class="w"> </span><span class="n">gyroscope_read</span><span class="p">(</span><span class="n">fd</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">dat</span><span class="p">);</span><span class="w"> </span><span class="c1">//手机放平，读取20次xyz数据平均值</span>
+<span class="w">    </span><span class="o">*</span><span class="w"> </span><span class="n">checkGyroscopeData</span><span class="p">(</span><span class="n">item</span><span class="p">,</span><span class="w"> </span><span class="n">count</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">avg</span><span class="p">,</span><span class="w"> </span><span class="n">tolerance</span><span class="p">)</span><span class="w"> </span><span class="c1">//检测是否符合宽容度要求，应该是偏差不能太大</span>
+<span class="w">  </span><span class="o">*</span><span class="w"> </span><span class="n">gyroscope_set_cali</span><span class="p">(</span><span class="n">gyroc</span><span class="o">-&gt;</span><span class="n">fd</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">cali</span><span class="p">)</span><span class="w"> </span><span class="c1">//设置校准参数</span>
+<span class="w">    </span><span class="o">*</span><span class="w"> </span><span class="n">kernel</span><span class="mf">-4.19</span><span class="o">/</span><span class="n">drivers</span><span class="o">/</span><span class="n">misc</span><span class="o">/</span><span class="n">mediatek</span><span class="o">/</span><span class="n">sensors</span><span class="mf">-1.0</span><span class="o">/</span><span class="n">gyroscope</span><span class="o">/</span><span class="n">gyro_factory</span><span class="p">.</span><span class="n">c</span><span class="w"></span>
+<span class="w">    </span><span class="o">*</span><span class="w">  </span><span class="n">gyro_factory_unlocked_ioctl</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">file</span><span class="w"> </span><span class="o">*</span><span class="n">file</span><span class="p">,</span><span class="w"> </span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">cmd</span><span class="p">,</span><span class="w"> </span><span class="c1">// /dev/gyroscope节点GYROSCOPE_IOCTL_SET_CALI指令</span>
+<span class="w">      </span><span class="o">*</span><span class="w"> </span><span class="n">gyro_factory</span><span class="p">.</span><span class="n">fops</span><span class="o">-&gt;</span><span class="n">set_cali</span><span class="p">(</span><span class="n">data_buf</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="o">*</span><span class="w"> </span><span class="n">gyrohub</span><span class="p">.</span><span class="n">c</span><span class="w"> </span><span class="c1">//.set_cali = gyrohub_factory_set_cali, </span>
+<span class="w">        </span><span class="o">*</span><span class="w"> </span><span class="n">gyrohub_WriteCalibration</span><span class="p">(</span><span class="n">data</span><span class="p">);</span><span class="w"></span>
+<span class="w">          </span><span class="o">*</span><span class="w"> </span><span class="n">gyrohub_WriteCalibration_scp</span><span class="p">(</span><span class="n">dat</span><span class="p">);</span><span class="w"></span>
+<span class="w">            </span><span class="o">*</span><span class="w"> </span><span class="n">sensor_set_cmd_to_hub</span><span class="p">(</span><span class="n">ID_GYROSCOPE</span><span class="p">,</span><span class="w"> </span><span class="n">CUST_ACTION_SET_CALI</span><span class="p">,</span><span class="w"> </span><span class="n">dat</span><span class="p">);</span><span class="w"></span>
+<span class="w">              </span><span class="o">*</span><span class="w"> </span><span class="n">req</span><span class="p">.</span><span class="n">set_cust_req</span><span class="p">.</span><span class="n">setCali</span><span class="p">.</span><span class="n">action</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">CUST_ACTION_SET_CALI</span><span class="p">;</span><span class="w"> </span><span class="c1">//IPI通信数据类型</span>
+<span class="w">              </span><span class="o">*</span><span class="w"> </span><span class="n">offsetof</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">SCP_SENSOR_HUB_SET_CUST_REQ</span><span class="p">,</span><span class="n">custData</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="k">sizeof</span><span class="p">(</span><span class="n">req</span><span class="p">.</span><span class="n">set_cust_req</span><span class="p">.</span><span class="n">setCali</span><span class="p">);</span><span class="w"> </span><span class="c1">//将校准数据填充到SCP_SENSOR_HUB_SET_CUST_REQ数据结构custData[11]成员</span>
+<span class="w">                </span><span class="o">*</span><span class="w"> </span><span class="n">scp_sensorHub_req_send</span><span class="p">(</span><span class="o">&amp;</span><span class="n">req</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">len</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span><span class="w"> </span><span class="c1">//kernel IPI通信统一发送接口</span>
+<span class="w">                </span><span class="o">*</span><span class="w"> </span><span class="n">contextHubHandleIpiRxEvent</span><span class="p">();</span><span class="w"> </span><span class="c1">//scp IPI统一接收处理接口</span>
+<span class="w">                  </span><span class="o">*</span><span class="w"> </span><span class="n">contextHubFindCmd</span><span class="p">(</span><span class="n">mTask</span><span class="p">.</span><span class="n">ipi_req</span><span class="p">.</span><span class="n">action</span><span class="p">);</span><span class="w"></span>
+<span class="w">                    </span><span class="o">*</span><span class="w"> </span><span class="n">CONTEXTHUB_CMD</span><span class="p">(</span><span class="n">SENSOR_HUB_SET_CUST</span><span class="p">,</span><span class="n">contextHubFwSetCust</span><span class="p">,</span><span class="w"> </span><span class="n">contextHubFwSetCustAck</span><span class="p">),</span><span class="w"> </span><span class="c1">//此条是SENSOR_HUB_SET_CUST数据格式</span>
+<span class="w">                      </span><span class="o">*</span><span class="w"> </span><span class="n">contextHubDispatchCust</span><span class="p">(</span><span class="n">mtkTypeToChreType</span><span class="p">(</span><span class="n">mtkType</span><span class="p">),</span><span class="w"> </span><span class="n">set_cust_req</span><span class="p">);</span><span class="w"> </span><span class="c1">//寻找SENSOR_HUB_SET_CUST action执行操作</span>
+<span class="w">                        </span><span class="o">*</span><span class="w"> </span><span class="k">case</span><span class="w"> </span><span class="n">CUST_ACTION_SET_CALI</span><span class="o">:</span><span class="w"></span>
+<span class="w">                        </span><span class="o">*</span><span class="w"> </span><span class="n">sensorCoreWriteCalibration</span><span class="p">(</span><span class="n">sensType</span><span class="p">,</span><span class="w"> </span><span class="n">cust_req</span><span class="o">-&gt;</span><span class="n">setCali</span><span class="p">.</span><span class="n">int32_data</span><span class="p">);</span><span class="w"></span>
+<span class="w">                          </span><span class="o">*</span><span class="w"> </span><span class="n">mCoreInfo</span><span class="o">-&gt;</span><span class="n">setCalibration</span><span class="p">(</span><span class="n">cali_sw</span><span class="p">,</span><span class="w"> </span><span class="n">AXES_NUM</span><span class="p">);</span><span class="w"> </span><span class="c1">//调用具体实例驱动setCalibration函数</span>
+<span class="w">                            </span><span class="o">*</span><span class="w"> </span><span class="n">mInfo</span><span class="p">.</span><span class="n">setCalibration</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">accSetCalibration</span><span class="p">;</span><span class="w"> </span><span class="c1">//qmi8656_i2c.c</span>
+<span class="w">                              </span><span class="o">*</span><span class="w"> </span><span class="n">mQmi8658</span><span class="p">.</span><span class="n">accSwCali</span><span class="p">[</span><span class="n">AXIS_X</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cali</span><span class="p">[</span><span class="n">AXIS_X</span><span class="p">];</span><span class="w"></span>
+<span class="w">        </span><span class="o">*</span><span class="w"> </span><span class="n">qmi8658gy</span><span class="p">.</span><span class="n">c</span><span class="w"> </span><span class="c1">//kernel驱动方式 .set_cali = qmi8658gy_factory_set_cali,</span>
+<span class="w">        </span><span class="o">*</span><span class="w"> </span><span class="n">qmi8658gy_factory_set_cali</span><span class="p">(</span><span class="kt">int32_t</span><span class="w"> </span><span class="n">data</span><span class="p">[</span><span class="mi">3</span><span class="p">])</span><span class="w">  </span>
+<span class="w">          </span><span class="o">*</span><span class="w"> </span><span class="n">qmi8658gy_WriteCalibration</span><span class="p">(</span><span class="n">qmi8658gy_i2c_client</span><span class="p">,</span><span class="w"> </span><span class="n">cali</span><span class="p">);</span><span class="w"></span>
+<span class="w">            </span><span class="o">*</span><span class="w"> </span><span class="n">obj</span><span class="o">-&gt;</span><span class="n">cali_sw</span><span class="p">[</span><span class="n">QMI8658_AXIS_X</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">obj</span><span class="o">-&gt;</span><span class="n">cvt</span><span class="p">.</span><span class="n">sign</span><span class="p">[</span><span class="n">QMI8658_AXIS_X</span><span class="p">]</span><span class="o">*</span><span class="p">(</span><span class="n">cali</span><span class="p">[</span><span class="n">obj</span><span class="o">-&gt;</span><span class="n">cvt</span><span class="p">.</span><span class="n">map</span><span class="p">[</span><span class="n">QMI8658_AXIS_X</span><span class="p">]]);</span><span class="w">  </span><span class="c1">//赋值驱动cali数组</span>
+<span class="w">  </span><span class="o">*</span><span class="w"> </span><span class="n">gyroscope_get_cali</span><span class="p">(</span><span class="n">gyroc</span><span class="o">-&gt;</span><span class="n">fd</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">cali</span><span class="p">)</span><span class="w"> </span><span class="c1">//读回并显示</span>
+<span class="w">  </span><span class="o">*</span><span class="w"> </span><span class="n">gyroscope_write_nvram</span><span class="p">(</span><span class="o">&amp;</span><span class="n">cali</span><span class="p">)</span><span class="w"> </span><span class="c1">//写入NV</span>
+<span class="w">  </span><span class="o">*</span><span class="w"> </span><span class="n">dat</span><span class="o">-&gt;</span><span class="n">gyroc</span><span class="p">.</span><span class="n">pending_op</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">GYRO_OP_NONE</span><span class="p">;</span><span class="w"></span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>log打印：</p></li>
+</ul>
+<div class="highlight-log notranslate"><div class="highlight"><pre><span></span>sensorhub acc:
+[286.720][qmi8658]: accGetCalibration cali x:-6, y:-181, z:165
+[286.720]read calibration (-6, -181, 165) (-5, -6, -5)
+[286.720]sensitivity:4096.000000, gain:9807
+[286.720]read calibration2 (-183, 4, 163) (-1, 1, 1)
+[286.721]write calibration (-4, -183, 163)
+[286.721][qmi8658]: accSetCalibration cali x:-4, y:-183, z:163
+[286.721]scp_ipi_send failed, enable a oneshot timer
+[286.724][qmi8658]: Qmi8658Sample status 0x1
+[286.725][qmi8658]: Qmi8658Convert
+[286.725][qmi8658]: accGetCalibration cali x:-4, y:-183, z:163
+</pre></div>
+</div>
+</section>
+<section id="id7">
+<h2>问题分习<a class="headerlink" href="#id7" title="Permalink to this headline"></a></h2>
+<section id="sensorhub">
+<h3>1.sensorhub方式无法进行校准<a class="headerlink" href="#sensorhub" title="Permalink to this headline"></a></h3>
+<ul class="simple">
+<li><p>工厂模式校准失败，根据错误打印<code class="docutils literal notranslate"><span class="pre">gsensor_get_cali:</span> <span class="pre">get_cali</span> <span class="pre">err:</span> <span class="pre">-1</span></code>，看看是什么问题：</p></li>
+</ul>
+<div class="highlight-log notranslate"><div class="highlight"><pre><span></span>kernel打印：
+&lt;3&gt;[   37.370284] .(1)[570:factory][GYRO] gyrohub_factory_get_cali fail!
+&lt;3&gt;[   37.370320] .(1)[570:factory]&lt;GYRO_FAC&gt; GYROSCOPE_IOCTL_GET_CALI FAIL!
+
+main log：
+02-19 17:10:08.501   460   570 D HWMLIB  : ----------------------------------------------------------------
+02-19 17:10:08.501   460   570 D HWMLIB  :                          Calibration Data
+02-19 17:10:08.502   460   570 D HWMLIB  : ----------------------------------------------------------------
+02-19 17:10:08.502   460   570 D HWMLIB  : maxdiff =   +3.9227
+02-19 17:10:08.502   460   570 D HWMLIB  : average =   +0.4361,   +0.0192   +9.4192
+02-19 17:10:08.502   460   570 D HWMLIB  : ----------------------------------------------------------------
+02-19 17:10:08.502   460   570 D HWMLIB  : [  317275] (  +0.4330,   +0.0350,   +9.3640)
+02-19 17:10:08.502   460   570 D HWMLIB  : [  317326] (  +0.4420,   +0.0070,   +9.3950)
+02-19 17:10:08.502   460   570 D HWMLIB  : [  317378] (  +0.4380,   +0.0330,   +9.4330)
+02-19 17:10:08.502   460   570 D HWMLIB  : [  317430] (  +0.4420,   -0.0070,   +9.4330)
+02-19 17:10:08.502   460   570 D HWMLIB  : [  317481] (  +0.4020,   +0.0450,   +9.3800)
+02-19 17:10:08.502   460   570 D HWMLIB  : [  317532] (  +0.4570,   +0.0040,   +9.4710)
+02-19 17:10:08.503   460   570 D HWMLIB  : [  317584] (  +0.4140,   +0.0260,   +9.3880)
+02-19 17:10:08.503   460   570 D HWMLIB  : [  317636] (  +0.4230,   +0.0380,   +9.3970)
+02-19 17:10:08.503   460   570 D HWMLIB  : [  317687] (  +0.4350,   +0.0040,   +9.4260)
+02-19 17:10:08.503   460   570 D HWMLIB  : [  317739] (  +0.4710,   +0.0070,   +9.3970)
+02-19 17:10:08.503   460   570 D HWMLIB  : [  317789] (  +0.4540,   +0.0830,   +9.4520)
+02-19 17:10:08.503   460   570 D HWMLIB  : [  317840] (  +0.4350,   +0.0000,   +9.4140)
+02-19 17:10:08.503   460   570 D HWMLIB  : [  317891] (  +0.4330,   +0.0040,   +9.4500)
+02-19 17:10:08.503   460   570 D HWMLIB  : [  317943] (  +0.4280,   +0.0280,   +9.4160)
+02-19 17:10:08.503   460   570 D HWMLIB  : [  317994] (  +0.4230,   +0.0160,   +9.4570)
+02-19 17:10:08.503   460   570 D HWMLIB  : [  318045] (  +0.4380,   -0.0310,   +9.3880)
+02-19 17:10:08.503   460   570 D HWMLIB  : [  318095] (  +0.4620,   +0.0280,   +9.4090)
+02-19 17:10:08.503   460   570 D HWMLIB  : [  318146] (  +0.4420,   +0.0040,   +9.4620)
+02-19 17:10:08.503   460   570 D HWMLIB  : [  318198] (  +0.4380,   +0.0090,   +9.4500)
+02-19 17:10:08.504   460   570 D HWMLIB  : [  318249] (  +0.4110,   +0.0500,   +9.4020)
+02-19 17:10:08.505   460   570 D HWMLIB  : ----------------------------------------------------------------
+02-19 17:10:08.505   460   570 D HWMLIB  : X-Axis: min/avg/max = (  +0.4020,   +0.4361,   +0.4710), diverse =   -0.0035 ~   +0.0036, std =    0.0165
+02-19 17:10:08.505   460   570 D HWMLIB  : Y-Axis: min/avg/max = (  -0.0310,   +0.0192,   +0.0830), diverse =   -0.0051 ~   +0.0065, std =    0.0241
+02-19 17:10:08.505   460   570 D HWMLIB  : Z-Axis: min/avg/max = (  +9.3640,   +9.4192,   +9.4710), diverse =   -0.0056 ~   +0.0053, std =    0.0299
+02-19 17:10:08.505   460   570 D HWMLIB  : ----------------------------------------------------------------
+02-19 17:10:08.506   460   570 D HWMLIB  : calculateStandardCalibration (  -0.4361,   -0.0192,    0.3875)
+02-19 17:10:08.506   460   570 D HWMLIB  : [WD]   -0.4361   -0.0192    0.3875 =&gt;  -436   -19   387
+02-19 17:10:11.701   460   570 E HWMLIB  : gsensor_get_cali: get_cali err: -1
+02-19 17:10:11.702   460   570 E FTM     : gs_cali_update_iv_thread [  296]: get calibration fail: (Invalid argument) -1
+02-19 17:10:11.702   460   570 D NVRAM   : fail to open /sys/class/BOOT/BOOT/boot/boot_mode:
+02-19 17:10:11.702   460   570 D NVRAM   : NVM_GetFileDesc: Open /mnt/vendor/nvdata/APCFG/APRDCL/HWMON_ACC,LID:12
+02-19 17:10:11.702   460   570 D NVRAM   : NVM_CmpFileVerNo 12
+02-19 17:10:11.702   460   570 D NVRAM   : Load File Version: 000, NvRam File Version: 000
+02-19 17:10:11.702   460   570 D NVRAM   : NVM_ProtectDataFile : 12 ++
+02-19 17:10:11.703   460   570 D NVRAM   : NVM_ProtectUserData:Check Success
+02-19 17:10:11.703   460   570 D HWMLIB  : [RN]    0.0000    0.0000    0.0000 =&gt;     0     0     0
+02-19 17:10:11.705   460   570 D NVRAM   : NVM_CloseFileDesc: Open by Readonly, no need to check when close
+02-19 17:10:14.773   460   570 E HWMLIB  : gsensor_get_cali: get_cali err: -1
+02-19 17:10:14.773   460   570 E FTM     : gs_cali_update_info [  161]: get calibration: 22(Invalid argument)
+02-19 17:10:14.913   460   570 E FTM     : MTK_LCM_PHYSICAL_ROTATION + 0
+02-19 17:10:14.916   460   570 E FTM     : set_active_framebuffer +
+02-19 17:10:14.933   460   570 E FTM     : gr_flip done
+02-19 17:10:14.933   460   570 D FTM     : [GSC] op: 0
+02-19 17:10:14.933   460   570 D NVRAM   : fail to open /sys/class/BOOT/BOOT/boot/boot_mode:
+02-19 17:10:14.933   460   570 D NVRAM   : NVM_GetFileDesc: Open /mnt/vendor/nvdata/APCFG/APRDCL/HWMON_ACC,LID:12
+02-19 17:10:14.933   460   570 D NVRAM   : NVM_CmpFileVerNo 12
+02-19 17:10:14.934   460   570 D NVRAM   : Load File Version: 000, NvRam File Version: 000
+02-19 17:10:14.934   460   570 D NVRAM   : NVM_ProtectDataFile : 12 ++
+02-19 17:10:14.934   460   570 D NVRAM   : NVM_ProtectUserData:Check Success
+02-19 17:10:14.934   460   570 D HWMLIB  : [RN]    0.0000    0.0000    0.0000 =&gt;     0     0     0
+02-19 17:10:14.934   460   570 D NVRAM   : NVM_CloseFileDesc: Open by Readonly, no need to check when close
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>结论</p></li>
+</ul>
+<div class="highlight-diff notranslate"><div class="highlight"><pre><span></span><span class="w">MTK_OLD_FACTORY_CALIBRATION宏未打开，gyrohub_WriteCalibration函数不生效。</span>
+
+<span class="w">static int gyrohub_factory_set_cali(int32_t data[3])</span>
+<span class="w">{</span>
+<span class="w">#ifdef MTK_OLD_FACTORY_CALIBRATION</span>
+<span class="w">	int err = 0;</span>
+
+<span class="w">	pr_err(&quot;%swugn test gyrohub\n&quot;, __func__);</span>
+<span class="w">	err = gyrohub_WriteCalibration(data);</span>
+<span class="w">	if (err) {</span>
+<span class="w">		pr_err(&quot;gyrohub_WriteCalibration failed!\n&quot;);</span>
+<span class="w">		return -1;</span>
+<span class="w">	}</span>
+<span class="w">#endif</span>
+<span class="w">	pr_err(&quot;%swugn test 11111gyrohub\n&quot;, __func__);</span>
+
+<span class="w">	return 0;</span>
+<span class="w">}</span>
+
+<span class="gd">--- a/kernel-4.19/drivers/misc/mediatek/sensors-1.0/accelerometer/accelhub/accelhub.h</span><span class="w"></span>
+<span class="gi">+++ b/kernel-4.19/drivers/misc/mediatek/sensors-1.0/accelerometer/accelhub/accelhub.h</span><span class="w"></span>
+<span class="gu">@@ -10,5 +10,6 @@</span><span class="w"></span>
+
+<span class="w"> </span>#define ACCELHUB_BUFSIZE 256<span class="w"></span>
+<span class="w"> </span>#define ACCELHUB_AXES_NUM 3<span class="w"></span>
+<span class="gi">+#define MTK_OLD_FACTORY_CALIBRATION</span><span class="w"></span>
+</pre></div>
+</div>
+</section>
+<section id="gyro0">
+<h3>2.gyro校准数据都是0<a class="headerlink" href="#gyro0" title="Permalink to this headline"></a></h3>
+<ul class="simple">
+<li><p>打印如下：</p></li>
+</ul>
+<div class="highlight-log notranslate"><div class="highlight"><pre><span></span>屏幕显示，这个屏幕打印是累加的，建议做之前clean以下数据：
+526 -496 40
+
+factory 打印：
+02-25 03:37:15.165   458  2652 D FTM     : [GYRO] op: 3
+02-25 03:37:16.190   458  2652 D HWMLIB  : ----------------------------------------------------------------
+02-25 03:37:16.190   458  2652 D HWMLIB  :                          Calibration Data
+02-25 03:37:16.190   458  2652 D HWMLIB  : ----------------------------------------------------------------
+02-25 03:37:16.191   458  2652 D HWMLIB  : maxdiff = +200.0000
+02-25 03:37:16.191   458  2652 D HWMLIB  : average = -525.5500, +495.8000  -39.6500
+02-25 03:37:16.191   458  2652 D HWMLIB  : ----------------------------------------------------------------
+02-25 03:37:16.191   458  2652 D HWMLIB  : [ 8912945] (-532.0000, +483.0000,  -36.0000)
+02-25 03:37:16.191   458  2652 D HWMLIB  : [ 8912996] (-519.0000, +491.0000,  -32.0000)
+02-25 03:37:16.191   458  2652 D HWMLIB  : [ 8913047] (-528.0000, +487.0000,  -28.0000)
+02-25 03:37:16.191   458  2652 D HWMLIB  : [ 8913099] (-532.0000, +495.0000,  -40.0000)
+02-25 03:37:16.191   458  2652 D HWMLIB  : [ 8913150] (-515.0000, +499.0000,  -49.0000)
+02-25 03:37:16.191   458  2652 D HWMLIB  : [ 8913202] (-519.0000, +483.0000,  -40.0000)
+02-25 03:37:16.191   458  2652 D HWMLIB  : [ 8913253] (-524.0000, +511.0000,  -36.0000)
+02-25 03:37:16.191   458  2652 D HWMLIB  : [ 8913304] (-519.0000, +499.0000,  -32.0000)
+02-25 03:37:16.191   458  2652 D HWMLIB  : [ 8913356] (-528.0000, +495.0000,  -36.0000)
+02-25 03:37:16.191   458  2652 D HWMLIB  : [ 8913407] (-540.0000, +528.0000,  -53.0000)
+02-25 03:37:16.191   458  2652 D HWMLIB  : [ 8913458] (-540.0000, +491.0000,  -36.0000)
+02-25 03:37:16.191   458  2652 D HWMLIB  : [ 8913509] (-515.0000, +487.0000,  -45.0000)
+02-25 03:37:16.191   458  2652 D HWMLIB  : [ 8913561] (-519.0000, +511.0000,  -40.0000)
+02-25 03:37:16.191   458  2652 D HWMLIB  : [ 8913612] (-524.0000, +495.0000,  -57.0000)
+02-25 03:37:16.191   458  2652 D HWMLIB  : [ 8913663] (-532.0000, +507.0000,  -40.0000)
+02-25 03:37:16.191   458  2652 D HWMLIB  : [ 8913714] (-540.0000, +499.0000,  -45.0000)
+02-25 03:37:16.191   458  2652 D HWMLIB  : [ 8913765] (-519.0000, +491.0000,  -40.0000)
+02-25 03:37:16.191   458  2652 D HWMLIB  : [ 8913817] (-536.0000, +499.0000,  -36.0000)
+02-25 03:37:16.191   458  2652 D HWMLIB  : [ 8913868] (-511.0000, +466.0000,  -36.0000)
+02-25 03:37:16.191   458  2652 D HWMLIB  : [ 8913918] (-519.0000, +499.0000,  -36.0000)
+02-25 03:37:16.191   458  2652 D HWMLIB  : ----------------------------------------------------------------
+02-25 03:37:16.191   458  2652 D HWMLIB  : X-Axis: min/avg/max = (-540.0000, -525.5500, -511.0000), diverse =  -14.4500 ~  +14.5500, std
+=    8.8571
+02-25 03:37:16.191   458  2652 D HWMLIB  : Y-Axis: min/avg/max = (+466.0000, +495.8000, +528.0000), diverse =  -29.8000 ~  +32.2000, std
+=   12.4844
+02-25 03:37:16.191   458  2652 D HWMLIB  : Z-Axis: min/avg/max = ( -57.0000,  -39.6500,  -28.0000), diverse =  -17.3500 ~  +11.6500, std
+=    6.9662
+02-25 03:37:16.191   458  2652 D HWMLIB  : ----------------------------------------------------------------
+02-25 03:37:16.191   458  2652 D HWMLIB  : [WD]  525.5500 -495.8000   39.6500 =&gt;   526  -496    40
+02-25 03:37:16.192   458  2652 D HWMLIB  : [RD]  526.0000 -496.0000   40.0000 =&gt;   526  -496    40
+02-25 03:37:16.193   458  2652 D NVRAM   : fail to open /sys/class/BOOT/BOOT/boot/boot_mode:
+02-25 03:37:16.193   458  2652 D NVRAM   : NVM_GetFileDesc: Open /mnt/vendor/nvdata/APCFG/APRDCL/HWMON_GYRO,LID:13
+02-25 03:37:16.193   458  2652 D NVRAM   : NVM_CmpFileVerNo 13
+02-25 03:37:16.193   458  2652 D NVRAM   : Load File Version: 000, NvRam File Version: 000
+02-25 03:37:16.193   458  2652 D NVRAM   : NVM_ProtectDataFile : 13 ++
+02-25 03:37:16.193   458  2652 D NVRAM   : NVM_ProtectUserData:Check Success
+02-25 03:37:16.193   458  2652 D HWMLIB  : [WN]  526.0000 -496.0000   40.0000 =&gt; 526000 -496000 40000
+
+
+kernel 打印：
+[Fri Feb 25 03:37:14 2022] .(7)[2652:factory]GYROSCOPE_IOCTL_SET_CALI: (526, -496, 40)!
+[Fri Feb 25 03:37:14 2022] .(7)[2652:factory][GYRO] gyrohub_factory_set_caliwugn test gyrohub
+[Fri Feb 25 03:37:15 2022] .(7)[2652:factory][GYRO] gyrohub_factory_set_caliwugn test 11111gyrohub
+[Fri Feb 25 03:37:15 2022] .(7)[2652:factory][GYRO] gyrohub_factory_get_cali gyrohub
+[Fri Feb 25 03:37:15 2022] .(7)[2652:factory]GYROSCOPE_IOCTL_GET_CALI: (526, -496, 40)!
+
+
+scp打印：
+[8912.544][qmi8658]: gyroGetCalibration cali x:0, y:0, z:0
+[8912.545][qmi8658]: gyroGetCalibration cali x:0, y:0, z:0
+[8912.545]read calibration (0, 0, 0) (526, -496, 40)
+[8912.545]sensitivity:32.000000, gain:131000
+[8912.545]read calibration2 (0, 0, 0) (-1, 1, 1)
+[8912.545]write calibration (0, 0, 0)
+[8912.545][qmi8658]: gyroSetCalibration cali x:0, y:0, z:0
+[8912.549][qmi8658]: Qmi8658Sample status 0x3
+[8912.549][qmi8658]: Qmi8658Convert
+[8912.549][qmi8658]: accGetCalibration cali x:-4, y:-183, z:163
+[8912.549][qmi8658]: gyroGetCalibration cali x:0, y:0, z:0
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>根据以下代码得知：</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span>mCoreInfo-&gt;getCalibration(cali_sw, AXES_NUM);
+cali_sw: 0 0 0 
+data:(526, -600, 32)
+
+#define GYROSCOPE_INCREASE_NUM_AP       131000
+static void Qmi8658SensorCoreRegistration(void) 
+{
+  mInfo.gain = GYROSCOPE_INCREASE_NUM_AP;
+	mInfo.sensitivity = mQmi8658.config.g_sensitivity;
+
+}
+
+static int Qmi8658SwReset(I2cCallbackF i2cCallBack, SpiCbkF spiCallBack, void *next_state,
+				void *inBuf, uint8_t inSize, uint8_t elemInSize, void *outBuf, uint8_t *outSize, uint8_t *elemOutSize) 
+{
+  mQmi8658.config.g_sensitivity = (1 &lt;&lt; 5);
+}
+
+mCoreInfo-&gt;sensitivity = (1 &lt;&lt; 5)
+mCoreInfo-&gt;gain = 131000
+
+int sensorCoreWriteCalibration(uint8_t sensType, int32_t *data)
+{
+    int32_t cali[AXES_NUM], cali_sw[AXES_NUM];
+    struct sensorCoreInfo *mCoreInfo;
+    int8_t handle = mSensorCoreList[sensType];
+    memset(cali, 0, sizeof(cali));
+    memset(cali_sw, 0, sizeof(cali_sw));
+
+    if (!atomicBitsetGetBit(mSensorCoreUsed, handle))
+        return -1;
+    mCoreInfo = &amp;mInfoCoreList[handle];
+    if (!mCoreInfo-&gt;getCalibration)
+        return -1;
+        mCoreInfo-&gt;getCalibration(cali_sw, AXES_NUM);
+    osLog(LOG_INFO, &quot;read calibration (%ld, %ld, %ld) (%ld, %ld, %ld)\n&quot;,
+          cali_sw[AXIS_X], cali_sw[AXIS_Y], cali_sw[AXIS_Z], data[AXIS_X], data[AXIS_Y], data[AXIS_Z]);
+    osLog(LOG_INFO, &quot;sensitivity:%f, gain:%lu\n&quot;, (double)mCoreInfo-&gt;sensitivity, mCoreInfo-&gt;gain);
+    data[AXIS_X] = data[AXIS_X] * mCoreInfo-&gt;sensitivity / mCoreInfo-&gt;gain;
+    data[AXIS_Y] = data[AXIS_Y] * mCoreInfo-&gt;sensitivity / mCoreInfo-&gt;gain;
+    data[AXIS_Z] = data[AXIS_Z] * mCoreInfo-&gt;sensitivity / mCoreInfo-&gt;gain;
+    //这里由于gain值很大，导致data直接变为0，例如data[AXIS_X] = 526*32/131000 = 0.1284 整形直接四舍五入为0
+
+    cali[mCoreInfo-&gt;cvt.map[AXIS_X]] = mCoreInfo-&gt;cvt.sign[AXIS_X] * cali_sw[AXIS_X];
+    cali[mCoreInfo-&gt;cvt.map[AXIS_Y]] = mCoreInfo-&gt;cvt.sign[AXIS_Y] * cali_sw[AXIS_Y];
+    cali[mCoreInfo-&gt;cvt.map[AXIS_Z]] = mCoreInfo-&gt;cvt.sign[AXIS_Z] * cali_sw[AXIS_Z];
+
+    cali[AXIS_X] += data[AXIS_X];
+    cali[AXIS_Y] += data[AXIS_Y];
+    cali[AXIS_Z] += data[AXIS_Z];
+
+	osLog(LOG_INFO, &quot;read calibration2 (%ld, %ld, %ld) (%ld, %ld, %ld)\n&quot;,
+			  cali[AXIS_X], cali[AXIS_Y], cali[AXIS_Z], mCoreInfo-&gt;cvt.sign[AXIS_X], mCoreInfo-&gt;cvt.sign[AXIS_Y], mCoreInfo-&gt;cvt.sign[AXIS_Z]);
+
+    cali_sw[AXIS_X] = mCoreInfo-&gt;cvt.sign[AXIS_X] * cali[mCoreInfo-&gt;cvt.map[AXIS_X]];
+    cali_sw[AXIS_Y] = mCoreInfo-&gt;cvt.sign[AXIS_Y] * cali[mCoreInfo-&gt;cvt.map[AXIS_Y]];
+    cali_sw[AXIS_Z] = mCoreInfo-&gt;cvt.sign[AXIS_Z] * cali[mCoreInfo-&gt;cvt.map[AXIS_Z]];
+
+    osLog(LOG_INFO, &quot;write calibration (%ld, %ld, %ld)\n&quot;,
+          cali_sw[AXIS_X], cali_sw[AXIS_Y], cali_sw[AXIS_Z]);
+    if (!mCoreInfo-&gt;setCalibration)
+        return -1;
+        mCoreInfo-&gt;setCalibration(cali_sw, AXES_NUM);
+
+    return 0;
+}
+
+kernel计算方式：
+DEFREE_SCALE 1024
+qmi8658gy-&gt;resolution = (1 &lt;&lt; 5)
+
+static int qmi8658gy_factory_set_cali(int32_t data[3])
+{
+	qmi8658gy_t *obj = qmi8658gy;
+	int err = 0;
+	int cali[QMI8658_AXIS_NUM] = { 0 };
+	//[BUGFIX]-Modify-BEGIN by (huling@paxsz.com), 2022/1/20, number:0039353
+	int32_t DEFAULT_CALI_DATA[3] = {3616, -5120, 488}; /*get 40 groups sensor data, take the average*/
+
+	err = qmi8658gy_config_gyr(qmi8658gy-&gt;range, qmi8658gy-&gt;odr, Qmi8658Lpf_Disable, Qmi8658St_Disable);
+	if (err &lt; 0) {
+		QMI8658GY_ERR(&quot;set gyroscope range failed.\n&quot;);
+		return err;
+	}
+	if((data[0] == 0) &amp;&amp; (data[1] == 0) &amp;&amp; (data[2] == 0)) {
+		QMI8658GY_LOG(&quot;not do factory cali, use default cali data&quot;);
+		data[0] = DEFAULT_CALI_DATA[0];
+		data[1] = DEFAULT_CALI_DATA[1];
+		data[2] = DEFAULT_CALI_DATA[2];
+	}
+	//QMI8658GY_LOG(&quot;data[] = [%d,%d,%d]&quot;,data[0], data[1], data[2]);
+	//[BUGFIX]-Modify-END by (huling@paxsz.com), 2022/1/20, number:0039353
+	cali[QMI8658_AXIS_X] = data[0]*obj-&gt;resolution/DEFREE_SCALE;
+	cali[QMI8658_AXIS_Y] = data[1]*obj-&gt;resolution/DEFREE_SCALE;
+	cali[QMI8658_AXIS_Z] = data[2]*obj-&gt;resolution/DEFREE_SCALE;
+	err = qmi8658gy_WriteCalibration(qmi8658gy_i2c_client, cali);
+	if (err) {
+		QMI8658GY_ERR(&quot;qmi8658gy_WriteCalibration failed!\n&quot;);
+		return -1;
+	}
+	return 0;
+}
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>从qmi5608 scp驱动这端获取参数如下：</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">Qmi8658SwReset</span><span class="p">(</span><span class="n">I2cCallbackF</span><span class="w"> </span><span class="n">i2cCallBack</span><span class="p">,</span><span class="w"> </span><span class="n">SpiCbkF</span><span class="w"> </span><span class="n">spiCallBack</span><span class="p">,</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="o">*</span><span class="n">next_state</span><span class="p">,</span><span class="w"></span>
+<span class="w">				</span><span class="kt">void</span><span class="w"> </span><span class="o">*</span><span class="n">inBuf</span><span class="p">,</span><span class="w"> </span><span class="kt">uint8_t</span><span class="w"> </span><span class="n">inSize</span><span class="p">,</span><span class="w"> </span><span class="kt">uint8_t</span><span class="w"> </span><span class="n">elemInSize</span><span class="p">,</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="o">*</span><span class="n">outBuf</span><span class="p">,</span><span class="w"> </span><span class="kt">uint8_t</span><span class="w"> </span><span class="o">*</span><span class="n">outSize</span><span class="p">,</span><span class="w"> </span><span class="kt">uint8_t</span><span class="w"> </span><span class="o">*</span><span class="n">elemOutSize</span><span class="p">)</span><span class="w"> </span>
+<span class="p">{</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">QMI8658_LOG</span><span class="p">(</span><span class="w"> </span><span class="s">&quot;Qmi8658SwReset</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="n">mQmi8658</span><span class="p">.</span><span class="n">acc_power</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">false</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="n">mQmi8658</span><span class="p">.</span><span class="n">gyr_power</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">false</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="n">mQmi8658</span><span class="p">.</span><span class="n">config</span><span class="p">.</span><span class="n">accRange</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Qmi8658AccRange_8g</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="n">mQmi8658</span><span class="p">.</span><span class="n">config</span><span class="p">.</span><span class="n">accOdr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Qmi8658AccOdr_1000Hz</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="n">mQmi8658</span><span class="p">.</span><span class="n">config</span><span class="p">.</span><span class="n">a_sensitivity</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="mi">1</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="mi">12</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="n">mQmi8658</span><span class="p">.</span><span class="n">config</span><span class="p">.</span><span class="n">gyrRange</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Qmi8658GyrRange_1024dps</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="n">mQmi8658</span><span class="p">.</span><span class="n">config</span><span class="p">.</span><span class="n">gyrOdr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Qmi8658GyrOdr_1000Hz</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="n">mQmi8658</span><span class="p">.</span><span class="n">config</span><span class="p">.</span><span class="n">g_sensitivity</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="mi">1</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="mi">5</span><span class="p">);</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">Qmi8658SensorCoreRegistration</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="w"> </span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="k">struct</span><span class="w"> </span><span class="nc">sensorCoreInfo</span><span class="w"> </span><span class="n">mInfo</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="n">QMI8658_LOG</span><span class="p">(</span><span class="w"> </span><span class="s">&quot;Qmi8658SensorCoreRegistration</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">mInfo</span><span class="p">.</span><span class="n">sensType</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">SENS_TYPE_ACCEL</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="cp">#define GRAVITY_EARTH_1000              9807</span>
+<span class="w">	</span><span class="n">mInfo</span><span class="p">.</span><span class="n">gain</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">GRAVITY_EARTH_1000</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="n">mInfo</span><span class="p">.</span><span class="n">sensitivity</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mQmi8658</span><span class="p">.</span><span class="n">config</span><span class="p">.</span><span class="n">a_sensitivity</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="n">mInfo</span><span class="p">.</span><span class="n">cvt</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mQmi8658</span><span class="p">.</span><span class="n">cvt</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="n">mInfo</span><span class="p">.</span><span class="n">getCalibration</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">accGetCalibration</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="n">mInfo</span><span class="p">.</span><span class="n">setCalibration</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">accSetCalibration</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">mInfo</span><span class="p">.</span><span class="n">sensType</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">SENS_TYPE_GYRO</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="cp">#define GYROSCOPE_INCREASE_NUM_AP       131000</span>
+<span class="w">	</span><span class="n">mInfo</span><span class="p">.</span><span class="n">gain</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">GYROSCOPE_INCREASE_NUM_AP</span><span class="p">;</span><span class="w"> </span>
+<span class="w">	</span><span class="n">mInfo</span><span class="p">.</span><span class="n">sensitivity</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mQmi8658</span><span class="p">.</span><span class="n">config</span><span class="p">.</span><span class="n">g_sensitivity</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="n">mInfo</span><span class="p">.</span><span class="n">cvt</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mQmi8658</span><span class="p">.</span><span class="n">cvt</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>对比kernel和scp计算公式不一样，采用kernel的公式发现陀螺仪都不动了，有问题，最后还是不采用这种校准方法了，直接使用静态值校准。</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="mf">178.452</span><span class="p">][</span><span class="n">qmi8658</span><span class="p">]:</span> <span class="n">gyroGetCalibration</span> <span class="n">cali</span> <span class="n">x</span><span class="p">:</span><span class="mi">15</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span><span class="mi">16</span><span class="p">,</span> <span class="n">z</span><span class="p">:</span><span class="mi">1</span>
+<span class="p">[</span><span class="mf">178.455</span><span class="p">][</span><span class="n">qmi8658</span><span class="p">]:</span> <span class="n">gyroGetCalibration</span> <span class="n">cali</span> <span class="n">x</span><span class="p">:</span><span class="mi">15</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span><span class="mi">16</span><span class="p">,</span> <span class="n">z</span><span class="p">:</span><span class="mi">1</span>
+<span class="p">[</span><span class="mf">178.455</span><span class="p">]</span><span class="n">read</span> <span class="n">calibration</span> <span class="p">(</span><span class="mi">15</span><span class="p">,</span> <span class="mi">16</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="o">-</span><span class="mi">3</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+<span class="p">[</span><span class="mf">178.455</span><span class="p">]</span><span class="n">sensitivity</span><span class="p">:</span><span class="mf">32.000000</span><span class="p">,</span> <span class="n">gain</span><span class="p">:</span><span class="mi">1024</span>
+<span class="p">[</span><span class="mf">178.455</span><span class="p">]</span><span class="n">read</span> <span class="n">calibration2</span> <span class="p">(</span><span class="mi">16</span><span class="p">,</span> <span class="o">-</span><span class="mi">15</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span> <span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="p">[</span><span class="mf">178.455</span><span class="p">]</span><span class="n">write</span> <span class="n">calibration</span> <span class="p">(</span><span class="mi">15</span><span class="p">,</span> <span class="mi">16</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="p">[</span><span class="mf">178.455</span><span class="p">][</span><span class="n">qmi8658</span><span class="p">]:</span> <span class="n">gyroSetCalibration</span> <span class="n">cali</span> <span class="n">x</span><span class="p">:</span><span class="mi">15</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span><span class="mi">16</span><span class="p">,</span> <span class="n">z</span><span class="p">:</span><span class="mi">1</span>
+<span class="p">[</span><span class="mf">178.457</span><span class="p">][</span><span class="n">qmi8658</span><span class="p">]:</span> <span class="n">Qmi8658Sample</span> <span class="n">status</span> <span class="mh">0x3</span>
+<span class="p">[</span><span class="mf">178.457</span><span class="p">][</span><span class="n">qmi8658</span><span class="p">]:</span> <span class="n">Qmi8658Convert</span>
+<span class="p">[</span><span class="mf">178.457</span><span class="p">][</span><span class="n">qmi8658</span><span class="p">]:</span> <span class="n">accGetCalibration</span> <span class="n">cali</span> <span class="n">x</span><span class="p">:</span><span class="o">-</span><span class="mi">15</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span><span class="o">-</span><span class="mi">157</span><span class="p">,</span> <span class="n">z</span><span class="p">:</span><span class="mi">181</span>
+<span class="p">[</span><span class="mf">178.457</span><span class="p">][</span><span class="n">qmi8658</span><span class="p">]:</span> <span class="n">gyroGetCalibration</span> <span class="n">cali</span> <span class="n">x</span><span class="p">:</span><span class="mi">15</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span><span class="mi">16</span><span class="p">,</span> <span class="n">z</span><span class="p">:</span><span class="mi">1</span>
+
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>上个修改是直接改了<code class="docutils literal notranslate"><span class="pre">GYROSCOPE_INCREASE_NUM_AP</span></code>值，应该只需要修改sensor hub驱动配置就行了，调通后下面且添加了默认校准数据：</p></li>
+</ul>
+<div class="highlight-diff notranslate"><div class="highlight"><pre><span></span><span class="gd">--- a/vendor/mediatek/proprietary/tinysys/freertos/source/middleware/contexthub/MEMS_Driver/accGyro/qmi8658_i2c.c</span><span class="w"></span>
+<span class="gi">+++ b/vendor/mediatek/proprietary/tinysys/freertos/source/middleware/contexthub/MEMS_Driver/accGyro/qmi8658_i2c.c</span><span class="w"></span>
+
+<span class="w"> </span>static void accSetCalibration(int32_t *cali, int32_t size)<span class="w"></span>
+<span class="w"> </span>{<span class="w"></span>
+<span class="gd">-       mQmi8658.accSwCali[AXIS_X] = cali[AXIS_X];</span><span class="w"></span>
+<span class="gd">-       mQmi8658.accSwCali[AXIS_Y] = cali[AXIS_Y];</span><span class="w"></span>
+<span class="gd">-       mQmi8658.accSwCali[AXIS_Z] = cali[AXIS_Z];</span><span class="w"></span>
+<span class="gi">+       //[BUGFIX]-Modify-BEGIN by (huling@paxsz.com), 2022/3/22, number:0039353,0040255</span><span class="w"></span>
+<span class="gi">+       int32_t DEFAULT_ACC_CALI_DATA[3] = {-70, -9, 525}; /*get 20 groups sensor data, take the average*/</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+       if((cali[AXIS_X] == 0) &amp;&amp; (cali[AXIS_Y] == 0) &amp;&amp; (cali[AXIS_Z] == 0)) {</span><span class="w"></span>
+<span class="gi">+               mQmi8658.accSwCali[AXIS_X] = DEFAULT_ACC_CALI_DATA[0];</span><span class="w"></span>
+<span class="gi">+               mQmi8658.accSwCali[AXIS_Y] = DEFAULT_ACC_CALI_DATA[1];</span><span class="w"></span>
+<span class="gi">+               mQmi8658.accSwCali[AXIS_Z] = DEFAULT_ACC_CALI_DATA[2];</span><span class="w"></span>
+<span class="gi">+       } else {</span><span class="w"></span>
+<span class="gi">+               mQmi8658.accSwCali[AXIS_X] = cali[AXIS_X];</span><span class="w"></span>
+<span class="gi">+               mQmi8658.accSwCali[AXIS_Y] = cali[AXIS_Y];</span><span class="w"></span>
+<span class="gi">+               mQmi8658.accSwCali[AXIS_Z] = cali[AXIS_Z];</span><span class="w"></span>
+<span class="gi">+       }</span><span class="w"></span>
+<span class="gi">+       //[BUGFIX]-Modify-END by (huling@paxsz.com), 2022/3/22, number:0039353,0040255</span><span class="w"></span>
+<span class="w"> </span>       QMI8658_LOG( &quot;accSetCalibration cali x:%d, y:%d, z:%d\n&quot;, cali[AXIS_X], cali[AXIS_Y], cali[AXIS_Z]);<span class="w"></span>
+<span class="w"> </span>}<span class="w"></span>
+
+<span class="gu">@@ -675,9 +685,19 @@ static void gyroGetCalibration(int32_t *cali, int32_t size)</span><span class="w"></span>
+
+<span class="w"> </span>static void gyroSetCalibration(int32_t *cali, int32_t size)<span class="w"></span>
+<span class="w"> </span>{<span class="w"></span>
+<span class="gd">-       mQmi8658.gyroSwCali[AXIS_X] = cali[AXIS_X];</span><span class="w"></span>
+<span class="gd">-       mQmi8658.gyroSwCali[AXIS_Y] = cali[AXIS_Y];</span><span class="w"></span>
+<span class="gd">-       mQmi8658.gyroSwCali[AXIS_Z] = cali[AXIS_Z];</span><span class="w"></span>
+<span class="gi">+       //[BUGFIX]-Modify-BEGIN by (huling@paxsz.com), 2022/3/22, number:0039353,0040255</span><span class="w"></span>
+<span class="gi">+       int32_t DEFAULT_GYRO_CALI_DATA[3] = {-141, 24, -8};/*get 20 groups sensor data, take the average*/</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+       if((cali[AXIS_X] == 0) &amp;&amp; (cali[AXIS_Y] == 0) &amp;&amp; (cali[AXIS_Z] == 0)) {</span><span class="w"></span>
+<span class="gi">+               mQmi8658.gyroSwCali[AXIS_X] = DEFAULT_GYRO_CALI_DATA[AXIS_X];</span><span class="w"></span>
+<span class="gi">+               mQmi8658.gyroSwCali[AXIS_Y] = DEFAULT_GYRO_CALI_DATA[AXIS_Y];</span><span class="w"></span>
+<span class="gi">+               mQmi8658.gyroSwCali[AXIS_Z] = DEFAULT_GYRO_CALI_DATA[AXIS_Z];</span><span class="w"></span>
+<span class="gi">+       } else {</span><span class="w"></span>
+<span class="gi">+               mQmi8658.gyroSwCali[AXIS_X] = cali[AXIS_X];</span><span class="w"></span>
+<span class="gi">+               mQmi8658.gyroSwCali[AXIS_Y] = cali[AXIS_Y];</span><span class="w"></span>
+<span class="gi">+               mQmi8658.gyroSwCali[AXIS_Z] = cali[AXIS_Z];</span><span class="w"></span>
+<span class="gi">+       }</span><span class="w"></span>
+<span class="gi">+       //[BUGFIX]-Modify-END by (huling@paxsz.com), 2022/3/22, number:0039353,0040255</span><span class="w"></span>
+<span class="w"> </span>       QMI8658_LOG( &quot;gyroSetCalibration cali x:%d, y:%d, z:%d\n&quot;, cali[AXIS_X], cali[AXIS_Y], cali[AXIS_Z]);<span class="w"></span>
+<span class="w"> </span>}<span class="w"></span>
+
+<span class="gu">@@ -1461,7 +1469,7 @@ static void Qmi8658SensorCoreRegistration(void)</span><span class="w"></span>
+
+<span class="w"> </span>       memset(&amp;mInfo, 0x00, sizeof(struct sensorCoreInfo));<span class="w"></span>
+<span class="w"> </span>       mInfo.sensType = SENS_TYPE_GYRO;<span class="w"></span>
+<span class="gd">-       mInfo.gain = GYROSCOPE_INCREASE_NUM_AP;</span><span class="w"></span>
+<span class="gi">+       mInfo.gain = 1024;//GYROSCOPE_INCREASE_NUM_AP;</span><span class="w"></span>
+<span class="w"> </span>       mInfo.sensitivity = mQmi8658.config.g_sensitivity;<span class="w"></span>
+</pre></div>
+</div>
+<section id="id8">
+<h4>2.静态校准参数误差大<a class="headerlink" href="#id8" title="Permalink to this headline"></a></h4>
+<p>目前发现这种写死的办法，局限性太大了，不同的设备差别比较大，写死的话在其他机器上可能不适用，供应商建议在工厂测试程序时加入校准流程，以下是修改：</p>
+<div class="highlight-diff notranslate"><div class="highlight"><pre><span></span><span class="w"> </span>   [Title]:gyro支持MTK ATA工厂测试工具进行gyroscope测试时自动校准<span class="w"></span>
+
+<span class="w"> </span>   [Summary]:<span class="w"></span>
+<span class="w"> </span>           1.gyro支持MTK ATA工厂测试工具进行gyroscope测试时自动校准<span class="w"></span>
+<span class="w"> </span>           2.工厂模式下Gyroscope测试项默认自动校准，且读出的数据是校准后的数据<span class="w"></span>
+<span class="w"> </span>           3.刚打开sensor去获取数据时，前面一部分异常数据需要过滤掉(qmi8658前几组数据全部为0)，否则会校准失败，默认过滤掉前面20组数据<span class="w"></span>
+<span class="w"> </span>           4.删除原来添加在qmi8658驱动默认的校准数据，以后统一产线校准<span class="w"></span>
+<span class="w"> </span>           5.工厂模式Gyroscope cali测试项读出的数据保持和Gyroscope测试项一致<span class="w"></span>
+
+<span class="w"> </span>   [Test Plan]:<span class="w"></span>
+<span class="w"> </span>           1.分别用ATA工具和进入工厂模式的Gyroscope测试项进行测试<span class="w"></span>
+
+<span class="w"> </span>   [Module]:sensor<span class="w"></span>
+
+<span class="w"> </span>   [Model]:M50<span class="w"></span>
+
+<span class="w"> </span>   [author]:huling@paxsz.com<span class="w"></span>
+
+<span class="w"> </span>   [date]:2022-4-12<span class="w"></span>
+
+<span class="gh">diff --git a/vendor/mediatek/proprietary/factory/src/test/ftm_gyro_cali.c b/vendor/mediatek/proprietary/factory/src/test/ftm_gyro_cali.c</span><span class="w"></span>
+<span class="w">old mode 100644</span>
+<span class="w">new mode 100755</span>
+<span class="gh">index 82dd77b6084..8f6c3f514a4</span><span class="w"></span>
+<span class="gd">--- a/vendor/mediatek/proprietary/factory/src/test/ftm_gyro_cali.c</span><span class="w"></span>
+<span class="gi">+++ b/vendor/mediatek/proprietary/factory/src/test/ftm_gyro_cali.c</span><span class="w"></span>
+<span class="gu">@@ -356,9 +356,12 @@ static void *gyro_cali_update_iv_thread(void *priv)</span><span class="w"></span>
+<span class="w"> </span>                       break;<span class="w"></span>
+<span class="w"> </span>               }<span class="w"></span>
+
+<span class="gd">-               data[0] =  gyroc-&gt;dat.x / MPU3000_FS_MAX_LSB;</span><span class="w"></span>
+<span class="gi">+               /*data[0] =  gyroc-&gt;dat.x / MPU3000_FS_MAX_LSB;</span><span class="w"></span>
+<span class="w"> </span>               data[1] =  gyroc-&gt;dat.y / MPU3000_FS_MAX_LSB;<span class="w"></span>
+<span class="gd">-               data[2] =  gyroc-&gt;dat.z / MPU3000_FS_MAX_LSB;</span><span class="w"></span>
+<span class="gi">+               data[2] =  gyroc-&gt;dat.z / MPU3000_FS_MAX_LSB;*/</span><span class="w"></span>
+<span class="gi">+               data[0] =  gyroc-&gt;dat.x / 1000;</span><span class="w"></span>
+<span class="gi">+               data[1] =  gyroc-&gt;dat.y / 1000;</span><span class="w"></span>
+<span class="gi">+               data[2] =  gyroc-&gt;dat.z / 1000;</span><span class="w"></span>
+<span class="w"> </span>               len = 0;<span class="w"></span>
+<span class="w"> </span>               len += snprintf(dat-&gt;info+len, sizeof(dat-&gt;info)-len, &quot;R: %+7.4f %+7.4f %+7.4f\n&quot;, data[0], data[1], data[2]);<span class="w"></span>
+<span class="w"> </span>               len += snprintf(dat-&gt;info+len, sizeof(dat-&gt;info)-len, &quot;D: %+7.4f %+7.4f %+7.4f\n&quot;, gyroc-&gt;cali_drv.x, gyroc-&gt;cali_drv.y, gyroc-&gt;cali_drv.z);<span class="w"></span>
+<span class="gh">diff --git a/vendor/mediatek/proprietary/factory/src/test/ftm_gyroscope.c b/vendor/mediatek/proprietary/factory/src/test/ftm_gyroscope.c</span><span class="w"></span>
+<span class="w">old mode 100644</span>
+<span class="w">new mode 100755</span>
+<span class="gh">index bd59b71e895..745d329fdfa</span><span class="w"></span>
+<span class="gd">--- a/vendor/mediatek/proprietary/factory/src/test/ftm_gyroscope.c</span><span class="w"></span>
+<span class="gi">+++ b/vendor/mediatek/proprietary/factory/src/test/ftm_gyroscope.c</span><span class="w"></span>
+<span class="gu">@@ -71,7 +71,10 @@</span><span class="w"></span>
+<span class="w"> </span>#define MPU3000_AXIS_Z          2<span class="w"></span>
+<span class="w"> </span>#define MPU3000_AXES_NUM        3<span class="w"></span>
+<span class="w"> </span>#define MPU3000_FIFOSIZE                               512<span class="w"></span>
+<span class="gd">-</span><span class="w"></span>
+<span class="gi">+#define CALI_DELAY                             50</span><span class="w"></span>
+<span class="gi">+#define CALI_NUM                               20</span><span class="w"></span>
+<span class="gi">+#define CALI_TOLERANCE                 40*10</span><span class="w"></span>
+<span class="gi">+#define FILTER_COUNT                   20</span><span class="w"></span>
+<span class="w"> </span>/******************************************************************************<span class="w"></span>
+<span class="w"> </span> * grobal variable<span class="w"></span>
+<span class="w"> </span> *****************************************************************************/<span class="w"></span>
+<span class="gu">@@ -148,6 +151,53 @@ static int gyro_init_priv(struct gyro_priv *gyro)</span><span class="w"></span>
+<span class="w"> </span>    return 0;<span class="w"></span>
+<span class="w"> </span>}<span class="w"></span>
+<span class="w"> </span>/*---------------------------------------------------------------------------*/<span class="w"></span>
+<span class="gi">+static int gyro_cali_before_read(int fd, int cali_delay, int cali_num, int cali_tolerance) {</span><span class="w"></span>
+<span class="gi">+       int err = 0;</span><span class="w"></span>
+<span class="gi">+       int num = 0;</span><span class="w"></span>
+<span class="gi">+       HwmData cali, data;</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+       FLPLOGD(&quot;gyro_cali_before_read\n&quot;);</span><span class="w"></span>
+<span class="gi">+       if(fd &lt; 0) {</span><span class="w"></span>
+<span class="gi">+               FLPLOGE(&quot;Couldn&#39;t open gyro device!\n&quot;);</span><span class="w"></span>
+<span class="gi">+               return -EINVAL;</span><span class="w"></span>
+<span class="gi">+       }</span><span class="w"></span>
+<span class="gi">+       FLPLOGD(&quot;----------------------------------------------------------------\n&quot;);</span><span class="w"></span>
+<span class="gi">+       FLPLOGD(&quot;start clean unneed gyro data, FILTER_COUNT = %d\n&quot;, FILTER_COUNT);</span><span class="w"></span>
+<span class="gi">+       FLPLOGD(&quot;----------------------------------------------------------------\n&quot;);</span><span class="w"></span>
+<span class="gi">+       while(num &lt; FILTER_COUNT) {</span><span class="w"></span>
+<span class="gi">+               err = gyroscope_read(fd, &amp;data);</span><span class="w"></span>
+<span class="gi">+               if(err) {</span><span class="w"></span>
+<span class="gi">+                       FLPLOGE(&quot;read data fail: %d\n&quot;, err);</span><span class="w"></span>
+<span class="gi">+                       return err;</span><span class="w"></span>
+<span class="gi">+               }</span><span class="w"></span>
+<span class="gi">+               FLPLOGD(&quot;num = %d, (%+9.4f, %+9.4f, %+9.4f)\n&quot;, num, data.x, data.y, data.z);</span><span class="w"></span>
+<span class="gi">+               num++;</span><span class="w"></span>
+<span class="gi">+               usleep(50000);</span><span class="w"></span>
+<span class="gi">+       }</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+       if(!cali_delay || !cali_num || !cali_tolerance)</span><span class="w"></span>
+<span class="gi">+       {</span><span class="w"></span>
+<span class="gi">+               FLPLOGE(&quot;ignore calibration: %d %d %d\n&quot;, cali_delay, cali_num, cali_tolerance);</span><span class="w"></span>
+<span class="gi">+       }</span><span class="w"></span>
+<span class="gi">+       else if((err = gyroscope_calibration(fd, cali_delay, cali_num, cali_tolerance, &amp;cali)) != 0)</span><span class="w"></span>
+<span class="gi">+       {</span><span class="w"></span>
+<span class="gi">+               FLPLOGE(&quot;calibrate gyro: %d\n&quot;, err);</span><span class="w"></span>
+<span class="gi">+       }</span><span class="w"></span>
+<span class="gi">+       else if((err = gyroscope_set_cali(fd, &amp;cali)) != 0)</span><span class="w"></span>
+<span class="gi">+       {</span><span class="w"></span>
+<span class="gi">+               FLPLOGE(&quot;gyro set calibration fail: %d\n&quot;, err);</span><span class="w"></span>
+<span class="gi">+       }</span><span class="w"></span>
+<span class="gi">+       else if((err = gyroscope_get_cali(fd, &amp;cali)) != 0)</span><span class="w"></span>
+<span class="gi">+       {</span><span class="w"></span>
+<span class="gi">+               FLPLOGE(&quot;gyro get calibration fail: %d\n&quot;, err);</span><span class="w"></span>
+<span class="gi">+       }</span><span class="w"></span>
+<span class="gi">+       else if((err = gyroscope_write_nvram(&amp;cali)) != 0)</span><span class="w"></span>
+<span class="gi">+       {</span><span class="w"></span>
+<span class="gi">+               FLPLOGE(&quot;gyro write nvram fail: %d\n&quot;, err);</span><span class="w"></span>
+<span class="gi">+       }</span><span class="w"></span>
+<span class="gi">+       return err;</span><span class="w"></span>
+<span class="gi">+}</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="w"> </span>static int gyro_open(struct gyro_priv *gyro)<span class="w"></span>
+<span class="w"> </span>{<span class="w"></span>
+<span class="w"> </span>    int err, max_retry = 3, retry_period = 100, retry;<span class="w"></span>
+<span class="gu">@@ -194,7 +244,6 @@ static int gyro_update_info(struct gyro_priv *gyro)</span><span class="w"></span>
+<span class="w"> </span>    int err = -EINVAL;<span class="w"></span>
+<span class="w"> </span>       char buf[64];<span class="w"></span>
+<span class="w"> </span>       int x,y,z=0;<span class="w"></span>
+<span class="gd">-</span><span class="w"></span>
+<span class="w"> </span>    if (gyro-&gt;fd == -1) {<span class="w"></span>
+<span class="w"> </span>        FLPLOGE(&quot;invalid fd\n&quot;);<span class="w"></span>
+<span class="w"> </span>        return err;<span class="w"></span>
+<span class="gu">@@ -247,11 +296,14 @@ static void *gyro_update_iv_thread(void *priv)</span><span class="w"></span>
+<span class="w"> </span>        pthread_exit(NULL);<span class="w"></span>
+<span class="w"> </span>        return NULL;<span class="w"></span>
+<span class="w"> </span>    }<span class="w"></span>
+<span class="gd">-</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+    gyro_cali_before_read(gyro-&gt;fd, CALI_DELAY, CALI_NUM, CALI_TOLERANCE);</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="w"> </span>    while (1) {<span class="w"></span>
+<span class="gd">-</span><span class="w"></span>
+<span class="gd">-        if (dat-&gt;exit_thd)</span><span class="w"></span>
+<span class="gi">+        /*if (dat-&gt;exit_thd) {</span><span class="w"></span>
+<span class="gi">+                       FLPLOGD(&quot;dat-&gt;exit_thd = true\n&quot;);</span><span class="w"></span>
+<span class="w"> </span>            break;<span class="w"></span>
+<span class="gi">+               }*/</span><span class="w"></span>
+
+<span class="w"> </span>        if ((err = gyro_update_info(gyro))){<span class="w"></span>
+<span class="w"> </span>          FLPLOGE(&quot;gyro_update_info() = (%s), %d\n&quot;, strerror(errno), err);<span class="w"></span>
+<span class="gu">@@ -285,7 +337,10 @@ static void *gyro_update_iv_thread(void *priv)</span><span class="w"></span>
+<span class="w"> </span>        }<span class="w"></span>
+<span class="w"> </span>        pthread_mutex_unlock (&amp;gyro_mutex);<span class="w"></span>
+<span class="w"> </span>        **/<span class="w"></span>
+<span class="gd">-</span><span class="w"></span>
+<span class="gi">+               if (dat-&gt;exit_thd) {</span><span class="w"></span>
+<span class="gi">+                       FLPLOGD(&quot;dat-&gt;exit_thd = true\n&quot;);</span><span class="w"></span>
+<span class="gi">+                       break;</span><span class="w"></span>
+<span class="gi">+               }</span><span class="w"></span>
+<span class="w"> </span>    }<span class="w"></span>
+<span class="w"> </span>    gyro_close(gyro);<span class="w"></span>
+<span class="w"> </span>    FLPLOGD(TAG &quot;%s: Exit\n&quot;, __FUNCTION__);<span class="w"></span>
+<span class="gu">@@ -356,7 +411,7 @@ int gyro_entry(struct ftm_param *param, void *priv)</span><span class="w"></span>
+<span class="w"> </span>            } else if (chosen == ITEM_FAIL) {<span class="w"></span>
+<span class="w"> </span>                dat-&gt;mod-&gt;test_result = FTM_TEST_FAIL;<span class="w"></span>
+<span class="w"> </span>            }<span class="w"></span>
+<span class="gd">-            gyroscope_thread_exit = true;</span><span class="w"></span>
+<span class="gi">+            gyroscope_thread_exit = true;</span><span class="w"></span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>factory校准原理：</p></li>
+</ul>
+<p><img alt="0014_0000.png" src="../../../_images/0014_00002.png" /></p>
+</section>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, wugn.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+  
+
+<script charset="UTF-8" id="LA_COLLECT" src="//sdk.51.la/js-sdk-pro.min.js"></script>
+<script>LA.init({id: "JjOE14XScyd75b2C",ck: "JjOE14XScyd75b2C"})</script>
+
+<br/>
+<script id="LA-DATA-WIDGET" crossorigin="anonymous" charset="UTF-8" src="https://v6-widget.51.la/v6/JjOE14XScyd75b2C/quote.js?theme=0&f=12&display=1,0,0,0,0,0,1,1"></script>
+
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

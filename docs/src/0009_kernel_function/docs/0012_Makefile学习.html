@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>wugn</title>
+
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../index.html" class="icon icon-home"> wugn_note
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">Makefile 语法入门</a></li>
+<li><a class="reference internal" href="#id1">参考</a></li>
+<li><a class="reference internal" href="#id2">概述</a></li>
+<li><a class="reference internal" href="#gcc">配置gcc编译参数，减少编译过程中的告警信息</a></li>
+<li><a class="reference internal" href="#id3">二、1个规则</a><ul>
+<li><a class="reference internal" href="#id4">1. 语法规则</a></li>
+<li><a class="reference internal" href="#id5">2. 目标</a></li>
+<li><a class="reference internal" href="#id6">3. 依赖</a></li>
+<li><a class="reference internal" href="#id7">4. 命令</a></li>
+<li><a class="reference internal" href="#all">5. ALL</a></li>
+<li><a class="reference internal" href="#id8">6. 示例</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id9">三、2个函数</a><ul>
+<li><a class="reference internal" href="#wildcard">1. wildcard</a></li>
+<li><a class="reference internal" href="#patsubst">2. patsubst</a></li>
+<li><a class="reference internal" href="#id10">3. 示例</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id11">四、3个变量</a><ul>
+<li><a class="reference internal" href="#id12">1. $&#64;</a></li>
+<li><a class="reference internal" href="#id13">2. $&lt;</a></li>
+<li><a class="reference internal" href="#id14">3. $^</a></li>
+<li><a class="reference internal" href="#id15">4. 示例</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id16">五、其它常用功能</a><ul>
+<li><a class="reference internal" href="#clean">1. 代码清理 clean</a></li>
+<li><a class="reference internal" href="#phony">2. 伪目标 .PHONY</a></li>
+</ul>
+</li>
+</ul>
+</div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">wugn_note</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs"> 
+<li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+<li>Makefile 语法入门</li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.forward()">Forward</a></li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.back()">Go Back</a> | </li>
+<li style="float: right;margin-left: 10px;"><a href="/index.html">Home</a> | </li>
+
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="makefile">
+<h1>Makefile 语法入门<a class="headerlink" href="#makefile" title="Permalink to this headline"></a></h1>
+<p>学会编写Makefile，不仅仅有益于你在Linux下编写大型工程。同时也能帮助你理解编译原理。远离IDE，了解编译过程。</p>
+</section>
+<section id="id1">
+<h1>参考<a class="headerlink" href="#id1" title="Permalink to this headline"></a></h1>
+<ul class="simple">
+<li><p><a class="reference external" href="https://blog.csdn.net/afei__/article/details/82696682">Makefile 语法入门</a></p></li>
+<li><p><a class="reference external" href="https://blog.csdn.net/onlylove_/category_11702110.html?spm=1001.2014.3001.5482">makfile整理合集</a></p></li>
+</ul>
+</section>
+<section id="id2">
+<h1>概述<a class="headerlink" href="#id2" title="Permalink to this headline"></a></h1>
+<p>Makefile 是一种常用于编译的脚本语言。它可以更好更方便的管理你的项目的代码编译，节约编译时间（没改动的文件不编译）。
+注意 Makefile 文件命令必须是 Makefile 或者 makefile，并使用 make 命令编译。</p>
+</section>
+<section id="gcc">
+<h1>配置gcc编译参数，减少编译过程中的告警信息<a class="headerlink" href="#gcc" title="Permalink to this headline"></a></h1>
+<div class="highlight-makefile notranslate"><div class="highlight"><pre><span></span>-Wno-unused-variable：不显示未使用的变量告警
+-Wno-unused-parameter：不显示未使用的参数告警
+-Wno-unused-function：不显示未使用的函数告警
+-Wno-unused-but-set-variable：不显示已赋值但未使用的变量告警
+-Wno-unused-private-field：不显示未使用的类私有成员告警
+-Wno-unused-label：不显示未使用的跳转标记告警
+
+-Wno-unused-but-set-variable，建议酌情使用，变量已赋值未使用，可能是潜在bug。
+建议如下设置：
+ccflags-y += -Wall -Wextra -Wno-unused-variable -Wno-unused-parameter -Wno-unused-function -Wno-unused-private-field -Wno-unused-label
+</pre></div>
+</div>
+</section>
+<section id="id3">
+<h1>二、1个规则<a class="headerlink" href="#id3" title="Permalink to this headline"></a></h1>
+<section id="id4">
+<h2>1. 语法规则<a class="headerlink" href="#id4" title="Permalink to this headline"></a></h2>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">目标</span><span class="o">...</span><span class="p">:</span> <span class="n">依赖</span><span class="o">...</span>
+    <span class="n">命令1</span>
+    <span class="n">命令2</span>
+    <span class="o">...</span>
+</pre></div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>目标［属性］:(分隔符号) ［依赖文件］［命令列］
+
+{《tab》命令列}
+
+与Linux下面的命令格式相同，［］中的内容表示为可选择项，{}中的内容表示可出现多次。
+
+A. 目标：目标文件列表，即要维护的文件列表。
+B. 属性：表示该文件的属性。
+C. 分隔符：用来分割目标文件和依赖文件的符号，如冒号“：”等。
+D. 依赖文件：目标文件所依赖的文件的列表。
+E. 命令列：重新生成目标文件的命令，可以有多条命令。
+</pre></div>
+</div>
+<p>注 意：在makefile中，除了第一条命令，每一个命令行的开头必须是一个《tab》符号，也就是制表符，而不能因为制表符相当于4个空格而 不去键入tab符号。因为make命令是通过每一行的tab符号来识别命令行的。另外，对于第一条命令而言，不必用《tab》键，就可以直接 跟在依赖文件的列表后面。对于注释的了，起头应该用#符号，并用换行符号结束。如果要引用#符号，要用到“”。</p>
+</section>
+<section id="id5">
+<h2>2. 目标<a class="headerlink" href="#id5" title="Permalink to this headline"></a></h2>
+<p>目标即要生成的文件。如果目标文件的更新时间晚于依赖文件的更新时间，则说明依赖文件没有改动，目标文件不需要重新编译。否则重新编译并更新目标。</p>
+</section>
+<section id="id6">
+<h2>3. 依赖<a class="headerlink" href="#id6" title="Permalink to this headline"></a></h2>
+<p>即目标文件由哪些文件生成。如果依赖条件中存在不存在的依赖条件，则会寻找其它规则是否可以产生依赖条件。</p>
+<p>例如：规则一是生成目标 hello.out 需要使用到依赖条件 hello.o，但是 hello.o 不存在。则 Makefile 会寻找到一个生成 hello.o 的规则二并执行。</p>
+</section>
+<section id="id7">
+<h2>4. 命令<a class="headerlink" href="#id7" title="Permalink to this headline"></a></h2>
+<p>即通过执行该命令，由依赖文件生成目标文件。</p>
+<p>注意每条命令前必须有且仅有一个 tab 保持缩进，这是语法要求。</p>
+</section>
+<section id="all">
+<h2>5. ALL<a class="headerlink" href="#all" title="Permalink to this headline"></a></h2>
+<p>Makefile 文件默认只生成第一个目标文件即完成编译，但是我们可以通过 “ALL” 指定需要生成的目标文件。</p>
+</section>
+<section id="id8">
+<h2>6. 示例<a class="headerlink" href="#id8" title="Permalink to this headline"></a></h2>
+<p>针对以上所说的，先写一个示例让大家了解一下，首先准备一个<code class="docutils literal notranslate"><span class="pre">Makefile</span></code>：</p>
+<div class="highlight-Makefile notranslate"><div class="highlight"><pre><span></span><span class="nf">all</span><span class="o">:</span> <span class="n">test</span>
+        @echo “Hello Lion， I love you”
+
+<span class="nf">test</span><span class="o">:</span>
+        @echo “Just <span class="k">for</span> test， she is so beauTIful”
+</pre></div>
+</div>
+<p>执行make命令：</p>
+<div class="highlight-log notranslate"><div class="highlight"><pre><span></span>wugn@jcrj-tf-compile:Makefile_test$ make
+“Just for test， she is so beauTIful”
+“Hello Lion， I love you”
+
+#### build completed successfully  ####
+</pre></div>
+</div>
+<p>从结果可以看到，test 目标先被构建了，然后才构建 all 目标，因为 test 目标是 all 目标的先决条件。出现这种目标依赖关系时， make 会从左到右（在同一规则中）和从上到下（在不同的规则中）的先后顺序先构建一个规则所依赖的每一个目标，形成一种“链式反应”。</p>
+<ul class="simple">
+<li><p>如果这个工程没有编译过，那么我们的所有C文件都要编译并被链接。</p></li>
+<li><p>如果这个工程的某几个C文件被修改，那么我们只编译被修改的C文件，并链接目标程。</p></li>
+<li><p>如果这个工程的头文件被改变了，那么我们需要编译引用了这几个头文件的C文件，并链接目标程序。</p></li>
+</ul>
+<ol class="arabic simple" start="6">
+<li><p>示例
+针对以上所说的，先写一个示例让大家了解一下，首先准备一个 hello.c：</p></li>
+</ol>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;stdio.h&gt;</span><span class="cp"></span>
+<span class="w"> </span>
+<span class="kt">int</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;Hello World !</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<p>然后写一个 Makefile</p>
+<div class="highlight-makefile notranslate"><div class="highlight"><pre><span></span><span class="nf">ALL</span><span class="o">:</span> <span class="n">hello</span>.<span class="n">out</span>
+ 
+<span class="nf">hello.out</span><span class="o">:</span> <span class="n">hello</span>.<span class="n">c</span>
+    gcc hello.c -o hello.out
+</pre></div>
+</div>
+<p>编译并执行：</p>
+<div class="highlight-makefile notranslate"><div class="highlight"><pre><span></span>$ make
+gcc hello.c -o hello.out
+$ ./hello.out
+Hello World !
+</pre></div>
+</div>
+</section>
+</section>
+<section id="id9">
+<h1>三、2个函数<a class="headerlink" href="#id9" title="Permalink to this headline"></a></h1>
+<section id="wildcard">
+<h2>1. wildcard<a class="headerlink" href="#wildcard" title="Permalink to this headline"></a></h2>
+<p>例如</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>SRC = $(wildcard ./*.c)
+</pre></div>
+</div>
+<p>匹配目录下所有的 .c 文件，并将其赋值给 SRC 变量。</p>
+</section>
+<section id="patsubst">
+<h2>2. patsubst<a class="headerlink" href="#patsubst" title="Permalink to this headline"></a></h2>
+<p>pat 是 pattern 的缩写，subst 是 substring 的缩写。例如</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>OBJ = $(patsubst %.c, %.o, $(SRC))
+</pre></div>
+</div>
+<p>这个函数有三个参数，意思是取出 SRC 中所有的值，然后将 “.c” 替换为 “.o”，最后赋值给 OBJ 变量。</p>
+</section>
+<section id="id10">
+<h2>3. 示例<a class="headerlink" href="#id10" title="Permalink to this headline"></a></h2>
+<p>通过上面两个函数，加入我们目录下有很多个 “.c” 后缀的源文件，就不需要写很多条规则语句了，而是可以像下面这样写</p>
+<div class="highlight-makefile notranslate"><div class="highlight"><pre><span></span><span class="nv">SRC</span> <span class="o">=</span> <span class="k">$(</span>wildcard *.c<span class="k">)</span>
+<span class="nv">OBJ</span> <span class="o">=</span> <span class="k">$(</span>patsubst %.c, %.o, <span class="k">$(</span>SRC<span class="k">))</span>
+ 
+<span class="nf">ALL</span><span class="o">:</span> <span class="n">hello</span>.<span class="n">out</span>
+ 
+<span class="nf">hello.out</span><span class="o">:</span> <span class="k">$(</span><span class="nv">OBJ</span><span class="k">)</span>
+        gcc <span class="k">$(</span>OBJ<span class="k">)</span> -o hello.out
+ 
+<span class="nf">$(OBJ)</span><span class="o">:</span> <span class="k">$(</span><span class="nv">SRC</span><span class="k">)</span>
+        gcc -c <span class="k">$(</span>SRC<span class="k">)</span> -o <span class="k">$(</span>OBJ<span class="k">)</span>
+</pre></div>
+</div>
+<p>这里我们先将所有的 “.c” 文件编译为 “.o” 文件，这样后面更改某个 “.c” 文件时，其它的 “.c” 文件将不再编译，而只是编译有更改的 “.c” 文件，可以大大节约大项目中的编译速度。</p>
+</section>
+</section>
+<section id="id11">
+<h1>四、3个变量<a class="headerlink" href="#id11" title="Permalink to this headline"></a></h1>
+<p>Makefile 中也有一些已经定义好的常用变量，这里介绍其中常用的3个。</p>
+<section id="id12">
+<h2>1. $&#64;<a class="headerlink" href="#id12" title="Permalink to this headline"></a></h2>
+<p>表示规则中目标，例如 hello.out。</p>
+</section>
+<section id="id13">
+<h2>2. $&lt;<a class="headerlink" href="#id13" title="Permalink to this headline"></a></h2>
+<p>表示规则中的第一个依赖条件，例如 hello.c</p>
+</section>
+<section id="id14">
+<h2>3. $^<a class="headerlink" href="#id14" title="Permalink to this headline"></a></h2>
+<p>表示规则中的所有依赖条件，由于我们示例中都只有一个依赖条件，这种情况下 $^ 和 $&lt; 区别不大。</p>
+</section>
+<section id="id15">
+<h2>4. 示例<a class="headerlink" href="#id15" title="Permalink to this headline"></a></h2>
+<p>使用这些变量替换上面写的 Makefile，即是：</p>
+<div class="highlight-makefile notranslate"><div class="highlight"><pre><span></span><span class="nv">SRC</span> <span class="o">=</span> <span class="k">$(</span>wildcard *.c<span class="k">)</span>
+<span class="nv">OBJ</span> <span class="o">=</span> <span class="k">$(</span>patsubst %.c, %.o, <span class="k">$(</span>SRC<span class="k">))</span>
+ 
+<span class="nf">ALL</span><span class="o">:</span> <span class="n">hello</span>.<span class="n">out</span>
+ 
+<span class="nf">hello.out</span><span class="o">:</span> <span class="k">$(</span><span class="nv">OBJ</span><span class="k">)</span>
+        gcc $&lt; -o <span class="nv">$@</span>
+ 
+<span class="nf">$(OBJ)</span><span class="o">:</span> <span class="k">$(</span><span class="nv">SRC</span><span class="k">)</span>
+        gcc -c $&lt; -o <span class="nv">$@</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="id16">
+<h1>五、其它常用功能<a class="headerlink" href="#id16" title="Permalink to this headline"></a></h1>
+<section id="clean">
+<h2>1. 代码清理 clean<a class="headerlink" href="#clean" title="Permalink to this headline"></a></h2>
+<p>我们可以编译一条属于自己的 clean 语句，来清理 make 命令所产生的所有文件。例如</p>
+<div class="highlight-makefile notranslate"><div class="highlight"><pre><span></span><span class="nv">SRC</span> <span class="o">=</span> <span class="k">$(</span>wildcard *.c<span class="k">)</span>
+<span class="nv">OBJ</span> <span class="o">=</span> <span class="k">$(</span>patsubst %.c, %.o, <span class="k">$(</span>SRC<span class="k">))</span>
+ 
+<span class="nf">ALL</span><span class="o">:</span> <span class="n">hello</span>.<span class="n">out</span>
+ 
+<span class="nf">hello.out</span><span class="o">:</span> <span class="k">$(</span><span class="nv">OBJ</span><span class="k">)</span>
+        gcc $&lt; -o <span class="nv">$@</span>
+ 
+<span class="nf">$(OBJ)</span><span class="o">:</span> <span class="k">$(</span><span class="nv">SRC</span><span class="k">)</span>
+        gcc -c $&lt; -o <span class="nv">$@</span>
+ 
+<span class="nf">clean</span><span class="o">:</span>
+        -rm -rf <span class="k">$(</span>OBJ<span class="k">)</span> hello.out
+</pre></div>
+</div>
+<p>这样我们就可以使用 clean 命令来清理生成的文件了：</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>$ ls
+hello.c  hello.o  hello.out  Makefile
+$ make clean
+rm -rf  hello.o hello.out
+$ ls
+hello.c  Makefile
+</pre></div>
+</div>
+</section>
+<section id="phony">
+<h2>2. 伪目标 .PHONY<a class="headerlink" href="#phony" title="Permalink to this headline"></a></h2>
+<p>上面我们写了一个 clean 语句，使得我们执行<code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">clean</span></code>命令的时候，可以清理我们生成的文件。
+但是假如还存在一个文件名就是 clean 文件，那么我们再执行<code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">clean</span></code>命令的时候就只是显示</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ make clean
+make: `clean&#39; is up to date.
+</pre></div>
+</div>
+<p><img alt="0012_0000.png" src="../../../_images/0012_00001.png" /></p>
+<p>解决方法就是我们使用伪目标，这样就可以避免出现上面的问题了，例如：</p>
+<div class="highlight-makefile notranslate"><div class="highlight"><pre><span></span><span class="nv">SRC</span> <span class="o">=</span> <span class="k">$(</span>wildcard *.c<span class="k">)</span>
+<span class="nv">OBJ</span> <span class="o">=</span> <span class="k">$(</span>patsubst %.c, %.o, <span class="k">$(</span>SRC<span class="k">))</span>
+ 
+<span class="nf">ALL</span><span class="o">:</span> <span class="n">hello</span>.<span class="n">out</span>
+ 
+<span class="nf">hello.out</span><span class="o">:</span> <span class="k">$(</span><span class="nv">OBJ</span><span class="k">)</span>
+        gcc $&lt; -o <span class="nv">$@</span>
+ 
+<span class="nf">$(OBJ)</span><span class="o">:</span> <span class="k">$(</span><span class="nv">SRC</span><span class="k">)</span>
+        gcc -c $&lt; -o <span class="nv">$@</span>
+ 
+<span class="nf">clean</span><span class="o">:</span>
+        -rm -rf <span class="k">$(</span>OBJ<span class="k">)</span> hello.out
+ 
+<span class="nf">.PHONY</span><span class="o">:</span> <span class="n">clean</span> <span class="n">ALL</span>
+</pre></div>
+</div>
+<p>通常，我们也会把 ALL 也设置为伪目标。</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, wugn.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+  
+
+<script charset="UTF-8" id="LA_COLLECT" src="//sdk.51.la/js-sdk-pro.min.js"></script>
+<script>LA.init({id: "JjOE14XScyd75b2C",ck: "JjOE14XScyd75b2C"})</script>
+
+<br/>
+<script id="LA-DATA-WIDGET" crossorigin="anonymous" charset="UTF-8" src="https://v6-widget.51.la/v6/JjOE14XScyd75b2C/quote.js?theme=0&f=12&display=1,0,0,0,0,0,1,1"></script>
+
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
