@@ -6,6 +6,7 @@ Android平台charger、BMS相关知识及调试整理。
 
 NO.|文件名称|摘要
 :--:|:--|:--
+0023| [qcom_qcm2290_无法进入关机充电模式分析](docs/0023_qcom_qcm2290_无法进入关机充电模式分析.md) | 高通qcm2290代码拿过来，关机插入usb直接开机，应该进入关机充电。
 0022| [android_charger充电阶段介绍](docs/0022_android_charger充电阶段介绍.md) | charger充电阶段介绍。
 0021| [qcom_pax_charger充电实验](docs/0021_qcom_pax_charger充电实验.md) | 目前battery电量计已经调试完成，对充电进行一次测试
 0020| [qcom_pax_charger频繁进入中断死机](docs/0020_qcom_pax_charger频繁进入中断死机.md) | 目前charger由于插电脑未限制充电电流，开机过程中插usb会频繁进入中断，而且容易导致死机。

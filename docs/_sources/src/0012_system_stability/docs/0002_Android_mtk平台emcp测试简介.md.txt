@@ -1,5 +1,6 @@
 # Android memery
-ETT测试
+
+MTK平台ETT测试介绍。
 
 ## 概述
 

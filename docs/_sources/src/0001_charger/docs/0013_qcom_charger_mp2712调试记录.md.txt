@@ -1879,3 +1879,79 @@ static int mp2721_set_cv(struct charger_device *chg_dev, u32 volt)
 	return ret;
 }
 ```
+
+## 14.刚开机疯狂进入中断，且发送VPDM
+
+刚开机发现`Reg[0x11] = 0x22`，也就是输入电压太低触发了`VINDPM occurred`，我们ICC电池电流设置的是4A，貌似太大了，设置成480ma试试。
+```log
+[    3.557103] PAX_CHG_MP2721: ==_set_input_vol_limit, mivr=4360 mV
+[    3.563323] PAX_CHG_MP2721: reg :4  write data:0xf6
+[    3.569181] _enable_vbus_ovp en:0
+[    3.574211] PAX_CHG_MP2721: mp2721_info Reg[0x00] = 0x0b
+[    3.579841] PAX_CHG_MP2721: mp2721_info Reg[0x01] = 0x13
+[    3.585471] PAX_CHG_MP2721: mp2721_info Reg[0x02] = 0xe5
+[    3.591118] PAX_CHG_MP2721: mp2721_info Reg[0x03] = 0xa7
+[    3.596747] PAX_CHG_MP2721: mp2721_info Reg[0x04] = 0xf6
+[    3.602374] PAX_CHG_MP2721: mp2721_info Reg[0x05] = 0x1e
+[    3.608003] PAX_CHG_MP2721: mp2721_info Reg[0x06] = 0xa4
+[    3.613647] PAX_CHG_MP2721: mp2721_info Reg[0x07] = 0x0b
+[    3.619275] PAX_CHG_MP2721: mp2721_info Reg[0x08] = 0x2f
+[    3.624905] PAX_CHG_MP2721: mp2721_info Reg[0x09] = 0x53
+[    3.630535] PAX_CHG_MP2721: mp2721_info Reg[0x0a] = 0x23
+[    3.636176] PAX_CHG_MP2721: mp2721_info Reg[0x0b] = 0x10
+[    3.641807] PAX_CHG_MP2721: mp2721_info Reg[0x0c] = 0x11
+[    3.647436] PAX_CHG_MP2721: mp2721_info Reg[0x0d] = 0x60
+[    3.653079] PAX_CHG_MP2721: mp2721_info Reg[0x0e] = 0x99
+[    3.658708] PAX_CHG_MP2721: mp2721_info Reg[0x0f] = 0x00
+[    3.664339] PAX_CHG_MP2721: mp2721_info Reg[0x10] = 0x44
+[    3.669981] PAX_CHG_MP2721: mp2721_info Reg[0x11] = 0x22
+[    3.675616] PAX_CHG_MP2721: mp2721_info Reg[0x12] = 0x74
+[    3.681246] PAX_CHG_MP2721: mp2721_info Reg[0x13] = 0x60
+[    3.686876] PAX_CHG_MP2721: mp2721_info Reg[0x14] = 0x00
+[    3.692519] PAX_CHG_MP2721: mp2721_info Reg[0x15] = 0x00
+[    3.698149] PAX_CHG_MP2721: mp2721_info Reg[0x16] = 0x00
+[    3.704344] PAX_CHG_MP2721: mp2721_charger_probe:irq = 195
+[    3.705608] PAX_CHG_MP2721: mp2721_irq_disable:
+[    3.710413] bq27z746_i2c_probe enter
+[    3.714464] PAX_CHG_MP2721: mp2721_charger_irq_workfunc:mp2721 irq
+[    3.721200] bq27z746_i2c_probe enter
+[    3.725449] PAX_CHG_MP2721: mp2721_irq_enable:
+[    3.727984] pax_battery_device_register: name=bq27z746
+[    3.732355] PAX_CHG_MP2721: mp2721_irq_disable:
+[    3.737621] [PAX_CHG] bq27z746_i2c_probe: success
+[    3.742058] PAX_CHG_MP2721: mp2721_charger_irq_workfunc:mp2721 irq
+[    3.746959] aws5480_i2c_probe enter
+[    3.754186] PAX_CHG_MP2721: mp2721_irq_enable:
+[    3.756824] [PAX_AUDIO_SWITCH]:aws5480_reg_read_byte_data read reg: 0 data: 09
+[    3.761016] PAX_CHG_MP2721: mp2721_irq_disable:
+[    3.768258] device type: 0x9
+[    3.772811] PAX_CHG_MP2721: mp2721_charger_irq_workfunc:mp2721 irq
+[    3.775700] aws5480_i2c_probe enter
+[    3.783078] PAX_CHG_MP2721: mp2721_irq_enable:
+[    3.785496] [PAX_AUDIO_SWITCH] aws5480_i2c_probe: success
+[    3.789967] PAX_CHG_MP2721: mp2721_irq_disable:
+[    3.796075] i2c_geni 4a88000.i2c: Bus frequency is set to 400000Hz
+[    3.799874] PAX_CHG_MP2721: mp2721_charger_irq_workfunc:mp2721 irq
+[    3.813365] PAX_CHG_MP2721: mp2721_irq_enable:
+[    3.815704] Couldn't parse device tree rc=-517
+```
+
+修改如下：
+```diff
+diff --git a/UM.9.15/vendor/qcom/proprietary/devicetree-4.19/qcom/a6650/a6650-scuba-iot-idp-overlay.dts b/UM.9.15/vendor/qcom/proprietary/devicetree-4.19/qcom/a6650/a6650-scuba-iot-idp-overlay.dts
+index 692edd65080..24cebade8a7 100755
+--- a/UM.9.15/vendor/qcom/proprietary/devicetree-4.19/qcom/a6650/a6650-scuba-iot-idp-overlay.dts
++++ b/UM.9.15/vendor/qcom/proprietary/devicetree-4.19/qcom/a6650/a6650-scuba-iot-idp-overlay.dts
+@@ -316,8 +316,8 @@
+                pinctrl-0 = <&charge_interrupt_pincfg>;
+                charger_name = "primary_chg";
+                /* charge ic default paramter */
+-               charge-voltage = <4370>;                                /* Battery Regulation Voltage, Range from 3.6V to 4.6V, Offset: 3.6V Default: 4.2V*/
+-               charge-current = <4000>;                                /* Battery Fast charge current setting Default: 2A*/
++               charge-voltage = <4350>;                                /* Battery Regulation Voltage, Range from 3.6V to 4.6V, Offset: 3.6V Default: 4.2V*/
++               charge-current = <480>;                                 /* Battery Fast charge current setting Default: 2A*/
+```
+
+完美解决，修改完成后开机过程只出现了一次中断打印：
+
+![0013_0044.png](images/0013_0044.png)

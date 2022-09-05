@@ -466,6 +466,13 @@ static const struct tcpci_alert_handler tcpci_alert_handlers[] = {
 	(typec_is_drp_toggling() || typec_is_cc_open())
 ```
 
+CC方向打印：
+```log
+pr_err("%s OTG plug in, polarity = %d\n", __func__, noti->typec_state.polarity);
+打印：
+pd_tcp_notifier_call OTG plug in, polarity = 0 //正向
+```
+
 * 4.一般typec主要处理CC/Vbus状态变化，当cc发送变化时，将运行`tcpci_alert_cc_changed`,下面我们分析CC状态处理流程：
 
 ```C++

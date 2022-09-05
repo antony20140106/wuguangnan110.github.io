@@ -51,6 +51,7 @@
 <li><a class="reference internal" href="#power-roledata-rolevconn-source">2.用户空间如何操作power_role、data_role、vconn_source等功能</a></li>
 </ul>
 </li>
+<li><a class="reference internal" href="#pr-swap">PR_SWAP操作实验</a></li>
 </ul>
 </div>
         </div>
@@ -611,6 +612,109 @@ power      subsystem             usb_typec_revision
 </pre></div>
 </div>
 </section>
+</section>
+<section id="pr-swap">
+<h1>PR_SWAP操作实验<a class="headerlink" href="#pr-swap" title="Permalink to this heading"></a></h1>
+<ul class="simple">
+<li><p>实验条件：</p>
+<ul>
+<li><p>1.两台机器都支持PD协议。</p></li>
+</ul>
+</li>
+<li><p>用A6650和M50机器做实验，已知A6650配置的<code class="docutils literal notranslate"><span class="pre">tcpc,role_def</span></code>属性是<code class="docutils literal notranslate"><span class="pre">DRP</span></code>，M50配置的是<code class="docutils literal notranslate"><span class="pre">Try.SNK</span></code>，当两台机器插入，默认A6650给M50充电。</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="nl">A6650</span><span class="p">:</span><span class="w"></span>
+<span class="n">tcpc</span><span class="p">,</span><span class="n">role_def</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">&lt;</span><span class="mi">2</span><span class="o">&gt;</span><span class="p">;</span><span class="w"> </span><span class="cm">/* 0: SNK Only, 1: SRC Only, 2: DRP, */</span><span class="w"></span>
+<span class="w">						</span><span class="cm">/* 3: Try.SRC, 4: Try.SNK */</span><span class="w"></span>
+
+<span class="nl">M50</span><span class="p">:</span><span class="w"></span>
+<span class="cm">/* 0: SNK Only, 1: SRC Only, 2: DRP, 3: Try.SRC, 4: Try.SNK */</span><span class="w"></span>
+<span class="n">mt</span><span class="o">-</span><span class="n">tcpc</span><span class="p">,</span><span class="n">role_def</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">&lt;</span><span class="mi">4</span><span class="o">&gt;</span><span class="p">;</span><span class="w"></span>
+</pre></div>
+</div>
+<p><img alt="0009_0000.png" src="../../../_images/0009_00001.png" /></p>
+<ul class="simple">
+<li><p>查看当前A6650的power_role是source：</p></li>
+</ul>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>console:/sys/class/typec/port0 <span class="c1"># cat power_role</span>
+<span class="o">[</span>source<span class="o">]</span> sink
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>执行命令<code class="docutils literal notranslate"><span class="pre">echo</span> <span class="pre">sink</span> <span class="pre">&gt;</span> <span class="pre">power_role</span></code>，将调用pr_set接口，也就是<code class="docutils literal notranslate"><span class="pre">tcpc_typec_pr_set</span></code>设置PD的power_role成功，目前charger bc1.2识别不成功，没执行plug in，也就是没打开充电，可能要特殊处理。</p></li>
+</ul>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>console:/sys/class/typec/port0 <span class="c1"># echo sink &gt; power_role</span>
+<span class="o">[</span> <span class="m">4356</span>.132704<span class="o">]</span> <span class="nv">typec_roles1</span> <span class="o">=</span> sink
+<span class="o">[</span> <span class="m">4356</span>.132704<span class="o">]</span>
+<span class="o">[</span> <span class="m">4356</span>.137499<span class="o">]</span> <span class="nv">typec_roles2</span> <span class="o">=</span> sink
+<span class="o">[</span> <span class="m">4356</span>.137499<span class="o">]</span>
+<span class="o">[</span> <span class="m">4356</span>.142462<span class="o">]</span> <span class="nv">typec_roles3</span> <span class="o">=</span> sink
+<span class="o">[</span> <span class="m">4356</span>.142462<span class="o">]</span>
+<span class="o">[</span> <span class="m">4356</span>.147321<span class="o">]</span> <span class="nv">typec_roles4</span> <span class="o">=</span> sink
+<span class="o">[</span> <span class="m">4356</span>.147321<span class="o">]</span>
+<span class="o">[</span> <span class="m">4356</span>.151974<span class="o">]</span> <span class="nv">pr_set</span> <span class="o">=</span> <span class="m">0</span>
+<span class="o">[</span> <span class="m">4356</span>.154531<span class="o">]</span> charger soc:charger: tcpc_typec_pr_set <span class="nv">role</span> <span class="o">=</span> <span class="m">0</span>
+<span class="o">[</span> <span class="m">4356</span>.212175<span class="o">]</span> pd_tcp_notifier_call <span class="nv">event</span> <span class="o">=</span> SOURCE_VBUS
+<span class="o">[</span> <span class="m">4356</span>.217309<span class="o">]</span> pd_tcp_notifier_call <span class="nb">source</span> vbus 0mV
+<span class="o">[</span> <span class="m">4356</span>.222080<span class="o">]</span> pd_tcp_notifier_call - <span class="nb">source</span> vbus 0v output
+<span class="o">[</span> <span class="m">4356</span>.227778<span class="o">]</span> pd_tcp_notifier_call <span class="nv">event</span> <span class="o">=</span> EXT_DISCHARGE
+<span class="o">[</span> <span class="m">4356</span>.253923<span class="o">]</span> pd_tcp_notifier_call <span class="nv">event</span> <span class="o">=</span> EXT_DISCHARGE
+<span class="o">[</span> <span class="m">4356</span>.259183<span class="o">]</span> pd_tcp_notifier_call <span class="nv">event</span> <span class="o">=</span> TYPEC_STATE
+<span class="o">[</span> <span class="m">4356</span>.264495<span class="o">]</span> tcpc_notifier_call, <span class="nv">old_state</span> <span class="o">=</span> ATTACHED_SRC, <span class="nv">new_state</span> <span class="o">=</span> ATTACHED_SNK
+<span class="o">[</span> <span class="m">4356</span>.272212<span class="o">]</span> pd_tcp_notifier_call <span class="nv">event</span> <span class="o">=</span> PR_SWAP
+<span class="o">[</span> <span class="m">4356</span>.276902<span class="o">]</span> PAX_CHG: psy_charger_set_property: prop:122 <span class="m">10</span>
+<span class="o">[</span> <span class="m">4356</span>.282704<span class="o">]</span> PAX_CHG: pd_status:10
+<span class="o">[</span> <span class="m">4356</span>.286060<span class="o">]</span> PAX_CHG: _wake_up_charger:
+<span class="o">[</span> <span class="m">4356</span>.289989<span class="o">]</span> PAX_CHG: pax_is_charger_on <span class="nv">chr_type</span> <span class="o">=</span> <span class="o">[</span>Unknown<span class="o">]</span> <span class="nv">last_chr_type</span> <span class="o">=</span> <span class="o">[</span>Unknown<span class="o">]</span>
+<span class="o">[</span> <span class="m">4356</span>.348486<span class="o">]</span> pd_tcp_notifier_call <span class="nv">event</span> <span class="o">=</span> SINK_VBUS
+<span class="o">[</span> <span class="m">4356</span>.353340<span class="o">]</span> charger soc:charger: pd_tcp_notifier_call sink vbus 5000mV 1500mA type<span class="o">(</span>0x84<span class="o">)</span>
+<span class="o">[</span> <span class="m">4356</span>.362059<span class="o">]</span> pd_tcp_notifier_call - sink vbus
+<span class="o">[</span> <span class="m">4356</span>.366392<span class="o">]</span> PAX_CHG: psy_charger_set_property: prop:8 <span class="m">5000000</span>
+<span class="o">[</span> <span class="m">4356</span>.372191<span class="o">]</span> PAX_CHG: _wake_up_charger:
+<span class="o">[</span> <span class="m">4356</span>.375978<span class="o">]</span> psy_charger_get_property: <span class="m">18</span> callbacks suppressed
+<span class="o">[</span> <span class="m">4356</span>.375980<span class="o">]</span> PAX_CHG: pax_is_charger_on <span class="nv">chr_type</span> <span class="o">=</span> <span class="o">[</span>Unknown<span class="o">]</span> <span class="nv">last_chr_type</span> <span class="o">=</span> <span class="o">[</span>Unknown<span class="o">]</span>
+<span class="o">[</span> <span class="m">4356</span>.375987<span class="o">]</span> PAX_CHG: psy_charger_set_property: prop:144 <span class="m">5000000</span>
+<span class="o">[</span> <span class="m">4356</span>.395839<span class="o">]</span> PAX_CHG: psy_charger_set_property: prop:143 <span class="m">5000000</span>
+<span class="o">[</span> <span class="m">4356</span>.401789<span class="o">]</span> PAX_CHG: <span class="nb">set</span> pd_charging_voltage_max:5000 mv
+<span class="o">[</span> <span class="m">4356</span>.401793<span class="o">]</span> PAX_CHG: _wake_up_charger:
+<span class="o">[</span> <span class="m">4356</span>.401816<span class="o">]</span> PAX_CHG: psy_charger_set_property: prop:124 <span class="m">1500000</span>
+console:/sys/cla<span class="o">[</span> <span class="m">4356</span>.401820<span class="o">]</span> PAss/typec/port0 <span class="c1">#[ [ 4356.401835] pd_tcp_notifier_call event = SINK_VBUS</span>
+<span class="o">[</span> <span class="m">4356</span>.401843<span class="o">]</span> charger soc:charger: pd_tcp_notifier_call sink vbus 5000mV 1500mA type<span class="o">(</span>0x01<span class="o">)</span>
+<span class="o">[</span> <span class="m">4356</span>.401858<span class="o">]</span> PAX_CHG: pax_is_charger_on <span class="nv">chr_type</span> <span class="o">=</span> <span class="o">[</span>Unknown<span class="o">]</span> <span class="nv">last_chr_type</span> <span class="o">=</span> <span class="o">[</span>Unknown<span class="o">]</span>
+<span class="o">[</span> <span class="m">4356</span>.473391<span class="o">]</span> pd_tcp_notifier_call <span class="nv">event</span> <span class="o">=</span> SINK_VBUS
+<span class="o">[</span> <span class="m">4356</span>.540881<span class="o">]</span> charger soc:charger: pd_tcp_notifier_call sink vbus 5000mV 3000mA type<span class="o">(</span>0x01<span class="o">)</span>
+<span class="o">[</span> <span class="m">4356</span>.540883<span class="o">]</span> pd_tcp_notifier_call - sink vbus
+<span class="o">[</span> <span class="m">4356</span>.540890<span class="o">]</span> PAX_CHG: psy_charger_set_property: prop:8 <span class="m">5000000</span>
+<span class="o">[</span> <span class="m">4356</span>.540894<span class="o">]</span> PAX_CHG: _wake_up_charger:
+<span class="o">[</span> <span class="m">4356</span>.553486<span class="o">]</span> PAX_CHG: pax_is_charger_on <span class="nv">chr_type</span> <span class="o">=</span> <span class="o">[</span>Unknown<span class="o">]</span> <span class="nv">last_chr_type</span> <span class="o">=</span> <span class="o">[</span>Unknown<span class="o">]</span>
+<span class="o">[</span> <span class="m">4356</span>.649145<span class="o">]</span> pd_tcp_notifier_call <span class="nv">event</span> <span class="o">=</span> PD_STATE
+<span class="o">[</span> <span class="m">4356</span>.653910<span class="o">]</span> PAX_CHG: psy_charger_set_property: prop:125 <span class="m">0</span>
+<span class="o">[</span> <span class="m">4356</span>.653915<span class="o">]</span> PAX_CHG: psy_charger_set_property: prop:122 <span class="m">1</span>
+<span class="o">[</span> <span class="m">4356</span>.665111<span class="o">]</span> PAX_CHG: pd_status:1
+<span class="o">[</span> <span class="m">4356</span>.668456<span class="o">]</span> PAX_CHG: _wake_up_charger:
+<span class="o">[</span> <span class="m">4356</span>.672334<span class="o">]</span> PAX_CHG: psy_charger_set_property: prop:124 <span class="m">3000000</span>
+<span class="o">[</span> <span class="m">4356</span>.672430<span class="o">]</span> PAX_CHG: pax_is_charger_on <span class="nv">chr_type</span> <span class="o">=</span> <span class="o">[</span>Unknown<span class="o">]</span> <span class="nv">last_chr_type</span> <span class="o">=</span> <span class="o">[</span>Unknown<span class="o">]</span>
+<span class="o">[</span> <span class="m">4356</span>.678376<span class="o">]</span> PAX_CHG: <span class="nb">set</span> pd_charging_current_max:3000 ma
+<span class="o">[</span> <span class="m">4356</span>.692167<span class="o">]</span> PAX_CHG: _wake_up_charger:
+<span class="o">[</span> <span class="m">4356</span>.696517<span class="o">]</span> PAX_CHG: pax_is_charger_on <span class="nv">chr_type</span> <span class="o">=</span> <span class="o">[</span>Unknown<span class="o">]</span> <span class="nv">last_chr_type</span> <span class="o">=</span> <span class="o">[</span>Unknown<span class="o">]</span>
+<span class="o">[</span> <span class="m">4359</span>.159246<span class="o">]</span> Battery: <span class="o">[</span> status:Not charging, health:Good, present:1, tech:Li-ion, capcity:86,cap_rm:4427 mah, vol:4059 mv, temp:34, curr:-380 ma, ui_soc:86, notify_code: <span class="m">0</span> <span class="o">]</span>
+<span class="o">[</span> <span class="m">4359</span>.182007<span class="o">]</span> healthd: battery <span class="nv">l</span><span class="o">=</span><span class="m">86</span> <span class="nv">v</span><span class="o">=</span><span class="m">4059</span> <span class="nv">t</span><span class="o">=</span><span class="m">34</span>.0 <span class="nv">h</span><span class="o">=</span><span class="m">2</span> <span class="nv">st</span><span class="o">=</span><span class="m">4</span> <span class="nv">c</span><span class="o">=</span>-380000 <span class="nv">fc</span><span class="o">=</span><span class="m">5192000</span> <span class="nv">cc</span><span class="o">=</span><span class="m">13</span> <span class="nv">chg</span><span class="o">=</span>u
+<span class="o">[</span> <span class="m">4359</span>.328212<span class="o">]</span> <span class="nv">type</span><span class="o">=</span><span class="m">1400</span> audit<span class="o">(</span><span class="m">1660277727</span>.639:126<span class="o">)</span>: avc: denied <span class="o">{</span> <span class="nb">read</span> <span class="o">}</span> <span class="k">for</span> <span class="nv">comm</span><span class="o">=</span><span class="s2">&quot;Binder:478_2&quot;</span> <span class="nv">name</span><span class="o">=</span><span class="s2">&quot;wakeup41&quot;</span> <span class="nv">dev</span><span class="o">=</span><span class="s2">&quot;sysfs&quot;</span> <span class="nv">ino</span><span class="o">=</span><span class="m">45514</span> <span class="nv">scontext</span><span class="o">=</span>u:r:system_suspend:s0 <span class="nv">tcontext</span><span class="o">=</span>u:object_r:vendor_sysfs_battery_supply:s0 <span class="nv">tclass</span><span class="o">=</span>dir <span class="nv">permissive</span><span class="o">=</span><span class="m">0</span>
+<span class="o">[</span> <span class="m">4359</span>.351346<span class="o">]</span> <span class="nv">type</span><span class="o">=</span><span class="m">1400</span> audit<span class="o">(</span><span class="m">1660277727</span>.643:127<span class="o">)</span>: avc: denied <span class="o">{</span> <span class="nb">read</span> <span class="o">}</span> <span class="k">for</span> <span class="nv">comm</span><span class="o">=</span><span class="s2">&quot;Binder:478_2&quot;</span> <span class="nv">name</span><span class="o">=</span><span class="s2">&quot;wakeup31&quot;</span> <span class="nv">dev</span><span class="o">=</span><span class="s2">&quot;sysfs&quot;</span> <span class="nv">ino</span><span class="o">=</span><span class="m">44775</span> <span class="nv">scontext</span><span class="o">=</span>u:r:system_suspend:s0 <span class="nv">tcontext</span><span class="o">=</span>u:object_r:vendor_sysfs_usb_supply:s0 <span class="nv">tclass</span><span class="o">=</span>dir <span class="nv">permissive</span><span class="o">=</span><span class="m">0</span>
+<span class="o">[</span> <span class="m">4359</span>.419138<span class="o">]</span> ext_spk_switch_put: <span class="nb">set</span> Ext_Spk_Switch val <span class="m">1</span>
+<span class="o">[</span> <span class="m">4359</span>.439102<span class="o">]</span> msm_pcm_chmap_ctl_put: substream ref_count:0 invalid
+<span class="o">[</span> <span class="m">4359</span>.470597<span class="o">]</span> send_afe_cal_type: No cal sent <span class="k">for</span> cal_index <span class="m">0</span>, <span class="nv">port_id</span> <span class="o">=</span> 0xb030! ret -22
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>我用命令<code class="docutils literal notranslate"><span class="pre">i2cset</span> <span class="pre">-f</span> <span class="pre">-y</span> <span class="pre">0</span> <span class="pre">0x3f</span> <span class="pre">0x09</span> <span class="pre">0x53</span> <span class="pre">b</span></code>，手动打开充电，可以看到电池电流是往里充的：</p></li>
+</ul>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>console:/sys/class/chg_info/mp2721 <span class="c1"># i2cset -f -y 0 0x3f 0x09 0x53 b</span>
+console:/sys/class/chg_info/mp2721 <span class="c1"># [ 4604.069683] psy_charger_get_property: 2 callbacks suppressed</span>
+<span class="o">[</span> <span class="m">4604</span>.093187<span class="o">]</span> healthd: battery <span class="nv">l</span><span class="o">=</span><span class="m">85</span> <span class="nv">v</span><span class="o">=</span><span class="m">4093</span> <span class="nv">t</span><span class="o">=</span><span class="m">34</span>.0 <span class="nv">h</span><span class="o">=</span><span class="m">2</span> <span class="nv">st</span><span class="o">=</span><span class="m">2</span> <span class="nv">c</span><span class="o">=</span>-67000 <span class="nv">fc</span><span class="o">=</span><span class="m">5192000</span> <span class="nv">cc</span><span class="o">=</span><span class="m">13</span> <span class="nv">chg</span><span class="o">=</span>
+<span class="o">[</span> <span class="m">4719</span>.615904<span class="o">]</span> Battery: <span class="o">[</span> status:Charging, health:Good, present:1, tech:Li-ion, capcity:85,cap_rm:4410 mah, vol:4108 mv, temp:34, curr:64 ma, ui_soc:85, notify_code: <span class="m">0</span> <span class="o">]</span>
+</pre></div>
+</div>
 </section>
 
 

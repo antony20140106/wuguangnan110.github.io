@@ -522,3 +522,100 @@ pd_tcp_notifier_call(...)
 					     TYPEC_PWR_MODE_PD);
 	}
 ```
+
+# PR_SWAP操作实验
+
+* 实验条件：
+  * 1.两台机器都支持PD协议。
+
+* 用A6650和M50机器做实验，已知A6650配置的`tcpc,role_def`属性是`DRP`，M50配置的是`Try.SNK`，当两台机器插入，默认A6650给M50充电。
+```C++
+A6650:
+tcpc,role_def = <2>; /* 0: SNK Only, 1: SRC Only, 2: DRP, */
+						/* 3: Try.SRC, 4: Try.SNK */
+
+M50:
+/* 0: SNK Only, 1: SRC Only, 2: DRP, 3: Try.SRC, 4: Try.SNK */
+mt-tcpc,role_def = <4>;
+```
+![0009_0000.png](images/0009_0000.png)
+
+* 查看当前A6650的power_role是source：
+```shell
+console:/sys/class/typec/port0 # cat power_role
+[source] sink
+```
+
+* 执行命令`echo sink > power_role`，将调用pr_set接口，也就是`tcpc_typec_pr_set`设置PD的power_role成功，目前charger bc1.2识别不成功，没执行plug in，也就是没打开充电，可能要特殊处理。
+
+```shell
+console:/sys/class/typec/port0 # echo sink > power_role
+[ 4356.132704] typec_roles1 = sink
+[ 4356.132704]
+[ 4356.137499] typec_roles2 = sink
+[ 4356.137499]
+[ 4356.142462] typec_roles3 = sink
+[ 4356.142462]
+[ 4356.147321] typec_roles4 = sink
+[ 4356.147321]
+[ 4356.151974] pr_set = 0
+[ 4356.154531] charger soc:charger: tcpc_typec_pr_set role = 0
+[ 4356.212175] pd_tcp_notifier_call event = SOURCE_VBUS
+[ 4356.217309] pd_tcp_notifier_call source vbus 0mV
+[ 4356.222080] pd_tcp_notifier_call - source vbus 0v output
+[ 4356.227778] pd_tcp_notifier_call event = EXT_DISCHARGE
+[ 4356.253923] pd_tcp_notifier_call event = EXT_DISCHARGE
+[ 4356.259183] pd_tcp_notifier_call event = TYPEC_STATE
+[ 4356.264495] tcpc_notifier_call, old_state = ATTACHED_SRC, new_state = ATTACHED_SNK
+[ 4356.272212] pd_tcp_notifier_call event = PR_SWAP
+[ 4356.276902] PAX_CHG: psy_charger_set_property: prop:122 10
+[ 4356.282704] PAX_CHG: pd_status:10
+[ 4356.286060] PAX_CHG: _wake_up_charger:
+[ 4356.289989] PAX_CHG: pax_is_charger_on chr_type = [Unknown] last_chr_type = [Unknown]
+[ 4356.348486] pd_tcp_notifier_call event = SINK_VBUS
+[ 4356.353340] charger soc:charger: pd_tcp_notifier_call sink vbus 5000mV 1500mA type(0x84)
+[ 4356.362059] pd_tcp_notifier_call - sink vbus
+[ 4356.366392] PAX_CHG: psy_charger_set_property: prop:8 5000000
+[ 4356.372191] PAX_CHG: _wake_up_charger:
+[ 4356.375978] psy_charger_get_property: 18 callbacks suppressed
+[ 4356.375980] PAX_CHG: pax_is_charger_on chr_type = [Unknown] last_chr_type = [Unknown]
+[ 4356.375987] PAX_CHG: psy_charger_set_property: prop:144 5000000
+[ 4356.395839] PAX_CHG: psy_charger_set_property: prop:143 5000000
+[ 4356.401789] PAX_CHG: set pd_charging_voltage_max:5000 mv
+[ 4356.401793] PAX_CHG: _wake_up_charger:
+[ 4356.401816] PAX_CHG: psy_charger_set_property: prop:124 1500000
+console:/sys/cla[ 4356.401820] PAss/typec/port0 #[ [ 4356.401835] pd_tcp_notifier_call event = SINK_VBUS
+[ 4356.401843] charger soc:charger: pd_tcp_notifier_call sink vbus 5000mV 1500mA type(0x01)
+[ 4356.401858] PAX_CHG: pax_is_charger_on chr_type = [Unknown] last_chr_type = [Unknown]
+[ 4356.473391] pd_tcp_notifier_call event = SINK_VBUS
+[ 4356.540881] charger soc:charger: pd_tcp_notifier_call sink vbus 5000mV 3000mA type(0x01)
+[ 4356.540883] pd_tcp_notifier_call - sink vbus
+[ 4356.540890] PAX_CHG: psy_charger_set_property: prop:8 5000000
+[ 4356.540894] PAX_CHG: _wake_up_charger:
+[ 4356.553486] PAX_CHG: pax_is_charger_on chr_type = [Unknown] last_chr_type = [Unknown]
+[ 4356.649145] pd_tcp_notifier_call event = PD_STATE
+[ 4356.653910] PAX_CHG: psy_charger_set_property: prop:125 0
+[ 4356.653915] PAX_CHG: psy_charger_set_property: prop:122 1
+[ 4356.665111] PAX_CHG: pd_status:1
+[ 4356.668456] PAX_CHG: _wake_up_charger:
+[ 4356.672334] PAX_CHG: psy_charger_set_property: prop:124 3000000
+[ 4356.672430] PAX_CHG: pax_is_charger_on chr_type = [Unknown] last_chr_type = [Unknown]
+[ 4356.678376] PAX_CHG: set pd_charging_current_max:3000 ma
+[ 4356.692167] PAX_CHG: _wake_up_charger:
+[ 4356.696517] PAX_CHG: pax_is_charger_on chr_type = [Unknown] last_chr_type = [Unknown]
+[ 4359.159246] Battery: [ status:Not charging, health:Good, present:1, tech:Li-ion, capcity:86,cap_rm:4427 mah, vol:4059 mv, temp:34, curr:-380 ma, ui_soc:86, notify_code: 0 ]
+[ 4359.182007] healthd: battery l=86 v=4059 t=34.0 h=2 st=4 c=-380000 fc=5192000 cc=13 chg=u
+[ 4359.328212] type=1400 audit(1660277727.639:126): avc: denied { read } for comm="Binder:478_2" name="wakeup41" dev="sysfs" ino=45514 scontext=u:r:system_suspend:s0 tcontext=u:object_r:vendor_sysfs_battery_supply:s0 tclass=dir permissive=0
+[ 4359.351346] type=1400 audit(1660277727.643:127): avc: denied { read } for comm="Binder:478_2" name="wakeup31" dev="sysfs" ino=44775 scontext=u:r:system_suspend:s0 tcontext=u:object_r:vendor_sysfs_usb_supply:s0 tclass=dir permissive=0
+[ 4359.419138] ext_spk_switch_put: set Ext_Spk_Switch val 1
+[ 4359.439102] msm_pcm_chmap_ctl_put: substream ref_count:0 invalid
+[ 4359.470597] send_afe_cal_type: No cal sent for cal_index 0, port_id = 0xb030! ret -22
+```
+
+* 我用命令`i2cset -f -y 0 0x3f 0x09 0x53 b`，手动打开充电，可以看到电池电流是往里充的：
+```shell
+console:/sys/class/chg_info/mp2721 # i2cset -f -y 0 0x3f 0x09 0x53 b
+console:/sys/class/chg_info/mp2721 # [ 4604.069683] psy_charger_get_property: 2 callbacks suppressed
+[ 4604.093187] healthd: battery l=85 v=4093 t=34.0 h=2 st=2 c=-67000 fc=5192000 cc=13 chg=
+[ 4719.615904] Battery: [ status:Charging, health:Good, present:1, tech:Li-ion, capcity:85,cap_rm:4410 mah, vol:4108 mv, temp:34, curr:64 ma, ui_soc:85, notify_code: 0 ]
+```

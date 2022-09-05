@@ -30,16 +30,20 @@ Panel需要在DSI PHY寄存器中为bitclk设置PHY值。80-NH713-1_DSI.zip压�
 
 ### 操作步骤
 
-1. 打开DSI和MDP寄存器表。将frame rate、lane numbers、panel resolution、porch和chip值输入到红线框定的区域。如下图所示
+1. 打开DSI和MDP寄存器表。将frame rate、lane numbers、panel resolution、porch和chip值输入到红线框定的区域。如下图所示:
+
 ![0001_0001.png](images/0001_0001.png)
 
 2. 打开DSI PHY timing setting sheet页，先按ctrl + j清除，然后按ctrl + k重新生成。Check for T_CLK_ZERO值会变成VALID：
+
 ![0001_0002.png](images/0001_0002.png)
 
 3. 打开DSI PHY 2.0.0 timing setting表，查看蓝色字段中与计算出的DSI相关时钟速率。如下图所示：
+
 ![0001_0003.png](images/0001_0003.png)
 
 4. 使用从Excel工作表中获取的上述值更新面板XML文件<PanelTimings>。如下所示。值为从上述内容中复制。
+
 ![0001_0004.png](images/0001_0004.png)
 
 ## 最终代码

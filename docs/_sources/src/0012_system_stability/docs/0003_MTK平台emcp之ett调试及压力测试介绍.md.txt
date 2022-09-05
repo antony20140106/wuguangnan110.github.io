@@ -1,38 +1,5 @@
 # MTK平台emcp测试详解
 
-* [特别提醒](#特别提醒)
-* [参考文档](#参考文档)
-* [一.ETT实验过程](#一ETT实验过程)
-  * [1.ett测试条件](#1ett测试条件)
-  * [2.ett测试过程](#2ett测试过程)
-    * [Step1.测试型号](#Step1测试型号)
-    * [Step2.bin文件需要从mtk online上下载](#Step2bin文件需要从mtk-online上下载)
-    * [Step3.接入debug串口到电脑](#Step3接入debug串口到电脑)
-    * [Step4.格式化单板](#Step4格式化单板)
-    * [Step5.连接USB完成ETT bin下载](#Step5连接USB完成ETT-bin下载)
-    * [Step6.转到超级终端调电压](#Step6转到超级终端调电压)
-    * [Step7.电压粗调(HV, NV, LV)](#Step7电压粗调HV-NV-LV)
-    * [Step9.电压测量](#Step9电压测量)
-    * [Step10.ETT测试PASS判断标准](#Step10ETT测试PASS判断标准)
-* [二.StressTest电压测量](#二StressTest电压测量)
-* [三.Stress test测试步骤(需进行高低常温测试、不能拔出USB)](#三Stress-test测试步骤需进行高低常温测试不能拔出USB)
-    * [Step1： 搭建环境](#Step1-搭建环境)
-  * [Step2.根据测试场景选择对应的load (HTLV/LTHV/NTNV)](#Step2根据测试场景选择对应的load-HTLVLTHVNTNV)
-  * [Step3.设置device id](#Step3设置device-id)
-  * [Step4. Install_Nenamark2.bat](#Step4-InstallNenamark2bat)
-  * [Step5. Push.bat](#Step5-Pushbat)
-  * [Step6. OPP table配置](#Step6-OPP-table配置)
-  * [Step7. run.sh && vcorefs_cervino.sh](#Step7-runsh--vcorefscervinosh)
-  * [Step8. start_DVFS_N2_Mem_test.bat](#Step8-startDVFSN2Memtestbat)
-  * [Step9. 注意事项](#Step9-注意事项)
-  * [Step10. Nenamark2 + DVFS for Fast-K测试步骤](#Step10-Nenamark2--DVFS-for-Fast-K测试步骤)
-* [四.Suspend/Resume测试步骤(需要拔出USB、不需要高低温测试)](#四SuspendResume测试步骤需要拔出USB不需要高低温测试)
-* [五.REBOOT测试步骤(不需要高低温测试、不能拔出USB)](#五REBOOT测试步骤不需要高低温测试不能拔出USB)
-  * [1.DDR reserve mode Reboot测试步骤](#1DDR-reserve-mode-Reboot测试步骤)
-  * [2.Full-K Reboot测试步骤](#2Full-K-Reboot测试步骤)
-  * [3.Fast-k Reboot测试步骤](#3Fast-k-Reboot测试步骤)
-* [六.判断测试pass的方法](#六判断测试pass的方法)
-
 使用ETT工具，自动同步memory设备，调试一组最优化的memory时序设定用于量产，同时检测memory接口的稳定性,避免因时序不稳定导致的系列问题；
 因此，在导入新layout或者memory chip的时候都请跑一遍ETT和压力测试。
 

@@ -6,6 +6,8 @@ Android各种sensor软件从底层到上层分析记录。
 
 NO.|文件名称|摘要
 :--:|:--|:--
+0020| [Android_Sensor_应用调研](docs/0020_Android_Sensor_应用调研.md) | M8项目sensor功能受到老板的关注，特别要求我们去调研一下sensor在手机上应用的新功能。
+0019| [Android_Sensor_App开发](docs/0019_Android_Sensor_App开发.md) | Android 各种Sensor监听。
 0018| [Pax项目Sensor支持情况调查](docs/0018_Pax项目Sensor支持情况调查.md) | 统计Pax基础软件部项目Sensor使用情况。
 0017| [Android_复合传感器介绍](docs/0017_Android_复合传感器介绍.md) | Android平台虚拟传感器`(fusion/virtual sensor)`介绍。
 0016| [qcom_SEE架构复合传感器介绍](docs/0016_qcom_SEE架构复合传感器介绍.md) | qcom平台虚拟传感器介绍。
@@ -24,4 +26,3 @@ NO.|文件名称|摘要
 0003| [Android_SensorHub介绍](docs/0003_Android_SensorHub介绍.md) | Sensor Hub，中文名：传感器控制中心。
 0002| [Android_SCP_IPI](docs/0002_Android_SCP_IPI.md) | Inter-Processor Communication (IPC) and Inter-Processor Interrupt (IPI)
 0001| [Android_SCP](docs/0001_Android_SCP.md) | SCP(Sensor-hub Control Processor)，CHRE(Context Hub Runtime Environment), System Companion Processor (SCP)
-cd

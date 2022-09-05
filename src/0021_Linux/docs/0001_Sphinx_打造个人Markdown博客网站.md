@@ -2,12 +2,16 @@
 
 打造炫酷个人博客网站，就是这么牛逼。
 
+所谓Sphinx，其实就是一个能将reStructuredText（类似于Markdown）语法的文本文件转换为HTML、PDF、epub等格式的强大工具。
+
+要知道，Python的官方文档就是利用这款工具书写而成的，并且被广泛用于各式各样的说明文档。
+
 # Sphinx注意事项
 
 * github图片某些图片无法正常显示，需要连接外网才行，国内有限制。
 * Sphinx制作渲染图片时，文件路径及文件名不能带中文，否则无法显示。
 * 文字和图片中间应该添加空格，不然会挤在一起，影响美观。
-* `make server`后，访问`http://127.0.0.1:8080`可在本地预览。
+* `make server`后，访问`http://127.0.0.1:8090`可在本地预览。
 
 # refers
 
@@ -15,6 +19,7 @@
 * [Sphinx Markdown](https://www.sphinx-doc.org/zh_CN/master/usage/markdown.html)
 * [make: sphinx-build: Command not found](https://blog.csdn.net/Will_Ye/article/details/106319473)
 * [Sphinx_Demo](refers/Sphinx_Demo)
+* [Sphinx入门教程](https://blog.csdn.net/weixin_47319129/article/details/125309657)
 
 # 命令介绍
 
@@ -40,6 +45,7 @@ GitHub.io 就是GitPage，GitPage 是一个用于展示你的项目和项目网�
 
 # sphinx环境配置
 
+首先保障python3环境正常，并执行以下命令：
 * pip3 install sphinx
 * pip3 install sphinx-rtd-theme
 * pip3 install myst-parser
@@ -117,6 +123,7 @@ The HTML pages are in build/html.
 
 # markdown支持修改
 
+增加扩展`myst_parser`兼容markdown文件。sphinx配置为解析具有扩展名的所有文件 .md 和 .txt 作为 Markdown
 ```diff
 diff --git a/source/conf.py b/source/conf.py
 index 9e4f81f..30fc640 100644
