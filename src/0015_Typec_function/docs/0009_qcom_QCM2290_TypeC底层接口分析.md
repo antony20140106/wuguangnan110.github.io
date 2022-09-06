@@ -391,7 +391,7 @@ static int pax_charger_probe(struct platform_device *pdev)
 ## 1.设置data_swap接口tcpm_dpm_pd_data_swap和class中typec_set_data_role区别
 
 按照我的理解，tcpm_dpm_pd_data_swap接口是直接操作typec芯片，typec_set_data_role是通过sysfs_notify通知typec芯片去做。
-上面的想法不对，因为我发现A800能实现data_swap和power_swap，并没有调用typec_set_data_role或者typec_set_power_role接口，那这两个接口应该就是给用户空间获取状态的，并没有实际作用。
+上面的想法不对，因为我发现A800能实现data_swap和power_swap，并没有调用typec_set_data_role或者typec_set_power_role接口，那这两个接口实际上就是给用户空间获取状态的，A800只是内部逻辑实现了，不可以用户主动去切。
 ```C++
 int tcpm_dpm_pd_data_swap(struct tcpc_device *tcpc,
 	uint8_t role, const struct tcp_dpm_event_cb_data *cb_data)

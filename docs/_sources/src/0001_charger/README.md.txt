@@ -6,7 +6,9 @@ Android平台charger、BMS相关知识及调试整理。
 
 NO.|文件名称|摘要
 :--:|:--|:--
-0023| [qcom_qcm2290_无法进入关机充电模式分析](docs/0023_qcom_qcm2290_无法进入关机充电模式分析.md) | 高通qcm2290代码拿过来，关机插入usb直接开机，应该进入关机充电。
+0025| [qcom_qcm2290_qpnp_power_on驱动分析](docs/0025_qcom_qcm2290_qpnp_power_on驱动分析.md) | 高通qcm2290平台，目前有专门的开关机原因检测驱动，分析一下。
+0024| [qcom_qcm2290_无电池启动功能开发](docs/0024_qcom_qcm2290_无电池启动功能开发.md) | 高通qcm2290平台，目前要求无电池启动功能，开发一下。
+0023| [qcom_qcm2290_关机充电模式分析](docs/0023_qcom_qcm2290_关机充电模式分析.md) | 高通qcm2290代码拿过来，关机插入usb直接开机，应该进入关机充电。
 0022| [android_charger充电阶段介绍](docs/0022_android_charger充电阶段介绍.md) | charger充电阶段介绍。
 0021| [qcom_pax_charger充电实验](docs/0021_qcom_pax_charger充电实验.md) | 目前battery电量计已经调试完成，对充电进行一次测试
 0020| [qcom_pax_charger频繁进入中断死机](docs/0020_qcom_pax_charger频繁进入中断死机.md) | 目前charger由于插电脑未限制充电电流，开机过程中插usb会频繁进入中断，而且容易导致死机。
@@ -17,7 +19,7 @@ NO.|文件名称|摘要
 0015| [power_supply子系统-基础概括](docs/0015_power_supply子系统-基础概括.md) | kernel中为了方便对battery的管理，专门提供了power supply framework
 0014| [qcom_healthd读取uevent事件分析](docs/0014_qcom_healthd读取uevent事件分析.md) | 高通A6650 healthd 守护进程分析。
 0013| [qcom_charger_mp2712调试记录](docs/0013_qcom_charger_mp2712调试记录.md) | 高通A6650 charger mp2721调试记录，该款ic不做bc1.2检测，没有adc采样功能，电流电压检测都将放到电池IC里面。
-0012| [qcom_charger_架构](docs/0012_qcom_charger_架构.md) | 高通A6650 charger mp2250架构理解。
+0012| [qcom_qcm2290_pm4125_软件架构](docs/0012_qcom_qcm2290_pm4125_软件架构.md) | 高通A6650 charger mp2250架构理解。
 0011| [mtk_charger_相关参数说明](docs/0011_mtk_charger_相关参数说明.md) | mtk平台charger相关参数说明
 0010| [charger_相关调试经验](docs/0010_charger_相关调试经验.md) | charger相关改动经验
 0009| [charger_BMS驱动及整体架构简介](docs/0009_charger_BMS驱动及整体架构简介.md) | BMS功能介绍

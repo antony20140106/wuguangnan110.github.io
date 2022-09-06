@@ -9,6 +9,10 @@ TypeC_高通A6650_USB_Type-C_PD_Controller_HUSB311调试记录。
 
 # 硬件信息
 
+* 原理图：
+
+![0005_0010.png](images/0005_0010.png)
+
 ```
 pin97：GPIO_31   连接充电IC的中断  
 pin98： GPIO_107 连接PD中断

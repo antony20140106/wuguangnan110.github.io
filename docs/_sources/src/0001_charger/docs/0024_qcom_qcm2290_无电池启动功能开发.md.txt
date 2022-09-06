@@ -1,0 +1,42 @@
+# 概述
+
+高通qcm2290平台，目前要求无电池启动功能，开发一下。
+
+# XBL开机电压检测
+
+由于需要准确关机电压，根据高通方案，需要将VBAT_P接到电池vbat脚，而目前接的是vsys，需要改回来。
+
+* 目前项目接法：
+
+![0024_0000.png](images/0024_0000.png)
+
+* 高通推荐接法：
+
+![0024_0001.png](images/0024_0001.png)
+
+* PIN脚解释：
+
+![0024_0002.png](images/0024_0002.png)
+
+无电池启动，也就是插入usb需要启动，那XBL阶段必然会检测vbat电压，也就是说无电池时也需要charger ic打开vbat，根据以下charger ic datasheet中描述，
+只需要检测到usb插入，打开充电即可：
+
+![0024_0003.png](images/0024_0003.png)
+
+经测量，开机后vbat是4.35v左右，跟预期一致。
+
+# 跳过关机充电模式
+
+目前插入usb启动是直接进入关机充电模式了，可以从log中找到原因：
+```log
+[    0.922874] qcom,qpnp-power-on 1c40000.qcom,spmi:qcom,pm2250@0:qcom,power-on@800: PMIC@SID0 Power-on reason: Triggered from CBL (External Power Supply) and 'cold' boot
+[    0.937927] qcom,qpnp-power-on 1c40000.qcom,spmi:qcom,pm2250@0:qcom,power-on@800: PMIC@SID0: Unknown power-off reason
+```
+
+从上面可以知道是CBL引脚触发的冷启动，CBL引脚在模块上接到vbus引脚，也就是插入usb会触发冷启动，我们从关机模式文档中可以得知，冷启接usb会进入关机充电模式，刚好符合条件。
+* [0023_qcom_qcm2290_关机充电模式分析.md](0023_qcom_qcm2290_关机充电模式分析.md)
+
+![0024_0004.png](images/0024_0004.png)
+![0024_0005.png](images/0024_0005.png)
+
+那就需要在关机充电增加一个无电池判断了。

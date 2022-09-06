@@ -2,7 +2,7 @@
 
 光距感sensor ltr553 sensorhub调试记录
 
-## 硬件
+# 硬件
 
 目前kernel端是通的，sensorhub一直不支持。
 
@@ -14,7 +14,7 @@
 
 ![0005_1.png](images/0005_als.png)
 
-## 1.sensorlist无法获取
+# 1.sensorlist无法获取
 
 * 1.首先按照移植步骤，将ltr553驱动移植到sensorhub中，发现sensorlist中并没有支持，先看一下getsensorlist接口流程：
 
@@ -154,9 +154,9 @@ static void alsGetSensorInfo(struct sensorInfo_t *data)
 02-17 13:03:49.249645   724   724 E SensorSaved: (/mnt/vendor/nvcfg) exist
 ```
 
-## PS及ALS优化(包括动态校准及数据算法）
+# PS及ALS优化(包括动态校准及数据算法）
 
-### 1.PS动态校准移植
+## 1.PS动态校准移植
 
 PS传感器一般都是靠近3cm，远离5cm。每次开启监听都会获取一个noise值，相当于一个初始值，如果旁边有遮挡，这个noise值会很大。所以PS传感器每次会根据开启监听后的noise值进行动态阈值校准：
 
@@ -274,7 +274,7 @@ framework打印：
 03-24 15:28:59.875   803   894 I Proximity: distance = 2  //远离
 ```
 
-### 2.ALS数据算法分析
+## 2.ALS数据算法分析
 
 ```C++
 cust_alsps.c
@@ -454,7 +454,7 @@ static int ltr559_get_als_value(struct ltr559_priv *obj, u16 als)
 }
 ```
 
-## 数据上报
+# 数据上报
 
 * 这里PS采用的是中断的方式上报数据，ALS采用的是轮询，首先介绍PS中断上报：
 
@@ -475,7 +475,7 @@ static int ltr559_get_als_value(struct ltr559_priv *obj, u16 als)
 #endif
 ```
 
-### 1.PS数据上报
+## 1.PS数据上报
 
 * 中断打印如下：
 
@@ -532,7 +532,7 @@ static void handleEvent(uint32_t evtType, const void* evtData)
         * mSensorOps[handle].sensorCfgData(mTask.mSensorPerUnit[handle].pendCaliCfg,//这里只在开机的时候跑一次
 ```
 
-### 2.ALS数据上报
+## 2.ALS数据上报
 
 * 打印如下：
 ```log
@@ -596,9 +596,9 @@ static void handleEvent(uint32_t evtType, const void* evtData)
   * sensorFsmEnqueueFakeI2cEvt(i2cCallBack, next_state, SUCCESS_EVT);
 ```
 
-## 问题点
+# 问题点
 
-### 1.重启或者久休眠唤醒经常误报成靠近
+## 1.重启或者久休眠唤醒经常误报成靠近
 
 * 查看打印，发现如下：
 

@@ -24,7 +24,7 @@
 * Pre-Charger：预充阶段，可以通过设置02寄存器VPRE位调节，目前是设置的3v。
 * CC-Fast-Charger：恒流阶段，此阶段电流达到最大ICC设定，vbat要小于cv值，这里vbat指的是charger IC端的vbat，实际电量计检测到的vbat可能没有charger端的大，因为存在线损。目前cv设置的是4.35v，为了提高速度，将95%前设置为4.375v。
 * Constant-Voltage-Charger：恒压阶段，当charger IC检测到vbat电压大于等于CV值时进入此阶段，此时充电电流会慢慢变小，直到截止电流。
-* Top-Off-Mode:截止阶段，充电电流降低到Iterm(目前是120ma)，充电截止。
+* Top-Off-Mode:截止阶段，充电电流降低到Iterm(目前是240ma)，再根据`max-topoff-time`继续补充充电，直到到达`max-topoff-time`时间为止，充电截止。
 * Re-Chager-Status：回充，当电压降低到回充点，目前设置的是200mv，也就是4.15v则回充。
 * Save-Time-Status：安全充电时间，目前设置的是15小时。
 
@@ -99,3 +99,58 @@ Reg[0x03] = 0xf4
 120+30=150ma，刚好和140ma对的上，代码写错了！
 
 ![0021_0001.png](images/0021_0001.png)
+
+## 满充实验三0906(满足预期)
+
+* 充电参数如下：
+```C++
+term-current = <240>; //截止电流
+max-topoff-time = <0>;                 /* Timer to stop charging after charge termination, Default:Disabled minutes*/
+ICC = 3000ma
+```
+
+* 满充后寄存器表：
+```C++
+Reg[0x00] = 0x0b
+Reg[0x01] = 0x13
+Reg[0x02] = 0xe5
+Reg[0x03] = 0xa7
+Reg[0x04] = 0xf6
+Reg[0x05] = 0x1e
+Reg[0x06] = 0xa4
+Reg[0x07] = 0x0b
+Reg[0x08] = 0x2f
+Reg[0x09] = 0x53
+Reg[0x0a] = 0x23
+Reg[0x0b] = 0x10
+Reg[0x0c] = 0x11
+Reg[0x0d] = 0x60
+Reg[0x0e] = 0x99
+Reg[0x0f] = 0x00
+Reg[0x10] = 0x44
+Reg[0x11] = 0x20
+Reg[0x12] = 0x74
+Reg[0x13] = 0xa0
+Reg[0x14] = 0x00
+Reg[0x15] = 0x00
+Reg[0x16] = 0x00
+```
+
+* 开始充到电量100%时间为139分钟。
+* 100%到`charge done(CHARGE TERMINATION)`时间29分钟，感觉还算正常，平时M50也要这个时间。
+* `charge done`到电池充电电流为0时间为0分钟,和`dts`中定义的`max-topoff-time`相符。
+
+![0021_0002.png](images/0021_0002.png)
+```log
+开始充电：
+[  144.776327] Battery: [ status:Charging, health:Good, present:1, tech:Li-ion, capcity:9,cap_rm:436 mah, vol:3647 mv, temp:32, curr:-322 ma, ui_soc:5, notify_code: 0 ]
+
+100%电量：
+[ 8478.467626] Battery: [ status:Charging, health:Good, present:1, tech:Li-ion, capcity:100,cap_rm:5192 mah, vol:4325 mv, temp:32, curr:401 ma, ui_soc:100, notify_code: 0 ]
+
+charge done(CHARGE TERMINATION):
+[10234.812918] Battery: [ status:Full, health:Good, present:1, tech:Li-ion, capcity:100,cap_rm:5175 mah, vol:4332 mv, temp:30, curr:237 ma, ui_soc:100, notify_code: 0 ]
+
+top-off
+[10239.765717] Battery: [ status:Full, health:Good, present:1, tech:Li-ion, capcity:100,cap_rm:5175 mah, vol:4313 mv, temp:30, curr:0 ma, ui_soc:100, notify_code: 0 ]
+```

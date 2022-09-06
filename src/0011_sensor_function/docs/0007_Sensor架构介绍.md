@@ -2,14 +2,14 @@
 
 Sensor架构介绍
 
-## 参考
+# 参考
 
 * [0007_sensor_all_in_one.pdf](refers/sensor_all_in_one.pdf)
 * [嵌入式Linux驱动开发（五）——poll机制原理以及驱动实现](https://www.jianshu.com/p/8cd91b71709a)
 * [韦东山：Linux驱动基石之POLL机制](https://cloud.tencent.com/developer/article/1708996)
 * [MTK Sensor框架 及信息传递详解](https://blog.csdn.net/wh2526422/article/details/120786350)
 
-## 软件架构图
+# 软件架构图
 
 ![0007_1.png](images/0007_dig1.png)
 
@@ -19,11 +19,11 @@ Sensor架构介绍
 
 ![0007_3.png](images/0007_eve.png)
 
-## HIDL层架构
+# HIDL层架构
 
 ![0007_HIDL.png](images/0007_HIDL.png)
 
-### 平台与相关文件
+## 平台与相关文件
 
 * 平台：M8 MT6765 Android11 sensor-1.0
 * 相关文件:
@@ -31,7 +31,7 @@ Sensor架构介绍
   * vendor\mediatek\proprietary\hardware\sensor\hidl\2.0，最终编译成vendor/bin/hw/android.hardware.sensors@2.0-service-mediatek
   * hardware\interfaces\sensors\2.0\ISensors.hal，google HIDL接口定义
 
-### 相关编译配置
+## 相关编译配置
 
 * HIDL 编译配置
 
@@ -109,7 +109,7 @@ MTK_SENSORS_1_0 = yes
 
 * hal层SensorList对应传感器类型添加
 
-### HIDL启动流程
+## HIDL启动流程
 
 * `vendor/mediatek/proprietary/hardware/sensor/hidl/2.0/android.hardware.sensors@2.0-service-mediatek.rc`系统起来后init进程会加载vendor/etc/init里的rc文件:
 ```
@@ -126,7 +126,7 @@ service vendor.sensors-hal-2-0 /vendor/bin/hw/android.hardware.sensors@2.0-servi
     rlimit rtprio 10 10
 ```
 
-#### 1.sensor数据流poll机制
+## 1.sensor数据流poll机制
 
 ```
 * vendor\mediatek\proprietary\hardware\sensor\hidl\2.0\service.cpp
@@ -158,7 +158,7 @@ Sensors::activate(int32_t sensor_handle, bool enabled)      //通过mSensorDevic
 Sensors::flush(int32_t sensor_handle)                       //通过mSensorDevice->flush进入Hal层sensors.cpp->poll__flush()方法
 ```
 
-### 2.open_sensors()函数了解open工作流程
+## 2.open_sensors()函数了解open工作流程
 
 * 流程分析：
 
@@ -263,7 +263,7 @@ poll__setDelay:  //HIDL
 
 
 
-### sensors_event_t数据格式
+## sensors_event_t数据格式
 
 ```C++
 //上面分析到AccelerationSensor::processEvent()数据处理过程中会将(sensor_event *event)转换成(sensors_event_t mPendingEvent)，我们可以看看sensors_event_t类型的数据是什么样的？
@@ -363,7 +363,7 @@ typedef struct sensors_event_t {
 } sensors_event_t;
 ```
 
-### 上层的传下来的sensor_handle与对应传感器的转换关系
+## 上层的传下来的sensor_handle与对应传感器的转换关系
 
 ```C++
 private:
@@ -457,7 +457,7 @@ int sensors_poll_context_t::activate(int handle, int enabled) {
 }
 ```
 
-## kernel hub层架构
+# kernel hub层架构
 
 * kernel文件节点关系：
 
@@ -465,14 +465,14 @@ int sensors_poll_context_t::activate(int handle, int enabled) {
 
 * 驱动架构图
 
-![0007_6.png](images/0007_dig2.png)
+![0007_0000.png](images/0007_0000.png)
 
-### 驱动获取物理sensor数据流程分析
+## 驱动获取物理sensor数据流程分析
 
 每个sensor都会在驱动层创建工作队列和定时器，当上层需要数据时，将启动定时器去循环调用工作队列获取数据。且注册一个等待队列的buffer，大小是2048byte，通过poll读取。poll机制每次只有当一个进程写入了一个数据之后本进程或其它进程才可以读取该数据，否则一直阻塞。
 
 ```C++
-accel.c->*late_initcall(acc_init);
+*accel.c->*late_initcall(acc_init);
 * acc_init
   * acc_probe
     * acc_context_alloc_object()     //函数返回一个accel 驱动上下文对象

@@ -58,6 +58,10 @@ A77 A950代码：
 
 # 硬件
 
+* 原理图：
+
+![0013_0045.png](images/0013_0045.png)
+
 ```C++
 I2C Slave Address: 3Fh
 中断脚：GPIO_86

@@ -47,6 +47,7 @@
 <li><a class="reference internal" href="#id5">实验现象</a><ul>
 <li><a class="reference internal" href="#id6">降流过快</a></li>
 <li><a class="reference internal" href="#id7">第二次改短电池连接线</a></li>
+<li><a class="reference internal" href="#id8">满充实验三0906(满足预期)</a></li>
 </ul>
 </li>
 </ul>
@@ -122,7 +123,7 @@
 <li><p>Pre-Charger：预充阶段，可以通过设置02寄存器VPRE位调节，目前是设置的3v。</p></li>
 <li><p>CC-Fast-Charger：恒流阶段，此阶段电流达到最大ICC设定，vbat要小于cv值，这里vbat指的是charger IC端的vbat，实际电量计检测到的vbat可能没有charger端的大，因为存在线损。目前cv设置的是4.35v，为了提高速度，将95%前设置为4.375v。</p></li>
 <li><p>Constant-Voltage-Charger：恒压阶段，当charger IC检测到vbat电压大于等于CV值时进入此阶段，此时充电电流会慢慢变小，直到截止电流。</p></li>
-<li><p>Top-Off-Mode:截止阶段，充电电流降低到Iterm(目前是120ma)，充电截止。</p></li>
+<li><p>Top-Off-Mode:截止阶段，充电电流降低到Iterm(目前是240ma)，再根据<code class="docutils literal notranslate"><span class="pre">max-topoff-time</span></code>继续补充充电，直到到达<code class="docutils literal notranslate"><span class="pre">max-topoff-time</span></code>时间为止，充电截止。</p></li>
 <li><p>Re-Chager-Status：回充，当电压降低到回充点，目前设置的是200mv，也就是4.15v则回充。</p></li>
 <li><p>Save-Time-Status：安全充电时间，目前设置的是15小时。</p></li>
 </ul>
@@ -194,6 +195,64 @@ Reg[0x03] = 0xf4
 03h=f4=1111 0100
 120+30=150ma，刚好和140ma对的上，代码写错了！</p>
 <p><img alt="0021_0001.png" src="../../../_images/0021_0001.png" /></p>
+</section>
+<section id="id8">
+<h2>满充实验三0906(满足预期)<a class="headerlink" href="#id8" title="Permalink to this heading"></a></h2>
+<ul class="simple">
+<li><p>充电参数如下：</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="n">term</span><span class="o">-</span><span class="n">current</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">&lt;</span><span class="mi">240</span><span class="o">&gt;</span><span class="p">;</span><span class="w"> </span><span class="c1">//截止电流</span>
+<span class="n">max</span><span class="o">-</span><span class="n">topoff</span><span class="o">-</span><span class="n">time</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">&lt;</span><span class="mi">0</span><span class="o">&gt;</span><span class="p">;</span><span class="w">                 </span><span class="cm">/* Timer to stop charging after charge termination, Default:Disabled minutes*/</span><span class="w"></span>
+<span class="n">ICC</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">3000</span><span class="n">ma</span><span class="w"></span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>满充后寄存器表：</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="n">Reg</span><span class="p">[</span><span class="mh">0x00</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0x0b</span><span class="w"></span>
+<span class="n">Reg</span><span class="p">[</span><span class="mh">0x01</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0x13</span><span class="w"></span>
+<span class="n">Reg</span><span class="p">[</span><span class="mh">0x02</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0xe5</span><span class="w"></span>
+<span class="n">Reg</span><span class="p">[</span><span class="mh">0x03</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0xa7</span><span class="w"></span>
+<span class="n">Reg</span><span class="p">[</span><span class="mh">0x04</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0xf6</span><span class="w"></span>
+<span class="n">Reg</span><span class="p">[</span><span class="mh">0x05</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0x1e</span><span class="w"></span>
+<span class="n">Reg</span><span class="p">[</span><span class="mh">0x06</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0xa4</span><span class="w"></span>
+<span class="n">Reg</span><span class="p">[</span><span class="mh">0x07</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0x0b</span><span class="w"></span>
+<span class="n">Reg</span><span class="p">[</span><span class="mh">0x08</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0x2f</span><span class="w"></span>
+<span class="n">Reg</span><span class="p">[</span><span class="mh">0x09</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0x53</span><span class="w"></span>
+<span class="n">Reg</span><span class="p">[</span><span class="mh">0x0a</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0x23</span><span class="w"></span>
+<span class="n">Reg</span><span class="p">[</span><span class="mh">0x0b</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0x10</span><span class="w"></span>
+<span class="n">Reg</span><span class="p">[</span><span class="mh">0x0c</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0x11</span><span class="w"></span>
+<span class="n">Reg</span><span class="p">[</span><span class="mh">0x0d</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0x60</span><span class="w"></span>
+<span class="n">Reg</span><span class="p">[</span><span class="mh">0x0e</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0x99</span><span class="w"></span>
+<span class="n">Reg</span><span class="p">[</span><span class="mh">0x0f</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0x00</span><span class="w"></span>
+<span class="n">Reg</span><span class="p">[</span><span class="mh">0x10</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0x44</span><span class="w"></span>
+<span class="n">Reg</span><span class="p">[</span><span class="mh">0x11</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0x20</span><span class="w"></span>
+<span class="n">Reg</span><span class="p">[</span><span class="mh">0x12</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0x74</span><span class="w"></span>
+<span class="n">Reg</span><span class="p">[</span><span class="mh">0x13</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0xa0</span><span class="w"></span>
+<span class="n">Reg</span><span class="p">[</span><span class="mh">0x14</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0x00</span><span class="w"></span>
+<span class="n">Reg</span><span class="p">[</span><span class="mh">0x15</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0x00</span><span class="w"></span>
+<span class="n">Reg</span><span class="p">[</span><span class="mh">0x16</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0x00</span><span class="w"></span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>开始充到电量100%时间为139分钟。</p></li>
+<li><p>100%到<code class="docutils literal notranslate"><span class="pre">charge</span> <span class="pre">done(CHARGE</span> <span class="pre">TERMINATION)</span></code>时间29分钟，感觉还算正常，平时M50也要这个时间。</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">charge</span> <span class="pre">done</span></code>到电池充电电流为0时间为0分钟,和<code class="docutils literal notranslate"><span class="pre">dts</span></code>中定义的<code class="docutils literal notranslate"><span class="pre">max-topoff-time</span></code>相符。</p></li>
+</ul>
+<p><img alt="0021_0002.png" src="../../../_images/0021_0002.png" /></p>
+<div class="highlight-log notranslate"><div class="highlight"><pre><span></span>开始充电：
+[  144.776327] Battery: [ status:Charging, health:Good, present:1, tech:Li-ion, capcity:9,cap_rm:436 mah, vol:3647 mv, temp:32, curr:-322 ma, ui_soc:5, notify_code: 0 ]
+
+100%电量：
+[ 8478.467626] Battery: [ status:Charging, health:Good, present:1, tech:Li-ion, capcity:100,cap_rm:5192 mah, vol:4325 mv, temp:32, curr:401 ma, ui_soc:100, notify_code: 0 ]
+
+charge done(CHARGE TERMINATION):
+[10234.812918] Battery: [ status:Full, health:Good, present:1, tech:Li-ion, capcity:100,cap_rm:5175 mah, vol:4332 mv, temp:30, curr:237 ma, ui_soc:100, notify_code: 0 ]
+
+top-off
+[10239.765717] Battery: [ status:Full, health:Good, present:1, tech:Li-ion, capcity:100,cap_rm:5175 mah, vol:4313 mv, temp:30, curr:0 ma, ui_soc:100, notify_code: 0 ]
+</pre></div>
+</div>
 </section>
 </section>
 

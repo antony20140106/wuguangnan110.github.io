@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>wugn</title>
+
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../index.html" class="icon icon-home"> wugn_note
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">概述</a></li>
+<li><a class="reference internal" href="#id2">参考</a></li>
+<li><a class="reference internal" href="#id3">软件分析</a></li>
+<li><a class="reference internal" href="#id4">实现原理</a></li>
+<li><a class="reference internal" href="#ischargingscreenenable">IsChargingScreenEnable原理</a></li>
+<li><a class="reference internal" href="#batterystatus">BatteryStatus原理</a><ul>
+<li><a class="reference internal" href="#pon-reason-type">PON_REASON_TYPE启动原因</a></li>
+<li><a class="reference internal" href="#getchargerpresence">GetChargerPresence是否充电判断</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#fastboot">fastboot命令控制开关</a></li>
+<li><a class="reference internal" href="#log">log分析</a></li>
+</ul>
+</div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">wugn_note</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs"> 
+<li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+<li>概述</li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.forward()">Forward</a></li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.back()">Go Back</a> | </li>
+<li style="float: right;margin-left: 10px;"><a href="/index.html">Home</a> | </li>
+
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="id1">
+<h1>概述<a class="headerlink" href="#id1" title="Permalink to this heading"></a></h1>
+<p>高通qcm2290代码拿过来，关机插入usb直接开机，应该进入关机充电。</p>
+</section>
+<section id="id2">
+<h1>参考<a class="headerlink" href="#id2" title="Permalink to this heading"></a></h1>
+<ul class="simple">
+<li><p><a class="reference external" href="https://blog.csdn.net/qq_27629673/article/details/125471481">高通uefi的abl增加新的kernel cmdlin标签经验分享</a></p></li>
+</ul>
+</section>
+<section id="id3">
+<h1>软件分析<a class="headerlink" href="#id3" title="Permalink to this heading"></a></h1>
+<p>移远那边给过来修改如下可以进入：</p>
+<div class="highlight-diff notranslate"><div class="highlight"><pre><span></span><span class="w"> </span>UM.9.15/bootable/bootloader/edk2/QcomModulePkg/Library/BootLib/UpdateCmdLine.c <span class="w"></span>
+<span class="gu">@@ -673,7 +673,9 @@ UpdateCmdLine (CONST CHAR8 *CmdLine,</span><span class="w"></span>
+<span class="w"> </span>    /* reduce kernel console messages to speed-up boot */<span class="w"></span>
+<span class="w"> </span>    CmdLineLen += AsciiStrLen (LogLevel);<span class="w"></span>
+<span class="w"> </span>  } else if (BatteryStatus &amp;&amp;<span class="w"></span>
+<span class="w"> </span>             IsChargingScreenEnable () &amp;&amp;<span class="w"></span>
+<span class="gi">+//[feature]-del-begin xielianxiong@paxsz.com 20220830,for shutdown boot into charging mode</span><span class="w"></span>
+<span class="gi">+             /*IsChargingScreenEnable () &amp;&amp;*/</span><span class="w"></span>
+<span class="gi">+ //[feature]-del-end xielianxiong@paxsz.com 20220830,for shutdown boot into charging mode</span><span class="w"></span>
+<span class="w"> </span>             !Recovery) {<span class="w"></span>
+<span class="w"> </span>    DEBUG ((EFI_D_INFO, &quot;Device will boot into off mode charging mode\n&quot;));<span class="w"></span>
+<span class="w"> </span>    PauseAtBootUp = 1;<span class="w"></span>
+</pre></div>
+</div>
+</section>
+<section id="id4">
+<h1>实现原理<a class="headerlink" href="#id4" title="Permalink to this heading"></a></h1>
+<ul class="simple">
+<li><p>以上可得知关机充电原理就是向上传一个<code class="docutils literal notranslate"><span class="pre">androidboot.mode=charger</span></code> kernel cmdline，healthd进程接收进入关机充电模式，最终判断的是<code class="docutils literal notranslate"><span class="pre">IsChargingScreenEnable</span></code>接口和<code class="docutils literal notranslate"><span class="pre">BatteryStatus</span></code>状态，下面dtb写了暂时不分析。</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="o">*</span><span class="w"> </span><span class="n">LinuxLoaderEntry</span><span class="w"> </span><span class="p">(</span><span class="n">IN</span><span class="w"> </span><span class="n">EFI_HANDLE</span><span class="w"> </span><span class="n">ImageHandle</span><span class="p">,</span><span class="w"> </span><span class="n">IN</span><span class="w"> </span><span class="n">EFI_SYSTEM_TABLE</span><span class="w"> </span><span class="o">*</span><span class="n">SystemTable</span><span class="p">)</span><span class="w"> </span><span class="c1">//ABL入口函数</span>
+<span class="w">  </span><span class="o">*</span><span class="w"> </span><span class="n">BootLinux</span><span class="w"> </span><span class="p">(</span><span class="o">&amp;</span><span class="n">Info</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="o">*</span><span class="w"> </span><span class="n">Status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">DTBImgCheckAndAppendDT</span><span class="w"> </span><span class="p">(</span><span class="n">Info</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">BootParamlistPtr</span><span class="p">);</span><span class="w"></span>
+<span class="w">	  </span><span class="o">*</span><span class="w"> </span><span class="n">BoardDtb</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">GetBoardDtb</span><span class="w"> </span><span class="p">(</span><span class="n">Info</span><span class="p">,</span><span class="w"> </span><span class="n">BootParamlistPtr</span><span class="o">-&gt;</span><span class="n">DtboImgBuffer</span><span class="p">);</span><span class="w"></span>
+<span class="w">	    </span><span class="o">*</span><span class="w"> </span><span class="n">FindBestDtb</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ReadDtbFindMatch</span><span class="w"> </span><span class="p">(</span><span class="o">&amp;</span><span class="n">CurDtbInfo</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">BestDtbInfo</span><span class="p">,</span><span class="w"> </span><span class="n">BIT</span><span class="p">(</span><span class="n">VARIANT_MATCH</span><span class="p">)</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">BIT</span><span class="p">(</span><span class="n">PAX_BOARD_INFO_MATCH</span><span class="p">));</span><span class="w"> </span><span class="c1">//重要，读取sp信息</span>
+<span class="w">	    </span><span class="o">*</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">FindBestDtb</span><span class="p">)</span><span class="w"> </span><span class="n">DtboIdx</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">DtboCount</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="o">*</span><span class="w"> </span><span class="n">Status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">UpdateCmdLine</span><span class="w"> </span><span class="p">(</span><span class="n">BootParamlistPtr</span><span class="p">.</span><span class="n">CmdLine</span><span class="p">,</span><span class="w"> </span><span class="n">FfbmStr</span><span class="p">,</span><span class="w"> </span><span class="n">Recovery</span><span class="p">,</span><span class="w"></span>
+<span class="w">	  </span><span class="o">*</span><span class="w"> </span><span class="n">DtboIdx</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">GetDtboIdx</span><span class="w"> </span><span class="p">();</span><span class="w"></span>
+<span class="w">	  </span><span class="o">*</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">BatteryStatus</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">IsChargingScreenEnable</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="o">!</span><span class="n">Recovery</span><span class="p">)</span><span class="w"></span>
+<span class="w">	    </span><span class="o">*</span><span class="w"> </span><span class="n">CmdLineLen</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="n">AsciiStrLen</span><span class="w"> </span><span class="p">(</span><span class="n">BatteryChgPause</span><span class="p">);</span><span class="w">  </span>
+<span class="w">		</span><span class="o">*</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="n">CmdLineLen</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="n">AsciiStrLen</span><span class="w"> </span><span class="p">(</span><span class="n">AlarmBootCmdLine</span><span class="p">);</span><span class="w"></span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>cmdline定义如下：</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="n">STATIC</span><span class="w"> </span><span class="n">CONST</span><span class="w"> </span><span class="n">CHAR8</span><span class="w"> </span><span class="o">*</span><span class="n">BatteryChgPause</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot; androidboot.mode=charger&quot;</span><span class="p">;</span><span class="w"></span>
+<span class="n">STATIC</span><span class="w"> </span><span class="n">CONST</span><span class="w"> </span><span class="n">CHAR8</span><span class="w"> </span><span class="o">*</span><span class="n">AlarmBootCmdLine</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot; androidboot.alarmboot=true&quot;</span><span class="p">;</span><span class="w"></span>
+
+<span class="n">STATIC</span><span class="w"> </span><span class="n">CHAR8</span><span class="w"> </span><span class="o">*</span><span class="n">AndroidBootDtboIdx</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot; androidboot.dtbo_idx=&quot;</span><span class="p">;</span><span class="w"></span>
+<span class="n">STATIC</span><span class="w"> </span><span class="n">CHAR8</span><span class="w"> </span><span class="o">*</span><span class="n">AndroidBootDtbIdx</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot; androidboot.dtb_idx=&quot;</span><span class="p">;</span><span class="w"></span>
+</pre></div>
+</div>
+</section>
+<section id="ischargingscreenenable">
+<h1>IsChargingScreenEnable原理<a class="headerlink" href="#ischargingscreenenable" title="Permalink to this heading"></a></h1>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">QcomModulePkg/Library/BootLib/DeviceInfo.c</span></code>中abl会在初始化中调用<code class="docutils literal notranslate"><span class="pre">DeviceInfoInit</span></code>接口获取devinfo：</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="n">EFI_STATUS</span><span class="w"> </span><span class="nf">DeviceInfoInit</span><span class="w"> </span><span class="p">(</span><span class="n">VOID</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="n">EFI_STATUS</span><span class="w"> </span><span class="n">Status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">EFI_SUCCESS</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">FirstReadDevInfo</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">Status</span><span class="w"> </span><span class="o">=</span><span class="w"></span>
+<span class="w">        </span><span class="n">ReadWriteDeviceInfo</span><span class="w"> </span><span class="p">(</span><span class="n">READ_CONFIG</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">VOID</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="o">&amp;</span><span class="n">DevInfo</span><span class="p">,</span><span class="w"> </span><span class="k">sizeof</span><span class="w"> </span><span class="p">(</span><span class="n">DevInfo</span><span class="p">));</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">Status</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">EFI_SUCCESS</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">      </span><span class="n">DEBUG</span><span class="w"> </span><span class="p">((</span><span class="n">EFI_D_ERROR</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Unable to Read Device Info: %r</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">Status</span><span class="p">));</span><span class="w"></span>
+<span class="w">      </span><span class="k">return</span><span class="w"> </span><span class="n">Status</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">    </span><span class="n">FirstReadDevInfo</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">FALSE</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">CompareMem</span><span class="w"> </span><span class="p">(</span><span class="n">DevInfo</span><span class="p">.</span><span class="n">magic</span><span class="p">,</span><span class="w"> </span><span class="n">DEVICE_MAGIC</span><span class="p">,</span><span class="w"> </span><span class="n">DEVICE_MAGIC_SIZE</span><span class="p">))</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">DEBUG</span><span class="w"> </span><span class="p">((</span><span class="n">EFI_D_ERROR</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Device Magic does not match</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">));</span><span class="w"></span>
+<span class="w">    </span><span class="n">gBS</span><span class="o">-&gt;</span><span class="n">SetMem</span><span class="w"> </span><span class="p">(</span><span class="o">&amp;</span><span class="n">DevInfo</span><span class="p">,</span><span class="w"> </span><span class="k">sizeof</span><span class="w"> </span><span class="p">(</span><span class="n">DevInfo</span><span class="p">),</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="n">gBS</span><span class="o">-&gt;</span><span class="n">CopyMem</span><span class="w"> </span><span class="p">(</span><span class="n">DevInfo</span><span class="p">.</span><span class="n">magic</span><span class="p">,</span><span class="w"> </span><span class="n">DEVICE_MAGIC</span><span class="p">,</span><span class="w"> </span><span class="n">DEVICE_MAGIC_SIZE</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="n">DevInfo</span><span class="p">.</span><span class="n">user_public_key_length</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="n">gBS</span><span class="o">-&gt;</span><span class="n">SetMem</span><span class="w"> </span><span class="p">(</span><span class="n">DevInfo</span><span class="p">.</span><span class="n">rollback_index</span><span class="p">,</span><span class="w"> </span><span class="k">sizeof</span><span class="w"> </span><span class="p">(</span><span class="n">DevInfo</span><span class="p">.</span><span class="n">rollback_index</span><span class="p">),</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="n">gBS</span><span class="o">-&gt;</span><span class="n">SetMem</span><span class="w"> </span><span class="p">(</span><span class="n">DevInfo</span><span class="p">.</span><span class="n">user_public_key</span><span class="p">,</span><span class="w"> </span><span class="k">sizeof</span><span class="w"> </span><span class="p">(</span><span class="n">DevInfo</span><span class="p">.</span><span class="n">user_public_key</span><span class="p">),</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">IsSecureBootEnabled</span><span class="w"> </span><span class="p">())</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">      </span><span class="n">DevInfo</span><span class="p">.</span><span class="n">is_unlocked</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">FALSE</span><span class="p">;</span><span class="w"></span>
+<span class="w">      </span><span class="n">DevInfo</span><span class="p">.</span><span class="n">is_unlock_critical</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">FALSE</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">      </span><span class="n">DevInfo</span><span class="p">.</span><span class="n">is_unlocked</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">TRUE</span><span class="p">;</span><span class="w"></span>
+<span class="w">      </span><span class="n">DevInfo</span><span class="p">.</span><span class="n">is_unlock_critical</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">TRUE</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="n">DevInfo</span><span class="p">.</span><span class="n">is_charger_screen_enabled</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">FALSE</span><span class="p">;</span><span class="w"> </span><span class="c1">//初始化为不开，可以通过改这里实现进入关机充电</span>
+<span class="w">    </span><span class="n">DevInfo</span><span class="p">.</span><span class="n">verity_mode</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">TRUE</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="n">Status</span><span class="w"> </span><span class="o">=</span><span class="w"></span>
+<span class="w">        </span><span class="n">ReadWriteDeviceInfo</span><span class="w"> </span><span class="p">(</span><span class="n">WRITE_CONFIG</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">VOID</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="o">&amp;</span><span class="n">DevInfo</span><span class="p">,</span><span class="w"> </span><span class="k">sizeof</span><span class="w"> </span><span class="p">(</span><span class="n">DevInfo</span><span class="p">));</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">Status</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">EFI_SUCCESS</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">      </span><span class="n">DEBUG</span><span class="w"> </span><span class="p">((</span><span class="n">EFI_D_ERROR</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Unable to Write Device Info: %r</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">Status</span><span class="p">));</span><span class="w"></span>
+<span class="w">      </span><span class="k">return</span><span class="w"> </span><span class="n">Status</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">Status</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="n">BOOLEAN</span><span class="w"> </span><span class="nf">IsChargingScreenEnable</span><span class="w"> </span><span class="p">(</span><span class="n">VOID</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">DevInfo</span><span class="p">.</span><span class="n">is_charger_screen_enabled</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="n">EFI_STATUS</span><span class="w"></span>
+<span class="nf">EnableChargingScreen</span><span class="w"> </span><span class="p">(</span><span class="n">BOOLEAN</span><span class="w"> </span><span class="n">IsEnabled</span><span class="p">)</span><span class="w"> </span><span class="c1">//提供fastboot命令调用</span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="n">EFI_STATUS</span><span class="w"> </span><span class="n">Status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">EFI_SUCCESS</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">IsChargingScreenEnable</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">IsEnabled</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">DevInfo</span><span class="p">.</span><span class="n">is_charger_screen_enabled</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">IsEnabled</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="n">Status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ReadWriteDeviceInfo</span><span class="w"> </span><span class="p">(</span><span class="n">WRITE_CONFIG</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">DevInfo</span><span class="p">,</span><span class="w"> </span><span class="k">sizeof</span><span class="w"> </span><span class="p">(</span><span class="n">DevInfo</span><span class="p">));</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">Status</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">EFI_SUCCESS</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">      </span><span class="n">DEBUG</span><span class="w"> </span><span class="p">((</span><span class="n">EFI_D_ERROR</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Error %a charger screen: %r</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"></span>
+<span class="w">              </span><span class="p">(</span><span class="n">IsEnabled</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="s">&quot;Enabling&quot;</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="s">&quot;Disabling&quot;</span><span class="p">),</span><span class="w"> </span><span class="n">Status</span><span class="p">));</span><span class="w"></span>
+<span class="w">      </span><span class="k">return</span><span class="w"> </span><span class="n">Status</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">Status</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+</section>
+<section id="batterystatus">
+<h1>BatteryStatus原理<a class="headerlink" href="#batterystatus" title="Permalink to this heading"></a></h1>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">BatteryStatus</span></code>是通过接口<code class="docutils literal notranslate"><span class="pre">TargetPauseForBatteryCharge</span></code>获取状态的，首先通过接口<code class="docutils literal notranslate"><span class="pre">GetPonReason</span></code>获取启动原因，然后根据接口<code class="docutils literal notranslate"><span class="pre">WarmResetStatus</span></code>判断是冷启还是热启，最后根据接口<code class="docutils literal notranslate"><span class="pre">GetChargerPresence</span></code>判断是否是usb充电启动，根据注释可以了解到：</p>
+<ul>
+<li><p>在<code class="docutils literal notranslate"><span class="pre">fastboot</span> <span class="pre">reboot</span></code>重启的情况下，<code class="docutils literal notranslate"><span class="pre">adb</span> <span class="pre">reboot</span></code>或者如果电源键被按下，我们不想进入关机充电模式。</p></li>
+<li><p>两个必要条件：冷启动和非<code class="docutils literal notranslate"><span class="pre">fastboot/adb</span> <span class="pre">reboot</span></code>启动必须满足，在此基础上usb充电、charger在充、<code class="docutils literal notranslate"><span class="pre">PON1</span> <span class="pre">trigger</span></code>则进入关机充电模式。</p></li>
+</ul>
+</li>
+</ul>
+<section id="pon-reason-type">
+<h2>PON_REASON_TYPE启动原因<a class="headerlink" href="#pon-reason-type" title="Permalink to this heading"></a></h2>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span>启动原因：
+QcomModulePkg/Include/Protocol/EFIPmicPon.h
+typedef struct {
+  UINT32 HARD_RESET : 1; /* Hard reset event trigger */
+  UINT32 SMPL : 1;       /* SMPL trigger */
+  UINT32 RTC : 1;        /* RTC trigger */
+  UINT32 DC_CHG : 1;     /* DC Charger trigger */
+  UINT32 USB_CHG : 1;    /* USB Charger trigger */
+  UINT32 PON1 : 1;       /* PON1 trigger */
+  UINT32 CBLPWR : 1;     /* CBL_PWR1_N trigger */
+  UINT32 KPDPWR : 1;     /* KPDPWR_N trigger */
+} EFI_PM_PON_REASON_TYPE;
+
+
+TargetPauseForBatteryCharge (BOOLEAN *BatteryStatus)
+{
+  EFI_STATUS Status = EFI_SUCCESS;
+  EFI_PM_PON_REASON_TYPE PONReason;
+  EFI_QCOM_PMIC_PON_PROTOCOL *PmicPonProtocol;
+  EFI_CHARGER_EX_PROTOCOL *ChgDetectProtocol;
+  BOOLEAN ChgPresent;
+  BOOLEAN WarmRtStatus;
+  BOOLEAN IsColdBoot;
+
+  /* Determines whether to pause for batter charge,
+   * Serves only performance purposes, defaults to return zero*/
+  *BatteryStatus = 0;
+
+  Status = gBS-&gt;LocateProtocol (&amp;gChargerExProtocolGuid, NULL,
+                                (VOID **)&amp;ChgDetectProtocol);
+  if (Status == EFI_NOT_FOUND) {
+    DEBUG ((EFI_D_VERBOSE, &quot;Charger Protocol is not available.\n&quot;));
+    return EFI_SUCCESS;
+  } else if (EFI_ERROR (Status)) {
+    DEBUG ((EFI_D_ERROR, &quot;Error finding charger protocol: %r\n&quot;, Status));
+    return Status;
+  }
+
+  /* The new protocol are supported on future chipsets */
+  if (ChgDetectProtocol-&gt;Revision &gt;= CHARGER_EX_REVISION) {
+    Status = ChgDetectProtocol-&gt;IsOffModeCharging (BatteryStatus);
+    if (EFI_ERROR (Status))
+      DEBUG (
+          (EFI_D_ERROR, &quot;Error getting off mode charging info: %r\n&quot;, Status));
+
+    return Status;
+  } else {
+    Status = gBS-&gt;LocateProtocol (&amp;gQcomPmicPonProtocolGuid, NULL,
+                                  (VOID **)&amp;PmicPonProtocol);
+    if (EFI_ERROR (Status)) {
+      DEBUG ((EFI_D_ERROR, &quot;Error locating pmic pon protocol: %r\n&quot;, Status));
+      return Status;
+    }
+
+    /* Passing 0 for PMIC device Index since the protocol infers internally */
+    Status = PmicPonProtocol-&gt;GetPonReason (0, &amp;PONReason);
+    if (EFI_ERROR (Status)) {
+      DEBUG ((EFI_D_ERROR, &quot;Error getting pon reason: %r\n&quot;, Status));
+      return Status;
+    }
+
+    Status = PmicPonProtocol-&gt;WarmResetStatus (0, &amp;WarmRtStatus);
+    if (EFI_ERROR (Status)) {
+      DEBUG ((EFI_D_ERROR, &quot;Error getting warm reset status: %r\n&quot;, Status));
+      return Status;
+    }
+
+    IsColdBoot = !WarmRtStatus;
+    Status = ChgDetectProtocol-&gt;GetChargerPresence (&amp;ChgPresent);
+    if (EFI_ERROR (Status)) {
+      DEBUG ((EFI_D_ERROR, &quot;Error getting charger info: %r\n&quot;, Status));
+      return Status;
+
+    DEBUG ((EFI_D_INFO, &quot; PON Reason is %d cold_boot:%d charger path: %d\n&quot;,
+            PONReason, IsColdBoot, ChgPresent));
+    /* In case of fastboot reboot,adb reboot or if we see the power key
+     * pressed we do not want go into charger mode.
+     * fastboot/adb reboot is warm boot with PON hard reset bit set.
+     */
+    if (IsColdBoot &amp;&amp; (!(PONReason.HARD_RESET) &amp;&amp; (!(PONReason.KPDPWR)) &amp;&amp;
+                       (PONReason.PON1 || PONReason.USB_CHG) &amp;&amp; (ChgPresent))) {
+      *BatteryStatus = 1;
+    } else {
+      *BatteryStatus = 0;
+    }
+
+    return Status;
+  }
+}
+</pre></div>
+</div>
+<p>首先来看一下<code class="docutils literal notranslate"><span class="pre">GetPonReason</span></code>和<code class="docutils literal notranslate"><span class="pre">WarmResetStatus</span></code>接口实现，他们都是基于同一个<code class="docutils literal notranslate"><span class="pre">PmicPonProtocol</span></code>，这里看看Pmic中接口实现在XBL中：</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">QcomPkg/Drivers/PmicDxe/Pmic.c</span></code>:</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="o">*</span><span class="w"> </span><span class="n">PmicInitialize</span><span class="p">(</span><span class="w"></span>
+<span class="w">  </span><span class="o">*</span><span class="w"> </span><span class="n">err_flag</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pm_init</span><span class="p">();</span><span class="w"></span>
+<span class="w">    </span><span class="o">*</span><span class="w"> </span><span class="n">pm_device_setup</span><span class="p">();</span><span class="w"> </span><span class="c1">//QcomPkg/Library/PmicLib/framework/src/pm_core_init.c</span>
+<span class="w">    </span><span class="o">*</span><span class="w"> </span><span class="n">pm_comm_info_init</span><span class="p">();</span><span class="w"></span>
+<span class="w">    </span><span class="o">*</span><span class="w"> </span><span class="n">pm_resource_manager_init</span><span class="p">();</span><span class="w"></span>
+<span class="w">  </span><span class="o">*</span><span class="w"> </span><span class="n">err_flag</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pm_pmicdxe_init</span><span class="p">(</span><span class="n">ImageHandle</span><span class="p">,</span><span class="w"> </span><span class="n">SystemTable</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="o">*</span><span class="w"> </span><span class="n">Status</span><span class="w"> </span><span class="o">|=</span><span class="w"> </span><span class="n">pm_install_common_protocols</span><span class="p">(</span><span class="n">ImageHandle</span><span class="p">,</span><span class="w"> </span><span class="n">SystemTable</span><span class="p">);</span><span class="w"> </span><span class="c1">//这里初始化所有常用的protocols</span>
+<span class="w">    </span><span class="o">*</span><span class="w"> </span><span class="n">Status</span><span class="w"> </span><span class="o">|=</span><span class="w"> </span><span class="n">pm_install_target_protocols</span><span class="p">(</span><span class="n">ImageHandle</span><span class="p">,</span><span class="w"> </span><span class="n">SystemTable</span><span class="p">);</span><span class="w"></span>
+</pre></div>
+</div>
+<p>接着查看一下具体内容，其中<code class="docutils literal notranslate"><span class="pre">PmicPwronProtocolImplementation</span></code>是我们找的protocol：</p>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="k">static</span><span class="w"> </span><span class="n">pm_err_flag_type</span><span class="w"> </span><span class="nf">pm_install_common_protocols</span><span class="p">(</span><span class="n">EFI_HANDLE</span><span class="w"> </span><span class="n">ImageHandle</span><span class="p">,</span><span class="w"> </span><span class="n">EFI_SYSTEM_TABLE</span><span class="w"> </span><span class="o">*</span><span class="n">SystemTable</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="n">EFI_STATUS</span><span class="w"> </span><span class="n">Status</span><span class="w">         </span><span class="o">=</span><span class="w"> </span><span class="n">EFI_SUCCESS</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="n">pm_err_flag_type</span><span class="w"> </span><span class="n">err_flag</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">PM_ERR_FLAG_SUCCESS</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">  </span><span class="n">Status</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="n">gBS</span><span class="o">-&gt;</span><span class="n">InstallMultipleProtocolInterfaces</span><span class="p">(</span><span class="w"></span>
+<span class="w">    </span><span class="o">&amp;</span><span class="n">ImageHandle</span><span class="p">,</span><span class="w"></span>
+<span class="w">    </span><span class="o">&amp;</span><span class="n">gQcomPmicGpioProtocolGuid</span><span class="p">,</span><span class="w">    </span><span class="o">&amp;</span><span class="n">PmicGpioProtocolImplementation</span><span class="p">,</span><span class="w"></span>
+<span class="w">    </span><span class="o">&amp;</span><span class="n">gQcomPmicVregProtocolGuid</span><span class="p">,</span><span class="w">    </span><span class="o">&amp;</span><span class="n">PmicVregProtocolImplementation</span><span class="p">,</span><span class="w"></span>
+<span class="w">    </span><span class="o">&amp;</span><span class="n">gQcomPmicLpgProtocolGuid</span><span class="p">,</span><span class="w">     </span><span class="o">&amp;</span><span class="n">PmicLpgProtocolImplementation</span><span class="p">,</span><span class="w"></span>
+<span class="w">    </span><span class="o">&amp;</span><span class="n">gQcomPmicClkBuffProtocolGuid</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">PmicClkBuffProtocolImplementation</span><span class="p">,</span><span class="w"></span>
+<span class="w">    </span><span class="o">&amp;</span><span class="n">gQcomPmicRtcProtocolGuid</span><span class="p">,</span><span class="w">     </span><span class="o">&amp;</span><span class="n">PmicRtcProtocolImplementation</span><span class="p">,</span><span class="w"></span>
+<span class="w">    </span><span class="o">&amp;</span><span class="n">gQcomPmicPwrOnProtocolGuid</span><span class="p">,</span><span class="w">   </span><span class="o">&amp;</span><span class="n">PmicPwronProtocolImplementation</span><span class="p">,</span><span class="w"></span>
+<span class="w">    </span><span class="o">&amp;</span><span class="n">gQcomPmicVersionProtocolGuid</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">PmicVersionProtocolImplementation</span><span class="p">,</span><span class="w"></span>
+<span class="w">    </span><span class="o">&amp;</span><span class="n">gQcomPmicWledProtocolGuid</span><span class="p">,</span><span class="w">    </span><span class="o">&amp;</span><span class="n">PmicWledProtocolImplementation</span><span class="p">,</span><span class="w"></span>
+<span class="w">    </span><span class="o">&amp;</span><span class="n">gQcomPmicIbbProtocolGuid</span><span class="p">,</span><span class="w">     </span><span class="o">&amp;</span><span class="n">PmicIbbProtocolImplementation</span><span class="p">,</span><span class="w"></span>
+<span class="w">    </span><span class="o">&amp;</span><span class="n">gQcomPmicAbProtocolGuid</span><span class="p">,</span><span class="w">      </span><span class="o">&amp;</span><span class="n">PmicAbProtocolImplementation</span><span class="p">,</span><span class="w"></span>
+<span class="w">    </span><span class="o">&amp;</span><span class="n">gQcomPmicOledbProtocolGuid</span><span class="p">,</span><span class="w">   </span><span class="o">&amp;</span><span class="n">PmicOledbProtocolImplementation</span><span class="p">,</span><span class="w"></span>
+<span class="w">    </span><span class="o">&amp;</span><span class="n">gQcomPmicRgbLedProtocolGuid</span><span class="p">,</span><span class="w">  </span><span class="o">&amp;</span><span class="n">PmicRgbLedProtocolImplementation</span><span class="p">,</span><span class="w"></span>
+<span class="w">    </span><span class="o">&amp;</span><span class="n">gQcomPmicUsbProtocolGuid</span><span class="p">,</span><span class="w">     </span><span class="o">&amp;</span><span class="n">PmicUsbProtocolImplementation</span><span class="p">,</span><span class="w"></span>
+<span class="w">    </span><span class="o">&amp;</span><span class="n">gQcomPmicVibProtocolGuid</span><span class="p">,</span><span class="w">     </span><span class="o">&amp;</span><span class="n">PmicVibProtocolImplementation</span><span class="p">,</span><span class="w"></span>
+<span class="w">    </span><span class="o">&amp;</span><span class="n">gQcomPmicGenericProtocolGuid</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">PmicGenericProtocolImplementation</span><span class="p">,</span><span class="w"></span>
+<span class="w">    </span><span class="o">&amp;</span><span class="n">gQcomPmicLcdbProtocolGuid</span><span class="p">,</span><span class="w">    </span><span class="o">&amp;</span><span class="n">PmicLcdbProtocolImplementation</span><span class="p">,</span><span class="w"></span>
+<span class="w">    </span><span class="o">&amp;</span><span class="n">gQcomPmicPwmProtocolGuid</span><span class="p">,</span><span class="w">     </span><span class="o">&amp;</span><span class="n">PmicPwmProtocolImplementation</span><span class="p">,</span><span class="w"></span>
+<span class="w">    </span><span class="o">&amp;</span><span class="n">gQcomPmicDriverTestProtocolGuid</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">PmicTestProtocolImplementation</span><span class="p">,</span><span class="w"></span>
+<span class="w">    </span><span class="nb">NULL</span><span class="w"></span>
+<span class="w">    </span><span class="p">);</span><span class="w"></span>
+
+<span class="w">  </span><span class="n">err_flag</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">Status</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">EFI_SUCCESS</span><span class="p">)</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="n">PM_ERR_FLAG_SUCCESS</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">PM_ERR_FLAG_FAILURE</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">err_flag</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="c1">// EXTERNAL FUNCTION PROTOTYPES</span>
+<span class="n">pm_err_flag_type</span><span class="w"> </span><span class="nf">pm_install_target_protocols</span><span class="p">(</span><span class="n">EFI_HANDLE</span><span class="w"> </span><span class="n">ImageHandle</span><span class="p">,</span><span class="w"> </span><span class="n">EFI_SYSTEM_TABLE</span><span class="w"> </span><span class="o">*</span><span class="n">SystemTable</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+
+<span class="w">  </span><span class="n">pm_err_flag_type</span><span class="w"> </span><span class="n">err_flag</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">PM_ERR_FLAG_SUCCESS</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="n">EFI_STATUS</span><span class="w">  </span><span class="n">Status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">EFI_SUCCESS</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">  </span><span class="n">Status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">gBS</span><span class="o">-&gt;</span><span class="n">InstallMultipleProtocolInterfaces</span><span class="p">(</span><span class="w"></span>
+<span class="w">    </span><span class="o">&amp;</span><span class="n">ImageHandle</span><span class="p">,</span><span class="w"></span>
+<span class="w">    </span><span class="o">&amp;</span><span class="n">gQcomPmicPonProtocolGuid</span><span class="p">,</span><span class="w">  </span><span class="o">&amp;</span><span class="n">PmicPonProtocolImplementation</span><span class="p">,</span><span class="w">       </span><span class="cm">/*installing gQcomPmicPonProtocolGuid for open source*/</span><span class="w"></span>
+<span class="w">    </span><span class="o">&amp;</span><span class="n">gQcomPmicSchgProtocolGuid</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">PmicScpqProtocolImplementation</span><span class="p">,</span><span class="w"></span>
+<span class="w">    </span><span class="o">&amp;</span><span class="n">gQcomPmicQgProtocolGuid</span><span class="p">,</span><span class="w">   </span><span class="o">&amp;</span><span class="n">PmicQgProtocolImplementation</span><span class="p">,</span><span class="w"></span>
+<span class="w">    </span><span class="nb">NULL</span><span class="w"></span>
+<span class="w">    </span><span class="p">);</span><span class="w"></span>
+
+<span class="w">  </span><span class="n">err_flag</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">Status</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">EFI_SUCCESS</span><span class="p">)</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="n">PM_ERR_FLAG_SUCCESS</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">PM_ERR_FLAG_FAILURE</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">err_flag</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">QcomPkg/Drivers/PmicDxe/PmicPwrOnProtocol.c</span></code>:<code class="docutils literal notranslate"><span class="pre">PmicPwronProtocolImplementation</span></code>接口定义如下：</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="n">EFI_QCOM_PMIC_PWRON_PROTOCOL</span><span class="w"> </span><span class="n">PmicPwronProtocolImplementation</span><span class="w"> </span><span class="o">=</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="n">PMIC_PWRON_REVISION</span><span class="p">,</span><span class="w"></span>
+<span class="w">  </span><span class="n">EFI_PmicPwronGetPonPblStatus</span><span class="p">,</span><span class="w"></span>
+<span class="w">  </span><span class="n">EFI_PmicPwronSetPonTrigger</span><span class="p">,</span><span class="w"></span>
+<span class="w">  </span><span class="n">EFI_PmicPwronGetPonRtStatus</span><span class="p">,</span><span class="w"></span>
+<span class="w">  </span><span class="n">EFI_PmicPonGetSpareReg</span><span class="p">,</span><span class="w"></span>
+<span class="w">  </span><span class="n">EFI_PmicPonSetSpareReg</span><span class="p">,</span><span class="w"></span>
+<span class="w">  </span><span class="n">EFI_PmicPonGetPonReason</span><span class="p">,</span><span class="w"></span>
+<span class="w">  </span><span class="n">EFI_PmicPonWarmResetStatus</span><span class="p">,</span><span class="w"></span>
+<span class="w">  </span><span class="n">EFI_PmicPonGetAllPonReasons</span><span class="p">,</span><span class="w"></span>
+<span class="w">  </span><span class="n">EFI_PmicPwronEnableEdgePonTrigger</span><span class="p">,</span><span class="w"></span>
+<span class="w">  </span><span class="n">EFI_PmicPonGetAllFaultReasons</span><span class="p">,</span><span class="w"></span>
+<span class="p">};</span><span class="w"></span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>我们找的接口如下，其中<code class="docutils literal notranslate"><span class="pre">EFI_PmicPonGetPonReason</span></code>接口是通过读取<code class="docutils literal notranslate"><span class="pre">PMIO_PON_GEN2_PON_REASON1_ADDR</span></code>寄存器获取启动原因：</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="n">EFI_STATUS</span><span class="w"></span>
+<span class="n">EFIAPI</span><span class="w"></span>
+<span class="n">EFI_PmicPonGetPonReason</span><span class="w"></span>
+<span class="p">(</span><span class="w"></span>
+<span class="w">   </span><span class="n">IN</span><span class="w">  </span><span class="n">UINT32</span><span class="w">                  </span><span class="n">PmicDeviceIndex</span><span class="p">,</span><span class="w"></span>
+<span class="w">   </span><span class="n">OUT</span><span class="w"> </span><span class="n">EFI_PM_PON_REASON_TYPE</span><span class="o">*</span><span class="w"> </span><span class="n">PonReason</span><span class="w"></span>
+<span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="n">EFI_STATUS</span><span class="w"> </span><span class="n">Status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">EFI_SUCCESS</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">  </span><span class="n">pm_err_flag_type</span><span class="w">  </span><span class="n">err_flag</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">PM_ERR_FLAG__SUCCESS</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">  </span><span class="k">if</span><span class="p">(</span><span class="nb">NULL</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">PonReason</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">Status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">EFI_INVALID_PARAMETER</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
+<span class="w">  </span><span class="k">else</span><span class="w"></span>
+<span class="w">  </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">err_flag</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pm_pon_get_pon_reason</span><span class="p">(</span><span class="n">PmicDeviceIndex</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">pm_pon_reason_type</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="n">PonReason</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">    </span><span class="n">Status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">PM_ERR_FLAG__SUCCESS</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">err_flag</span><span class="p">)</span><span class="o">?</span><span class="w"> </span><span class="n">EFI_SUCCESS</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">EFI_DEVICE_ERROR</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">Status</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="cp">#define PON_BASE                                                          0x00000800</span>
+<span class="cp">#define PMIO_PON_GEN2_PON_REASON1_ADDR                                        (PON_BASE      + 0x000000C0)</span>
+<span class="n">pm_err_flag_type</span><span class="w"></span>
+<span class="n">pm_pon_get_pon_reason</span><span class="p">(</span><span class="n">uint32</span><span class="w"> </span><span class="n">pmic_device_index</span><span class="p">,</span><span class="w"> </span><span class="n">pm_pon_reason_type</span><span class="w"> </span><span class="o">*</span><span class="n">reason</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="n">pm_err_flag_type</span><span class="w"> </span><span class="n">err_flag</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">PM_ERR_FLAG_SUCCESS</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="n">uint32</span><span class="w"> </span><span class="n">slave_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">reason</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="nb">NULL</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">err_flag</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">PM_ERR_FLAG_INVALID_PARAMETER</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
+<span class="w">  </span><span class="k">else</span><span class="w"></span>
+<span class="w">  </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">err_flag</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pm_pon_get_pon_info</span><span class="p">(</span><span class="n">pmic_device_index</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">slave_id</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">err_flag</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">PM_ERR_FLAG_SUCCESS</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="p">{</span><span class="w"></span>
+<span class="w">      </span><span class="n">err_flag</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pm_comm_read_byte</span><span class="p">(</span><span class="n">slave_id</span><span class="p">,</span><span class="w"> </span><span class="n">PMIO_PON_GEN2_PON_REASON1_ADDR</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">uint8</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="n">reason</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span><span class="w"></span>
+<span class="w">          </span><span class="k">if</span><span class="p">(</span><span class="w"> </span><span class="p">(</span><span class="n">pm_get_pmic_model</span><span class="p">(</span><span class="n">PMIC_A</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">PMIC_IS_PM6125</span><span class="p">)</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">reason</span><span class="o">-&gt;</span><span class="n">pon1</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mh">0x1</span><span class="p">)</span><span class="w"></span>
+<span class="w">          </span><span class="p">{</span><span class="w"></span>
+<span class="w">                  </span><span class="n">reason</span><span class="o">-&gt;</span><span class="n">rtc</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0x1</span><span class="p">;</span><span class="w"></span>
+<span class="w">                  </span><span class="n">reason</span><span class="o">-&gt;</span><span class="n">pon1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0x0</span><span class="p">;</span><span class="w"></span>
+<span class="w">          </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">err_flag</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">cPonWarmResetStatus</span></code>接口如下，也是通过<code class="docutils literal notranslate"><span class="pre">pm_pon_get_on_reason</span></code>获取，如果能获取到启动原因则是热启动：</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="n">EFI_STATUS</span><span class="w"></span>
+<span class="n">EFIAPI</span><span class="w"></span>
+<span class="n">EFI_PmicPonWarmResetStatus</span><span class="w"></span>
+<span class="p">(</span><span class="w"></span>
+<span class="w">   </span><span class="n">IN</span><span class="w">  </span><span class="n">UINT32</span><span class="w">      </span><span class="n">PmicDeviceIndex</span><span class="p">,</span><span class="w"></span>
+<span class="w">   </span><span class="n">OUT</span><span class="w"> </span><span class="n">BOOLEAN</span><span class="o">*</span><span class="w">    </span><span class="n">WarmReset</span><span class="w"></span>
+<span class="w">  </span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="n">EFI_STATUS</span><span class="w"> </span><span class="n">Status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">EFI_SUCCESS</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">  </span><span class="n">pm_err_flag_type</span><span class="w">  </span><span class="n">err_flag</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">PM_ERR_FLAG__SUCCESS</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="n">pm_pon_on_state_reason_type</span><span class="w"> </span><span class="n">Reason</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">  </span><span class="k">if</span><span class="p">(</span><span class="nb">NULL</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">WarmReset</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">Status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">EFI_DEVICE_ERROR</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
+<span class="w">  </span><span class="k">else</span><span class="w"></span>
+<span class="w">  </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">err_flag</span><span class="w"> </span><span class="o">=</span><span class="w">  </span><span class="n">pm_pon_get_on_reason</span><span class="p">(</span><span class="n">PmicDeviceIndex</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">Reason</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">    </span><span class="k">if</span><span class="p">(</span><span class="n">err_flag</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">PM_ERR_FLAG__SUCCESS</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="p">{</span><span class="w"></span>
+<span class="w">      </span><span class="o">*</span><span class="n">WarmReset</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">Reason</span><span class="p">.</span><span class="n">warm_seq</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">TRUE</span><span class="p">)</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="n">TRUE</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">FALSE</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">    </span><span class="n">Status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">PM_ERR_FLAG__SUCCESS</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">err_flag</span><span class="p">)</span><span class="o">?</span><span class="w"> </span><span class="n">EFI_SUCCESS</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">EFI_DEVICE_ERROR</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">Status</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">QcomPkg/Library/ChargerLib/target/Agatti/ChargerLibTarget.c</span></code>代码流程：</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="o">*</span><span class="w"> </span><span class="n">EFI_STATUS</span><span class="w"> </span><span class="n">ChargerLibTarget_Init</span><span class="p">(</span><span class="w"> </span><span class="n">chargerlib_cfgdata_type</span><span class="w"> </span><span class="o">*</span><span class="n">pChargerLibTargetConfig</span><span class="w"> </span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="o">*</span><span class="w"> </span><span class="n">ChargerLibTarget_HWInit</span><span class="p">(</span><span class="n">pChargerLibTargetConfig</span><span class="p">);</span><span class="w"></span>
+</pre></div>
+</div>
+</section>
+<section id="getchargerpresence">
+<h2>GetChargerPresence是否充电判断<a class="headerlink" href="#getchargerpresence" title="Permalink to this heading"></a></h2>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">GetChargerPresence</span></code>定义如下，根据接口<code class="docutils literal notranslate"><span class="pre">GetVbusDetectStatus</span></code>获取vbus状态，来判断是否在充电：</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="cm">/**</span>
+<span class="cm">EFI_ChargerExGetChargerPresence()</span>
+
+<span class="cm">@brief</span>
+<span class="cm"> Returns charger presence status</span>
+<span class="cm"> */</span><span class="w"></span>
+<span class="n">EFI_STATUS</span><span class="w"></span>
+<span class="n">EFIAPI</span><span class="w"></span>
+<span class="n">EFI_ChargerExGetChargerPresence</span><span class="w"></span>
+<span class="p">(</span><span class="w"></span>
+<span class="w">  </span><span class="n">OUT</span><span class="w"> </span><span class="n">BOOLEAN</span><span class="w">  </span><span class="o">*</span><span class="n">pChargerPresent</span><span class="w"></span>
+<span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="n">EFI_STATUS</span><span class="w">                           </span><span class="n">Status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">EFI_SUCCESS</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="n">STATIC</span><span class="w"> </span><span class="n">EFI_USB_PWR_CTRL_PROTOCOL</span><span class="w">   </span><span class="o">*</span><span class="n">UsbPwrCtrlProtocol</span><span class="w">   </span><span class="o">=</span><span class="w"> </span><span class="nb">NULL</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="c1">//BOOLEAN                              DcInValid = FALSE;</span>
+<span class="w">  </span><span class="n">EFI_PLATFORMINFO_PLATFORM_TYPE</span><span class="w">       </span><span class="n">PlatformType</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">  </span><span class="k">if</span><span class="p">(</span><span class="n">FALSE</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">IsChgPresent</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">EFI_UNSUPPORTED</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">pChargerPresent</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">EFI_INVALID_PARAMETER</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">  </span><span class="n">Status</span><span class="w"> </span><span class="o">|=</span><span class="w"> </span><span class="n">GetPlatformType</span><span class="p">(</span><span class="o">&amp;</span><span class="n">PlatformType</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="k">if</span><span class="p">(</span><span class="n">EFI_SUCCESS</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">Status</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">DEBUG</span><span class="p">((</span><span class="n">EFI_D_WARN</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;ChargerExProtocol:: %a Error getting platform type  </span><span class="se">\r\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">__FUNCTION__</span><span class="p">));</span><span class="w"></span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">EFI_DEVICE_ERROR</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">  </span><span class="k">if</span><span class="p">((</span><span class="n">EFI_PLATFORMINFO_TYPE_CDP</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">PlatformType</span><span class="p">)</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="p">(</span><span class="n">EFI_PLATFORMINFO_TYPE_RUMI</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">PlatformType</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="o">||</span><span class="w"> </span><span class="p">(</span><span class="n">EFI_PLATFORMINFO_TYPE_CLS</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">PlatformType</span><span class="p">))</span><span class="w"></span>
+<span class="w">  </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">DEBUG</span><span class="p">((</span><span class="w"> </span><span class="n">EFI_D_WARN</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;ChargerExProtocol:: %a CDP/RUMI/CLS/IDP (%d) Platform detected. No Battery information available. </span><span class="se">\r\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">__FUNCTION__</span><span class="p">,</span><span class="w"> </span><span class="n">PlatformType</span><span class="p">));</span><span class="w"></span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">EFI_UNSUPPORTED</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">UsbPwrCtrlProtocol</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">Status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">gBS</span><span class="o">-&gt;</span><span class="n">LocateProtocol</span><span class="p">(</span><span class="w"> </span><span class="o">&amp;</span><span class="n">gQcomUsbPwrCtrlProtocolGuid</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                  </span><span class="nb">NULL</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                 </span><span class="p">(</span><span class="n">VOID</span><span class="w"> </span><span class="o">**</span><span class="p">)</span><span class="o">&amp;</span><span class="n">UsbPwrCtrlProtocol</span><span class="w"> </span><span class="p">);</span><span class="w"></span>
+
+<span class="w">    </span><span class="k">if</span><span class="p">((</span><span class="n">EFI_SUCCESS</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">Status</span><span class="p">)</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="p">(</span><span class="nb">NULL</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">UsbPwrCtrlProtocol</span><span class="p">))</span><span class="w"></span>
+<span class="w">    </span><span class="p">{</span><span class="w"></span>
+<span class="w">      </span><span class="k">return</span><span class="w"> </span><span class="n">EFI_DEVICE_ERROR</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">  </span><span class="n">Status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">UsbPwrCtrlProtocol</span><span class="o">-&gt;</span><span class="n">GetVbusDetectStatus</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">pChargerPresent</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">EFI_SUCCESS</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">Status</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">Status</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">pQcomChargerProtocol</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">Status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">gBS</span><span class="o">-&gt;</span><span class="n">LocateProtocol</span><span class="p">(</span><span class="o">&amp;</span><span class="n">gQcomChargerProtocolGuid</span><span class="p">,</span><span class="w"> </span><span class="nb">NULL</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">VOID</span><span class="w"> </span><span class="o">**</span><span class="p">)</span><span class="o">&amp;</span><span class="n">pQcomChargerProtocol</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">((</span><span class="n">EFI_SUCCESS</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">Status</span><span class="p">)</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="p">(</span><span class="nb">NULL</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">pQcomChargerProtocol</span><span class="p">))</span><span class="w"></span>
+<span class="w">    </span><span class="p">{</span><span class="w"></span>
+<span class="w">      </span><span class="k">return</span><span class="w"> </span><span class="n">EFI_DEVICE_ERROR</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
+
+<span class="c1">//disabling DcIn as Wi Power (Wireless charging) is not supported</span>
+<span class="w">  </span><span class="cm">/*Status = pQcomChargerProtocol-&gt;IsDcInValid(&amp;DcInValid);</span>
+
+<span class="cm">  if (EFI_SUCCESS == Status)</span>
+<span class="cm">  {</span>
+<span class="cm">    (*pChargerPresent) |= DcInValid;</span>
+<span class="cm">  } */</span><span class="w"></span>
+
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">Status</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="fastboot">
+<h1>fastboot命令控制开关<a class="headerlink" href="#fastboot" title="Permalink to this heading"></a></h1>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">QcomModulePkg/Library/FastbootLib/FastbootCmds.c</span></code>fastboot命令支持开关关机充电模式:</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="w">  </span><span class="k">struct</span><span class="w"> </span><span class="nc">FastbootCmdDesc</span><span class="w"> </span><span class="n">cmd_list</span><span class="p">[]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">      </span><span class="cm">/* By Default enable list is empty */</span><span class="w"></span>
+<span class="w">      </span><span class="p">{</span><span class="s">&quot;&quot;</span><span class="p">,</span><span class="w"> </span><span class="nb">NULL</span><span class="p">},</span><span class="w"></span>
+<span class="cm">/*CAUTION(High): Enabling these commands will allow changing the partitions</span>
+<span class="cm"> *like system,userdata,cachec etc...</span>
+<span class="cm"> */</span><span class="w"></span>
+<span class="cp">#ifdef ENABLE_UPDATE_PARTITIONS_CMDS</span>
+<span class="w">      </span><span class="p">{</span><span class="s">&quot;flash:&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">CmdFlash</span><span class="p">},</span><span class="w"></span>
+<span class="w">      </span><span class="p">{</span><span class="s">&quot;erase:&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">CmdErase</span><span class="p">},</span><span class="w"></span>
+<span class="w">      </span><span class="p">{</span><span class="s">&quot;set_active&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">CmdSetActive</span><span class="p">},</span><span class="w"></span>
+<span class="w">      </span><span class="p">{</span><span class="s">&quot;flashing get_unlock_ability&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">CmdFlashingGetUnlockAbility</span><span class="p">},</span><span class="w"></span>
+<span class="w">      </span><span class="p">{</span><span class="s">&quot;flashing unlock&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">CmdFlashingUnlock</span><span class="p">},</span><span class="w"></span>
+<span class="w">      </span><span class="p">{</span><span class="s">&quot;flashing lock&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">CmdFlashingLock</span><span class="p">},</span><span class="w"></span>
+<span class="cp">#endif</span>
+<span class="cm">/*</span>
+<span class="cm"> *CAUTION(CRITICAL): Enabling these commands will allow changes to bootimage.</span>
+<span class="cm"> */</span><span class="w"></span>
+<span class="cp">#ifdef ENABLE_DEVICE_CRITICAL_LOCK_UNLOCK_CMDS</span>
+<span class="w">      </span><span class="p">{</span><span class="s">&quot;flashing unlock_critical&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">CmdFlashingUnLockCritical</span><span class="p">},</span><span class="w"></span>
+<span class="w">      </span><span class="p">{</span><span class="s">&quot;flashing lock_critical&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">CmdFlashingLockCritical</span><span class="p">},</span><span class="w"></span>
+<span class="cp">#endif</span>
+<span class="cm">/*</span>
+<span class="cm"> *CAUTION(CRITICAL): Enabling this command will allow boot with different</span>
+<span class="cm"> *bootimage.</span>
+<span class="cm"> */</span><span class="w"></span>
+<span class="cp">#ifdef ENABLE_BOOT_CMD</span>
+<span class="w">      </span><span class="p">{</span><span class="s">&quot;boot&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">CmdBoot</span><span class="p">},</span><span class="w"></span>
+<span class="cp">#endif</span>
+<span class="w">      </span><span class="p">{</span><span class="s">&quot;oem enable-charger-screen&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">CmdOemEnableChargerScreen</span><span class="p">},</span><span class="w"></span>
+<span class="w">      </span><span class="p">{</span><span class="s">&quot;oem disable-charger-screen&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">CmdOemDisableChargerScreen</span><span class="p">},</span><span class="w"></span>
+<span class="w">  </span><span class="p">};</span><span class="w"></span>
+
+<span class="n">STATIC</span><span class="w"> </span><span class="n">VOID</span><span class="w"></span>
+<span class="n">CmdOemEnableChargerScreen</span><span class="w"> </span><span class="p">(</span><span class="n">CONST</span><span class="w"> </span><span class="n">CHAR8</span><span class="w"> </span><span class="o">*</span><span class="n">Arg</span><span class="p">,</span><span class="w"> </span><span class="n">VOID</span><span class="w"> </span><span class="o">*</span><span class="n">Data</span><span class="p">,</span><span class="w"> </span><span class="n">UINT32</span><span class="w"> </span><span class="n">Size</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="n">EFI_STATUS</span><span class="w"> </span><span class="n">Status</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="n">DEBUG</span><span class="w"> </span><span class="p">((</span><span class="n">EFI_D_INFO</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Enabling Charger Screen</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">));</span><span class="w"></span>
+
+<span class="w">  </span><span class="n">Status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">EnableChargingScreen</span><span class="w"> </span><span class="p">(</span><span class="n">TRUE</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">Status</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">EFI_SUCCESS</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">FastbootFail</span><span class="w"> </span><span class="p">(</span><span class="s">&quot;Failed to enable charger screen&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">FastbootOkay</span><span class="w"> </span><span class="p">(</span><span class="s">&quot;&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="n">STATIC</span><span class="w"> </span><span class="n">VOID</span><span class="w"></span>
+<span class="n">CmdOemDisableChargerScreen</span><span class="w"> </span><span class="p">(</span><span class="n">CONST</span><span class="w"> </span><span class="n">CHAR8</span><span class="w"> </span><span class="o">*</span><span class="n">Arg</span><span class="p">,</span><span class="w"> </span><span class="n">VOID</span><span class="w"> </span><span class="o">*</span><span class="n">Data</span><span class="p">,</span><span class="w"> </span><span class="n">UINT32</span><span class="w"> </span><span class="n">Size</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="n">EFI_STATUS</span><span class="w"> </span><span class="n">Status</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="n">DEBUG</span><span class="w"> </span><span class="p">((</span><span class="n">EFI_D_INFO</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Disabling Charger Screen</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">));</span><span class="w"></span>
+
+<span class="w">  </span><span class="n">Status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">EnableChargingScreen</span><span class="w"> </span><span class="p">(</span><span class="n">FALSE</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">Status</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">EFI_SUCCESS</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">FastbootFail</span><span class="w"> </span><span class="p">(</span><span class="s">&quot;Failed to disable charger screen&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">FastbootOkay</span><span class="w"> </span><span class="p">(</span><span class="s">&quot;&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>操作如下：</p></li>
+</ul>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>C:<span class="se">\U</span>sers<span class="se">\w</span>ugangnan&gt;fastboot oem enable-charger-screen
+                                                   OKAY <span class="o">[</span>  <span class="m">0</span>.011s<span class="o">]</span>
+Finished. Total time: <span class="m">0</span>.017s
+
+C:<span class="se">\U</span>sers<span class="se">\w</span>ugangnan&gt;fastboot getvar charger-screen-enabled
+charger-screen-enabled: <span class="m">1</span>
+Finished. Total time: <span class="m">0</span>.004s
+</pre></div>
+</div>
+</section>
+<section id="log">
+<h1>log分析<a class="headerlink" href="#log" title="Permalink to this heading"></a></h1>
+<ul class="simple">
+<li><p>关机拔出usb后打印如下：</p></li>
+</ul>
+<div class="highlight-log notranslate"><div class="highlight"><pre><span></span>   57.119711] charger: [57111] shutting down
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>对应代码<code class="docutils literal notranslate"><span class="pre">healthd_mode_charger.cpp</span></code>：</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="o">*</span><span class="w"> </span><span class="n">Charger</span><span class="o">::</span><span class="n">Heartbeat</span><span class="p">()</span><span class="w"></span>
+<span class="w">  </span><span class="o">*</span><span class="w"> </span><span class="n">HandlePowerSupplyState</span><span class="p">(</span><span class="n">now</span><span class="p">);</span><span class="w"></span>
+
+<span class="kt">void</span><span class="w"> </span><span class="nf">Charger::HandlePowerSupplyState</span><span class="p">(</span><span class="kt">int64_t</span><span class="w"> </span><span class="n">now</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">timer_shutdown</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">UNPLUGGED_SHUTDOWN_TIME</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">have_battery_state_</span><span class="p">)</span><span class="w"> </span><span class="k">return</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">charger_online</span><span class="p">())</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="n">request_suspend</span><span class="p">(</span><span class="nb">false</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">next_pwr_check_</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">-1</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">            </span><span class="cm">/* Last cycle would have stopped at the extreme top of battery-icon</span>
+<span class="cm">             * Need to show the correct level corresponding to capacity.</span>
+<span class="cm">             *</span>
+<span class="cm">             * Reset next_screen_transition_ to update screen immediately.</span>
+<span class="cm">             * Reset &amp; kick animation to show complete animation cycles</span>
+<span class="cm">             * when charger disconnected.</span>
+<span class="cm">             */</span><span class="w"></span>
+<span class="w">            </span><span class="n">timer_shutdown</span><span class="w"> </span><span class="o">=</span><span class="w"></span>
+<span class="w">                    </span><span class="n">property_get_int32</span><span class="p">(</span><span class="n">UNPLUGGED_SHUTDOWN_TIME_PROP</span><span class="p">,</span><span class="w"> </span><span class="n">UNPLUGGED_SHUTDOWN_TIME</span><span class="p">);</span><span class="w"></span>
+<span class="w">            </span><span class="n">next_screen_transition_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">now</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span><span class="w"></span>
+<span class="w">            </span><span class="n">reset_animation</span><span class="p">(</span><span class="o">&amp;</span><span class="n">batt_anim_</span><span class="p">);</span><span class="w"></span>
+<span class="w">            </span><span class="n">kick_animation</span><span class="p">(</span><span class="o">&amp;</span><span class="n">batt_anim_</span><span class="p">);</span><span class="w"></span>
+<span class="w">            </span><span class="n">next_pwr_check_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">now</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">timer_shutdown</span><span class="p">;</span><span class="w"></span>
+<span class="w">            </span><span class="n">LOGW</span><span class="p">(</span><span class="s">&quot;[%&quot;</span><span class="w"> </span><span class="n">PRId64</span><span class="w"> </span><span class="s">&quot;] device unplugged: shutting down in %&quot;</span><span class="w"> </span><span class="n">PRId64</span><span class="w"> </span><span class="s">&quot; (@ %&quot;</span><span class="w"> </span><span class="n">PRId64</span><span class="w"> </span><span class="s">&quot;)</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"></span>
+<span class="w">                 </span><span class="n">now</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="kt">int64_t</span><span class="p">)</span><span class="n">timer_shutdown</span><span class="p">,</span><span class="w"> </span><span class="n">next_pwr_check_</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">now</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="n">next_pwr_check_</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">            </span><span class="n">LOGW</span><span class="p">(</span><span class="s">&quot;[%&quot;</span><span class="w"> </span><span class="n">PRId64</span><span class="w"> </span><span class="s">&quot;] shutting down</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">now</span><span class="p">);</span><span class="w"></span>
+<span class="w">            </span><span class="n">reboot</span><span class="p">(</span><span class="n">RB_POWER_OFF</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">            </span><span class="cm">/* otherwise we already have a shutdown timer scheduled */</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="cm">/* online supply present, reset shutdown timer if set */</span><span class="w"></span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">next_pwr_check_</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="mi">-1</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">            </span><span class="cm">/* Reset next_screen_transition_ to update screen immediately.</span>
+<span class="cm">             * Reset &amp; kick animation to show complete animation cycles</span>
+<span class="cm">             * when charger connected again.</span>
+<span class="cm">             */</span><span class="w"></span>
+<span class="w">            </span><span class="n">request_suspend</span><span class="p">(</span><span class="nb">false</span><span class="p">);</span><span class="w"></span>
+<span class="w">            </span><span class="n">next_screen_transition_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">now</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span><span class="w"></span>
+<span class="w">            </span><span class="n">reset_animation</span><span class="p">(</span><span class="o">&amp;</span><span class="n">batt_anim_</span><span class="p">);</span><span class="w"></span>
+<span class="w">            </span><span class="n">kick_animation</span><span class="p">(</span><span class="o">&amp;</span><span class="n">batt_anim_</span><span class="p">);</span><span class="w"></span>
+<span class="w">            </span><span class="n">LOGW</span><span class="p">(</span><span class="s">&quot;[%&quot;</span><span class="w"> </span><span class="n">PRId64</span><span class="w"> </span><span class="s">&quot;] device plugged in: shutdown cancelled</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">now</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="n">next_pwr_check_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">-1</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, wugn.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+  
+
+<script charset="UTF-8" id="LA_COLLECT" src="//sdk.51.la/js-sdk-pro.min.js"></script>
+<script>LA.init({id: "JjOE14XScyd75b2C",ck: "JjOE14XScyd75b2C"})</script>
+
+<br/>
+<script id="LA-DATA-WIDGET" crossorigin="anonymous" charset="UTF-8" src="https://v6-widget.51.la/v6/JjOE14XScyd75b2C/quote.js?theme=0&f=12&display=1,0,0,0,0,0,1,1"></script>
+
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

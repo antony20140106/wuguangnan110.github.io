@@ -2,13 +2,13 @@
 
 介绍传感器原理
 
-## 参考
+# 参考
 
 * [Android Manager之SensorManager(传感器)—基础知识](https://blog.csdn.net/weixin_37730482/article/details/80570268)
 
 * [Android Sensor 传感器总结](https://aiethan.blog.csdn.net/article/details/106949028?spm=1001.2101.3001.6650.1&utm_medium=distribute.pc_relevant.none-task-blog-2%7Edefault%7ECTRLIST%7ERate-1.pc_relevant_paycolumn_v3&depth_1-utm_source=distribute.pc_relevant.none-task-blog-2%7Edefault%7ECTRLIST%7ERate-1.pc_relevant_paycolumn_v3&utm_relevant_index=2)
 
-## 一、传感器概览
+# 一、传感器概览
 
 Android平台支持三个大类的传感器
 
@@ -63,9 +63,9 @@ Android平台支持三个大类的传感器
   | `TYPE_ROTATION_VECTOR`     | Software or Hardware | Measures the orientation of a device by providing the three elements of the device's rotation vector. | Motion detection and rotation detection.              |
   | `TYPE_TEMPERATURE`         | Hardware             | Measures the temperature of the device in degrees Celsius (°C). This sensor implementation varies across devices and this sensor was replaced with the `TYPE_AMBIENT_TEMPERATURE` sensor in API Level 14 | Monitoring temperatures.                              | 
 
-## APP读取sensor数据
+# APP读取sensor数据
 
-### 1.获取当前设备传感器列表
+## 1.获取当前设备传感器列表
 
 ```java
 import android.view.View;
@@ -156,7 +156,7 @@ import android.widget.TextView;
 hardware acceleration = true , fakeHwAccelerated = false, sRendererDisabled = false, forceHwAccelerated = false, sSystemRendererDisabled = false
 ```
 
-### 2.获取sensor数据
+## 2.获取sensor数据
 
 * 常用api
 
@@ -257,7 +257,7 @@ if (mSensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD) != null){
 List<Sensor> deviceSensors = mSensorManager.getSensorList(Sensor.TYPE_ALL);
 ```
 
-## 二、加速度传感器（accelerometer）
+# 二、加速度传感器（accelerometer）
 
 加速度传感器又叫G-sensor，返回x、y、z三轴的加速度数值。
 
@@ -272,7 +272,7 @@ List<Sensor> deviceSensors = mSensorManager.getSensorList(Sensor.TYPE_ALL);
   * 当设备平放在桌子上时，z 轴上的加速度值为 +9.81，相当于设备的加速度 (0m/s^2) 减去重力加速度 (-9.81 m/s²)
   * 当设备平放在桌子上并向上抬起时，z轴加速度值大于 +9.81，相当于设备的加速度 (+A m/s²) 减去重力加速度 (-9.81 m/s²)
 
-## 三、陀螺仪（gyroscope）
+# 三、陀螺仪（gyroscope）
 
 * 手机陀螺仪又称为角速度传感器，区别于上面介绍的加速度传感器(线性加速度)，陀螺仪测量的是当物体发生偏转或者倾斜时的旋转角速度。
 通俗的陀螺仪是这样的：
@@ -280,7 +280,9 @@ List<Sensor> deviceSensors = mSensorManager.getSensorList(Sensor.TYPE_ALL);
 ![0001_Gyroscope.png](images/0001_Gyroscope.png)
 
 <img src=images/0001_Gyroscope_1.gif width=30% />
+
 <img src=images/0001_Gyroscope_2.gif width=30% />
+
 <img src=images/0001_Gyroscope_3.gif width=30% />
 
 * 而我们手机上的陀螺仪的工作原理是陀螺仪内部有一些金属框架和滑块，滑块在交变电压的作用下以一定的频率做往复直线运动，当传感器沿轴线发生偏移时，直线运动的滑块会在科里奥利力的作用下发生偏移，而直线运动的滑块一旦发生偏移，就会产生电容变化，滑块的偏移值与对应的电容值成正比，也与所受的科里奥利力成正比，而科里奥利力与偏转的角速度成正比，所以电容值与偏转的角速度成正比，将变化的电容值转化成数字信号，经过dsp，我们软件上就能去处理。
@@ -293,7 +295,7 @@ List<Sensor> deviceSensors = mSensorManager.getSensorList(Sensor.TYPE_ALL);
 
 [知乎-陀螺仪工作原理](https://www.zhihu.com/question/27216244)
 
-## 四、地磁传感器（magnetometer）
+# 四、地磁传感器（magnetometer）
 磁力传感器简称为M-sensor，返回x、y、z三轴的环境磁场数据。
 
 该数值的单位是微特斯拉（micro-Tesla），用uT表示。 单位也可以是高斯（Gauss），1Tesla=10000Gauss。1Gauss = 100uT,硬件上一般没有独立的磁力传感器，磁力数据由电子罗盘传感器提供（E-compass）。
@@ -309,17 +311,17 @@ List<Sensor> deviceSensors = mSensorManager.getSensorList(Sensor.TYPE_ALL);
 
 ![霍尔效应](images/0001_Hall_Effect.png)
 
-## 五、光线传感器（ambient light sensor）
+# 五、光线传感器（ambient light sensor）
 
 * 器件内部光敏材料接收到不同强度的光线时，会产生强弱不等的电流，从而感知环境光亮度的变化；
 * 基本应用：手机的自动调节背光功能。
 
-## 六、距离传感器（proximity sensor）
+# 六、距离传感器（proximity sensor）
 
 * 距离传感器通过向被测物体发射超声波/红外/激光等并被被测物体反射，通过计算超声波/红外从发射到反射回来的时间，来计算与被测物体之间的距离；
 * 基本应用：当用户在接听电话时，将手机靠近头部，距离传感器测出两者的距离从而关闭背光，当手机拿开时，重新打开背光。
 
-## 七、方向传感器(Orientation sensor)
+# 七、方向传感器(Orientation sensor)
 方向传感器简称为O-sensor，返回三轴的角度数据，方向数据的单位是角度。
 
 为了得到精确的角度数据，E-compass(电子罗盘传感器)需要获取G-sensor(加速度传感器)的数据， 经过计算生产O-sensor数据，否则只能获取水平方向的角度。
@@ -334,25 +336,25 @@ List<Sensor> deviceSensors = mSensorManager.getSensorList(Sensor.TYPE_ALL);
 
 电子罗盘在获取正确的数据前需要进行校准，通常可用8字校准法。 8字校准法要求用户使用需要校准的设备在空中做8字晃动， 原则上尽量多的让设备法线方向指向空间的所有8个象限。
 
-## 八、Barometer Sensor (气)压力传感器
+# 八、Barometer Sensor (气)压力传感器
 压力传感器返回当前的压强，单位是百帕斯卡hectopascal（hPa）。
 
-## 九、Temperature Sensor 温度传感器
+# 九、Temperature Sensor 温度传感器
 温度传感器返回当前的温度。
 
-## 十、Gravity 重力传感器
+# 十、Gravity 重力传感器
 重力传感器简称GV-sensor，输出重力数据。
 
 在地球上，重力数值为9.8，单位是m/s^2。 坐标系统与加速度传感器相同。 当设备复位时，重力传感器的输出与加速度传感器相同。
 
-## 十一、Linear Acceleration 线性加速度传感器
+# 十一、Linear Acceleration 线性加速度传感器
 线性加速度传感器简称LA-sensor。
 
 线性加速度传感器是加速度传感器减去重力影响获取的数据。 单位是m/s^2，坐标系统与加速度传感器相同。
 
 加速度传感器、重力传感器和线性加速度传感器的计算公式如下： 加速度 = 重力 + 线性加速度
 
-## 十二、Rotation Vector 旋转矢量传感器
+# 十二、Rotation Vector 旋转矢量传感器
 旋转矢量传感器简称RV-sensor。
 
 旋转矢量代表设备的方向，是一个将坐标轴和角度混合计算得到的数据。
@@ -372,7 +374,7 @@ sensors_event_t.data[2] = z*sin(theta/2)
 sensors_event_t.data[3] = cos(theta/2)
 ```
 
-## 其他传感器
+# 其他传感器
 
 ```
 Step Detector 步数探测器
@@ -384,7 +386,7 @@ Basic Gestures 基本手势
 Motion Accel 运动加速度
 ```
 
-## sensor特色功能
+# sensor特色功能
 
 | 快捷键/手势                |                                                        |
 | -------------------------- | ------------------------------------------------------ |

@@ -119,10 +119,11 @@ Run Time，系统控制权从UEFI内核转交到OS Loader手中。
 
 SEC的汇编代码入口位于：
 
-BOOT.XF.1.4\boot_images\QcomPkg\XBLCore\AARCH64\ModuleEntryPoint.masm的 _ModuleEntryPoint中
+* `BOOT.XF.1.4\boot_images\QcomPkg\XBLCore\AARCH64\ModuleEntryPoint.masm`的`_ModuleEntryPoint`中
 
 入口汇编代码分析
-分析看看ModuleEntryPoint.masm 这个文件
+
+分析看看`ModuleEntryPoint.masm`这个文件:
 
 该汇编代码中，主要工作为：
 
@@ -238,7 +239,7 @@ _PrepareArguments
 初始化C运行环境
 前面汇编代码中主要目的是初始化C运行环境，初始化栈，以便可以调C代码运行。
 
-SEC的C代码入口位于： `BOOT.XF.1.4\boot_images\QcomPkg\XBLCore\Sec.c`的 CEntryPoint 中
+SEC的C代码入口位于：`BOOT.XF.1.4\boot_images\QcomPkg\XBLCore\Sec.c`的 CEntryPoint 中
 
 ```C++
 /**  Entry point

@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>wugn</title>
+
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../index.html" class="icon icon-home"> wugn_note
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">概述</a></li>
+<li><a class="reference internal" href="#id2">参考</a></li>
+<li><a class="reference internal" href="#id3">代码分析</a></li>
+</ul>
+</div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">wugn_note</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs"> 
+<li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+<li>概述</li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.forward()">Forward</a></li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.back()">Go Back</a> | </li>
+<li style="float: right;margin-left: 10px;"><a href="/index.html">Home</a> | </li>
+
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="id1">
+<h1>概述<a class="headerlink" href="#id1" title="Permalink to this heading"></a></h1>
+<p>高通qcm2290平台，目前有专门的开关机原因检测驱动，分析一下。</p>
+</section>
+<section id="id2">
+<h1>参考<a class="headerlink" href="#id2" title="Permalink to this heading"></a></h1>
+<ul class="simple">
+<li><p><a class="reference external" href="https://www.pianshen.com/article/5166594551/">android L 关机流程图</a></p></li>
+</ul>
+<p><img alt="0025_0000.png" src="../../../_images/0025_0000.png" /></p>
+<p>根据上图得知：</p>
+<ul class="simple">
+<li><p>关机时会调用<code class="docutils literal notranslate"><span class="pre">msm_restart_prepare</span></code>和<code class="docutils literal notranslate"><span class="pre">do_msm_poweroff</span></code>接口控制pmic关机。</p></li>
+<li><p>开机时<code class="docutils literal notranslate"><span class="pre">qpnp-power-on.c</span></code>驱动会打印开机原因。</p></li>
+</ul>
+</section>
+<section id="id3">
+<h1>代码分析<a class="headerlink" href="#id3" title="Permalink to this heading"></a></h1>
+<ul class="simple">
+<li><p>涉及代码：</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span>drivers/power/reset/msm-poweroff.c
+drivers/input/misc/qpnp-power-on.c
+
+pm2250.dts:
+qcom,power-on@800 {
+        compatible = &quot;qcom,qpnp-power-on&quot;;
+        reg = &lt;0x800 0x100&gt;;
+        interrupts = &lt;0x0 0x8 0x0 IRQ_TYPE_EDGE_BOTH&gt;,
+                        &lt;0x0 0x8 0x1 IRQ_TYPE_EDGE_BOTH&gt;;
+        interrupt-names = &quot;kpdpwr&quot;, &quot;resin&quot;;
+        qcom,pon-dbc-delay = &lt;15625&gt;;
+        qcom,kpdpwr-sw-debounce;
+        qcom,system-reset;
+        qcom,store-hard-reset-reason;
+
+        qcom,pon_1 {
+                qcom,pon-type = &lt;PON_POWER_ON_TYPE_KPDPWR&gt;;
+                qcom,pull-up = &lt;1&gt;;
+                linux,code = &lt;KEY_POWER&gt;;
+                qcom,support-reset = &lt;1&gt;;
+                qcom,s1-timer = &lt;6720&gt;;
+                qcom,s2-timer = &lt;500&gt;;
+                qcom,s2-type = &lt;4&gt;;
+        };
+
+/*
+        qcom,pon_2 {
+                qcom,pon-type = &lt;PON_POWER_ON_TYPE_RESIN&gt;;
+                qcom,pull-up = &lt;1&gt;;
+                linux,code = &lt;KEY_VOLUMEDOWN&gt;;
+        };
+*/
+};
+
+scuba.dtsi:
+restart@440b000 {
+        compatible = &quot;qcom,pshold&quot;;
+        reg = &lt;0x440b000 0x4&gt;,
+                &lt;0x03d3000 0x4&gt;;
+        reg-names = &quot;pshold-base&quot;, &quot;tcsr-boot-misc-detect&quot;;
+};
+</pre></div>
+</div>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, wugn.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+  
+
+<script charset="UTF-8" id="LA_COLLECT" src="//sdk.51.la/js-sdk-pro.min.js"></script>
+<script>LA.init({id: "JjOE14XScyd75b2C",ck: "JjOE14XScyd75b2C"})</script>
+
+<br/>
+<script id="LA-DATA-WIDGET" crossorigin="anonymous" charset="UTF-8" src="https://v6-widget.51.la/v6/JjOE14XScyd75b2C/quote.js?theme=0&f=12&display=1,0,0,0,0,0,1,1"></script>
+
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
