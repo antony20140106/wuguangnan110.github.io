@@ -339,3 +339,70 @@ wugn.tech
 ![0001_0003.png](images/0001_0003.png)
 
 ![0001_0004.png](images/0001_0004.png)
+
+# 增加评论系统
+
+* [基于 utterance 插件为博客部署评论系统（适用于 Sphinx 文档）](https://iswbm.com/678.html)
+
+## 安装 utterances
+
+访问[utterances](https://github.com/apps/utterances)应用程序 ，然后点击 Install 按钮进行安装
+
+![0001_0005.png](images/0001_0005.png)
+
+在安装时，可以立即选择是否限制其访问的仓库，若安装时忘记设置了，也可以在安装后再次选择。
+
+只要再次访问 utterances 应用程序，就会显示配置的界面
+
+点进去就能更新配置，选择完直接 Save 。
+
+![0001_0006.png](images/0001_0006.png)
+ 
+我的文档使用的是 Sphinx + rtd 主题，因此找到 sphinx_rtd_theme 所在的目录，比如我的目录是`C:\Users\Administrator\AppData\Local\Programs\Python\Python310\Lib\site-packages\sphinx_rtd_theme`
+
+在该目录下新建 comments.html 文件，内容如下:
+```java
+<comments>
+  <script src="https://utteranc.es/client.js"
+    repo="iswbm/magic-python"
+    issue-term="pathname"
+    theme="github-light"
+    crossorigin="anonymous"
+    async>
+  </script>
+</comments>
+```
+
+其中你需要根据自己的情况进行调整的字段只有 repo，填写你评论要存放在哪个 github 仓库。
+
+定义了 comments 的模板文件后，要在 layout.html 中引用它
+
+但由于原先 layout.html 已经预留了 comments 的内容，先将其删除
+
+![0001_0007.png](images/0001_0007.png)
+
+替换成
+```java
+        <div class="articleComments">
+               {% include "comments.html" %}
+           </div>
+```
+
+##  编译查看效果
+
+执行 make html 重新编译文档的静态 html 文件，再次查看网页，就会发现在文档的尾部出现了期待的评论区
+
+![0001_0008.png](images/0001_0008.png)
+
+想要在文章下评论，就得先登陆 Github 授权一下,登陆并授权之后，你的 Github 头像出现了，是可以评论的状态,utterances 的评论是放在 issue 里的，因此评论这边也是要支持 markdown
+
+## 总结一下
+
+utterances 与 gitalk 对比一下，缺点不少，比如：
+
+gitalk 可以通过 如下容器定义评论区的位置，而 utterances 则不行（反正我没有找到对应方法），需要你有动手能力去定义模板。
+utterances 不支持在评论区直接引用他人的评论进行多级回复
+当有评论时 utterances 的评论框是在所有的评论的下方，不太符合用户逻辑
+即使 utterances 有如此之多的缺点，但 utterances 不需要手动去创建 issue ，仅凭这一点，在我看来，就可以秒杀 gitalk ，希望 gitalk 早日改进支持吧。
+
+现在我的六个在线文档，都已经加上 utterances，大家在查阅学习时，若有问题可以在评论区提出来噢：
