@@ -40,6 +40,10 @@ source_suffix = {
     '.md': 'markdown',
 }
 
+html_js_files = [
+    'js/baidutongji.js'
+]
+
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
 
