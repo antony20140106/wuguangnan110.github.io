@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="zh-CN" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>wugn</title>
+
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script src="../../../_static/translations.js"></script>
+        <script src="../../../_static/js/baidutongji.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="索引" href="../../../genindex.html" />
+    <link rel="search" title="搜索" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../index.html" class="icon icon-home"> wugn_note
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="在文档中搜索" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">概述</a></li>
+<li><a class="reference internal" href="#id2">参考</a></li>
+<li><a class="reference internal" href="#smbus">SMBus帧格式</a></li>
+<li><a class="reference internal" href="#smbusi2c">SMBus与I2C的差异</a></li>
+<li><a class="reference internal" href="#id3">软件接口</a></li>
+</ul>
+</div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">wugn_note</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs"> 
+<li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+<li>概述</li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.forward()">Forward</a></li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.back()">Go Back</a> | </li>
+<li style="float: right;margin-left: 10px;"><a href="/index.html">Home</a> | </li>
+
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="id1">
+<h1>概述<a class="headerlink" href="#id1" title="此标题的永久链接"></a></h1>
+<p>SMBus（System Management Bus）是系统管理总线的简称，该总线由SBS-IF提出并维护（SBS-IF，Smart Battery System Implementers Forum，智能电池系统实现者论坛），该论坛发起者为Intel。SMBus总线主要应用于智能电池与MCU之间的通信，PC系统中与系统传感器之间的低速通信等。</p>
+</section>
+<section id="id2">
+<h1>参考<a class="headerlink" href="#id2" title="此标题的永久链接"></a></h1>
+<ul class="simple">
+<li><p><a class="reference external" href="http://blog.chinaunix.net/uid-29567807-id-5773693.html">I2C驱动编程SMBUS接口函数</a></p></li>
+<li><p><a class="reference external" href="https://www.elecfans.com/emb/jiekou/202010271346975.html">SMBus接口信号和帧格式_SMBus与I2C的差异</a></p></li>
+<li><p><a class="reference external" href="https://rohm.eefocus.com/article/id-2431">I2C通信协议：了解PMBus和SMBus</a></p></li>
+</ul>
+<p>SMBus为I2C协议的子集（常用数字接口（3） I2C ），SMBus接口信号与I2C信号之间映射关系如下，其中SMBSUS#，SMBALERT#为可选信号，协议并未强制。</p>
+<p><img alt="0022_0000.png" src="../../../_images/0022_00001.png" /></p>
+</section>
+<section id="smbus">
+<h1>SMBus帧格式<a class="headerlink" href="#smbus" title="此标题的永久链接"></a></h1>
+<p>如图1所示，SMBus协议定义的帧格式第1字节与I2C协议相同，传输Slave地址和读写命令。从第2字节开始，通过指定DATAn的内容组成不同的帧。例如在DATA1中填充Command Code来指示特定操作（协议对Command Code未详细描述），在帧尾字节填充PEC（CRC-8校验）增强传输的可靠性等。具体请参考协议的第五章网络层相关描述。</p>
+<p><img alt="0022_0001.png" src="../../../_images/0022_00011.png" /></p>
+</section>
+<section id="smbusi2c">
+<h1>SMBus与I2C的差异<a class="headerlink" href="#smbusi2c" title="此标题的永久链接"></a></h1>
+<p>SMBus协议在附录B中，详述了SMBus同I2C的差异。总结如下：</p>
+<p><img alt="0022_0002.png" src="../../../_images/0022_0002.png" /></p>
+<p>SMBus和I2C的区别主要体现在四个方面：电气特性，时序，ACK用法，帧格式的不同。通常支持I2C的数字IP，通过模式配置既可以支持SMBus。</p>
+<p>SMBus与I2C总线之间在时序特性上存在一些差别。首先，SMBus需要一定数据保持时间，而 I2C总线则是从内部延长数据保持时间。SMBus具有超时功能，因此当SCL太低而超过35 ms时，从器件将复位正在进行的通信。相反，I2C采用硬件复位。SMBus具有一种警报响应地址(ARA)，因此当从器件产生一个中断时，它不会马上清除中断，而是一直保持到其收到一个由主器件发送的含有其地址的ARA为止。SMBus只工作在从10kHz到最高100kHz。最低工作频率10kHz是由SMBus超时功能决定的。</p>
+<p>smbus兼容i2c，所以用i2c_smbus_read_i2c_block_data接口比用i2c接口简单高效。但是smbus最大的clock频率为100KHz，而i2c可以支持400KHz或2MHz。</p>
+</section>
+<section id="id3">
+<h1>软件接口<a class="headerlink" href="#id3" title="此标题的永久链接"></a></h1>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">drivers/i2c/i2c-core-smbus.c</span></code>提供如下接口：</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="n">EXPORT_SYMBOL</span><span class="p">(</span><span class="n">i2c_smbus_read_byte</span><span class="p">);</span><span class="w"></span>
+<span class="n">EXPORT_SYMBOL</span><span class="p">(</span><span class="n">i2c_smbus_write_byte</span><span class="p">);</span><span class="w"></span>
+<span class="n">EXPORT_SYMBOL</span><span class="p">(</span><span class="n">i2c_smbus_read_byte_data</span><span class="p">);</span><span class="w"></span>
+<span class="n">EXPORT_SYMBOL</span><span class="p">(</span><span class="n">i2c_smbus_write_byte_data</span><span class="p">);</span><span class="w"></span>
+<span class="n">EXPORT_SYMBOL</span><span class="p">(</span><span class="n">i2c_smbus_read_word_data</span><span class="p">);</span><span class="w"></span>
+<span class="n">EXPORT_SYMBOL</span><span class="p">(</span><span class="n">i2c_smbus_write_word_data</span><span class="p">);</span><span class="w"></span>
+<span class="n">EXPORT_SYMBOL</span><span class="p">(</span><span class="n">i2c_smbus_read_block_data</span><span class="p">);</span><span class="w"></span>
+<span class="n">EXPORT_SYMBOL</span><span class="p">(</span><span class="n">i2c_smbus_write_block_data</span><span class="p">);</span><span class="w"></span>
+<span class="n">EXPORT_SYMBOL</span><span class="p">(</span><span class="n">i2c_smbus_read_i2c_block_data</span><span class="p">);</span><span class="w"></span>
+<span class="n">EXPORT_SYMBOL</span><span class="p">(</span><span class="n">i2c_smbus_write_i2c_block_data</span><span class="p">);</span><span class="w"></span>
+<span class="n">EXPORT_SYMBOL</span><span class="p">(</span><span class="n">i2c_smbus_xfer</span><span class="p">);</span><span class="w"></span>
+<span class="n">EXPORT_SYMBOL</span><span class="p">(</span><span class="n">__i2c_smbus_xfer</span><span class="p">);</span><span class="w"></span>
+<span class="n">EXPORT_SYMBOL</span><span class="p">(</span><span class="n">i2c_smbus_read_i2c_block_data_or_emulated</span><span class="p">);</span><span class="w"></span>
+<span class="n">EXPORT_SYMBOL_GPL</span><span class="p">(</span><span class="n">i2c_setup_smbus_alert</span><span class="p">);</span><span class="w"></span>
+<span class="n">EXPORT_SYMBOL_GPL</span><span class="p">(</span><span class="n">of_i2c_setup_smbus_alert</span><span class="p">);</span><span class="w"></span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>部分接口解释如下：</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span>【1】__s32 i2c_smbus_write_quick(int file, __u8 value);
+发送一个写控制字，可用于测试I2C设备是否存在。
+S Addr Rd [A] [Data] NA P
+
+【2】__s32 i2c_smbus_read_byte(int file);
+发送一个读控制字，并从I2C设备中读取一个字节。
+S Addr Rd [A] [Data] NA P
+
+【3】__s32 i2c_smbus_write_byte(int file, __u8 value);
+发送一个写控制字，并向I2C设备中写入一个字节。
+S Addr Wr [A] Data [A] P
+
+【4】__s32 i2c_smbus_read_byte_data(int file, __u8 command);
+向I2C设备发送一个写控制字+控制指令（寄存器地址），再发送一个读控制字，此时I2C从设备内部的读写指针转移到指定的位置，并返回一个字节，最后返回一个无应答NA。
+S Addr Wr [A] Comm [A] S Addr Rd [A] [Data] NA P
+
+【5】__s32 i2c_smbus_write_byte_data(int file, __u8 command, __u8 value);
+向I2C设备发送一个写控制字+控制指令（寄存器地址），紧接着发送指令内容（寄存器内容，单字节）。
+S Addr Wr [A] Comm [A] Data [A] P
+
+【6】__s32 i2c_smbus_read_i2c_block_data(int file, __u8 command, __u8 *values);
+向I2C设备发送一个写控制字+控制指令（寄存器地址），再发送一个读控制字，此时I2C从设备内部的读写指针转移到指定的位置，并连续返回多个字节，I2C主机读取到一定数量字节内容之后发送无应答NA。
+S Addr Wr [A] Comm [A] S Addr Rd [A] [Data] A [Data] A ... A [Data] NA P
+
+【7】__s32 i2c_smbus_write_i2c_block_data(int file, __u8 command, __u8 length, __u8 *values);
+向I2C设备发送一个写控制字+控制指令（寄存器地址），接着发送发送指令内容（寄存器内容，多字节）
+S Addr Wr [A] Comm [A] Data [A] Data [A] ... [A] Data [A] P
+</pre></div>
+</div>
+</section>
+
+
+           </div>
+             <div class="articleComments">
+                <comments>
+  <script src="https://utteranc.es/client.js"
+    repo="iswbm/magic-python"
+    issue-term="pathname"
+    theme="github-light"
+    crossorigin="anonymous"
+    async>
+  </script>
+</comments>
+             </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; 版权所有 2022, wugn.</p>
+  </div>
+
+  利用 <a href="https://www.sphinx-doc.org/">Sphinx</a> 构建，使用了 
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">主题</a>
+    由 <a href="https://readthedocs.org">Read the Docs</a>开发.
+  
+
+<script charset="UTF-8" id="LA_COLLECT" src="//sdk.51.la/js-sdk-pro.min.js"></script>
+<script>LA.init({id: "JoV5csIHTGhHiGQ4",ck: "JoV5csIHTGhHiGQ4"})</script>
+
+<br/>
+<script id="LA-DATA-WIDGET" crossorigin="anonymous" charset="UTF-8" src="https://v6-widget.51.la/v6/JoV5csIHTGhHiGQ4/quote.js?theme=0&f=12&display=1,0,0,0,0,0,1,1"></script>
+
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

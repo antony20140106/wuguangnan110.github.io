@@ -20,6 +20,7 @@
 project = 'wugn_note'
 copyright = '2022, wugn'
 author = 'wugn'
+language ='zh_CN'
 
 # The full version, including alpha/beta/rc tags
 release = '0.0.1'

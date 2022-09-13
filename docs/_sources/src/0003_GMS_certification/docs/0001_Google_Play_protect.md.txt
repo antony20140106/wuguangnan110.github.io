@@ -2,23 +2,11 @@
 
 简述GMS google play protect机制。
 
-* [简介](#简介)
-  * [1.开启或关闭 Google Play 保护机制](#1开启或关闭-Google-Play-保护机制)
-  * [2.Google Play 保护机制的运作方式](#2Google-Play-保护机制的运作方式)
-  * [3.恶意软件防护功能的运作方式](#3恶意软件防护功能的运作方式)
-* [现象](#现象)
-* [Android签名机制](#Android签名机制)
-  * [系统中有4组key用于build阶段对apk进行签名](#系统中有4组key用于build阶段对apk进行签名)
-  * [在apk的android.mk文件中会指定LOCAL_CERTIFICATE 变量](#在apk的androidmk文件中会指定LOCAL_CERTIFICATE-变量)
-* [查看PDM签名信息](#查看PDM签名信息)
-* [修改方案](#修改方案)
-
-
 * [使用 Google Play 保护机制协助防范有害应用](https://support.google.com/googleplay/answer/2812853?hl=zh-Hans)
 * [Android 用 platform.pk8 和 platform.x509.pem将应用升级为系统级应用](https://www.jianshu.com/p/37f37340db24)
 * [一次让你搞懂Android应用签名](https://blog.fengsq.com/post/ApkSignature.html)
 
-## 简介
+# 简介
 
 Google Play 保护机制有助于确保您的设备安全无虞：
 
@@ -28,7 +16,7 @@ Google Play 保护机制有助于确保您的设备安全无虞：
 * 这一机制会在检测到因隐藏或不实描述重要信息而违反反垃圾软件政策的应用时，向您发出警告。
 * 这一机制会在检测到应用能够获取用户权限来访问您的个人信息（这违反了我们的开发者政策）时，向您发出隐私权提醒。
 
-### 1.开启或关闭 Google Play 保护机制
+## 1.开启或关闭 Google Play 保护机制
 
 重要提示：默认情况下，Google Play 保护机制处于开启状态，不过您可以将其关闭。为安全起见，建议您始终开启 Google Play 保护机制。
 
@@ -37,7 +25,7 @@ Google Play 保护机制有助于确保您的设备安全无虞：
 * 依次点按 Play 保护机制 接着点按 设置。
 * 开启或关闭使用 Play 保护机制扫描应用。
 
-### 2.Google Play 保护机制的运作方式
+## 2.Google Play 保护机制的运作方式
 
 Google Play 保护机制会在您安装应用时对应用进行检查，还会定期扫描您的设备。如果此保护机制发现可能有害的应用，可能会执行以下操作：
 
@@ -45,7 +33,7 @@ Google Play 保护机制会在您安装应用时对应用进行检查，还会�
 * 停用该应用，直到您将其卸载。
 * 自动移除该应用。在大多数情况下，如果 Google Play 保护机制检测到有害应用，则会发出通知，告知您该应用已被移除。
 
-### 3.恶意软件防护功能的运作方式
+## 3.恶意软件防护功能的运作方式
 
 为保护您免遭受第三方恶意软件、有害网址和其他安全问题的侵害，Google 可能会接收与以下内容相关的信息：
 
@@ -57,7 +45,7 @@ Google 可能会就不安全的应用或网址向您发出警告。如果 Google
 
 您可以在设备设置中选择停用部分防护功能。不过，Google 可能会继续接收关于通过 Google Play 安装的应用的信息，并且系统可能会继续检查通过其他来源安装在您设备上的应用，以确定是否存在安全问题（但不会将相关信息发送给 Google）。
 
-## 现象
+# 现象
 
 安装PDM应用出现如下现象：
 
@@ -71,11 +59,11 @@ shared.pk8
 shared.x509.pem
 ```
 
-## Android签名机制
+# Android签名机制
 
 系统build阶段签名机制
 
-### 系统中有4组key用于build阶段对apk进行签名
+## 系统中有4组key用于build阶段对apk进行签名
 
 ```
 Media
@@ -92,7 +80,7 @@ testkey.pk8与testkey.x509.pem；
 ```
 其中，*.pk8文件为私钥，*.x509.pem文件为公钥，这需要去了解非对称加密方式。
 
-### 在apk的android.mk文件中会指定LOCAL_CERTIFICATE 变量
+## 在apk的android.mk文件中会指定LOCAL_CERTIFICATE 变量
 
 LOCAL_CERTIFICATE可设置的值如下：
 
@@ -105,7 +93,7 @@ LOCAL_CERTIFICATE := media     # 该APK是media/download系统中的一环
 
 如果不指定，默认使用testkey。
 
-## 查看PDM签名信息
+# 查看PDM签名信息
 
 参考方法：
 使用解压工具解压 APK 文件，在 META-INF 文件夹拿到 CERT.RSA 文件。假设 CERT.RSA 文件的路径是 C:\Users\Administrator\Desktop\CERT.RSA。在 CMD 中输入
@@ -156,7 +144,7 @@ The certificate uses the MD5withRSA signature algorithm which is considered a se
 ```
 可以看到`Owner: EMAILADDRESS=android@android.com`属于android通用的系统签名，所以GMS会判断该应用有风险。
 
-## 修改方案
+# 修改方案
 
 为了保证系统安全，更新新的platform key，如果测试或者其他应用需要系统权限，需要此key进行打包,使用pax公司paxdroid平台的签名方式，首先需要替换平台签名秘钥，然后在Android.mk文件中修改设置项，更换如下秘钥：
 

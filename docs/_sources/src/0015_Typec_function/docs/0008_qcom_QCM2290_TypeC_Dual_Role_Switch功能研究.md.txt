@@ -12,7 +12,7 @@ qcom qcm2290 验证普通TypeC接拓展坞作为host功能，插入外电至拓�
 很奇怪，当插入外电至拓展坞后，整机typec消息由host变成device，重点是后面typec发送了`PR_SWAP`信号，将power_role设置为`PD_ROLE_SINK`状态，紧接着会收到`SINK_VBUS`消息，将charger vbus关闭，由拓展坞供电。
 
 * [a6650拓展坞接U盘插外电.txt](log/a6650拓展坞接U盘插外电.txt)
-```log
+```shell
 console:/ # [  309.766809] pd_tcp_notifier_call event = SOURCE_VBUS
 [  309.771997] pd_tcp_notifier_call source vbus 5000mV
 [  309.777510] pd_tcp_notifier_call - source vbus 5v output

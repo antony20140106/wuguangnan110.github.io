@@ -38,8 +38,6 @@ pd/qpnp-pdphy.c
 870:    pdphy->usbpd = usbpd_create(&pdev->dev);
 872:            dev_err(&pdev->dev, "usbpd_create failed: %ld\n",
 
-
-
 typec/Makefile
 obj-$(CONFIG_TYPEC)             += typec.o
 typec-y                         := class.o mux.o bus.o

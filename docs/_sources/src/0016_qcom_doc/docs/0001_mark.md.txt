@@ -11,6 +11,32 @@ A6650_Unpacking_Tool\QCM2290.LA.2.0\common\config\emmc\partition_r_ext.xml
 
 # xbl/abl如何打开log
 
+debug等级定义如下：
+```C++
+//
+// Declare bits for PcdDebugPrintErrorLevel and the ErrorLevel parameter of DebugPrint()
+//
+#define DEBUG_INIT      0x00000001  // Initialization
+#define DEBUG_WARN      0x00000002  // Warnings
+#define DEBUG_LOAD      0x00000004  // Load events
+#define DEBUG_FS        0x00000008  // EFI File system
+#define DEBUG_POOL      0x00000010  // Alloc & Free's
+#define DEBUG_PAGE      0x00000020  // Alloc & Free's
+#define DEBUG_INFO      0x00000040  // Informational debug messages
+#define DEBUG_DISPATCH  0x00000080  // PEI/DXE/SMM Dispatchers
+#define DEBUG_VARIABLE  0x00000100  // Variable
+#define DEBUG_BM        0x00000400  // Boot Manager
+#define DEBUG_BLKIO     0x00001000  // BlkIo Driver
+#define DEBUG_NET       0x00004000  // SNI Driver
+#define DEBUG_UNDI      0x00010000  // UNDI Driver
+#define DEBUG_LOADFILE  0x00020000  // UNDI Driver
+#define DEBUG_EVENT     0x00080000  // Event messages
+#define DEBUG_GCD       0x00100000  // Global Coherency Database changes
+#define DEBUG_CACHE     0x00200000  // Memory range cachability changes
+#define DEBUG_VERBOSE   0x00400000  // Detailed debug messages that may significantly impact boot performance
+#define DEBUG_ERROR     0x80000000  // Error
+```
+
 ```diff
 ABL:
 --- a/UM.9.15/bootable/bootloader/edk2/QcomModulePkg/QcomModulePkg.dsc
@@ -20,7 +46,7 @@ ABL:
 
    gEfiMdePkgTokenSpaceGuid.PcdDebugPropertyMask|0x2f
 -  gEfiMdePkgTokenSpaceGuid.PcdDebugPrintErrorLevel|0x80000042
-+  gEfiMdePkgTokenSpaceGuid.PcdDebugPrintErrorLevel|0x80400042
++  gEfiMdePkgTokenSpaceGuid.PcdDebugPrintErrorLevel|0x80400042  //open DEBUG_VERBOSE
    gEfiMdePkgTokenSpaceGuid.PcdReportStatusCodePropertyMask|0x06
 
  ################################################################################
@@ -283,4 +309,44 @@ setprop sys.usb.config diag,serial_cdev,rmnet,adb
 08-11 23:09:33.170  6118  6118 I qti-logkit.cService: onDestroy service
 08-11 23:09:33.173  6118  6118 I Process : Sending signal. PID: 6118 SIG: 9
 08-11 23:09:33.203   544   544 I Zygote  : Process 6118 exited due to signal 9 (Killed)
+```
+
+# Android用户空间的hvdcp（high voltage deticated charger port）
+
+hvdcp是高通平台控制qc快充协议的应用程序，具体qc协议请参考：
+* [BC1.2协议以及QC2.0/3.0快充协议学习笔记](https://blog.csdn.net/zzsddre/article/details/124420624)
+
+如果不支持或者用不到，软件上关闭：
+```diff
+--- a/UM.9.15/vendor/qcom/proprietary/common/config/device-vendor-qssi.mk
++++ b/UM.9.15/vendor/qcom/proprietary/common/config/device-vendor-qssi.mk
+@@ -4918,7 +4918,9 @@ PRODUCT_PACKAGES += $(FTM)
+ PRODUCT_PACKAGES += $(GPQESE)
+ PRODUCT_PACKAGES += $(GSMA_NFC)
+ PRODUCT_PACKAGES += $(HBTP)
+-PRODUCT_PACKAGES += $(HVDCP_OPTI)
++#[BUGFIX]-BEGIN by wugangnan@paxsz.com 2022-08-27,remove the qcom charger app
++#PRODUCT_PACKAGES += $(HVDCP_OPTI)
++#[BUGFIX]-END by wugangnan@paxsz.com 2022-08-27,remove the qcom charger app
+ PRODUCT_PACKAGES += $(HY11_HY22_diff)
+ PRODUCT_PACKAGES += $(BTSAR)
+
+diff --git a/UM.9.15/vendor/qcom/proprietary/common/config/device-vendor.mk b/UM.9.15/vendor/qcom/proprietary/common/config/device-vendor.mk
+index e8ad9285cfe..d9459e5d845 100755
+--- a/UM.9.15/vendor/qcom/proprietary/common/config/device-vendor.mk
++++ b/UM.9.15/vendor/qcom/proprietary/common/config/device-vendor.mk
+@@ -5783,9 +5783,11 @@ PRODUCT_PACKAGES += $(GPQESE)
+ PRODUCT_PACKAGES += $(GSMA_NFC)
+ PRODUCT_PACKAGES += $(HBTP)
+ PRODUCT_PACKAGES += $(TS_FORWARD)
+-ifneq ($(TARGET_BOARD_AUTO),true)
+-PRODUCT_PACKAGES += $(HVDCP_OPTI)
+-endif
++#[BUGFIX]-BEGIN by wugangnan@paxsz.com 2022-08-27,remove the qcom charger app
++#ifneq ($(TARGET_BOARD_AUTO),true)
++#PRODUCT_PACKAGES += $(HVDCP_OPTI)
++#endif
++#[BUGFIX]-END by wugangnan@paxsz.com 2022-08-27,remove the qcom charger app
+ PRODUCT_PACKAGES += $(HY11_HY22_diff)
+ PRODUCT_PACKAGES += $(BTSAR)
 ```

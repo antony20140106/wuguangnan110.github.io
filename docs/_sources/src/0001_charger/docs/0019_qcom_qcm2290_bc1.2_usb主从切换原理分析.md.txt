@@ -12,7 +12,7 @@ qcom有的平台直接通过寄存器获取，接口`smblib_get_apsd_result`：
 
 * 涉及文件如下：
 
-```C++
+```shell
 vendor/bengal_defconfig
 470:CONFIG_MSM_QUSB_PHY=y
 CONFIG_USB_MSM_SSPHY_QMP=y
@@ -35,7 +35,7 @@ obj-$(CONFIG_USB_MSM_SSPHY_QMP)         += phy-msm-ssusb-qmp.o
 ## qusb设置host/device逻辑
 
 * qusb驱动通过extcon绑定pm2250_charger驱动，两者可以进行extcon notify通信，dts:
-```C++
+```shell
 scuba-usb.dtsi:
         /* Primary USB port related High Speed PHY */
         qusb_phy0: qusb@1613000 {
@@ -144,7 +144,7 @@ static int qusb_phy_probe(struct platform_device *pdev)
 		return ret;
 }
 
-1.qusb 根据dts找到edev(pm2250_charger)，并将vbus_nb和id_nb注册到其内核通知链中(usb_add_phy_dev)
+//1.qusb 根据dts找到edev(pm2250_charger)，并将vbus_nb和id_nb注册到其内核通知链中(usb_add_phy_dev)
 int usb_add_phy_dev(struct usb_phy *x)
 {
 	...	
@@ -163,7 +163,7 @@ static int usb_add_extcon(struct usb_phy *x)
 	} 
 	...
 
-	1.注册vbus_nb，绑定EXTCON_USB
+	//1.注册vbus_nb，绑定EXTCON_USB
 	if (x->vbus_nb.notifier_call) {
 		ret = devm_extcon_register_notifier(x->dev, x->edev,
 							EXTCON_USB,
@@ -174,7 +174,7 @@ static int usb_add_extcon(struct usb_phy *x)
 			return ret;
 		}
 
-	2.注册id_nb，绑定EXTCON_USB_HOST
+	//2.注册id_nb，绑定EXTCON_USB_HOST
 	if (x->id_nb.notifier_call) {
 		struct extcon_dev *id_ext;
 
@@ -209,7 +209,7 @@ int extcon_register_notifier(struct extcon_dev *edev, unsigned int id,struct not
 }
 
 
-注册两个notify，分别是vbus和id脚，由charger发起通知，qusb接收：
+//注册两个notify，分别是vbus和id脚，由charger发起通知，qusb接收：
 static int qusb_phy_extcon_register(struct qusb_phy *qphy)
 {
 	int ret;
@@ -227,7 +227,7 @@ static int qusb_phy_extcon_register(struct qusb_phy *qphy)
 		return PTR_ERR(qphy->usb_extcon);
 	}
 
-向DW3驱动注册extcon设备，并设置属性EXTCON_USB_HOST EXTCON_USB
+//向DW3驱动注册extcon设备，并设置属性EXTCON_USB_HOST EXTCON_USB
 	ret = devm_extcon_dev_register(qphy->phy.dev, qphy->usb_extcon);
 	if (ret) {
 		dev_err(qphy->phy.dev, "failed to register extcon device\n");
@@ -247,7 +247,7 @@ static int qusb_phy_extcon_register(struct qusb_phy *qphy)
 ```
 
 dw3驱动dts如下：
-```C++
+```shell
 &usb0 {
         extcon = <&qusb_phy0>, <&eud>;
 };
@@ -349,22 +349,22 @@ static int qusb_phy_id_notifier(struct notifier_block *nb,
 
 ```C++
 * INIT_DELAYED_WORK(&qphy->port_det_w, qusb_phy_port_state_work);
-  * switch (qphy->port_state)
-    * PORT_UNKNOWN
-	  * PORT_DISCONNECTED
-	    * PORT_DCD_IN_PROGRESS
-		  * PORT_DISCONNECTED
-		    * PORT_DCD_IN_PROGRESS
-			  * PORT_PRIMARY_IN_PROGRESS
-			    * PORT_DCD_IN_PROGRESS
-				  * qusb_phy_notify_charger(qphy, POWER_SUPPLY_TYPE_USB); //设置charger充电类型
-				    * power_supply_set_property(qphy->usb_psy, POWER_SUPPLY_PROP_REAL_TYPE,&pval);
-				  * qusb_phy_notify_extcon(qphy, EXTCON_USB, 1); //通知dw3驱动切换device
-				    * extcon_set_state_sync(qphy->usb_extcon, extcon_id, event);
-```
+  └── switch (qphy->port_state)
+      └── PORT_UNKNOWN
+          └── PORT_DISCONNECTED
+              └── PORT_DCD_IN_PROGRESS
+                  └── PORT_DISCONNECTED
+                      └── PORT_DCD_IN_PROGRESS
+                          └── PORT_PRIMARY_IN_PROGRESS
+                              └── PORT_DCD_IN_PROGRESS
+                                  ├── qusb_phy_notify_charger(qphy, POWER_SUPPLY_TYPE_USB); //设置charger充电类型
+                                  │   └── power_supply_set_property(qphy->usb_psy, POWER_SUPPLY_PROP_REAL_TYPE,&pval);
+                          	       └── qusb_phy_notify_extcon(qphy, EXTCON_USB, 1); //通知dw3驱动切换device
+                          	           └── extcon_set_state_sync(qphy->usb_extcon, extcon_id, event);
+```  
 
 log如下，识别过程花费时间`0.302503`s：
-```log
+```
 [   74.957732] msm-qusb-phy 1613000.qusb: Got VBUS notification: 1
 [   74.963686] extcon extcon2: name_show = NAME=soc:rt_pd_manager
 [   74.969536] extcon extcon2: state_show = STATE=USB=1
@@ -396,7 +396,7 @@ log如下，识别过程花费时间`0.302503`s：
 ```
 
 DCP识别过程log如下：
-```log
+```
 行 1585: [Wed Dec 31 20:05:14 1969] msm-qusb-phy 1613000.qusb: Got VBUS notification: 1
 行 1594: [Wed Dec 31 20:05:14 1969] msm-qusb-phy 1613000.qusb: state: 0
 行 1595: [Wed Dec 31 20:05:15 1969] msm-qusb-phy 1613000.qusb: qusb_phy_enable_power turn on regulators
@@ -693,7 +693,7 @@ static int dwc3_msm_extcon_register(struct dwc3_msm *mdwc)
 
 }
 
-这里主要绑定了两个notify：
+//这里主要绑定了两个notify：
 EXTCON_USB_HOST:
 static int dwc3_msm_id_notifier(struct notifier_block *nb,
 	unsigned long event, void *ptr)
@@ -887,7 +887,7 @@ skip_update:
 	dwc3_ext_event_notify(mdwc);
 }
 
-设置usb phy：
+//设置usb phy：
 static int dwc3_msm_resume(struct dwc3_msm *mdwc)
 {
 	int ret;
@@ -1062,7 +1062,7 @@ static int dwc3_msm_resume(struct dwc3_msm *mdwc)
 	return 0;
 }
 
-主从切换实际是sm_work做的：
+//主从切换实际是sm_work做的：
 static void dwc3_ext_event_notify(struct dwc3_msm *mdwc)
 {
 	/* Flush processing any pending events before handling new ones */
@@ -1594,7 +1594,7 @@ static int dwc3_otg_start_peripheral(struct dwc3_msm *mdwc, int on)
 # 拔usb时设置充电类型为POWER_SUPPLY_TYPE_UNKNOWN
 
 * 目前smblite是在拔插中断中判断vbus是否在位，不在位则设置为POWER_SUPPLY_TYPE_UNKNOWN，打印如下：
-```log
+```
    51.107378] PM2250_charger: smblite_usbin_uv_irq_handler: IRQ: usbin-uv
 [   51.109555] PM2250_charger: smblite_usb_plugin_irq_handler: smblite_usb_plugin_irq_handler
 [   51.109588] PM2250_charger: smblite_lib_set_charge_param: AICL 5V threshold = 4200 (0x00)
@@ -1612,7 +1612,7 @@ static int dwc3_otg_start_peripheral(struct dwc3_msm *mdwc, int on)
 
 # device流程实例
 
-```log
+```
 source plug in:
 [   74.748103] rt-pd-manager soc:rt_pd_manager: usb_dwork_handler Device
 [   74.753185] <   74.670>TCPC-TCPC:wake_lock=1
@@ -1779,7 +1779,7 @@ console:/ $ [   73.330003] PM2250_charger: smblite_lib_get_prop_usb_online: POWE
 # PAX extcon实例
 
 目前将qcom charger的extcon通知改为我们自己PD驱动去通知，在qusb接收notify中加`dump_stack`打印如下，表示是从pax接收的通知：
-```log
+```
 [Tue Aug  2 20:34:05 2022] < 1553.131>TCPC-TCPC:RA_DETACH\x0a< 1553.131>TCPC-TCPC:tcpci_alert_cc_changed ++
 [Tue Aug  2 20:34:05 2022] pax-pd-manager soc:pax_pd_manager: pd_tcp_notifier_call - sink vbus
 [Tue Aug  2 20:34:05 2022] pax-pd-manager soc:pax_pd_manager: pd_tcp_notifier_call event = 14

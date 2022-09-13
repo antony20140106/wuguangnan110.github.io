@@ -154,3 +154,52 @@ charge done(CHARGE TERMINATION):
 top-off
 [10239.765717] Battery: [ status:Full, health:Good, present:1, tech:Li-ion, capcity:100,cap_rm:5175 mah, vol:4313 mv, temp:30, curr:0 ma, ui_soc:100, notify_code: 0 ]
 ```
+
+## 满充实验四0910
+
+![0021_0003.png](images/0021_0003.png)
+
+* 充电参数如下：
+```C++
+term-current = <240>; //截止电流
+max-topoff-time = <0>;                 /* Timer to stop charging after charge termination, Default:Disabled minutes*/
+ICC = 4080ma
+```
+
+* 寄存器
+```log
+Reg[0x00] = 0x0b
+Reg[0x01] = 0x13
+Reg[0x02] = 0xf3
+Reg[0x03] = 0xa7
+Reg[0x04] = 0xf6
+Reg[0x05] = 0x1e
+Reg[0x06] = 0xa4
+Reg[0x07] = 0x0b
+Reg[0x08] = 0x2f
+Reg[0x09] = 0x53
+Reg[0x0a] = 0x23
+Reg[0x0b] = 0x10
+Reg[0x0c] = 0x11
+Reg[0x0d] = 0x60
+Reg[0x0e] = 0x99
+Reg[0x0f] = 0x00
+Reg[0x10] = 0x44
+Reg[0x11] = 0x20
+Reg[0x12] = 0x74
+Reg[0x13] = 0xa0
+Reg[0x14] = 0x00
+Reg[0x15] = 0x00
+Reg[0x16] = 0x00
+```
+
+* 开始充到电量100%时间为138分钟。
+* 100%到`charge done(CHARGE TERMINATION)`时间27.5分钟，感觉还算正常，平时M50也要这个时间。
+* `charge done`到电池充电电流为0时间为0分钟,和`dts`中定义的`max-topoff-time`相符。
+```log
+[  597.508243] Battery: [ status:Charging, health:Good, present:1, tech:Li-ion, capcity:13,cap_rm:642 mah, vol:4003 mv, temp:32, curr:3274 ma, ui_soc:13, notify_code: 0 ]
+
+[ 8879.615310] Battery: [ status:Charging, health:Good, present:1, tech:Li-ion, capcity:100,cap_rm:5205 mah, vol:4323 mv, temp:32, curr:389 ma, ui_soc:100, notify_code: 0 ]
+
+[10534.396189] Battery: [ status:Full, health:Good, present:1, tech:Li-ion, capcity:100,cap_rm:5207 mah, vol:4312 mv, temp:30, curr:3 ma, ui_soc:100, notify_code: 0 ]
+```

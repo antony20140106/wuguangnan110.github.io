@@ -49,7 +49,7 @@ CONFIG_USB_MTK_OTG=y
 
 * Kconfig:
 
-```C++
+```shell
 涉及文件：
 wugn@jcrj-tf-compile:kernel-4.19$ cd drivers/misc/mediatek/usb20/
 wugn@jcrj-tf-compile:usb20$ tree

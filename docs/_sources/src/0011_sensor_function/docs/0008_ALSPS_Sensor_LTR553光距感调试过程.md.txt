@@ -604,7 +604,7 @@ static void handleEvent(uint32_t evtType, const void* evtData)
 
 ```log
 
-开机第一次打开并没有算好靠近远离的阈值就直接断电了：
+#开机第一次打开并没有算好靠近远离的阈值就直接断电了：
 	行 732: [40.469]ltr553_ps_calibration: raw_data_unsigned: 106, i : 1, sum : 106
 	行 748: [40.762]ltr553_ps_calibration: raw_data_unsigned: 107, i : 2, sum : 213
 	行 762: [41.056]ltr553_ps_calibration: raw_data_unsigned: 105, i : 3, sum : 318

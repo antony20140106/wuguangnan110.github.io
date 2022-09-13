@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="zh-CN" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>wugn</title>
+
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script src="../../../_static/translations.js"></script>
+        <script src="../../../_static/js/baidutongji.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="索引" href="../../../genindex.html" />
+    <link rel="search" title="搜索" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../index.html" class="icon icon-home"> wugn_note
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="在文档中搜索" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">概述</a></li>
+<li><a class="reference internal" href="#id2">参考</a></li>
+<li><a class="reference internal" href="#manufacturer-access-system-mac">Manufacturer Access System(制造商准入系统MAC)</a><ul>
+<li><a class="reference internal" href="#altmanufactureraccess-command-list">AltManufacturerAccess() Command List</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id3">问题点调试</a><ul>
+<li><a class="reference internal" href="#icreset">1.如何解密IC并reset芯片</a></li>
+<li><a class="reference internal" href="#id4">2.如何退出自动船运模式</a></li>
+<li><a class="reference internal" href="#id5">3.4%电量关机</a></li>
+</ul>
+</li>
+</ul>
+</div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">wugn_note</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs"> 
+<li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+<li>概述</li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.forward()">Forward</a></li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.back()">Go Back</a> | </li>
+<li style="float: right;margin-left: 10px;"><a href="/index.html">Home</a> | </li>
+
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="id1">
+<h1>概述<a class="headerlink" href="#id1" title="此标题的永久链接"></a></h1>
+<p>该电量计用在A6650上面。</p>
+</section>
+<section id="id2">
+<h1>参考<a class="headerlink" href="#id2" title="此标题的永久链接"></a></h1>
+<ul class="simple">
+<li><p><a class="reference external" href="https://www.ti.com.cn/document-viewer/cn/BQ27Z746/datasheet/GUID-5126B3AB-B1C8-48C4-8BCF-355113FCAC13#TITLE-SLUSDW2TOCWRAPPER_DETAILED_DESCRIPTION">适用于单芯锂离子电池组的 BQ27Z746 Impedance Track 技术电池电量监测计和保护解决方案</a></p></li>
+<li><p><a class="reference download internal" download="" href="../../../_downloads/68ad9870aa4d487866eaa44b00dfc551/Bq27Z746sluuca6.pdf"><span class="xref download myst">Bq27Z746电量计寄存器表.pdf</span></a></p></li>
+<li><p><a class="reference external" href="https://blog.csdn.net/wangbaochu/article/details/44406681">Android Low Battery 低电量处理流程</a></p></li>
+</ul>
+</section>
+<section id="manufacturer-access-system-mac">
+<h1>Manufacturer Access System(制造商准入系统MAC)<a class="headerlink" href="#manufacturer-access-system-mac" title="此标题的永久链接"></a></h1>
+<p><code class="docutils literal notranslate"><span class="pre">AltManufacturerAccess()</span></code>提供了在MAC（制造商访问系统）中读取和写入数据的方法，bq27z746中很多寄存器都是需要通过mac中读写的，以下是读写实例：</p>
+<p>The MAC command is sent via AltManufacturerAccess() by a block protocol. The result is returned on
+AltManufacturerAccess() via a block read.
+Commands are sent by writing to registers 0x00/0x01 or 0x3E/0x3F. 0x3E and 0x3F work the same as 0x00 and
+0x01, but are primarily intended for block writes and reads.</p>
+<ul>
+<li><p>Example: Send a MAC Gauging() to enable IT via AltManufacturerAccess().</p>
+<ul>
+<li><ol class="arabic simple">
+<li><p>With Impedance Track disabled, send Gauging() (0x0021) to AltManufacturerAccess()</p></li>
+</ol>
+<ul class="simple">
+<li><p>a. Command Write, start address = 0x3E (or 0x00). Data = 21 00 (data must be sent in little endian).向3f写0x0021</p></li>
+</ul>
+</li>
+<li><ol class="arabic simple" start="2">
+<li><p>IT is enabled, ManufacturingStatus()[GAUGE_EN] = 1.</p></li>
+</ol>
+</li>
+</ul>
+</li>
+<li><p>Example: Read Chemical ID() (0x0006) via AltManufacturerAccess().</p>
+<ul>
+<li><ol class="arabic simple">
+<li><p>Send Chemical ID() to AltManufacturerAccess().</p></li>
+</ol>
+<ul class="simple">
+<li><p>a. Command Write, start address = 0x3E (or 0x00). Data sent = 06 00 (data must be sent in little endian).先向3f写0x0006</p></li>
+</ul>
+</li>
+<li><ol class="arabic simple" start="2">
+<li><p>Read the result from AltManufacturerAccess() and MACData(). 读取MACData 0x40寄存器</p></li>
+</ol>
+</li>
+</ul>
+</li>
+</ul>
+<p><img alt="0004_0005.png" src="../../../_images/0004_0005.png" /></p>
+<p>读写函数：</p>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="cp">#define BQ27Z746_MAC		0x3E</span>
+<span class="cp">#define BQ27Z746_MACDATA   0x40</span>
+<span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">bq27z746_reg_mac_read</span><span class="p">(</span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">short</span><span class="w"> </span><span class="n">reg</span><span class="p">,</span><span class="w"> </span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">val</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">size</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="k">struct</span><span class="w"> </span><span class="nc">i2c_client</span><span class="w"> </span><span class="o">*</span><span class="n">client</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">g_batt_info</span><span class="o">-&gt;</span><span class="n">i2c_client</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="n">s32</span><span class="w"> </span><span class="n">status</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="n">u16</span><span class="w"> </span><span class="n">addr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="n">u8</span><span class="w"> </span><span class="n">data</span><span class="p">[</span><span class="mi">36</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="mi">0</span><span class="p">};</span><span class="w"></span>
+<span class="w">	</span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="kt">int</span><span class="w"> </span><span class="n">try_cnt</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">3</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="kt">int</span><span class="w"> </span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">mutex_lock</span><span class="p">(</span><span class="o">&amp;</span><span class="n">g_batt_info</span><span class="o">-&gt;</span><span class="n">lock</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">	</span><span class="k">while</span><span class="w"> </span><span class="p">(</span><span class="o">--</span><span class="n">try_cnt</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="n">addr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">u16</span><span class="p">)</span><span class="n">reg</span><span class="p">;</span><span class="w"></span>
+<span class="w">		</span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">i2c_smbus_write_word_data</span><span class="p">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="n">BQ27Z746_MAC</span><span class="p">,</span><span class="w"> </span><span class="n">addr</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">status</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">			</span><span class="n">bq27z746_set_i2c_fault_status</span><span class="p">();</span><span class="w"></span>
+<span class="w">			</span><span class="n">BAT_MONITOR_ERR</span><span class="p">(</span><span class="s">&quot;write reg: %x failed</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">reg</span><span class="p">);</span><span class="w"></span>
+<span class="w">			</span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">-1</span><span class="p">;</span><span class="w"></span>
+<span class="w">			</span><span class="k">continue</span><span class="p">;</span><span class="w"></span>
+<span class="w">		</span><span class="p">}</span><span class="w"></span>
+
+<span class="w">		</span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">i2c_smbus_read_i2c_block_data</span><span class="p">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="n">BQ27Z746_MACDATA</span><span class="p">,</span><span class="w"> </span><span class="n">size</span><span class="p">,</span><span class="w"> </span><span class="n">data</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">status</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">			</span><span class="n">bq27z746_set_i2c_fault_status</span><span class="p">();</span><span class="w"></span>
+<span class="w">			</span><span class="n">BAT_MONITOR_ERR</span><span class="p">(</span><span class="s">&quot;read reg: %x failed</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">reg</span><span class="p">);</span><span class="w"></span>
+<span class="w">			</span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">-1</span><span class="p">;</span><span class="w"></span>
+<span class="w">			</span><span class="k">continue</span><span class="p">;</span><span class="w"></span>
+<span class="w">		</span><span class="p">}</span><span class="w"></span>
+
+<span class="w">		</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">status</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">size</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">			</span><span class="n">bq27z746_set_i2c_fault_status</span><span class="p">();</span><span class="w"></span>
+<span class="w">			</span><span class="n">BAT_MONITOR_ERR</span><span class="p">(</span><span class="s">&quot;data size is not right: %d:%d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">status</span><span class="p">,</span><span class="w"> </span><span class="n">size</span><span class="p">);</span><span class="w"></span>
+<span class="w">			</span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">-1</span><span class="p">;</span><span class="w"></span>
+<span class="w">			</span><span class="k">continue</span><span class="p">;</span><span class="w"></span>
+<span class="w">		</span><span class="p">}</span><span class="w"></span>
+
+<span class="cp">#if 0</span><span class="c"></span>
+<span class="c">		BAT_MONITOR_DBG(&quot;--------- read reg: %x, size: %d:%d ------\n&quot;, reg, status, size);</span>
+<span class="c">		for (i = 0; i &lt; status; i++)</span>
+<span class="c">		{</span>
+<span class="c">			printk(KERN_INFO &quot; %02x&quot;, data[i]);</span>
+<span class="c">			if ((i + 1) % 10 == 0)</span>
+<span class="c">				pr_info(&quot;\n&quot;);</span>
+<span class="c">		}</span>
+<span class="c">		BAT_MONITOR_DBG(&quot;-----------------------------\n&quot;);</span>
+<span class="cp">#endif</span>
+
+<span class="w">		</span><span class="n">bq27z746_reset_i2c_fault_cnt</span><span class="p">();</span><span class="w"></span>
+
+<span class="w">		</span><span class="n">memcpy</span><span class="p">(</span><span class="n">val</span><span class="p">,</span><span class="w"> </span><span class="n">data</span><span class="p">,</span><span class="w"> </span><span class="n">status</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">		</span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="w">		</span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">mutex_unlock</span><span class="p">(</span><span class="o">&amp;</span><span class="n">g_batt_info</span><span class="o">-&gt;</span><span class="n">lock</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">	</span><span class="k">return</span><span class="w"> </span><span class="n">ret</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<section id="altmanufactureraccess-command-list">
+<h2>AltManufacturerAccess() Command List<a class="headerlink" href="#altmanufactureraccess-command-list" title="此标题的永久链接"></a></h2>
+<p><img alt="0004_0000.png" src="../../../_images/0004_00002.png" />
+<img alt="0004_0001.png" src="../../../_images/0004_00012.png" />
+<img alt="0004_0002.png" src="../../../_images/0004_00022.png" /></p>
+</section>
+</section>
+<section id="id3">
+<h1>问题点调试<a class="headerlink" href="#id3" title="此标题的永久链接"></a></h1>
+<section id="icreset">
+<h2>1.如何解密IC并reset芯片<a class="headerlink" href="#icreset" title="此标题的永久链接"></a></h2>
+<p>如果需要修改某些寄存器或者reset时，首先需要解密，解密操作如下：</p>
+<p><img alt="0018_0000.png" src="../../../_images/0018_00001.png" /></p>
+<p>中颖的电量计支持软件解锁，而bq27z746不支持：</p>
+<p><img alt="0004_0003.png" src="../../../_images/0004_00031.png" /></p>
+<p>default unseal key is 0x1234 and 0x5678. To go from Sealed to Unsealed, these two words must be sent to ManufacturerAccess(), first 0x1234 followed by 0x5678, both sent sequentially with the second word sent within 4 seconds of the first</p>
+<p>Changing from Unsealed to Full Access must be performed by writing the first word of the full access key to ManufacturerAccess(), followed
+by the second word of the full access key to ManufacturerAccess().The two words must be sent within 4s.</p>
+<ul class="simple">
+<li><p>中颖软件支持sys节点解密如下：</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="cp">#define BQ27Z746_SEALED_CMD		0x00</span>
+<span class="cp">#define BQ27Z746_SEALED_DATA1	0X1234</span>
+<span class="cp">#define BQ27Z746_SEALED_DATA2	0X5678</span>
+<span class="cp">#define BQ27Z746_FULL_ACESS_DATA1	0X90AB</span>
+<span class="cp">#define BQ27Z746_FULL_ACESS_DATA2	0XCDEF</span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">__maybe_unused</span><span class="w"> </span><span class="nf">bq27z746_sealed</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="kt">int</span><span class="w"> </span><span class="n">ret</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="n">val</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="mi">0</span><span class="p">};</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">bq27z746_reg_mac_read</span><span class="p">(</span><span class="n">BQ27Z746_reg_SealDevice</span><span class="p">,</span><span class="w"> </span><span class="n">val</span><span class="p">,</span><span class="w"> </span><span class="k">sizeof</span><span class="p">(</span><span class="n">val</span><span class="p">));</span><span class="w"></span>
+
+<span class="w">	</span><span class="k">return</span><span class="w"> </span><span class="n">ret</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">__maybe_unused</span><span class="w"> </span><span class="nf">bq27z746_unsealed</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="cp">#if 0</span><span class="c"></span>
+<span class="c">	int ret;</span>
+<span class="c">	unsigned char val[2] = {0};</span>
+
+<span class="c">	ret = bq27z746_reg_write_word_data(BQ27Z746_SEALED_CMD, BQ27Z746_SEALED_DATA2);</span>
+<span class="c">	if (ret &lt; 0)</span>
+<span class="c">		return ret;</span>
+
+<span class="c">	ret = bq27z746_reg_mac_read(BQ27Z746_SEALED_DATA1, val, sizeof(val));</span>
+<span class="c">	if (ret &lt; 0)</span>
+<span class="c">		return ret;</span>
+<span class="cp">#else</span>
+<span class="w">	</span><span class="kt">int</span><span class="w"> </span><span class="n">ret</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="n">val</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="mi">0</span><span class="p">};</span><span class="w"></span>
+<span class="w">	</span><span class="k">struct</span><span class="w"> </span><span class="nc">i2c_client</span><span class="w"> </span><span class="o">*</span><span class="n">client</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">g_batt_info</span><span class="o">-&gt;</span><span class="n">i2c_client</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">mutex_lock</span><span class="p">(</span><span class="o">&amp;</span><span class="n">g_batt_info</span><span class="o">-&gt;</span><span class="n">lock</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">	</span><span class="k">do</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">i2c_smbus_write_word_data</span><span class="p">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="n">BQ27Z746_SEALED_CMD</span><span class="p">,</span><span class="w"> </span><span class="n">BQ27Z746_SEALED_DATA2</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ret</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">			</span><span class="n">bq27z746_set_i2c_fault_status</span><span class="p">();</span><span class="w"></span>
+<span class="w">			</span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+<span class="w">		</span><span class="p">}</span><span class="w"></span>
+
+<span class="w">		</span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">i2c_smbus_write_word_data</span><span class="p">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="n">BQ27Z746_MAC</span><span class="p">,</span><span class="w"> </span><span class="n">BQ27Z746_SEALED_DATA1</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ret</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">			</span><span class="n">bq27z746_set_i2c_fault_status</span><span class="p">();</span><span class="w"></span>
+<span class="w">			</span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+<span class="w">		</span><span class="p">}</span><span class="w"></span>
+
+<span class="w">		</span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">i2c_smbus_read_i2c_block_data</span><span class="p">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="n">BQ27Z746_MACDATA</span><span class="p">,</span><span class="w"> </span><span class="k">sizeof</span><span class="p">(</span><span class="n">val</span><span class="p">),</span><span class="w"> </span><span class="n">val</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ret</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">			</span><span class="n">bq27z746_set_i2c_fault_status</span><span class="p">();</span><span class="w"></span>
+<span class="w">			</span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+<span class="w">		</span><span class="p">}</span><span class="w"></span>
+
+<span class="w">		</span><span class="n">bq27z746_reset_i2c_fault_cnt</span><span class="p">();</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"> </span><span class="k">while</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">mutex_unlock</span><span class="p">(</span><span class="o">&amp;</span><span class="n">g_batt_info</span><span class="o">-&gt;</span><span class="n">lock</span><span class="p">);</span><span class="w"></span>
+<span class="cp">#endif</span>
+
+<span class="w">	</span><span class="k">return</span><span class="w"> </span><span class="n">ret</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">__maybe_unused</span><span class="w"> </span><span class="nf">bq27z746_full_access</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="cp">#if 0</span><span class="c"></span>
+<span class="c">	int ret;</span>
+<span class="c">	unsigned char val[2] = {0};</span>
+
+<span class="c">	ret = bq27z746_reg_write_word_data(BQ27Z746_SEALED_CMD, BQ27Z746_FULL_ACESS_DATA2);</span>
+<span class="c">	if (ret &lt; 0)</span>
+<span class="c">		return ret;</span>
+
+<span class="c">	ret = bq27z746_reg_mac_read(BQ27Z746_FULL_ACESS_DATA1, val, sizeof(val));</span>
+<span class="c">	if (ret &lt; 0)</span>
+<span class="c">		return ret;</span>
+<span class="cp">#else</span>
+<span class="w">	</span><span class="kt">int</span><span class="w"> </span><span class="n">ret</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="n">val</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="mi">0</span><span class="p">};</span><span class="w"></span>
+<span class="w">	</span><span class="k">struct</span><span class="w"> </span><span class="nc">i2c_client</span><span class="w"> </span><span class="o">*</span><span class="n">client</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">g_batt_info</span><span class="o">-&gt;</span><span class="n">i2c_client</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">mutex_lock</span><span class="p">(</span><span class="o">&amp;</span><span class="n">g_batt_info</span><span class="o">-&gt;</span><span class="n">lock</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">	</span><span class="k">do</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">i2c_smbus_write_word_data</span><span class="p">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="n">BQ27Z746_SEALED_CMD</span><span class="p">,</span><span class="w"> </span><span class="n">BQ27Z746_FULL_ACESS_DATA2</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ret</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">			</span><span class="n">bq27z746_set_i2c_fault_status</span><span class="p">();</span><span class="w"></span>
+<span class="w">			</span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+<span class="w">		</span><span class="p">}</span><span class="w"></span>
+
+<span class="w">		</span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">i2c_smbus_write_word_data</span><span class="p">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="n">BQ27Z746_MAC</span><span class="p">,</span><span class="w"> </span><span class="n">BQ27Z746_FULL_ACESS_DATA1</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ret</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">			</span><span class="n">bq27z746_set_i2c_fault_status</span><span class="p">();</span><span class="w"></span>
+<span class="w">			</span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+<span class="w">		</span><span class="p">}</span><span class="w"></span>
+
+<span class="w">		</span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">i2c_smbus_read_i2c_block_data</span><span class="p">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="n">BQ27Z746_MACDATA</span><span class="p">,</span><span class="w"> </span><span class="k">sizeof</span><span class="p">(</span><span class="n">val</span><span class="p">),</span><span class="w"> </span><span class="n">val</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ret</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">			</span><span class="n">bq27z746_set_i2c_fault_status</span><span class="p">();</span><span class="w"></span>
+<span class="w">			</span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+<span class="w">		</span><span class="p">}</span><span class="w"></span>
+
+<span class="w">		</span><span class="n">bq27z746_reset_i2c_fault_cnt</span><span class="p">();</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"> </span><span class="k">while</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">mutex_unlock</span><span class="p">(</span><span class="o">&amp;</span><span class="n">g_batt_info</span><span class="o">-&gt;</span><span class="n">lock</span><span class="p">);</span><span class="w"></span>
+<span class="cp">#endif</span>
+
+<span class="w">	</span><span class="k">return</span><span class="w"> </span><span class="n">ret</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="cm">/* attr for debug */</span><span class="w"></span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">ssize_t</span><span class="w"> </span><span class="nf">monitor_show_sealed</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w"> </span><span class="o">*</span><span class="n">dev</span><span class="p">,</span><span class="w"></span>
+<span class="w">						</span><span class="k">struct</span><span class="w"> </span><span class="nc">device_attribute</span><span class="w"> </span><span class="o">*</span><span class="n">attr</span><span class="p">,</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">buf</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="kt">int</span><span class="w"> </span><span class="n">ret</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="kt">int</span><span class="w"> </span><span class="n">sealed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="kt">int</span><span class="w"> </span><span class="n">full_access</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">bq27z746_get_op_status</span><span class="p">(</span><span class="o">&amp;</span><span class="n">status</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">status</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="p">(</span><span class="mi">1</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="mi">8</span><span class="p">))</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="n">sealed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">status</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="p">(</span><span class="mi">1</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="mi">9</span><span class="p">))</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="n">full_access</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sprintf</span><span class="p">(</span><span class="n">buf</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;status: 0x%x [%s] [%s]</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">status</span><span class="p">,</span><span class="w"></span>
+<span class="w">			</span><span class="n">sealed</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="s">&quot;sealed&quot;</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="s">&quot;unsealed&quot;</span><span class="p">,</span><span class="w"></span>
+<span class="w">			</span><span class="n">full_access</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="s">&quot;full access&quot;</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="s">&quot;not full access&quot;</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">	</span><span class="k">return</span><span class="w"> </span><span class="n">ret</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">ssize_t</span><span class="w"> </span><span class="nf">monitor_store_sealed</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w"> </span><span class="o">*</span><span class="n">dev</span><span class="p">,</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">device_attribute</span><span class="w"> </span><span class="o">*</span><span class="n">attr</span><span class="p">,</span><span class="w"></span>
+<span class="w">		</span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">buf</span><span class="p">,</span><span class="w"> </span><span class="kt">size_t</span><span class="w"> </span><span class="n">count</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="kt">int</span><span class="w"> </span><span class="n">val</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="kt">int</span><span class="w"> </span><span class="n">ret</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sscanf</span><span class="p">(</span><span class="n">buf</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;%d&quot;</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">val</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ret</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"></span>
+<span class="w">		</span><span class="k">return</span><span class="w"> </span><span class="n">count</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">val</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="n">bq27z746_full_access</span><span class="p">();</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+<span class="w">	</span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">val</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="n">bq27z746_unsealed</span><span class="p">();</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+<span class="w">	</span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="n">bq27z746_sealed</span><span class="p">();</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+
+<span class="w">	</span><span class="k">return</span><span class="w"> </span><span class="n">count</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+</section>
+<section id="id4">
+<h2>2.如何退出自动船运模式<a class="headerlink" href="#id4" title="此标题的永久链接"></a></h2>
+<p>目前电量计都打开了自动进入船运模式功能，如果超过3天不开机，电池就会自动进入船运模式。船运模式的特点是电池无输出，功耗极低，但是能记录lifetime，保障电池在运输过程中能够检测是否经历高温等环境，相当于黑夹子。</p>
+<ul class="simple">
+<li><p>解密
+首先点击unseal进行解密，加密的S1S0 都亮，解密后只有SEC0亮。</p></li>
+</ul>
+<p><img alt="0018_0001.png" src="../../../_images/0018_00011.png" /></p>
+<ul class="simple">
+<li><p>关闭AUDO_SHIP_EN：</p></li>
+</ul>
+<p><img alt="0018_0002.png" src="../../../_images/0018_00021.png" />
+<img alt="0018_0003.png" src="../../../_images/0018_00031.png" /></p>
+<ul class="simple">
+<li><p>写完后，该bit为绿色：</p></li>
+</ul>
+<p><img alt="0018_0004.png" src="../../../_images/0018_00041.png" /></p>
+<ul class="simple">
+<li><p>重新reset：</p></li>
+</ul>
+<p><img alt="0018_0006.png" src="../../../_images/0018_00061.png" /></p>
+<ul class="simple">
+<li><p>自动进入的时间在这里进行设置：</p></li>
+</ul>
+<p><img alt="0018_0005.png" src="../../../_images/0018_00051.png" /></p>
+</section>
+<section id="id5">
+<h2>3.4%电量关机<a class="headerlink" href="#id5" title="此标题的永久链接"></a></h2>
+<p>目前机器每次都是电量降低到4%左右就马上关机了，看一下什么原因，打印如下：</p>
+<div class="highlight-log notranslate"><div class="highlight"><pre><span></span>[57195.767140] Battery: [ status:Discharging, health:Good, present:1, tech:Li-ion, capcity:11,cap_rm:521 mah, vol:3492 mv, temp:34, curr:-1477 ma, ui_soc:5, notify_code: 0 ]
+[57195.782485] time_to_full:65535, remain:ui:95 mah:4676, current_now:-1477, qmax:5197
+[57195.791387] time_to_full:65535, remain:ui:95 mah:4676, current_now:-1477, qmax:5197
+[57195.794506] ///PD dbg info 127d
+[57195.799737] PAX_CHG: psy_charger_get_property psp:4
+[57195.802347] &lt;57195.794&gt;TCPC-TCPC:bat_update_work_func battery update soc = 5
+[57195.802347] &lt;57195.794&gt;TCPC-TCPC:bat_update_work_func Battery Discharging
+[57195.807781] healthd: battery l=5 v=3492 t=34.0 h=2 st=3 c=-1477000 fc=5197000 cc=11 chg=
+[57195.830360] time_to_full:65535, remain:ui:95 mah:4676, current_now:-1477, qmax:5197
+[57195.838564] PAX_CHG: psy_charger_get_property psp:4
+[57203.959679] Battery: [ status:Discharging, health:Good, present:1, tech:Li-ion, capcity:10,cap_rm:518 mah, vol:3490 mv, temp:34, curr:-1477 ma, ui_soc:4, notify_code: 0 ]
+[57203.975079] time_to_full:65535, remain:ui:96 mah:4679, current_now:-1477, qmax:5197
+[57203.983752] time_to_full:65535, remain:ui:96 mah:4679, current_now:-1477, qmax:5197
+[57203.987698] ///PD dbg info 65d
+[57203.992546] PAX_CHG: psy_charger_get_property psp:4
+[57203.994648] &lt;57203.987&gt;TCPC-TCPC:bat_update_work_func battery update soc = 4
+[57204.007202] healthd: battery l=4 v=3490 t=34.0 h=2 st=3 c=-1477000 fc=5197000 cc=11 chg=
+[57204.016209] time_to_full:65535, remain:ui:96 mah:4679, current_now:-1477, qmax:5197
+[57204.024982] PAX_CHG: psy_charger_get_property psp:4
+[57204.028336] ///PD dbg info 62d
+[57204.033102] &lt;57203.994&gt;TCPC-TCPC:bat_update_work_func Battery Discharging
+[57204.153001] init: processing action (sys.shutdown.requested=*) from (/vendor/etc/init/hw/init.qcom.rc:715)
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>查看关机条件：</p></li>
+</ul>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kt">boolean</span><span class="w"> </span><span class="nf">shouldShutdownLocked</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mHealthInfo2p1</span><span class="p">.</span><span class="na">batteryCapacityLevel</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">BatteryCapacityLevel</span><span class="p">.</span><span class="na">UNSUPPORTED</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">            </span><span class="k">return</span><span class="w"> </span><span class="p">(</span><span class="n">mHealthInfo2p1</span><span class="p">.</span><span class="na">batteryCapacityLevel</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">BatteryCapacityLevel</span><span class="p">.</span><span class="na">CRITICAL</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mHealthInfo</span><span class="p">.</span><span class="na">batteryLevel</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">            </span><span class="k">return</span><span class="w"> </span><span class="kc">false</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">        </span><span class="c1">// Battery-less devices should not shutdown.</span><span class="w"></span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">mHealthInfo</span><span class="p">.</span><span class="na">batteryPresent</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">            </span><span class="k">return</span><span class="w"> </span><span class="kc">false</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">        </span><span class="c1">// If battery state is not CHARGING, shutdown.</span><span class="w"></span>
+<span class="w">        </span><span class="c1">// - If battery present and state == unknown, this is an unexpected error state.</span><span class="w"></span>
+<span class="w">        </span><span class="c1">// - If level &lt;= 0 and state == full, this is also an unexpected state</span><span class="w"></span>
+<span class="w">        </span><span class="c1">// - All other states (NOT_CHARGING, DISCHARGING) means it is not charging.</span><span class="w"></span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">mHealthInfo</span><span class="p">.</span><span class="na">batteryStatus</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">BatteryManager</span><span class="p">.</span><span class="na">BATTERY_STATUS_CHARGING</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">shutdownIfNoPowerLocked</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="c1">// shut down gracefully if our battery is critically low and we are not powered.</span><span class="w"></span>
+<span class="w">        </span><span class="c1">// wait until the system has booted before attempting to display the shutdown dialog.</span><span class="w"></span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">shouldShutdownLocked</span><span class="p">())</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">            </span><span class="n">mHandler</span><span class="p">.</span><span class="na">post</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">Runnable</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="nd">@Override</span><span class="w"></span>
+<span class="w">                </span><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">run</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mActivityManagerInternal</span><span class="p">.</span><span class="na">isSystemReady</span><span class="p">())</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                        </span><span class="n">Intent</span><span class="w"> </span><span class="n">intent</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">Intent</span><span class="p">(</span><span class="n">Intent</span><span class="p">.</span><span class="na">ACTION_REQUEST_SHUTDOWN</span><span class="p">);</span><span class="w"></span>
+<span class="w">                        </span><span class="n">intent</span><span class="p">.</span><span class="na">putExtra</span><span class="p">(</span><span class="n">Intent</span><span class="p">.</span><span class="na">EXTRA_KEY_CONFIRM</span><span class="p">,</span><span class="w"> </span><span class="kc">false</span><span class="p">);</span><span class="w"></span>
+<span class="w">                        </span><span class="n">intent</span><span class="p">.</span><span class="na">putExtra</span><span class="p">(</span><span class="n">Intent</span><span class="p">.</span><span class="na">EXTRA_REASON</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                </span><span class="n">PowerManager</span><span class="p">.</span><span class="na">SHUTDOWN_LOW_BATTERY</span><span class="p">);</span><span class="w"></span>
+<span class="w">                        </span><span class="n">intent</span><span class="p">.</span><span class="na">setFlags</span><span class="p">(</span><span class="n">Intent</span><span class="p">.</span><span class="na">FLAG_ACTIVITY_NEW_TASK</span><span class="p">);</span><span class="w"></span>
+<span class="w">                        </span><span class="n">mContext</span><span class="p">.</span><span class="na">startActivityAsUser</span><span class="p">(</span><span class="n">intent</span><span class="p">,</span><span class="w"> </span><span class="n">UserHandle</span><span class="p">.</span><span class="na">CURRENT</span><span class="p">);</span><span class="w"></span>
+<span class="w">                    </span><span class="p">}</span><span class="w"></span>
+<span class="w">                </span><span class="p">}</span><span class="w"></span>
+<span class="w">            </span><span class="p">});</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>以上代码得知关机条件有以下两种：</p>
+<ul>
+<li><p>mHealthInfo2p1.batteryCapacityLevel == BatteryCapacityLevel.CRITICAL</p></li>
+<li><p>soc = 0% &amp;&amp; 不在充电</p></li>
+</ul>
+</li>
+</ul>
+<p>这样就只有第一种关机可能，看看batteryCapacityLevel是怎么获取<code class="docutils literal notranslate"><span class="pre">mHealthInfo</span></code>和<code class="docutils literal notranslate"><span class="pre">mHealthInfo2p1</span></code>的，是从healthd回调函数中获取的：</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">frameworks/base/services/core/java/com/android/server/BatteryService.java</span></code>:</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>* onStart()
+  └── registerHealthCallback(); //注册回调
+      └── mHealthServiceWrapper.init(mHealthHalCallback,
+          └── healthInfoChanged(android.hardware.health.V2_0.HealthInfo props) //回调函数
+              └── BatteryService.this.update(propsLatest);
+                  └── update(android.hardware.health.V2_1.HealthInfo info)
+                      ├── mHealthInfo = info.legacy.legacy;
+                      └── mHealthInfo2p1 = info;
+</pre></div>
+</div>
+<p>我们再看看healthd是上传哪个值上来，首先初始化获取路径：</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">system/core/healthd/BatteryMonitor.cpp</span></code>:</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>* void BatteryMonitor::init(struct healthd_config *hc) 
+  └── case ANDROID_POWER_SUPPLY_TYPE_BATTERY:
+      └── if (mHealthdConfig-&gt;batteryCapacityLevelPath.isEmpty())
+          ├── path.appendFormat(&quot;%s/%s/capacity_level&quot;, POWER_SUPPLY_SYSFS_PATH, name);
+          └── if (access(path, R_OK) == 0) mHealthdConfig-&gt;batteryCapacityLevelPath = path;
+</pre></div>
+</div>
+<p>更新回调数据：</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">system/core/healthd/BatteryMonitor.cpp</span></code>:</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span>* BatteryMonitor::updateValues(void)
+  └── if (readFromFile(mHealthdConfig-&gt;batteryCapacityLevelPath, &amp;buf) &gt; 0) //读取sys文件节点 %s/%s/capacity_level
+      └── mHealthInfo-&gt;batteryCapacityLevel = getBatteryCapacityLevel(buf.c_str()); 
+          └── mapSysfsString(capacityLevel, batteryCapacityLevelMap);//转换
+</pre></div>
+</div>
+<p>找到<code class="docutils literal notranslate"><span class="pre">capacity_level</span></code>定义，以下得知<code class="docutils literal notranslate"><span class="pre">BAT_ui_soc</span></code>小于4%就会上报<code class="docutils literal notranslate"><span class="pre">POWER_SUPPLY_CAPACITY_LEVEL_CRITICAL</span></code>导致关机，修改这个判断条件即可。</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">pax_battery_class.c</span></code>:</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">battery_get_property</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">power_supply</span><span class="w"> </span><span class="o">*</span><span class="n">psy</span><span class="p">,</span><span class="w"></span>
+<span class="w">		</span><span class="k">enum</span><span class="w"> </span><span class="nc">power_supply_property</span><span class="w"> </span><span class="n">psp</span><span class="p">,</span><span class="w"> </span><span class="k">union</span><span class="w"> </span><span class="nc">power_supply_propval</span><span class="w"> </span><span class="o">*</span><span class="n">val</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="k">case</span><span class="w"> </span><span class="no">POWER_SUPPLY_PROP_CAPACITY_LEVEL</span><span class="p">:</span><span class="w"></span>
+<span class="w">		</span><span class="n">val</span><span class="o">-&gt;</span><span class="n">intval</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pax_battery_get_cap_level</span><span class="p">();</span><span class="w"></span>
+<span class="w">		</span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="kt">int</span><span class="w"> </span><span class="nf">pax_battery_get_cap_level</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">pax_battery_sply</span><span class="p">.</span><span class="n">BAT_ui_soc</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">100</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="k">return</span><span class="w"> </span><span class="n">POWER_SUPPLY_CAPACITY_LEVEL_FULL</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">pax_battery_sply</span><span class="p">.</span><span class="n">BAT_ui_soc</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">85</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="k">return</span><span class="w"> </span><span class="n">POWER_SUPPLY_CAPACITY_LEVEL_HIGH</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">pax_battery_sply</span><span class="p">.</span><span class="n">BAT_ui_soc</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">15</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="k">return</span><span class="w"> </span><span class="n">POWER_SUPPLY_CAPACITY_LEVEL_NORMAL</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">pax_battery_sply</span><span class="p">.</span><span class="n">BAT_ui_soc</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">4</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="k">return</span><span class="w"> </span><span class="n">POWER_SUPPLY_CAPACITY_LEVEL_LOW</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">pax_battery_sply</span><span class="p">.</span><span class="n">BAT_ui_soc</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="mi">4</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="k">return</span><span class="w"> </span><span class="n">POWER_SUPPLY_CAPACITY_LEVEL_CRITICAL</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+
+<span class="w">	</span><span class="k">return</span><span class="w"> </span><span class="n">POWER_SUPPLY_CAPACITY_LEVEL_UNKNOWN</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>mtk_battery.c：修改方案，按照mtk来定义：</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="kt">int</span><span class="w"> </span><span class="nf">check_cap_level</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">uisoc</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">uisoc</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="mi">100</span><span class="p">)</span><span class="w"></span>
+<span class="w">                </span><span class="k">return</span><span class="w"> </span><span class="n">POWER_SUPPLY_CAPACITY_LEVEL_FULL</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">uisoc</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="mi">80</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">uisoc</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">100</span><span class="p">)</span><span class="w"></span>
+<span class="w">                </span><span class="k">return</span><span class="w"> </span><span class="n">POWER_SUPPLY_CAPACITY_LEVEL_HIGH</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">uisoc</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="mi">20</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">uisoc</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">80</span><span class="p">)</span><span class="w"></span>
+<span class="w">                </span><span class="k">return</span><span class="w"> </span><span class="n">POWER_SUPPLY_CAPACITY_LEVEL_NORMAL</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">uisoc</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">uisoc</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">20</span><span class="p">)</span><span class="w"></span>
+<span class="w">                </span><span class="k">return</span><span class="w"> </span><span class="n">POWER_SUPPLY_CAPACITY_LEVEL_LOW</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">uisoc</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"></span>
+<span class="w">                </span><span class="k">return</span><span class="w"> </span><span class="n">POWER_SUPPLY_CAPACITY_LEVEL_CRITICAL</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="k">else</span><span class="w"></span>
+<span class="w">                </span><span class="k">return</span><span class="w"> </span><span class="n">POWER_SUPPLY_CAPACITY_LEVEL_UNKNOWN</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+</section>
+</section>
+
+
+           </div>
+             <div class="articleComments">
+                <comments>
+  <script src="https://utteranc.es/client.js"
+    repo="iswbm/magic-python"
+    issue-term="pathname"
+    theme="github-light"
+    crossorigin="anonymous"
+    async>
+  </script>
+</comments>
+             </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; 版权所有 2022, wugn.</p>
+  </div>
+
+  利用 <a href="https://www.sphinx-doc.org/">Sphinx</a> 构建，使用了 
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">主题</a>
+    由 <a href="https://readthedocs.org">Read the Docs</a>开发.
+  
+
+<script charset="UTF-8" id="LA_COLLECT" src="//sdk.51.la/js-sdk-pro.min.js"></script>
+<script>LA.init({id: "JoV5csIHTGhHiGQ4",ck: "JoV5csIHTGhHiGQ4"})</script>
+
+<br/>
+<script id="LA-DATA-WIDGET" crossorigin="anonymous" charset="UTF-8" src="https://v6-widget.51.la/v6/JoV5csIHTGhHiGQ4/quote.js?theme=0&f=12&display=1,0,0,0,0,0,1,1"></script>
+
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

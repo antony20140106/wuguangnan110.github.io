@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html class="writer-html5" lang="en" >
+<html class="writer-html5" lang="zh-CN" >
 <head>
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
@@ -18,10 +18,11 @@
         <script src="../../../_static/underscore.js"></script>
         <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="../../../_static/doctools.js"></script>
+        <script src="../../../_static/translations.js"></script>
         <script src="../../../_static/js/baidutongji.js"></script>
     <script src="../../../_static/js/theme.js"></script>
-    <link rel="index" title="Index" href="../../../genindex.html" />
-    <link rel="search" title="Search" href="../../../search.html" /> 
+    <link rel="index" title="索引" href="../../../genindex.html" />
+    <link rel="search" title="搜索" href="../../../search.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -33,7 +34,7 @@
           </a>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
+    <input type="text" name="q" placeholder="在文档中搜索" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
   </form>
@@ -84,10 +85,10 @@
            <div itemprop="articleBody">
              
   <section id="id1">
-<h1>概述<a class="headerlink" href="#id1" title="Permalink to this heading"></a></h1>
+<h1>概述<a class="headerlink" href="#id1" title="此标题的永久链接"></a></h1>
 <p>磁感sensor MMC5603 sensorhub调试记录</p>
 <section id="id2">
-<h2>硬件<a class="headerlink" href="#id2" title="Permalink to this heading"></a></h2>
+<h2>硬件<a class="headerlink" href="#id2" title="此标题的永久链接"></a></h2>
 <p>目前kernel端是通的，sensorhub通了，但是校准有问题。</p>
 <table class="colwidths-auto docutils align-default">
 <thead>
@@ -107,7 +108,7 @@
 <p><img alt="0005_磁力计原理图.png" src="../../../_images/0005_mag.png" /></p>
 </section>
 <section id="id3">
-<h2>1.校准库获取流程<a class="headerlink" href="#id3" title="Permalink to this heading"></a></h2>
+<h2>1.校准库获取流程<a class="headerlink" href="#id3" title="此标题的永久链接"></a></h2>
 <ul class="simple">
 <li><p>Hal层通过maglibinfo节点绑定进入到驱动层寻找库，并返回相应字符串，通过字符串找到对应的libxxx.so</p></li>
 </ul>
@@ -260,7 +261,7 @@
 </li>
 </ul>
 <section id="id4">
-<h3>校准库获取优化<a class="headerlink" href="#id4" title="Permalink to this heading"></a></h3>
+<h3>校准库获取优化<a class="headerlink" href="#id4" title="此标题的永久链接"></a></h3>
 <ul class="simple">
 <li><p>1.校准库兼容M50/M8直接通过读取设备节点，这样做的弊端就是，kernel磁感5603驱动关闭了或者更换型号，就无法通过节点read的方式获取校准库名称了，应该直接在hal层做兼容工作，优化如下：</p></li>
 </ul>
@@ -557,11 +558,11 @@ M50塑胶版本打印：
 </section>
 </section>
 <section id="id5">
-<h2>2.数据不准分析<a class="headerlink" href="#id5" title="Permalink to this heading"></a></h2>
+<h2>2.数据不准分析<a class="headerlink" href="#id5" title="此标题的永久链接"></a></h2>
 <p>单位：</p>
 <p>微特斯拉（micro-Tesla），用uT表示。 单位也可以是高斯（Gauss），1Tesla=10000Gauss。1Gauss = 100uT，六轴入口单位是Gauss，九轴是uT。</p>
 <section id="id6">
-<h3>1.原始数据上报单位确认<a class="headerlink" href="#id6" title="Permalink to this heading"></a></h3>
+<h3>1.原始数据上报单位确认<a class="headerlink" href="#id6" title="此标题的永久链接"></a></h3>
 <ul class="simple">
 <li><p>首先分析kernel和sensorhub里面原始数据上报的单位：</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">freertos/source/middleware/contexthub/MEMS_Driver/magnetometer/mmc5603.c</span></code>寄存器原始数据是16bit，范围是<code class="docutils literal notranslate"><span class="pre">0~65535</span></code>。第一步是减去32768的偏移值，变成<code class="docutils literal notranslate"><span class="pre">-32768</span> <span class="pre">~</span> <span class="pre">+32768</span></code>量程。第二步是确定方向，得到数组remap_data。第三步除以1024后得到的单位是uT，再乘以100得到单位是Gauss，也就是说sensorhub上传的数据的高斯:</p></li>
@@ -632,7 +633,7 @@ M50塑胶版本打印：
 </div>
 </section>
 <section id="hal">
-<h3>2.hal层单位获取情况<a class="headerlink" href="#hal" title="Permalink to this heading"></a></h3>
+<h3>2.hal层单位获取情况<a class="headerlink" href="#hal" title="此标题的永久链接"></a></h3>
 <ul class="simple">
 <li><p>1.经过分析，得知sensorhub上传的数据的高斯，而kernel则还是原始数据，看看hal层如何处理,主要关注<code class="docutils literal notranslate"><span class="pre">processEvent</span></code>函数中的<code class="docutils literal notranslate"><span class="pre">DATA_ACTION</span></code>：</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">vendor/mediatek/proprietary/hardware/sensor/sensors-0.1/Magnetic.cpp</span></code>:</p></li>
@@ -825,8 +826,8 @@ hub相当于高斯/100，单位是uT
 
 
            </div>
-         <div class="articleComments">
-               <comments>
+             <div class="articleComments">
+                <comments>
   <script src="https://utteranc.es/client.js"
     repo="iswbm/magic-python"
     issue-term="pathname"
@@ -835,26 +836,26 @@ hub相当于高斯/100，单位是uT
     async>
   </script>
 </comments>
-           </div>
+             </div>
           </div>
           <footer>
 
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2022, wugn.</p>
+    <p>&#169; 版权所有 2022, wugn.</p>
   </div>
 
-  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
-    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
-    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+  利用 <a href="https://www.sphinx-doc.org/">Sphinx</a> 构建，使用了 
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">主题</a>
+    由 <a href="https://readthedocs.org">Read the Docs</a>开发.
   
 
 <script charset="UTF-8" id="LA_COLLECT" src="//sdk.51.la/js-sdk-pro.min.js"></script>
-<script>LA.init({id: "JjOE14XScyd75b2C",ck: "JjOE14XScyd75b2C"})</script>
+<script>LA.init({id: "JoV5csIHTGhHiGQ4",ck: "JoV5csIHTGhHiGQ4"})</script>
 
 <br/>
-<script id="LA-DATA-WIDGET" crossorigin="anonymous" charset="UTF-8" src="https://v6-widget.51.la/v6/JjOE14XScyd75b2C/quote.js?theme=0&f=12&display=1,0,0,0,0,0,1,1"></script>
+<script id="LA-DATA-WIDGET" crossorigin="anonymous" charset="UTF-8" src="https://v6-widget.51.la/v6/JoV5csIHTGhHiGQ4/quote.js?theme=0&f=12&display=1,0,0,0,0,0,1,1"></script>
 
 
 

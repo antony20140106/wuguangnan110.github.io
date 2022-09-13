@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html class="writer-html5" lang="en" >
+<html class="writer-html5" lang="zh-CN" >
 <head>
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
@@ -18,10 +18,11 @@
         <script src="../../../_static/underscore.js"></script>
         <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="../../../_static/doctools.js"></script>
+        <script src="../../../_static/translations.js"></script>
         <script src="../../../_static/js/baidutongji.js"></script>
     <script src="../../../_static/js/theme.js"></script>
-    <link rel="index" title="Index" href="../../../genindex.html" />
-    <link rel="search" title="Search" href="../../../search.html" /> 
+    <link rel="index" title="索引" href="../../../genindex.html" />
+    <link rel="search" title="搜索" href="../../../search.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -33,7 +34,7 @@
           </a>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
+    <input type="text" name="q" placeholder="在文档中搜索" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
   </form>
@@ -54,6 +55,7 @@
 <li><a class="reference internal" href="#gpio">如何查看目前gpio配置</a></li>
 <li><a class="reference internal" href="#kernel">修改kernel打印等级</a></li>
 <li><a class="reference internal" href="#qti-logkit">QTI LogKit抓取工具重启打不开</a></li>
+<li><a class="reference internal" href="#androidhvdcp-high-voltage-deticated-charger-port">Android用户空间的hvdcp（high voltage deticated charger port）</a></li>
 </ul>
 </div>
         </div>
@@ -84,18 +86,43 @@
            <div itemprop="articleBody">
              
   <section id="id1">
-<h1>概述<a class="headerlink" href="#id1" title="Permalink to this heading"></a></h1>
+<h1>概述<a class="headerlink" href="#id1" title="此标题的永久链接"></a></h1>
 <p>简单记录下调试记录</p>
 </section>
 <section id="id2">
-<h1>重要路径记录<a class="headerlink" href="#id2" title="Permalink to this heading"></a></h1>
+<h1>重要路径记录<a class="headerlink" href="#id2" title="此标题的永久链接"></a></h1>
 <div class="highlight-log notranslate"><div class="highlight"><pre><span></span>分区表：
 A6650_Unpacking_Tool\QCM2290.LA.2.0\common\config\emmc\partition_r_ext.xml
 </pre></div>
 </div>
 </section>
 <section id="xbl-abllog">
-<h1>xbl/abl如何打开log<a class="headerlink" href="#xbl-abllog" title="Permalink to this heading"></a></h1>
+<h1>xbl/abl如何打开log<a class="headerlink" href="#xbl-abllog" title="此标题的永久链接"></a></h1>
+<p>debug等级定义如下：</p>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="c1">//</span>
+<span class="c1">// Declare bits for PcdDebugPrintErrorLevel and the ErrorLevel parameter of DebugPrint()</span>
+<span class="c1">//</span>
+<span class="cp">#define DEBUG_INIT      0x00000001  </span><span class="c1">// Initialization</span>
+<span class="cp">#define DEBUG_WARN      0x00000002  </span><span class="c1">// Warnings</span>
+<span class="cp">#define DEBUG_LOAD      0x00000004  </span><span class="c1">// Load events</span>
+<span class="cp">#define DEBUG_FS        0x00000008  </span><span class="c1">// EFI File system</span>
+<span class="cp">#define DEBUG_POOL      0x00000010  </span><span class="c1">// Alloc &amp; Free&#39;s</span>
+<span class="cp">#define DEBUG_PAGE      0x00000020  </span><span class="c1">// Alloc &amp; Free&#39;s</span>
+<span class="cp">#define DEBUG_INFO      0x00000040  </span><span class="c1">// Informational debug messages</span>
+<span class="cp">#define DEBUG_DISPATCH  0x00000080  </span><span class="c1">// PEI/DXE/SMM Dispatchers</span>
+<span class="cp">#define DEBUG_VARIABLE  0x00000100  </span><span class="c1">// Variable</span>
+<span class="cp">#define DEBUG_BM        0x00000400  </span><span class="c1">// Boot Manager</span>
+<span class="cp">#define DEBUG_BLKIO     0x00001000  </span><span class="c1">// BlkIo Driver</span>
+<span class="cp">#define DEBUG_NET       0x00004000  </span><span class="c1">// SNI Driver</span>
+<span class="cp">#define DEBUG_UNDI      0x00010000  </span><span class="c1">// UNDI Driver</span>
+<span class="cp">#define DEBUG_LOADFILE  0x00020000  </span><span class="c1">// UNDI Driver</span>
+<span class="cp">#define DEBUG_EVENT     0x00080000  </span><span class="c1">// Event messages</span>
+<span class="cp">#define DEBUG_GCD       0x00100000  </span><span class="c1">// Global Coherency Database changes</span>
+<span class="cp">#define DEBUG_CACHE     0x00200000  </span><span class="c1">// Memory range cachability changes</span>
+<span class="cp">#define DEBUG_VERBOSE   0x00400000  </span><span class="c1">// Detailed debug messages that may significantly impact boot performance</span>
+<span class="cp">#define DEBUG_ERROR     0x80000000  </span><span class="c1">// Error</span>
+</pre></div>
+</div>
 <div class="highlight-diff notranslate"><div class="highlight"><pre><span></span><span class="w">ABL:</span>
 <span class="gd">--- a/UM.9.15/bootable/bootloader/edk2/QcomModulePkg/QcomModulePkg.dsc</span><span class="w"></span>
 <span class="gi">+++ b/UM.9.15/bootable/bootloader/edk2/QcomModulePkg/QcomModulePkg.dsc</span><span class="w"></span>
@@ -104,7 +131,7 @@ A6650_Unpacking_Tool\QCM2290.LA.2.0\common\config\emmc\partition_r_ext.xml
 
 <span class="w"> </span>  gEfiMdePkgTokenSpaceGuid.PcdDebugPropertyMask|0x2f<span class="w"></span>
 <span class="gd">-  gEfiMdePkgTokenSpaceGuid.PcdDebugPrintErrorLevel|0x80000042</span><span class="w"></span>
-<span class="gi">+  gEfiMdePkgTokenSpaceGuid.PcdDebugPrintErrorLevel|0x80400042</span><span class="w"></span>
+<span class="gi">+  gEfiMdePkgTokenSpaceGuid.PcdDebugPrintErrorLevel|0x80400042  //open DEBUG_VERBOSE</span><span class="w"></span>
 <span class="w"> </span>  gEfiMdePkgTokenSpaceGuid.PcdReportStatusCodePropertyMask|0x06<span class="w"></span>
 
 <span class="w"> </span>################################################################################<span class="w"></span>
@@ -125,7 +152,7 @@ A6650_Unpacking_Tool\QCM2290.LA.2.0\common\config\emmc\partition_r_ext.xml
 </div>
 </section>
 <section id="evbqfil">
-<h1>EVB如何使用QFIL下载<a class="headerlink" href="#evbqfil" title="Permalink to this heading"></a></h1>
+<h1>EVB如何使用QFIL下载<a class="headerlink" href="#evbqfil" title="此标题的永久链接"></a></h1>
 <ul class="simple">
 <li><p>1.开发板将<code class="docutils literal notranslate"><span class="pre">FORCE</span> <span class="pre">USB</span> <span class="pre">BOOT</span></code>拨到<code class="docutils literal notranslate"><span class="pre">ON</span></code>档位。</p></li>
 <li><p>2.接入type-c口至红色框位置。</p></li>
@@ -141,7 +168,7 @@ A6650_Unpacking_Tool\QCM2290.LA.2.0\common\config\emmc\partition_r_ext.xml
 <p><img alt="0001_0002.png" src="../../../_images/0001_00022.png" /></p>
 </section>
 <section id="xbl">
-<h1>XBL编译<a class="headerlink" href="#xbl" title="Permalink to this heading"></a></h1>
+<h1>XBL编译<a class="headerlink" href="#xbl" title="此标题的永久链接"></a></h1>
 <ul class="simple">
 <li><p>编译XBL命令:./build_qcm2290.sh boot ddr4</p></li>
 <li><p>编译文件清除：./build_qcm2290.sh boot ddr4 clr</p></li>
@@ -152,7 +179,7 @@ A6650_Unpacking_Tool\QCM2290.LA.2.0\common\config\emmc\partition_r_ext.xml
 </div>
 </section>
 <section id="id3">
-<h1>解锁烧录<a class="headerlink" href="#id3" title="Permalink to this heading"></a></h1>
+<h1>解锁烧录<a class="headerlink" href="#id3" title="此标题的永久链接"></a></h1>
 <ul class="simple">
 <li><p>解锁步骤：</p></li>
 </ul>
@@ -173,7 +200,7 @@ A6650_Unpacking_Tool\QCM2290.LA.2.0\common\config\emmc\partition_r_ext.xml
 </div>
 </section>
 <section id="i2ctool">
-<h1>i2ctool使用<a class="headerlink" href="#i2ctool" title="Permalink to this heading"></a></h1>
+<h1>i2ctool使用<a class="headerlink" href="#i2ctool" title="此标题的永久链接"></a></h1>
 <div class="highlight-log notranslate"><div class="highlight"><pre><span></span>查找设备：
 1|bengal:/sys/class/power_supply/mp2721_charger # tect -y 0
      0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f
@@ -213,7 +240,7 @@ bengal:/sys/class/power_supply/mp2721_charger # i2cget -f -y 0 0x3f 0x09
 </div>
 </section>
 <section id="id4">
-<h1>驱动中添加专属打印<a class="headerlink" href="#id4" title="Permalink to this heading"></a></h1>
+<h1>驱动中添加专属打印<a class="headerlink" href="#id4" title="此标题的永久链接"></a></h1>
 <div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span>//#define CHARGER_DBG
 #ifdef CHARGER_DBG
 #define PAX_CHARGER_DBG(fmt, arg...) printk(KERN_ERR &quot;[pax_charger] %s: &quot; fmt &quot;\n&quot; , __func__, ## arg)
@@ -264,13 +291,13 @@ do {								\
 </div>
 </section>
 <section id="uefi">
-<h1>UEFI学习资料<a class="headerlink" href="#uefi" title="Permalink to this heading"></a></h1>
+<h1>UEFI学习资料<a class="headerlink" href="#uefi" title="此标题的永久链接"></a></h1>
 <ul class="simple">
 <li><p><a class="reference external" href="https://blog.csdn.net/wlswls1711/article/details/119410569">UEFI学习——事件函数WaitForEvent和CreateEvent/CreateEventEx</a></p></li>
 </ul>
 </section>
 <section id="wakeup-source-register">
-<h1>wakeup_source_register使用<a class="headerlink" href="#wakeup-source-register" title="Permalink to this heading"></a></h1>
+<h1>wakeup_source_register使用<a class="headerlink" href="#wakeup-source-register" title="此标题的永久链接"></a></h1>
 <div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span>wakeup_source_register(chip-&gt;dev, &quot;husb311_irq_wake_lock&quot;);
 改为：
 wakeup_source_register(&amp;tcpc-&gt;dev, &quot;husb311_irq_wake_lock&quot;);
@@ -278,7 +305,7 @@ wakeup_source_register(&amp;tcpc-&gt;dev, &quot;husb311_irq_wake_lock&quot;);
 </div>
 </section>
 <section id="gpio">
-<h1>如何查看目前gpio配置<a class="headerlink" href="#gpio" title="Permalink to this heading"></a></h1>
+<h1>如何查看目前gpio配置<a class="headerlink" href="#gpio" title="此标题的永久链接"></a></h1>
 <p>使用命令<code class="docutils literal notranslate"><span class="pre">cat</span> <span class="pre">/sys/kernel/debug/gpio</span></code>:</p>
 <div class="highlight-log notranslate"><div class="highlight"><pre><span></span>A6650:/sys # cat ./kernel/debug/gpio
 gpiochip1: GPIOs 1143-1152, parent: platform/1c40000.qcom,spmi:qcom,pm2250@0:pinctrl@c000, 1c40000.qcom,spmi:qcom,pm2250@0:pinctrl@c000:
@@ -357,13 +384,13 @@ gpiochip0: GPIOs 1153-1279, parent: platform/500000.pinctrl, 500000.pinctrl:
 </div>
 </section>
 <section id="kernel">
-<h1>修改kernel打印等级<a class="headerlink" href="#kernel" title="Permalink to this heading"></a></h1>
+<h1>修改kernel打印等级<a class="headerlink" href="#kernel" title="此标题的永久链接"></a></h1>
 <p>可以使用<code class="docutils literal notranslate"><span class="pre">dmesg</span> <span class="pre">-n</span> <span class="pre">8</span></code>将打印等级提升到8，默认是5。</p>
 <p>手动切换adb：
 setprop sys.usb.config diag,serial_cdev,rmnet,adb</p>
 </section>
 <section id="qti-logkit">
-<h1>QTI LogKit抓取工具重启打不开<a class="headerlink" href="#qti-logkit" title="Permalink to this heading"></a></h1>
+<h1>QTI LogKit抓取工具重启打不开<a class="headerlink" href="#qti-logkit" title="此标题的永久链接"></a></h1>
 <div class="highlight-log notranslate"><div class="highlight"><pre><span></span>08-11 23:09:33.101  6118  6118 D CompatibilityChangeReporter: Compat change id reported: 171228096; UID 1000; state: ENABLED
 08-11 23:09:33.114  6118  6118 I qti-logkit.cActivity: Storage card not initialized yet so can&#39;t update
 08-11 23:09:33.115  6118  6118 I qti-logkit.cActivity: Storage card details not available
@@ -375,11 +402,52 @@ setprop sys.usb.config diag,serial_cdev,rmnet,adb</p>
 </pre></div>
 </div>
 </section>
+<section id="androidhvdcp-high-voltage-deticated-charger-port">
+<h1>Android用户空间的hvdcp（high voltage deticated charger port）<a class="headerlink" href="#androidhvdcp-high-voltage-deticated-charger-port" title="此标题的永久链接"></a></h1>
+<p>hvdcp是高通平台控制qc快充协议的应用程序，具体qc协议请参考：</p>
+<ul class="simple">
+<li><p><a class="reference external" href="https://blog.csdn.net/zzsddre/article/details/124420624">BC1.2协议以及QC2.0/3.0快充协议学习笔记</a></p></li>
+</ul>
+<p>如果不支持或者用不到，软件上关闭：</p>
+<div class="highlight-diff notranslate"><div class="highlight"><pre><span></span><span class="gd">--- a/UM.9.15/vendor/qcom/proprietary/common/config/device-vendor-qssi.mk</span><span class="w"></span>
+<span class="gi">+++ b/UM.9.15/vendor/qcom/proprietary/common/config/device-vendor-qssi.mk</span><span class="w"></span>
+<span class="gu">@@ -4918,7 +4918,9 @@ PRODUCT_PACKAGES += $(FTM)</span><span class="w"></span>
+<span class="w"> </span>PRODUCT_PACKAGES += $(GPQESE)<span class="w"></span>
+<span class="w"> </span>PRODUCT_PACKAGES += $(GSMA_NFC)<span class="w"></span>
+<span class="w"> </span>PRODUCT_PACKAGES += $(HBTP)<span class="w"></span>
+<span class="gd">-PRODUCT_PACKAGES += $(HVDCP_OPTI)</span><span class="w"></span>
+<span class="gi">+#[BUGFIX]-BEGIN by wugangnan@paxsz.com 2022-08-27,remove the qcom charger app</span><span class="w"></span>
+<span class="gi">+#PRODUCT_PACKAGES += $(HVDCP_OPTI)</span><span class="w"></span>
+<span class="gi">+#[BUGFIX]-END by wugangnan@paxsz.com 2022-08-27,remove the qcom charger app</span><span class="w"></span>
+<span class="w"> </span>PRODUCT_PACKAGES += $(HY11_HY22_diff)<span class="w"></span>
+<span class="w"> </span>PRODUCT_PACKAGES += $(BTSAR)<span class="w"></span>
+
+<span class="gh">diff --git a/UM.9.15/vendor/qcom/proprietary/common/config/device-vendor.mk b/UM.9.15/vendor/qcom/proprietary/common/config/device-vendor.mk</span><span class="w"></span>
+<span class="gh">index e8ad9285cfe..d9459e5d845 100755</span><span class="w"></span>
+<span class="gd">--- a/UM.9.15/vendor/qcom/proprietary/common/config/device-vendor.mk</span><span class="w"></span>
+<span class="gi">+++ b/UM.9.15/vendor/qcom/proprietary/common/config/device-vendor.mk</span><span class="w"></span>
+<span class="gu">@@ -5783,9 +5783,11 @@ PRODUCT_PACKAGES += $(GPQESE)</span><span class="w"></span>
+<span class="w"> </span>PRODUCT_PACKAGES += $(GSMA_NFC)<span class="w"></span>
+<span class="w"> </span>PRODUCT_PACKAGES += $(HBTP)<span class="w"></span>
+<span class="w"> </span>PRODUCT_PACKAGES += $(TS_FORWARD)<span class="w"></span>
+<span class="gd">-ifneq ($(TARGET_BOARD_AUTO),true)</span><span class="w"></span>
+<span class="gd">-PRODUCT_PACKAGES += $(HVDCP_OPTI)</span><span class="w"></span>
+<span class="gd">-endif</span><span class="w"></span>
+<span class="gi">+#[BUGFIX]-BEGIN by wugangnan@paxsz.com 2022-08-27,remove the qcom charger app</span><span class="w"></span>
+<span class="gi">+#ifneq ($(TARGET_BOARD_AUTO),true)</span><span class="w"></span>
+<span class="gi">+#PRODUCT_PACKAGES += $(HVDCP_OPTI)</span><span class="w"></span>
+<span class="gi">+#endif</span><span class="w"></span>
+<span class="gi">+#[BUGFIX]-END by wugangnan@paxsz.com 2022-08-27,remove the qcom charger app</span><span class="w"></span>
+<span class="w"> </span>PRODUCT_PACKAGES += $(HY11_HY22_diff)<span class="w"></span>
+<span class="w"> </span>PRODUCT_PACKAGES += $(BTSAR)<span class="w"></span>
+</pre></div>
+</div>
+</section>
 
 
            </div>
-         <div class="articleComments">
-               <comments>
+             <div class="articleComments">
+                <comments>
   <script src="https://utteranc.es/client.js"
     repo="iswbm/magic-python"
     issue-term="pathname"
@@ -388,26 +456,26 @@ setprop sys.usb.config diag,serial_cdev,rmnet,adb</p>
     async>
   </script>
 </comments>
-           </div>
+             </div>
           </div>
           <footer>
 
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2022, wugn.</p>
+    <p>&#169; 版权所有 2022, wugn.</p>
   </div>
 
-  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
-    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
-    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+  利用 <a href="https://www.sphinx-doc.org/">Sphinx</a> 构建，使用了 
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">主题</a>
+    由 <a href="https://readthedocs.org">Read the Docs</a>开发.
   
 
 <script charset="UTF-8" id="LA_COLLECT" src="//sdk.51.la/js-sdk-pro.min.js"></script>
-<script>LA.init({id: "JjOE14XScyd75b2C",ck: "JjOE14XScyd75b2C"})</script>
+<script>LA.init({id: "JoV5csIHTGhHiGQ4",ck: "JoV5csIHTGhHiGQ4"})</script>
 
 <br/>
-<script id="LA-DATA-WIDGET" crossorigin="anonymous" charset="UTF-8" src="https://v6-widget.51.la/v6/JjOE14XScyd75b2C/quote.js?theme=0&f=12&display=1,0,0,0,0,0,1,1"></script>
+<script id="LA-DATA-WIDGET" crossorigin="anonymous" charset="UTF-8" src="https://v6-widget.51.la/v6/JoV5csIHTGhHiGQ4/quote.js?theme=0&f=12&display=1,0,0,0,0,0,1,1"></script>
 
 
 

@@ -1,0 +1,932 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="zh-CN" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>wugn</title>
+
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script src="../../../_static/translations.js"></script>
+        <script src="../../../_static/js/baidutongji.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="索引" href="../../../genindex.html" />
+    <link rel="search" title="搜索" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../index.html" class="icon icon-home"> wugn_note
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="在文档中搜索" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">概述</a><ul>
+<li><a class="reference internal" href="#id2">参考</a></li>
+<li><a class="reference internal" href="#id3">导读</a></li>
+<li><a class="reference internal" href="#power-supply">power_supply电源框架介绍</a></li>
+<li><a class="reference internal" href="#id4">power_supply 框架工作流程</a><ul>
+<li><a class="reference internal" href="#psy">1.psy设备注册</a></li>
+<li><a class="reference internal" href="#sys-class-power-supply">2./sys/class/power_supply节点生成</a><ul>
+<li><a class="reference internal" href="#power-supply-init-attrs-sysfs">1.power_supply_init_attrs sysfs节点生成</a></li>
+<li><a class="reference internal" href="#power-supply-uevent-uevent">2.power_supply_uevent uevent节点生成</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#uevent">3.uevent事件上报</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#uvent">新增一个uvent事件</a></li>
+</ul>
+</li>
+</ul>
+</div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">wugn_note</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs"> 
+<li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+<li>概述</li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.forward()">Forward</a></li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.back()">Go Back</a> | </li>
+<li style="float: right;margin-left: 10px;"><a href="/index.html">Home</a> | </li>
+
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="id1">
+<h1>概述<a class="headerlink" href="#id1" title="此标题的永久链接"></a></h1>
+<p>mt6762平台psy uevent上报分析</p>
+<section id="id2">
+<h2>参考<a class="headerlink" href="#id2" title="此标题的永久链接"></a></h2>
+<ul class="simple">
+<li><p><a class="reference external" href="https://blog.csdn.net/u011636692/article/details/87874954">BatteryProperty上报流程</a></p></li>
+<li><p><a class="reference external" href="https://blog.csdn.net/stoic163/article/details/99680422">高通平台power_supply 框架下添加第三方充电IC的驱动方法</a></p></li>
+<li><p><a class="reference external" href="https://blog.csdn.net/potato_man/article/details/97623828">Kernel上报电量UEvent事件流程分析</a></p></li>
+<li><p><a class="reference external" href="https://www.itdaan.com/blog/2017/09/18/438ab9815aed647ba8f3be75a97f7545.html">linux设备驱动uevent详解，高通平台battery上报电量实例</a>
+这个介绍的很详细：</p></li>
+<li><p><a class="reference external" href="https://blog.csdn.net/weixin_46376201/article/details/125201962">Linux Power supply子系统分析</a></p></li>
+<li><p><a class="reference external" href="https://blog.csdn.net/dfysy/article/details/7330919">Android Uevent 分析，从kernel到framework</a></p></li>
+</ul>
+</section>
+<section id="id3">
+<h2>导读<a class="headerlink" href="#id3" title="此标题的永久链接"></a></h2>
+<ol class="arabic simple">
+<li><p>uevent是什么呢？
+uevent是一种linux设备模型中的一个组成部分。kset中包含的uevent_ops结构体拥有uevent的操作函数。
+uevent可以在设备发生变化时主动通知应用层。是对普通先注册设备后注册驱动模式的一种补充。一般用作usb设备的自动驱动加载、电池电量上报等。</p></li>
+</ol>
+<p>2，uevent主动通知应用层的原理是什么？
+有两种方式，第一种是设置环境变量后使用call_usermodehelper_setup函数直接调用应用层程序；第二种是通过netlink向应用层发送消息，在应用层的守护进程收到消息后完成相关操作。其中第一种本方式较少使用，以第二种为主。
+ps：netlink是一种基于socket的内核空间与用户空间的双向通信机制，十分灵活好用。</p>
+<p>3，sys目录下有许多uevent节点，它们是干什么的？
+最开始我对uevent的理解感到困惑就是因为这些uevent节点，如cat /sys/devices/soc/qpnp-smbcharger-17/power_supply/battery/uevent节点可以查看到电池状态，充放电电流等等信息，好像uevent就像其他sysfs中的节点一样仅仅供上层读取。然而这并不是uevent的全部，在上面解释的uevent机制中是完全不需要这些节点存在的，事实上上层也并不会去使用这些节点。这些节点的存在仅仅是为了调试目的，可以提供一种简单方式检测到uevent的中间信息。但在android的电源管理结构中电池的相关信息是通过读取/sys/devices/soc/qpnp-smbcharger-17/power_supply/battery/uevent节点获取的，netlink消息只发出KOBJ_CHANGE的action kobject_uevent(&amp;cm-&gt;dev-&gt;kobj, KOBJ_CHANGE)，去触发上层读取sys节点。
+注意：这些uevent节点与/dev/input/eventX节点虽然名字相似，但其原理和作用是完全不同的。eventX节点是输入子系统的事件上报接口，需要上层来读取eventX节点。</p>
+</section>
+<section id="power-supply">
+<h2>power_supply电源框架介绍<a class="headerlink" href="#power-supply" title="此标题的永久链接"></a></h2>
+<p>power supply framework在kernel/drivers/power/下。内核抽象出来power supply子系统为驱动提供了统一的框架。</p>
+<p>功能包括：</p>
+<ul class="simple">
+<li><p>1.抽象PSY设备的共性，向用户空间提供统一的API；</p></li>
+<li><p>2.为底层PSY驱动的编写，提供简单、统一的方式，同时封装并实现公共逻辑。</p></li>
+</ul>
+<p>power supply class位于drivers/power/目录中，主要由3部分组成（可参考下图的软件架构）：</p>
+<ul class="simple">
+<li><p>1）power_supply_core，用于抽象核心数据结构、实现公共逻辑。位于drivers/power/power_supply_core.c中。</p></li>
+<li><p>2）power_supply_sysfs，实现sysfs以及uevent功能。位于drivers/power/power_supply_sysfs.c中。</p></li>
+<li><p>3）power_supply_leds，基于Linux led class，提供PSY设备状态指示的通用实现。位于drivers/power/power_suppply_leds.c中。</p></li>
+</ul>
+<p>最后，驱动工程师可以基于power supply class，实现具体的PSY drivers，主要处理平台相关、硬件相关的逻辑。这些drivers都位于drivers/power/power_supply目录下。</p>
+<p><img alt="0004_0002.png" src="../../../_images/0004_0002.png" /></p>
+</section>
+<section id="id4">
+<h2>power_supply 框架工作流程<a class="headerlink" href="#id4" title="此标题的永久链接"></a></h2>
+<section id="psy">
+<h3>1.psy设备注册<a class="headerlink" href="#psy" title="此标题的永久链接"></a></h3>
+<ul class="simple">
+<li><p>常用函数：</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="w">	</span><span class="n">power_supply_register</span><span class="p">()</span><span class="w"></span>
+<span class="w">	</span><span class="n">power_supply_get_by_name</span><span class="p">()</span><span class="w"></span>
+<span class="w">	</span><span class="n">power_supply_get_property</span><span class="p">()</span><span class="w"></span>
+<span class="w">	</span><span class="n">power_supply_set_property</span><span class="p">()</span><span class="w"></span>
+<span class="w">	</span><span class="n">power_supply_changed</span><span class="p">()</span><span class="w"></span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>历程：比如设置充电类型，需要设置属性<code class="docutils literal notranslate"><span class="pre">POWER_SUPPLY_PROP_ONLINE</span></code>：</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">mt6370_get_charger_type</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">mt6370_pmu_charger_data</span><span class="w"> </span><span class="o">*</span><span class="n">chg_data</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="kt">bool</span><span class="w"> </span><span class="n">attach</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="k">union</span><span class="w"> </span><span class="nc">power_supply_propval</span><span class="w"> </span><span class="n">prop</span><span class="p">,</span><span class="w"> </span><span class="n">prop2</span><span class="p">,</span><span class="w"> </span><span class="n">prop3</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="k">static</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">power_supply</span><span class="w"> </span><span class="o">*</span><span class="n">chg_psy</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="kt">int</span><span class="w"> </span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">chg_psy</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="nb">NULL</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">chg_data</span><span class="o">-&gt;</span><span class="n">chg_desc</span><span class="o">-&gt;</span><span class="n">bc12_sel</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"></span>
+<span class="w">			</span><span class="n">chg_psy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">power_supply_get_by_name</span><span class="p">(</span><span class="s">&quot;mtk_charger_type&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">chg_data</span><span class="o">-&gt;</span><span class="n">chg_desc</span><span class="o">-&gt;</span><span class="n">bc12_sel</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span><span class="w"></span>
+<span class="w">			</span><span class="n">chg_psy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">power_supply_get_by_name</span><span class="p">(</span><span class="s">&quot;ext_charger_type&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">IS_ERR_OR_NULL</span><span class="p">(</span><span class="n">chg_psy</span><span class="p">))</span><span class="w"></span>
+<span class="w">		</span><span class="n">pr_notice</span><span class="p">(</span><span class="s">&quot;%s Couldn&#39;t get chg_psy</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">__func__</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="n">prop</span><span class="p">.</span><span class="n">intval</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">attach</span><span class="p">;</span><span class="w"></span>
+<span class="w">		</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">attach</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">			</span><span class="c1">//FEATURE-BEGIN by shanliangliang@paxsz.com, 2022/01/13, typec is norp_src, no need to do bc11 detect</span>
+<span class="w">			</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">chg_data</span><span class="o">-&gt;</span><span class="n">typec_state</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">TYPEC_ATTACHED_NORP_SRC</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">				</span><span class="n">prop</span><span class="p">.</span><span class="n">intval</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="w">			</span><span class="p">}</span><span class="w"></span>
+
+<span class="w">			</span><span class="cp">#ifdef CONFIG_PAX_GPIOS_CONTROL</span>
+<span class="w">			</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">chg_data</span><span class="o">-&gt;</span><span class="n">r15_state</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">R15_STATUS_ONLINE</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">				</span><span class="n">prop</span><span class="p">.</span><span class="n">intval</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="w">			</span><span class="p">}</span><span class="w"></span>
+
+<span class="w">			</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">chg_data</span><span class="o">-&gt;</span><span class="n">pogo_dev_state</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">POGO_DEV_STATE_ONLINE</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">				</span><span class="n">prop</span><span class="p">.</span><span class="n">intval</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="w">			</span><span class="p">}</span><span class="w"></span>
+
+<span class="w">			</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">chg_data</span><span class="o">-&gt;</span><span class="n">manual_usb_mode</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">USB_MODE_DEV</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">				</span><span class="n">prop</span><span class="p">.</span><span class="n">intval</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">attach</span><span class="p">;</span><span class="w"></span>
+<span class="w">			</span><span class="p">}</span><span class="w"></span>
+<span class="w">			</span><span class="cp">#endif</span>
+<span class="w">			</span><span class="c1">//FEATURE-END by shanliangliang@paxsz.com, 2022/01/13, typec is norp_src, no need to do bc11 detect</span>
+
+<span class="w">			</span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">power_supply_set_property</span><span class="p">(</span><span class="n">chg_psy</span><span class="p">,</span><span class="w"></span>
+<span class="w">					</span><span class="n">POWER_SUPPLY_PROP_ONLINE</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">prop</span><span class="p">);</span><span class="w"></span>
+<span class="w">			</span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">power_supply_get_property</span><span class="p">(</span><span class="n">chg_psy</span><span class="p">,</span><span class="w"></span>
+<span class="w">					</span><span class="n">POWER_SUPPLY_PROP_TYPE</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">prop2</span><span class="p">);</span><span class="w"></span>
+<span class="w">			</span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">power_supply_get_property</span><span class="p">(</span><span class="n">chg_psy</span><span class="p">,</span><span class="w"></span>
+<span class="w">					</span><span class="n">POWER_SUPPLY_PROP_USB_TYPE</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">prop3</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">			</span><span class="n">prop2</span><span class="p">.</span><span class="n">intval</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">POWER_SUPPLY_TYPE_UNKNOWN</span><span class="p">;</span><span class="w"></span>
+<span class="w">			</span><span class="n">prop3</span><span class="p">.</span><span class="n">intval</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">POWER_SUPPLY_USB_TYPE_UNKNOWN</span><span class="p">;</span><span class="w"></span>
+<span class="w">		</span><span class="p">}</span><span class="w"></span>
+
+<span class="w">		</span><span class="n">pr_notice</span><span class="p">(</span><span class="s">&quot;%s type:%d usb_type:%d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">__func__</span><span class="p">,</span><span class="w"></span>
+<span class="w">					</span><span class="n">prop2</span><span class="p">.</span><span class="n">intval</span><span class="p">,</span><span class="w"> </span><span class="n">prop3</span><span class="p">.</span><span class="n">intval</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">		</span><span class="n">chg_data</span><span class="o">-&gt;</span><span class="n">psy_desc</span><span class="p">.</span><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">prop2</span><span class="p">.</span><span class="n">intval</span><span class="p">;</span><span class="w"></span>
+<span class="w">		</span><span class="n">chg_data</span><span class="o">-&gt;</span><span class="n">psy_usb_type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">prop3</span><span class="p">.</span><span class="n">intval</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">		</span><span class="n">power_supply_changed</span><span class="p">(</span><span class="n">chg_data</span><span class="o">-&gt;</span><span class="n">psy</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="c1">//FEATURE-BEGIN by shanliangliang@paxsz.com, 2022/01/13, for BC detect notify</span>
+<span class="w">		</span><span class="n">charger_dev_notify</span><span class="p">(</span><span class="n">chg_data</span><span class="o">-&gt;</span><span class="n">chg_dev</span><span class="p">,</span><span class="w"> </span><span class="n">CHARGER_DEV_NOTIFY_BC</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="c1">//FEATURE-END by shanliangliang@paxsz.com, 2022/01/13, for BC detect notify</span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+<span class="w">	</span><span class="k">return</span><span class="w"> </span><span class="n">prop2</span><span class="p">.</span><span class="n">intval</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<p>进入power_supply的目录下,我们可以看到出现了好几个psy设备，这几个目录就是充电IC(mt6370)与电量计(gauge)等部分的注册的设备节点内容的集合。</p>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span>PAYTABLETM8:/sys/class/power_supply # ls
+battery             mtk-gauge           mtk-slave-charger
+mt6370_pmu_charger  mtk-master-charger  mtk_charger_type
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>在power_supply的结构体中：</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="cm">/* Description of power supply */</span><span class="w"></span>
+<span class="k">struct</span><span class="w"> </span><span class="nc">power_supply_desc</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">name</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="k">enum</span><span class="w"> </span><span class="nc">power_supply_type</span><span class="w"> </span><span class="n">type</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="k">enum</span><span class="w"> </span><span class="nc">power_supply_usb_type</span><span class="w"> </span><span class="o">*</span><span class="n">usb_types</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="kt">size_t</span><span class="w"> </span><span class="n">num_usb_types</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="k">enum</span><span class="w"> </span><span class="nc">power_supply_property</span><span class="w"> </span><span class="o">*</span><span class="n">properties</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="kt">size_t</span><span class="w"> </span><span class="n">num_properties</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">	</span><span class="cm">/*</span>
+<span class="cm">	 * Functions for drivers implementing power supply class.</span>
+<span class="cm">	 * These shouldn&#39;t be called directly by other drivers for accessing</span>
+<span class="cm">	 * this power supply. Instead use power_supply_*() functions (for</span>
+<span class="cm">	 * example power_supply_get_property()).</span>
+<span class="cm">	 */</span><span class="w"></span>
+<span class="w">	</span><span class="kt">int</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="n">get_property</span><span class="p">)(</span><span class="k">struct</span><span class="w"> </span><span class="nc">power_supply</span><span class="w"> </span><span class="o">*</span><span class="n">psy</span><span class="p">,</span><span class="w"></span>
+<span class="w">			    </span><span class="k">enum</span><span class="w"> </span><span class="nc">power_supply_property</span><span class="w"> </span><span class="n">psp</span><span class="p">,</span><span class="w"></span>
+<span class="w">			    </span><span class="k">union</span><span class="w"> </span><span class="nc">power_supply_propval</span><span class="w"> </span><span class="o">*</span><span class="n">val</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="kt">int</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="n">set_property</span><span class="p">)(</span><span class="k">struct</span><span class="w"> </span><span class="nc">power_supply</span><span class="w"> </span><span class="o">*</span><span class="n">psy</span><span class="p">,</span><span class="w"></span>
+<span class="w">			    </span><span class="k">enum</span><span class="w"> </span><span class="nc">power_supply_property</span><span class="w"> </span><span class="n">psp</span><span class="p">,</span><span class="w"></span>
+<span class="w">			    </span><span class="k">const</span><span class="w"> </span><span class="k">union</span><span class="w"> </span><span class="nc">power_supply_propval</span><span class="w"> </span><span class="o">*</span><span class="n">val</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="cm">/*</span>
+<span class="cm">	 * property_is_writeable() will be called during registration</span>
+<span class="cm">	 * of power supply. If this happens during device probe then it must</span>
+<span class="cm">	 * not access internal data of device (because probe did not end).</span>
+<span class="cm">	 */</span><span class="w"></span>
+<span class="w">	</span><span class="kt">int</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="n">property_is_writeable</span><span class="p">)(</span><span class="k">struct</span><span class="w"> </span><span class="nc">power_supply</span><span class="w"> </span><span class="o">*</span><span class="n">psy</span><span class="p">,</span><span class="w"></span>
+<span class="w">				     </span><span class="k">enum</span><span class="w"> </span><span class="nc">power_supply_property</span><span class="w"> </span><span class="n">psp</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="kt">void</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="n">external_power_changed</span><span class="p">)(</span><span class="k">struct</span><span class="w"> </span><span class="nc">power_supply</span><span class="w"> </span><span class="o">*</span><span class="n">psy</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="kt">void</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="n">set_charged</span><span class="p">)(</span><span class="k">struct</span><span class="w"> </span><span class="nc">power_supply</span><span class="w"> </span><span class="o">*</span><span class="n">psy</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">	</span><span class="cm">/*</span>
+<span class="cm">	 * Set if thermal zone should not be created for this power supply.</span>
+<span class="cm">	 * For example for virtual supplies forwarding calls to actual</span>
+<span class="cm">	 * sensors or other supplies.</span>
+<span class="cm">	 */</span><span class="w"></span>
+<span class="w">	</span><span class="kt">bool</span><span class="w"> </span><span class="n">no_thermal</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="cm">/* For APM emulation, think legacy userspace. */</span><span class="w"></span>
+<span class="w">	</span><span class="kt">int</span><span class="w"> </span><span class="n">use_for_apm</span><span class="p">;</span><span class="w"></span>
+<span class="p">};</span><span class="w"></span>
+</pre></div>
+</div>
+<p>比如battery psy通过<code class="docutils literal notranslate"><span class="pre">power_supply_register</span></code>接口进行注册，并且需要配置get_property及set_property，这两个函数指针就是用来具体实现相关属性功能的：</p>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="n">mt6357_gauge</span><span class="p">.</span><span class="n">c</span><span class="o">:</span><span class="w"></span>
+
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">battery_psy_init</span><span class="p">(</span><span class="n">pdev</span><span class="p">))</span><span class="w"></span>
+<span class="w">	  </span><span class="o">*</span><span class="w"> </span><span class="n">battery_service_data_init</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">mtk_battery</span><span class="w"> </span><span class="o">*</span><span class="n">gm</span><span class="p">);</span><span class="w"></span>
+<span class="w">	  </span><span class="o">*</span><span class="w"> </span><span class="n">gm</span><span class="o">-&gt;</span><span class="n">bs_data</span><span class="p">.</span><span class="n">psy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">power_supply_register</span><span class="p">(</span><span class="o">&amp;</span><span class="p">(</span><span class="n">pdev</span><span class="o">-&gt;</span><span class="n">dev</span><span class="p">),</span><span class="w"> </span><span class="o">&amp;</span><span class="n">gm</span><span class="o">-&gt;</span><span class="n">bs_data</span><span class="p">.</span><span class="n">psd</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">gm</span><span class="o">-&gt;</span><span class="n">bs_data</span><span class="p">.</span><span class="n">psy_cfg</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="k">return</span><span class="w"> </span><span class="o">-</span><span class="n">ENOMEM</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">gauge</span><span class="o">-&gt;</span><span class="n">psy_desc</span><span class="p">.</span><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;mtk-gauge&quot;</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="n">gauge</span><span class="o">-&gt;</span><span class="n">psy_desc</span><span class="p">.</span><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">POWER_SUPPLY_TYPE_UNKNOWN</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="n">gauge</span><span class="o">-&gt;</span><span class="n">psy_desc</span><span class="p">.</span><span class="n">properties</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">gauge_properties</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="n">gauge</span><span class="o">-&gt;</span><span class="n">psy_desc</span><span class="p">.</span><span class="n">num_properties</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ARRAY_SIZE</span><span class="p">(</span><span class="n">gauge_properties</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="n">gauge</span><span class="o">-&gt;</span><span class="n">psy_desc</span><span class="p">.</span><span class="n">get_property</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">psy_gauge_get_property</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="n">gauge</span><span class="o">-&gt;</span><span class="n">psy_desc</span><span class="p">.</span><span class="n">set_property</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">psy_gauge_set_property</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="n">gauge</span><span class="o">-&gt;</span><span class="n">psy_cfg</span><span class="p">.</span><span class="n">drv_data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">gauge</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="n">gauge</span><span class="o">-&gt;</span><span class="n">psy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">power_supply_register</span><span class="p">(</span><span class="o">&amp;</span><span class="n">pdev</span><span class="o">-&gt;</span><span class="n">dev</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">gauge</span><span class="o">-&gt;</span><span class="n">psy_desc</span><span class="p">,</span><span class="w"></span>
+<span class="w">			</span><span class="o">&amp;</span><span class="n">gauge</span><span class="o">-&gt;</span><span class="n">psy_cfg</span><span class="p">);</span><span class="w"></span>
+
+
+<span class="kt">void</span><span class="w"> </span><span class="nf">battery_service_data_init</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">mtk_battery</span><span class="w"> </span><span class="o">*</span><span class="n">gm</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="k">struct</span><span class="w"> </span><span class="nc">battery_data</span><span class="w"> </span><span class="o">*</span><span class="n">bs_data</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">bs_data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">&amp;</span><span class="n">gm</span><span class="o">-&gt;</span><span class="n">bs_data</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="n">bs_data</span><span class="o">-&gt;</span><span class="n">psd</span><span class="p">.</span><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;battery&quot;</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="n">bs_data</span><span class="o">-&gt;</span><span class="n">psd</span><span class="p">.</span><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">POWER_SUPPLY_TYPE_BATTERY</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="n">bs_data</span><span class="o">-&gt;</span><span class="n">psd</span><span class="p">.</span><span class="n">properties</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">battery_props</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="n">bs_data</span><span class="o">-&gt;</span><span class="n">psd</span><span class="p">.</span><span class="n">num_properties</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ARRAY_SIZE</span><span class="p">(</span><span class="n">battery_props</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="n">bs_data</span><span class="o">-&gt;</span><span class="n">psd</span><span class="p">.</span><span class="n">get_property</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">battery_psy_get_property</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="n">bs_data</span><span class="o">-&gt;</span><span class="n">psd</span><span class="p">.</span><span class="n">external_power_changed</span><span class="w"> </span><span class="o">=</span><span class="w"></span>
+<span class="w">		</span><span class="n">mtk_battery_external_power_changed</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="n">bs_data</span><span class="o">-&gt;</span><span class="n">psy_cfg</span><span class="p">.</span><span class="n">drv_data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">gm</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">bs_data</span><span class="o">-&gt;</span><span class="n">bat_status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">POWER_SUPPLY_STATUS_DISCHARGING</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="n">bs_data</span><span class="o">-&gt;</span><span class="n">bat_health</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">POWER_SUPPLY_HEALTH_GOOD</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="n">bs_data</span><span class="o">-&gt;</span><span class="n">bat_present</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="n">bs_data</span><span class="o">-&gt;</span><span class="n">bat_technology</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">POWER_SUPPLY_TECHNOLOGY_LION</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="n">bs_data</span><span class="o">-&gt;</span><span class="n">bat_capacity</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">-1</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="n">bs_data</span><span class="o">-&gt;</span><span class="n">bat_batt_vol</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="n">bs_data</span><span class="o">-&gt;</span><span class="n">bat_batt_temp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">gm</span><span class="o">-&gt;</span><span class="n">fixed_uisoc</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0xffff</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>battery申请的uevent属性如下：</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span>PAYTABLETM8:/sys/class/power_supply/battery # ls
+capacity            cycle_count      manufacturer   technology        uisoc_lt_int_gap
+capacity_level      device           power          temp              voltage_now
+charge_counter      disable          present        temperature       voltage_ocv
+charge_full         en_uisoc_ht_int  reset          time_to_full_now  wakeup116
+charge_full_design  en_uisoc_lt_int  resistance     type
+coulomb_int_gap     health           serial_number  uevent
+current_avg         init_done        status         uisoc
+current_now         log_level        subsystem      uisoc_ht_int_gap
+
+static enum power_supply_property battery_props[] = {
+	POWER_SUPPLY_PROP_STATUS,
+	POWER_SUPPLY_PROP_HEALTH,
+	POWER_SUPPLY_PROP_PRESENT,
+	POWER_SUPPLY_PROP_TECHNOLOGY,
+	POWER_SUPPLY_PROP_CYCLE_COUNT,
+	POWER_SUPPLY_PROP_CAPACITY,
+	POWER_SUPPLY_PROP_CURRENT_NOW,
+	POWER_SUPPLY_PROP_CURRENT_AVG,
+	POWER_SUPPLY_PROP_VOLTAGE_NOW,
+	POWER_SUPPLY_PROP_CHARGE_FULL,
+	POWER_SUPPLY_PROP_CHARGE_COUNTER,
+	POWER_SUPPLY_PROP_TEMP,
+	POWER_SUPPLY_PROP_CAPACITY_LEVEL,
+	POWER_SUPPLY_PROP_TIME_TO_FULL_NOW,
+	POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN,
+	POWER_SUPPLY_PROP_MANUFACTURER,
+	// [FEATURE]-ADD-BEGIN by shanliangliang@paxsz.com 2021-09-17, 	for battery serial number
+	POWER_SUPPLY_PROP_SERIAL_NUMBER,
+	// [FEATURE]-ADD-END by shanliangliang@paxsz.com 2021-09-17, 	for battery serial number
+	// [FEATURE]-ADD-BEGIN by shanliangliang@paxsz.com 2021-10-03, 	for battery ocv
+	POWER_SUPPLY_PROP_VOLTAGE_OCV,
+	// [FEATURE]-ADD-END by shanliangliang@paxsz.com 2021-10-03, 	for battery ocv
+// [FEATURE]-ADD-BEGIN by shanliangliang@paxsz.com 2021-11-11, 	for battery resistance 
+	POWER_SUPPLY_PROP_RESISTANCE,
+// [FEATURE]-ADD-END by shanliangliang@paxsz.com 2021-11-11, 	for battery resistance 
+};
+
+对应的uevent事件如下：
+PAYTABLETM8:/sys/class/power_supply/battery # cat uevent
+POWER_SUPPLY_NAME=battery
+POWER_SUPPLY_STATUS=Not charging
+POWER_SUPPLY_HEALTH=Good
+POWER_SUPPLY_PRESENT=1
+POWER_SUPPLY_TECHNOLOGY=Li-ion
+POWER_SUPPLY_CYCLE_COUNT=1
+POWER_SUPPLY_CAPACITY=100
+POWER_SUPPLY_CURRENT_NOW=300
+POWER_SUPPLY_CURRENT_AVG=300
+POWER_SUPPLY_VOLTAGE_NOW=4332000
+POWER_SUPPLY_CHARGE_FULL=6555000
+POWER_SUPPLY_CHARGE_COUNTER=6555000
+POWER_SUPPLY_TEMP=251
+POWER_SUPPLY_CAPACITY_LEVEL=Full
+POWER_SUPPLY_TIME_TO_FULL_NOW=0
+POWER_SUPPLY_CHARGE_FULL_DESIGN=655000
+POWER_SUPPLY_MANUFACTURER=M8-Icon-Energy
+POWER_SUPPLY_SERIAL_NUMBER=ICS021NA-S21223000007
+POWER_SUPPLY_VOLTAGE_OCV=4332600
+POWER_SUPPLY_RESISTANCE=174500
+</pre></div>
+</div>
+</section>
+<section id="sys-class-power-supply">
+<h3>2./sys/class/power_supply节点生成<a class="headerlink" href="#sys-class-power-supply" title="此标题的永久链接"></a></h3>
+<p>Linux的设备文件目录中可以在sys/class/下看到power_supply目录；这个power_supply的类是通过power_supply_core.c文件中的power_supply_class_init()中的class_create()函数来进行power_supply类的创建，如下：</p>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="n">power_supply_core</span><span class="p">.</span><span class="n">c</span><span class="o">:</span><span class="w"></span>
+<span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">__init</span><span class="w"> </span><span class="n">power_supply_class_init</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="n">power_supply_class</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">class_create</span><span class="p">(</span><span class="n">THIS_MODULE</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;power_supply&quot;</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">IS_ERR</span><span class="p">(</span><span class="n">power_supply_class</span><span class="p">))</span><span class="w"></span>
+<span class="w">		</span><span class="k">return</span><span class="w"> </span><span class="n">PTR_ERR</span><span class="p">(</span><span class="n">power_supply_class</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">power_supply_class</span><span class="o">-&gt;</span><span class="n">dev_uevent</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">power_supply_uevent</span><span class="p">;</span><span class="w">  </span><span class="c1">//这里配置uevent节点cat事件，如/sys/class/power_supply/battery/uevent</span>
+<span class="w">	</span><span class="n">power_supply_init_attrs</span><span class="p">(</span><span class="o">&amp;</span><span class="n">power_supply_dev_type</span><span class="p">);</span><span class="w"> </span><span class="c1">//这里是生成sysfs节点</span>
+
+<span class="w">	</span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">__exit</span><span class="w"> </span><span class="n">power_supply_class_exit</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="n">class_destroy</span><span class="p">(</span><span class="n">power_supply_class</span><span class="p">);</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="n">subsys_initcall</span><span class="p">(</span><span class="n">power_supply_class_init</span><span class="p">);</span><span class="w"></span>
+</pre></div>
+</div>
+<section id="power-supply-init-attrs-sysfs">
+<h4>1.power_supply_init_attrs sysfs节点生成<a class="headerlink" href="#power-supply-init-attrs-sysfs" title="此标题的永久链接"></a></h4>
+<p>sysfs节点分为两部分，一部分是驱动自己创建的sysfs仅供调试用，一部分是power_supply_core实现的sysfs节点，供healthd读取。</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">power_supply_core.c</span></code>节点创建如下:</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span>具体进行的是设备节点的注册过程，以及相关功能的实现：
+* power_supply_class_init(void)
+  * power_supply_init_attrs(&amp;power_supply_dev_type);
+
+void power_supply_init_attrs(struct device_type *dev_type)
+{
+	int i;
+
+	dev_type-&gt;groups = power_supply_attr_groups;
+
+	for (i = 0; i &lt; ARRAY_SIZE(power_supply_attrs); i++)
+		__power_supply_attrs[i] = &amp;power_supply_attrs[i].attr;
+}
+
+/* Must be in the same order as POWER_SUPPLY_PROP_* */
+static struct device_attribute power_supply_attrs[] = {
+	/* Properties of type `int&#39; */
+	POWER_SUPPLY_ATTR(status),
+	POWER_SUPPLY_ATTR(charge_type),
+	POWER_SUPPLY_ATTR(health),
+	POWER_SUPPLY_ATTR(present),
+	POWER_SUPPLY_ATTR(online),
+	POWER_SUPPLY_ATTR(authentic),
+    ···省略···
+};
+
+static struct attribute *
+__power_supply_attrs[ARRAY_SIZE(power_supply_attrs) + 1];
+
+static struct attribute_group power_supply_attr_group = {
+	.attrs = __power_supply_attrs,
+	.is_visible = power_supply_attr_is_visible,
+};
+
+static const struct attribute_group *power_supply_attr_groups[] = {
+	&amp;power_supply_attr_group,
+	NULL,
+};
+</pre></div>
+</div>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">power_supply_core.c</span></code>:在power_supply_sysfs文件中主要是实现power_supply_attrs数组中的成员的show与store，程序如下：</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="k">static</span><span class="w"> </span><span class="kt">ssize_t</span><span class="w"> </span><span class="nf">power_supply_show_property</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w"> </span><span class="o">*</span><span class="n">dev</span><span class="p">,</span><span class="w"></span>
+<span class="w">					  </span><span class="k">struct</span><span class="w"> </span><span class="nc">device_attribute</span><span class="w"> </span><span class="o">*</span><span class="n">attr</span><span class="p">,</span><span class="w"></span>
+<span class="w">					  </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">buf</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="kt">ssize_t</span><span class="w"> </span><span class="n">ret</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="k">struct</span><span class="w"> </span><span class="nc">power_supply</span><span class="w"> </span><span class="o">*</span><span class="n">psy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">dev_get_drvdata</span><span class="p">(</span><span class="n">dev</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="k">enum</span><span class="w"> </span><span class="nc">power_supply_property</span><span class="w"> </span><span class="n">psp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">attr</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">power_supply_attrs</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="k">union</span><span class="w"> </span><span class="nc">power_supply_propval</span><span class="w"> </span><span class="n">value</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">psp</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">POWER_SUPPLY_PROP_TYPE</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="n">value</span><span class="p">.</span><span class="n">intval</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">psy</span><span class="o">-&gt;</span><span class="n">desc</span><span class="o">-&gt;</span><span class="n">type</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">power_supply_get_property</span><span class="p">(</span><span class="n">psy</span><span class="p">,</span><span class="w"> </span><span class="n">psp</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">value</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">		</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ret</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">			</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ret</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="o">-</span><span class="n">ENODATA</span><span class="p">)</span><span class="w"></span>
+<span class="w">				</span><span class="n">dev_dbg</span><span class="p">(</span><span class="n">dev</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;driver has no data for `%s&#39; property</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"></span>
+<span class="w">					</span><span class="n">attr</span><span class="o">-&gt;</span><span class="n">attr</span><span class="p">.</span><span class="n">name</span><span class="p">);</span><span class="w"></span>
+<span class="w">			</span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ret</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="o">-</span><span class="n">ENODEV</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">ret</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="o">-</span><span class="n">EAGAIN</span><span class="p">)</span><span class="w"></span>
+<span class="w">				</span><span class="n">dev_err_ratelimited</span><span class="p">(</span><span class="n">dev</span><span class="p">,</span><span class="w"></span>
+<span class="w">					</span><span class="s">&quot;driver failed to report `%s&#39; property: %zd</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"></span>
+<span class="w">					</span><span class="n">attr</span><span class="o">-&gt;</span><span class="n">attr</span><span class="p">.</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="n">ret</span><span class="p">);</span><span class="w"></span>
+<span class="w">			</span><span class="k">return</span><span class="w"> </span><span class="n">ret</span><span class="p">;</span><span class="w"></span>
+<span class="w">		</span><span class="p">}</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+
+<span class="w">	</span><span class="k">switch</span><span class="w"> </span><span class="p">(</span><span class="n">psp</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="k">case</span><span class="w"> </span><span class="no">POWER_SUPPLY_PROP_STATUS</span><span class="p">:</span><span class="w"></span>
+<span class="w">		</span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sprintf</span><span class="p">(</span><span class="n">buf</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;%s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"></span>
+<span class="w">			      </span><span class="n">power_supply_status_text</span><span class="p">[</span><span class="n">value</span><span class="p">.</span><span class="n">intval</span><span class="p">]);</span><span class="w"></span>
+<span class="w">		</span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="k">case</span><span class="w"> </span><span class="no">POWER_SUPPLY_PROP_CHARGE_TYPE</span><span class="p">:</span><span class="w"></span>
+<span class="w">		</span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sprintf</span><span class="p">(</span><span class="n">buf</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;%s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"></span>
+<span class="w">			      </span><span class="n">power_supply_charge_type_text</span><span class="p">[</span><span class="n">value</span><span class="p">.</span><span class="n">intval</span><span class="p">]);</span><span class="w"></span>
+<span class="w">		</span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="k">case</span><span class="w"> </span><span class="no">POWER_SUPPLY_PROP_HEALTH</span><span class="p">:</span><span class="w"></span>
+<span class="w">		</span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sprintf</span><span class="p">(</span><span class="n">buf</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;%s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"></span>
+<span class="w">			      </span><span class="n">power_supply_health_text</span><span class="p">[</span><span class="n">value</span><span class="p">.</span><span class="n">intval</span><span class="p">]);</span><span class="w"></span>
+<span class="w">		</span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="k">case</span><span class="w"> </span><span class="no">POWER_SUPPLY_PROP_TECHNOLOGY</span><span class="p">:</span><span class="w"></span>
+<span class="w">		</span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sprintf</span><span class="p">(</span><span class="n">buf</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;%s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"></span>
+<span class="w">			      </span><span class="n">power_supply_technology_text</span><span class="p">[</span><span class="n">value</span><span class="p">.</span><span class="n">intval</span><span class="p">]);</span><span class="w"></span>
+<span class="w">		</span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="k">case</span><span class="w"> </span><span class="no">POWER_SUPPLY_PROP_CAPACITY_LEVEL</span><span class="p">:</span><span class="w"></span>
+<span class="w">		</span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sprintf</span><span class="p">(</span><span class="n">buf</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;%s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"></span>
+<span class="w">			      </span><span class="n">power_supply_capacity_level_text</span><span class="p">[</span><span class="n">value</span><span class="p">.</span><span class="n">intval</span><span class="p">]);</span><span class="w"></span>
+<span class="w">		</span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="k">case</span><span class="w"> </span><span class="no">POWER_SUPPLY_PROP_TYPE</span><span class="p">:</span><span class="w"></span>
+<span class="w">	</span><span class="k">case</span><span class="w"> </span><span class="no">POWER_SUPPLY_PROP_REAL_TYPE</span><span class="p">:</span><span class="w"></span>
+<span class="w">		</span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sprintf</span><span class="p">(</span><span class="n">buf</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;%s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"></span>
+<span class="w">			      </span><span class="n">power_supply_type_text</span><span class="p">[</span><span class="n">value</span><span class="p">.</span><span class="n">intval</span><span class="p">]);</span><span class="w"></span>
+<span class="w">		</span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="k">case</span><span class="w"> </span><span class="no">POWER_SUPPLY_PROP_USB_TYPE</span><span class="p">:</span><span class="w"></span>
+<span class="w">		</span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">power_supply_show_usb_type</span><span class="p">(</span><span class="n">dev</span><span class="p">,</span><span class="w"> </span><span class="n">psy</span><span class="o">-&gt;</span><span class="n">desc</span><span class="o">-&gt;</span><span class="n">usb_types</span><span class="p">,</span><span class="w"></span>
+<span class="w">						 </span><span class="n">psy</span><span class="o">-&gt;</span><span class="n">desc</span><span class="o">-&gt;</span><span class="n">num_usb_types</span><span class="p">,</span><span class="w"></span>
+<span class="w">						 </span><span class="o">&amp;</span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="n">buf</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="k">case</span><span class="w"> </span><span class="no">POWER_SUPPLY_PROP_SCOPE</span><span class="p">:</span><span class="w"></span>
+<span class="w">		</span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sprintf</span><span class="p">(</span><span class="n">buf</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;%s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"></span>
+<span class="w">			      </span><span class="n">power_supply_scope_text</span><span class="p">[</span><span class="n">value</span><span class="p">.</span><span class="n">intval</span><span class="p">]);</span><span class="w"></span>
+<span class="w">		</span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="k">case</span><span class="w"> </span><span class="no">POWER_SUPPLY_PROP_TYPEC_MODE</span><span class="p">:</span><span class="w"></span>
+<span class="w">		</span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sprintf</span><span class="p">(</span><span class="n">buf</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;%s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"></span>
+<span class="w">			      </span><span class="n">power_supply_usbc_text</span><span class="p">[</span><span class="n">value</span><span class="p">.</span><span class="n">intval</span><span class="p">]);</span><span class="w"></span>
+<span class="w">		</span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="k">case</span><span class="w"> </span><span class="no">POWER_SUPPLY_PROP_TYPEC_POWER_ROLE</span><span class="p">:</span><span class="w"></span>
+<span class="w">		</span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sprintf</span><span class="p">(</span><span class="n">buf</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;%s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"></span>
+<span class="w">			      </span><span class="n">power_supply_usbc_pr_text</span><span class="p">[</span><span class="n">value</span><span class="p">.</span><span class="n">intval</span><span class="p">]);</span><span class="w"></span>
+<span class="w">		</span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="k">case</span><span class="w"> </span><span class="no">POWER_SUPPLY_PROP_TYPEC_SRC_RP</span><span class="p">:</span><span class="w"></span>
+<span class="w">		</span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sprintf</span><span class="p">(</span><span class="n">buf</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;%s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"></span>
+<span class="w">			      </span><span class="n">power_supply_typec_src_rp_text</span><span class="p">[</span><span class="n">value</span><span class="p">.</span><span class="n">intval</span><span class="p">]);</span><span class="w"></span>
+<span class="w">		</span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="k">case</span><span class="w"> </span><span class="no">POWER_SUPPLY_PROP_DIE_HEALTH</span><span class="p">:</span><span class="w"></span>
+<span class="w">	</span><span class="k">case</span><span class="w"> </span><span class="no">POWER_SUPPLY_PROP_SKIN_HEALTH</span><span class="p">:</span><span class="w"></span>
+<span class="w">	</span><span class="k">case</span><span class="w"> </span><span class="no">POWER_SUPPLY_PROP_CONNECTOR_HEALTH</span><span class="p">:</span><span class="w"></span>
+<span class="w">		</span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sprintf</span><span class="p">(</span><span class="n">buf</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;%s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"></span>
+<span class="w">			      </span><span class="n">power_supply_health_text</span><span class="p">[</span><span class="n">value</span><span class="p">.</span><span class="n">intval</span><span class="p">]);</span><span class="w"></span>
+<span class="w">		</span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="k">case</span><span class="w"> </span><span class="no">POWER_SUPPLY_PROP_CHARGE_COUNTER_EXT</span><span class="p">:</span><span class="w"></span>
+<span class="w">		</span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sprintf</span><span class="p">(</span><span class="n">buf</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;%lld</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">.</span><span class="n">int64val</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="k">case</span><span class="w"> </span><span class="no">POWER_SUPPLY_PROP_MODEL_NAME</span><span class="w"> </span><span class="p">...</span><span class="w"> </span><span class="no">POWER_SUPPLY_PROP_PTMC_ID</span><span class="p">:</span><span class="w"></span>
+<span class="w">		</span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sprintf</span><span class="p">(</span><span class="n">buf</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;%s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">.</span><span class="n">strval</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="c1">// [FEATURE]-MOD-BEGIN by wugangnan@paxsz.com 2021-09-05, 	for battery manufacturer identify</span>
+<span class="w">	</span><span class="k">case</span><span class="w"> </span><span class="no">POWER_SUPPLY_PROP_MANUFACTURER</span><span class="p">:</span><span class="w"></span>
+<span class="w">		</span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sprintf</span><span class="p">(</span><span class="n">buf</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;%s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"></span>
+<span class="w">			      </span><span class="n">power_supply_manufacturer_text</span><span class="p">[</span><span class="n">value</span><span class="p">.</span><span class="n">intval</span><span class="p">]);</span><span class="w"></span>
+<span class="w">		</span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="c1">// [FEATURE]-MOD-BEGIN by wugangnan@paxsz.com 2021-09-05, 	for battery manufacturer identify</span>
+<span class="w">	</span><span class="k">case</span><span class="w"> </span><span class="no">POWER_SUPPLY_PROP_BATTERY_TYPE</span><span class="w"> </span><span class="p">...</span><span class="w"> </span><span class="no">POWER_SUPPLY_PROP_SERIAL_NUMBER</span><span class="p">:</span><span class="w"></span>
+<span class="w">		</span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sprintf</span><span class="p">(</span><span class="n">buf</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;%s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">.</span><span class="n">strval</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="k">default</span><span class="o">:</span><span class="w"></span>
+<span class="w">		</span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sprintf</span><span class="p">(</span><span class="n">buf</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;%d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">.</span><span class="n">intval</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+
+<span class="w">	</span><span class="k">return</span><span class="w"> </span><span class="n">ret</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">ssize_t</span><span class="w"> </span><span class="nf">power_supply_store_property</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w"> </span><span class="o">*</span><span class="n">dev</span><span class="p">,</span><span class="w"></span>
+<span class="w">					   </span><span class="k">struct</span><span class="w"> </span><span class="nc">device_attribute</span><span class="w"> </span><span class="o">*</span><span class="n">attr</span><span class="p">,</span><span class="w"></span>
+<span class="w">					   </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">buf</span><span class="p">,</span><span class="w"> </span><span class="kt">size_t</span><span class="w"> </span><span class="n">count</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="kt">ssize_t</span><span class="w"> </span><span class="n">ret</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="k">struct</span><span class="w"> </span><span class="nc">power_supply</span><span class="w"> </span><span class="o">*</span><span class="n">psy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">dev_get_drvdata</span><span class="p">(</span><span class="n">dev</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="k">enum</span><span class="w"> </span><span class="nc">power_supply_property</span><span class="w"> </span><span class="n">psp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">attr</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">power_supply_attrs</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="k">union</span><span class="w"> </span><span class="nc">power_supply_propval</span><span class="w"> </span><span class="n">value</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">	</span><span class="k">switch</span><span class="w"> </span><span class="p">(</span><span class="n">psp</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="k">case</span><span class="w"> </span><span class="no">POWER_SUPPLY_PROP_STATUS</span><span class="p">:</span><span class="w"></span>
+<span class="w">		</span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sysfs_match_string</span><span class="p">(</span><span class="n">power_supply_status_text</span><span class="p">,</span><span class="w"> </span><span class="n">buf</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="k">case</span><span class="w"> </span><span class="no">POWER_SUPPLY_PROP_CHARGE_TYPE</span><span class="p">:</span><span class="w"></span>
+<span class="w">		</span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sysfs_match_string</span><span class="p">(</span><span class="n">power_supply_charge_type_text</span><span class="p">,</span><span class="w"> </span><span class="n">buf</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="k">case</span><span class="w"> </span><span class="no">POWER_SUPPLY_PROP_HEALTH</span><span class="p">:</span><span class="w"></span>
+<span class="w">		</span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sysfs_match_string</span><span class="p">(</span><span class="n">power_supply_health_text</span><span class="p">,</span><span class="w"> </span><span class="n">buf</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="k">case</span><span class="w"> </span><span class="no">POWER_SUPPLY_PROP_TECHNOLOGY</span><span class="p">:</span><span class="w"></span>
+<span class="w">		</span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sysfs_match_string</span><span class="p">(</span><span class="n">power_supply_technology_text</span><span class="p">,</span><span class="w"> </span><span class="n">buf</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="k">case</span><span class="w"> </span><span class="no">POWER_SUPPLY_PROP_CAPACITY_LEVEL</span><span class="p">:</span><span class="w"></span>
+<span class="w">		</span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sysfs_match_string</span><span class="p">(</span><span class="n">power_supply_capacity_level_text</span><span class="p">,</span><span class="w"> </span><span class="n">buf</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="k">case</span><span class="w"> </span><span class="no">POWER_SUPPLY_PROP_SCOPE</span><span class="p">:</span><span class="w"></span>
+<span class="w">		</span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sysfs_match_string</span><span class="p">(</span><span class="n">power_supply_scope_text</span><span class="p">,</span><span class="w"> </span><span class="n">buf</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="k">default</span><span class="o">:</span><span class="w"></span>
+<span class="w">		</span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">-</span><span class="n">EINVAL</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+
+<span class="w">	</span><span class="cm">/*</span>
+<span class="cm">	 * If no match was found, then check to see if it is an integer.</span>
+<span class="cm">	 * Integer values are valid for enums in addition to the text value.</span>
+<span class="cm">	 */</span><span class="w"></span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ret</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="kt">long</span><span class="w"> </span><span class="n">long_val</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">		</span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">kstrtol</span><span class="p">(</span><span class="n">buf</span><span class="p">,</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">long_val</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ret</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"></span>
+<span class="w">			</span><span class="k">return</span><span class="w"> </span><span class="n">ret</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">		</span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">long_val</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">value</span><span class="p">.</span><span class="n">intval</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ret</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">power_supply_set_property</span><span class="p">(</span><span class="n">psy</span><span class="p">,</span><span class="w"> </span><span class="n">psp</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">value</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ret</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"></span>
+<span class="w">		</span><span class="k">return</span><span class="w"> </span><span class="n">ret</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">	</span><span class="k">return</span><span class="w"> </span><span class="n">count</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+</section>
+<section id="power-supply-uevent-uevent">
+<h4>2.power_supply_uevent uevent节点生成<a class="headerlink" href="#power-supply-uevent-uevent" title="此标题的永久链接"></a></h4>
+<p>在上述节点中，存在uevent这个节点，可以看看uevent节点的内容，这个节点由power_supply_sysfs文件中的power_supply_uevent函数实现的,这个函数的作用就是将该设备节点下所有节点的内容组合成字符串发送到uevent中，在通过内核的uevent框架发送到用户空间。</p>
+<p>也就是当用户cat uevent节点时，都会调用一遍<code class="docutils literal notranslate"><span class="pre">power_supply_uevent</span></code>函数。</p>
+<div class="highlight-log notranslate"><div class="highlight"><pre><span></span>PAYTABLETM8:/sys/class/power_supply/battery # cat uevent
+POWER_SUPPLY_NAME=battery
+POWER_SUPPLY_STATUS=Not charging
+POWER_SUPPLY_HEALTH=Good
+POWER_SUPPLY_PRESENT=1
+POWER_SUPPLY_TECHNOLOGY=Li-ion
+POWER_SUPPLY_CYCLE_COUNT=1
+POWER_SUPPLY_CAPACITY=100
+POWER_SUPPLY_CURRENT_NOW=300
+POWER_SUPPLY_CURRENT_AVG=300
+POWER_SUPPLY_VOLTAGE_NOW=4332000
+POWER_SUPPLY_CHARGE_FULL=6555000
+POWER_SUPPLY_CHARGE_COUNTER=6555000
+POWER_SUPPLY_TEMP=251
+POWER_SUPPLY_CAPACITY_LEVEL=Full
+POWER_SUPPLY_TIME_TO_FULL_NOW=0
+POWER_SUPPLY_CHARGE_FULL_DESIGN=655000
+POWER_SUPPLY_MANUFACTURER=M8-Icon-Energy
+POWER_SUPPLY_SERIAL_NUMBER=ICS021NA-S21223000007
+POWER_SUPPLY_VOLTAGE_OCV=4332600
+POWER_SUPPLY_RESISTANCE=174500
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>uevent函数原理就是：开头添加属性<code class="docutils literal notranslate"><span class="pre">POWER_SUPPLY_NAME</span></code>，然后for循环添加具体psy设备注册的prop，prop值通过函数<code class="docutils literal notranslate"><span class="pre">power_supply_show_property</span></code>获取，最后通过<code class="docutils literal notranslate"><span class="pre">add_uevent_var</span></code>添加到uevent数据中，如下：</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="kt">int</span><span class="w"> </span><span class="nf">power_supply_uevent</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w"> </span><span class="o">*</span><span class="n">dev</span><span class="p">,</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">kobj_uevent_env</span><span class="w"> </span><span class="o">*</span><span class="n">env</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="k">struct</span><span class="w"> </span><span class="nc">power_supply</span><span class="w"> </span><span class="o">*</span><span class="n">psy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">dev_get_drvdata</span><span class="p">(</span><span class="n">dev</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="kt">int</span><span class="w"> </span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">j</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">prop_buf</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">attrname</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">psy</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="o">!</span><span class="n">psy</span><span class="o">-&gt;</span><span class="n">desc</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="n">dev_dbg</span><span class="p">(</span><span class="n">dev</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;No power supply yet</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="k">return</span><span class="w"> </span><span class="n">ret</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">add_uevent_var</span><span class="p">(</span><span class="n">env</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;POWER_SUPPLY_NAME=%s&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">psy</span><span class="o">-&gt;</span><span class="n">desc</span><span class="o">-&gt;</span><span class="n">name</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ret</span><span class="p">)</span><span class="w"></span>
+<span class="w">		</span><span class="k">return</span><span class="w"> </span><span class="n">ret</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">prop_buf</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="n">get_zeroed_page</span><span class="p">(</span><span class="n">GFP_KERNEL</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">prop_buf</span><span class="p">)</span><span class="w"></span>
+<span class="w">		</span><span class="k">return</span><span class="w"> </span><span class="o">-</span><span class="n">ENOMEM</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">	</span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="n">j</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">j</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">psy</span><span class="o">-&gt;</span><span class="n">desc</span><span class="o">-&gt;</span><span class="n">num_properties</span><span class="p">;</span><span class="w"> </span><span class="n">j</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="k">struct</span><span class="w"> </span><span class="nc">device_attribute</span><span class="w"> </span><span class="o">*</span><span class="n">attr</span><span class="p">;</span><span class="w"></span>
+<span class="w">		</span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">line</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">		</span><span class="n">attr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">&amp;</span><span class="n">power_supply_attrs</span><span class="p">[</span><span class="n">psy</span><span class="o">-&gt;</span><span class="n">desc</span><span class="o">-&gt;</span><span class="n">properties</span><span class="p">[</span><span class="n">j</span><span class="p">]];</span><span class="w"></span>
+
+<span class="w">		</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">attr</span><span class="o">-&gt;</span><span class="n">attr</span><span class="p">.</span><span class="n">name</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">			</span><span class="n">dev_info</span><span class="p">(</span><span class="n">dev</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;%s:%d FAKE attr.name=NULL skip</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"></span>
+<span class="w">				</span><span class="n">__FILE__</span><span class="p">,</span><span class="w"> </span><span class="n">__LINE__</span><span class="p">);</span><span class="w"></span>
+<span class="w">			</span><span class="k">continue</span><span class="p">;</span><span class="w"></span>
+<span class="w">		</span><span class="p">}</span><span class="w"></span>
+
+<span class="w">		</span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">power_supply_show_property</span><span class="p">(</span><span class="n">dev</span><span class="p">,</span><span class="w"> </span><span class="n">attr</span><span class="p">,</span><span class="w"> </span><span class="n">prop_buf</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ret</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="o">-</span><span class="n">ENODEV</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="n">ret</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="o">-</span><span class="n">ENODATA</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">			</span><span class="cm">/* When a battery is absent, we expect -ENODEV. Don&#39;t abort;</span>
+<span class="cm">			   send the uevent with at least the the PRESENT=0 property */</span><span class="w"></span>
+<span class="w">			</span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="w">			</span><span class="k">continue</span><span class="p">;</span><span class="w"></span>
+<span class="w">		</span><span class="p">}</span><span class="w"></span>
+
+<span class="w">		</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ret</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"></span>
+<span class="w">			</span><span class="k">goto</span><span class="w"> </span><span class="n">out</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">		</span><span class="n">line</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">strchr</span><span class="p">(</span><span class="n">prop_buf</span><span class="p">,</span><span class="w"> </span><span class="sc">&#39;\n&#39;</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">line</span><span class="p">)</span><span class="w"></span>
+<span class="w">			</span><span class="o">*</span><span class="n">line</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">		</span><span class="n">attrname</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">kstruprdup</span><span class="p">(</span><span class="n">attr</span><span class="o">-&gt;</span><span class="n">attr</span><span class="p">.</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="n">GFP_KERNEL</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">attrname</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">			</span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">-</span><span class="n">ENOMEM</span><span class="p">;</span><span class="w"></span>
+<span class="w">			</span><span class="k">goto</span><span class="w"> </span><span class="n">out</span><span class="p">;</span><span class="w"></span>
+<span class="w">		</span><span class="p">}</span><span class="w"></span>
+
+<span class="w">		</span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">add_uevent_var</span><span class="p">(</span><span class="n">env</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;POWER_SUPPLY_%s=%s&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">attrname</span><span class="p">,</span><span class="w"> </span><span class="n">prop_buf</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="n">kfree</span><span class="p">(</span><span class="n">attrname</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ret</span><span class="p">)</span><span class="w"></span>
+<span class="w">			</span><span class="k">goto</span><span class="w"> </span><span class="n">out</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+
+<span class="nl">out</span><span class="p">:</span><span class="w"></span>
+<span class="w">	</span><span class="n">free_page</span><span class="p">((</span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">long</span><span class="p">)</span><span class="n">prop_buf</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">	</span><span class="k">return</span><span class="w"> </span><span class="n">ret</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="uevent">
+<h3>3.uevent事件上报<a class="headerlink" href="#uevent" title="此标题的永久链接"></a></h3>
+<p>当charger或者battery/gauge等prop属性发送改变时，一般都会调用<code class="docutils literal notranslate"><span class="pre">power_supply_changed</span></code>函数发送uevent事件，上层health hidl将接受到uevent事件并作处理，具体处理这里不做具体分析。</p>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span><span class="w"> </span><span class="nf">power_supply_changed</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">power_supply</span><span class="w"> </span><span class="o">*</span><span class="n">psy</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">long</span><span class="w"> </span><span class="n">flags</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">dev_dbg</span><span class="p">(</span><span class="o">&amp;</span><span class="n">psy</span><span class="o">-&gt;</span><span class="n">dev</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;%s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">__func__</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">spin_lock_irqsave</span><span class="p">(</span><span class="o">&amp;</span><span class="n">psy</span><span class="o">-&gt;</span><span class="n">changed_lock</span><span class="p">,</span><span class="w"> </span><span class="n">flags</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="n">psy</span><span class="o">-&gt;</span><span class="n">changed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">true</span><span class="p">;</span><span class="w"> </span><span class="c1">//设置属性变化标志位</span>
+<span class="w">	</span><span class="n">pm_stay_awake</span><span class="p">(</span><span class="o">&amp;</span><span class="n">psy</span><span class="o">-&gt;</span><span class="n">dev</span><span class="p">);</span><span class="w"> </span><span class="c1">//阻止系统休眠</span>
+<span class="w">	</span><span class="n">spin_unlock_irqrestore</span><span class="p">(</span><span class="o">&amp;</span><span class="n">psy</span><span class="o">-&gt;</span><span class="n">changed_lock</span><span class="p">,</span><span class="w"> </span><span class="n">flags</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="n">schedule_work</span><span class="p">(</span><span class="o">&amp;</span><span class="n">psy</span><span class="o">-&gt;</span><span class="n">changed_work</span><span class="p">);</span><span class="w"> </span><span class="c1">//启动psy-&gt;changed_work 工作队列</span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>在power_supply_changed_work工作队列中，可以看到，对该类中查询每个设备的更新操作，再更新led灯的操作，还有就是发送新的事件通知应用层：</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="k">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">power_supply_changed_work</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">work_struct</span><span class="w"> </span><span class="o">*</span><span class="n">work</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">long</span><span class="w"> </span><span class="n">flags</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="k">struct</span><span class="w"> </span><span class="nc">power_supply</span><span class="w"> </span><span class="o">*</span><span class="n">psy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">container_of</span><span class="p">(</span><span class="n">work</span><span class="p">,</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">power_supply</span><span class="p">,</span><span class="w"></span>
+<span class="w">						</span><span class="n">changed_work</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">dev_dbg</span><span class="p">(</span><span class="o">&amp;</span><span class="n">psy</span><span class="o">-&gt;</span><span class="n">dev</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;%s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">__func__</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">spin_lock_irqsave</span><span class="p">(</span><span class="o">&amp;</span><span class="n">psy</span><span class="o">-&gt;</span><span class="n">changed_lock</span><span class="p">,</span><span class="w"> </span><span class="n">flags</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="cm">/*</span>
+<span class="cm">	 * Check &#39;changed&#39; here to avoid issues due to race between</span>
+<span class="cm">	 * power_supply_changed() and this routine. In worst case</span>
+<span class="cm">	 * power_supply_changed() can be called again just before we take above</span>
+<span class="cm">	 * lock. During the first call of this routine we will mark &#39;changed&#39; as</span>
+<span class="cm">	 * false and it will stay false for the next call as well.</span>
+<span class="cm">	 */</span><span class="w"></span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">likely</span><span class="p">(</span><span class="n">psy</span><span class="o">-&gt;</span><span class="n">changed</span><span class="p">))</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="n">psy</span><span class="o">-&gt;</span><span class="n">changed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">false</span><span class="p">;</span><span class="w"> </span><span class="c1">//清除标志位</span>
+<span class="w">		</span><span class="n">spin_unlock_irqrestore</span><span class="p">(</span><span class="o">&amp;</span><span class="n">psy</span><span class="o">-&gt;</span><span class="n">changed_lock</span><span class="p">,</span><span class="w"> </span><span class="n">flags</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="n">class_for_each_device</span><span class="p">(</span><span class="n">power_supply_class</span><span class="p">,</span><span class="w"> </span><span class="nb">NULL</span><span class="p">,</span><span class="w"> </span><span class="n">psy</span><span class="p">,</span><span class="w"></span>
+<span class="w">				      </span><span class="n">__power_supply_changed_work</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="n">power_supply_update_leds</span><span class="p">(</span><span class="n">psy</span><span class="p">);</span><span class="w"> </span><span class="c1">// 更新充电指示灯</span>
+<span class="w">		</span><span class="n">atomic_notifier_call_chain</span><span class="p">(</span><span class="o">&amp;</span><span class="n">power_supply_notifier</span><span class="p">,</span><span class="w"></span>
+<span class="w">				</span><span class="n">PSY_EVENT_PROP_CHANGED</span><span class="p">,</span><span class="w"> </span><span class="n">psy</span><span class="p">);</span><span class="w"> </span><span class="c1">//属性改变通知</span>
+<span class="w">		</span><span class="n">kobject_uevent</span><span class="p">(</span><span class="o">&amp;</span><span class="n">psy</span><span class="o">-&gt;</span><span class="n">dev</span><span class="p">.</span><span class="n">kobj</span><span class="p">,</span><span class="w"> </span><span class="n">KOBJ_CHANGE</span><span class="p">);</span><span class="w"> </span><span class="c1">//上报uevent事件</span>
+<span class="w">		</span><span class="n">spin_lock_irqsave</span><span class="p">(</span><span class="o">&amp;</span><span class="n">psy</span><span class="o">-&gt;</span><span class="n">changed_lock</span><span class="p">,</span><span class="w"> </span><span class="n">flags</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+
+<span class="w">	</span><span class="cm">/*</span>
+<span class="cm">	 * Hold the wakeup_source until all events are processed.</span>
+<span class="cm">	 * power_supply_changed() might have called again and have set &#39;changed&#39;</span>
+<span class="cm">	 * to true.</span>
+<span class="cm">	 */</span><span class="w"></span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">likely</span><span class="p">(</span><span class="o">!</span><span class="n">psy</span><span class="o">-&gt;</span><span class="n">changed</span><span class="p">))</span><span class="w"></span>
+<span class="w">		</span><span class="n">pm_relax</span><span class="p">(</span><span class="o">&amp;</span><span class="n">psy</span><span class="o">-&gt;</span><span class="n">dev</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="n">spin_unlock_irqrestore</span><span class="p">(</span><span class="o">&amp;</span><span class="n">psy</span><span class="o">-&gt;</span><span class="n">changed_lock</span><span class="p">,</span><span class="w"> </span><span class="n">flags</span><span class="p">);</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<p>kobject_uevent函数会通过netlink_broadcast_filtered以netlink（一种socket通信）的方式上报，netlink能够实现内核空间与用户空间通信。</p>
+<p>详情请参考：</p>
+<ul class="simple">
+<li><p><a class="reference external" href="https://blog.csdn.net/dfysy/article/details/7330919">Android Uevent 分析，从kernel到framework</a></p></li>
+</ul>
+</section>
+</section>
+<section id="uvent">
+<h2>新增一个uvent事件<a class="headerlink" href="#uvent" title="此标题的永久链接"></a></h2>
+<ul class="simple">
+<li><p>增加电池厂商manufacturer uevent属性，供上层识别。</p></li>
+</ul>
+<div class="highlight-diff notranslate"><div class="highlight"><pre><span></span><span class="w">[Summary]:</span>
+<span class="w">	1.查看节点/sys/class/power_supply/battery/uevent下的POWER_SUPPLY_MANUFACTURER属性即可确认电池厂家。</span>
+
+<span class="w">[Test Plan]:查看节点/sys/class/power_supply/battery/uevent下的POWER_SUPPLY_MANUFACTURER属性即可确认电池厂家。</span>
+
+<span class="w">[Module]: battery</span>
+
+<span class="w">[Model]: M50 &amp;&amp; M8</span>
+
+<span class="w">[author]: wugangnan@paxsz.com</span>
+
+<span class="w">[date]: 2021-9-5</span>
+<span class="gd">---</span><span class="w"></span>
+<span class="w"> </span>.../drivers/power/supply/mtk_battery.c        | 22 +++++++++++++++++--<span class="w"></span>
+<span class="w"> </span>.../drivers/power/supply/power_supply_sysfs.c | 16 +++++++++++++-<span class="w"></span>
+<span class="w"> </span>2 files changed, 35 insertions(+), 3 deletions(-)<span class="w"></span>
+<span class="w"> </span>mode change 100644 =&gt; 100755 kernel-4.19/drivers/power/supply/power_supply_sysfs.c<span class="w"></span>
+
+<span class="gh">diff --git a/kernel-4.19/drivers/power/supply/mtk_battery.c b/kernel-4.19/drivers/power/supply/mtk_battery.c</span><span class="w"></span>
+<span class="gh">index 28748405e1e..58fdbb1d8e7 100755</span><span class="w"></span>
+<span class="gd">--- a/kernel-4.19/drivers/power/supply/mtk_battery.c</span><span class="w"></span>
+<span class="gi">+++ b/kernel-4.19/drivers/power/supply/mtk_battery.c</span><span class="w"></span>
+<span class="gu">@@ -173,6 +173,19 @@ int fgauge_get_profile_id(void)</span><span class="w"></span>
+<span class="w"> </span>	return battery_id;<span class="w"></span>
+<span class="w"> </span>}<span class="w"></span>
+<span class="w"> </span>
+<span class="gi">+bool pax_is_m8_product(void)</span><span class="w"></span>
+<span class="gi">+{</span><span class="w"></span>
+<span class="gi">+	const char *product_id_cmd;</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+	product_id_cmd = cmdline_get_value(&quot;androidboot.terminal_name&quot;);</span><span class="w"></span>
+<span class="gi">+	if(strcmp(product_id_cmd, &quot;M8&quot;) == 0)</span><span class="w"></span>
+<span class="gi">+	{</span><span class="w"></span>
+<span class="gi">+		return true;</span><span class="w"></span>
+<span class="gi">+	}</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+	return false;</span><span class="w"></span>
+<span class="gi">+}</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="w"> </span>int wakeup_fg_algo_cmd(<span class="w"></span>
+<span class="w"> </span>	struct mtk_battery *gm, unsigned int flow_state, int cmd, int para1)<span class="w"></span>
+<span class="w"> </span>{<span class="w"></span>
+<span class="gu">@@ -258,6 +271,7 @@ static enum power_supply_property battery_props[] = {</span><span class="w"></span>
+<span class="w"> </span>	POWER_SUPPLY_PROP_CAPACITY_LEVEL,<span class="w"></span>
+<span class="w"> </span>	POWER_SUPPLY_PROP_TIME_TO_FULL_NOW,<span class="w"></span>
+<span class="w"> </span>	POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN,<span class="w"></span>
+<span class="gi">+	POWER_SUPPLY_PROP_MANUFACTURER,</span><span class="w"></span>
+<span class="w"> </span>};<span class="w"></span>
+<span class="w"> </span>
+<span class="w"> </span>static int battery_psy_get_property(struct power_supply *psy,<span class="w"></span>
+<span class="gu">@@ -385,7 +399,11 @@ static int battery_psy_get_property(struct power_supply *psy,</span><span class="w"></span>
+<span class="w"> </span>			val-&gt;intval = q_max_uah;<span class="w"></span>
+<span class="w"> </span>		}<span class="w"></span>
+<span class="w"> </span>		break;<span class="w"></span>
+<span class="gd">-</span><span class="w"></span>
+<span class="gi">+	// [FEATURE]-MOD-BEGIN by wugangnan@paxsz.com 2021-09-05, 	for battery manufacturer identify</span><span class="w"></span>
+<span class="gi">+	case POWER_SUPPLY_PROP_MANUFACTURER:</span><span class="w"></span>
+<span class="gi">+		val-&gt;intval = fgauge_get_profile_id();</span><span class="w"></span>
+<span class="gi">+		break;</span><span class="w"></span>
+<span class="gi">+	// [FEATURE]-MOD-END by wugangnan@paxsz.com 2021-09-05, 	for battery manufacturer identify</span><span class="w"></span>
+<span class="w"> </span>	default:<span class="w"></span>
+
+<span class="gh">diff --git a/kernel-4.19/drivers/power/supply/power_supply_sysfs.c b/kernel-4.19/drivers/power/supply/power_supply_sysfs.c</span><span class="w"></span>
+<span class="w">old mode 100644</span>
+<span class="w">new mode 100755</span>
+<span class="gh">index 7eee0489636..a36c0243444</span><span class="w"></span>
+<span class="gd">--- a/kernel-4.19/drivers/power/supply/power_supply_sysfs.c</span><span class="w"></span>
+<span class="gi">+++ b/kernel-4.19/drivers/power/supply/power_supply_sysfs.c</span><span class="w"></span>
+<span class="gu">@@ -103,6 +103,11 @@ static const char * const power_supply_usbc_pr_text[] = {</span><span class="w"></span>
+<span class="w"> </span>static const char * const power_supply_typec_src_rp_text[] = {<span class="w"></span>
+<span class="w"> </span>	&quot;Rp-Default&quot;, &quot;Rp-1.5A&quot;, &quot;Rp-3A&quot;<span class="w"></span>
+<span class="w"> </span>};<span class="w"></span>
+<span class="gi">+// [FEATURE]-MOD-BEGIN by wugangnan@paxsz.com 2021-09-05, 	for battery manufacturer identify</span><span class="w"></span>
+<span class="gi">+static const char * const power_supply_manufacturer_text[] = {</span><span class="w"></span>
+<span class="gi">+	&quot;M50-Icon-Energy&quot;, &quot;M50-Veken-Battery&quot;, &quot;M8-Icon-Energy&quot;</span><span class="w"></span>
+<span class="gi">+};</span><span class="w"></span>
+<span class="gi">+// [FEATURE]-MOD-END by wugangnan@paxsz.com 2021-09-05, 	for battery manufacturer identify</span><span class="w"></span>
+<span class="w"> </span>
+<span class="w"> </span>static ssize_t power_supply_show_usb_type(struct device *dev,<span class="w"></span>
+<span class="w"> </span>					  enum power_supply_usb_type *usb_types,<span class="w"></span>
+<span class="gu">@@ -220,7 +225,16 @@ static ssize_t power_supply_show_property(struct device *dev,</span><span class="w"></span>
+<span class="w"> </span>	case POWER_SUPPLY_PROP_CHARGE_COUNTER_EXT:<span class="w"></span>
+<span class="w"> </span>		ret = sprintf(buf, &quot;%lld\n&quot;, value.int64val);<span class="w"></span>
+<span class="w"> </span>		break;<span class="w"></span>
+<span class="gd">-	case POWER_SUPPLY_PROP_MODEL_NAME ... POWER_SUPPLY_PROP_SERIAL_NUMBER:</span><span class="w"></span>
+<span class="gi">+	case POWER_SUPPLY_PROP_MODEL_NAME ... POWER_SUPPLY_PROP_PTMC_ID:</span><span class="w"></span>
+<span class="gi">+		ret = sprintf(buf, &quot;%s\n&quot;, value.strval);</span><span class="w"></span>
+<span class="gi">+		break;</span><span class="w"></span>
+<span class="gi">+	// [FEATURE]-MOD-BEGIN by wugangnan@paxsz.com 2021-09-05, 	for battery manufacturer identify</span><span class="w"></span>
+<span class="gi">+	case POWER_SUPPLY_PROP_MANUFACTURER:</span><span class="w"></span>
+<span class="gi">+		ret = sprintf(buf, &quot;%s\n&quot;,</span><span class="w"></span>
+<span class="gi">+			      power_supply_manufacturer_text[value.intval]);</span><span class="w"></span>
+<span class="gi">+		break;</span><span class="w"></span>
+<span class="gi">+	// [FEATURE]-MOD-BEGIN by wugangnan@paxsz.com 2021-09-05, 	for battery manufacturer identify</span><span class="w"></span>
+<span class="gi">+	case POWER_SUPPLY_PROP_BATTERY_TYPE ... POWER_SUPPLY_PROP_SERIAL_NUMBER:</span><span class="w"></span>
+<span class="w"> </span>		ret = sprintf(buf, &quot;%s\n&quot;, value.strval);<span class="w"></span>
+<span class="w"> </span>		break;<span class="w"></span>
+<span class="w"> </span>	default:<span class="w"></span>
+<span class="gd">-- </span><span class="w"></span>
+<span class="w">2.17.1</span>
+</pre></div>
+</div>
+</section>
+</section>
+
+
+           </div>
+             <div class="articleComments">
+                <comments>
+  <script src="https://utteranc.es/client.js"
+    repo="iswbm/magic-python"
+    issue-term="pathname"
+    theme="github-light"
+    crossorigin="anonymous"
+    async>
+  </script>
+</comments>
+             </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; 版权所有 2022, wugn.</p>
+  </div>
+
+  利用 <a href="https://www.sphinx-doc.org/">Sphinx</a> 构建，使用了 
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">主题</a>
+    由 <a href="https://readthedocs.org">Read the Docs</a>开发.
+  
+
+<script charset="UTF-8" id="LA_COLLECT" src="//sdk.51.la/js-sdk-pro.min.js"></script>
+<script>LA.init({id: "JoV5csIHTGhHiGQ4",ck: "JoV5csIHTGhHiGQ4"})</script>
+
+<br/>
+<script id="LA-DATA-WIDGET" crossorigin="anonymous" charset="UTF-8" src="https://v6-widget.51.la/v6/JoV5csIHTGhHiGQ4/quote.js?theme=0&f=12&display=1,0,0,0,0,0,1,1"></script>
+
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="zh-CN" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>wugn</title>
+
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script src="../../../_static/translations.js"></script>
+        <script src="../../../_static/js/baidutongji.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="索引" href="../../../genindex.html" />
+    <link rel="search" title="搜索" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../index.html" class="icon icon-home"> wugn_note
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="在文档中搜索" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">概述</a></li>
+<li><a class="reference internal" href="#mtk">MTK</a></li>
+<li><a class="reference internal" href="#qcom">QCOM</a></li>
+<li><a class="reference internal" href="#id2">调试方法</a></li>
+</ul>
+</div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">wugn_note</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs"> 
+<li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+<li>概述</li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.forward()">Forward</a></li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.back()">Go Back</a> | </li>
+<li style="float: right;margin-left: 10px;"><a href="/index.html">Home</a> | </li>
+
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="id1">
+<h1>概述<a class="headerlink" href="#id1" title="此标题的永久链接"></a></h1>
+<p>我们经常要在开机阶段检测某些硬件信息传递给kernel，可以通过cmdline方式传递。</p>
+</section>
+<section id="mtk">
+<h1>MTK<a class="headerlink" href="#mtk" title="此标题的永久链接"></a></h1>
+<p>mtk平台在lk阶段使用<code class="docutils literal notranslate"><span class="pre">cmdline_append</span></code>接口即可追加cmdline信息：</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">app/mt_boot/bootargs.c</span></code>:</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="kt">bool</span><span class="w"> </span><span class="nf">cmdline_append</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">append_string</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">append_string_len</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">        </span><span class="n">enter_critical_section</span><span class="p">();</span><span class="w"></span>
+<span class="w">        </span><span class="n">append_string_len</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">strlen</span><span class="p">(</span><span class="n">append_string</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="n">validate_cmdline_boundary</span><span class="p">((</span><span class="n">cmdline_tail</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">append_string_len</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">),</span><span class="w"> </span><span class="n">cmdline_end</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="o">*</span><span class="n">cmdline_tail</span><span class="o">++</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="sc">&#39; &#39;</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="n">strncat</span><span class="p">(</span><span class="n">cmdline_tail</span><span class="p">,</span><span class="w"> </span><span class="n">append_string</span><span class="p">,</span><span class="w"> </span><span class="n">cmdline_end</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">cmdline_tail</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="n">cmdline_tail</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="n">append_string_len</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="n">exit_critical_section</span><span class="p">();</span><span class="w"></span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="nb">true</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>实例：</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="c1">//[FEATURE]-Add-BEGIN by (wugangnan@paxsz.com), 2020/07/03, for LCD identification.</span>
+<span class="n">sprintf</span><span class="p">(</span><span class="n">cmdline_tmpbuf</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;%s%s%s&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">CMDLINE_TMP_CONCAT_SIZE</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;androidboot.lcm.select=&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">mt_disp_get_lcm_id</span><span class="p">());</span><span class="w"></span>
+<span class="n">cmdline_append</span><span class="p">(</span><span class="n">cmdline_tmpbuf</span><span class="p">);</span><span class="w"></span>
+<span class="c1">//[FEATURE]-Add-END by (wugangnan@paxsz.com), 2020/07/03, for LCD identification.</span>
+<span class="n">pax_get_profile_id</span><span class="p">();</span><span class="w"></span>
+<span class="n">sprintf</span><span class="p">(</span><span class="n">cmdline_tmpbuf</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;%s%s%d&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">CMDLINE_TMP_CONCAT_SIZE</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;androidboot.battery.id=&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">battery_id</span><span class="p">);</span><span class="w"></span>
+<span class="n">cmdline_append</span><span class="p">(</span><span class="n">cmdline_tmpbuf</span><span class="p">);</span><span class="w"></span>
+<span class="n">sprintf</span><span class="p">(</span><span class="n">cmdline_tmpbuf</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;%s%s%d&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">CMDLINE_TMP_CONCAT_SIZE</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;androidboot.lcm.id=&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">lcm_id</span><span class="p">);</span><span class="w"></span>
+<span class="n">cmdline_append</span><span class="p">(</span><span class="n">cmdline_tmpbuf</span><span class="p">);</span><span class="w"></span>
+</pre></div>
+</div>
+</section>
+<section id="qcom">
+<h1>QCOM<a class="headerlink" href="#qcom" title="此标题的永久链接"></a></h1>
+<ul class="simple">
+<li><p>通过<code class="docutils literal notranslate"><span class="pre">update_bootargs</span></code>函数向<code class="docutils literal notranslate"><span class="pre">PaxCmdLine</span></code>添加我们要加的cmdline字符串。</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">edk2/QcomModulePkg/Library/bootLib/update_cmdline.c</span></code>:</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="cm">/*Update command line: appends boot information to the original commandline</span>
+<span class="cm"> *that is taken from boot image header*/</span><span class="w"></span>
+<span class="n">EFI_STATUS</span><span class="w"></span>
+<span class="nf">UpdateCmdLine</span><span class="w"> </span><span class="p">(</span><span class="n">CONST</span><span class="w"> </span><span class="n">CHAR8</span><span class="w"> </span><span class="o">*</span><span class="n">CmdLine</span><span class="p">,</span><span class="w"></span>
+<span class="w">               </span><span class="n">CHAR8</span><span class="w"> </span><span class="o">*</span><span class="n">FfbmStr</span><span class="p">,</span><span class="w"></span>
+<span class="w">               </span><span class="n">BOOLEAN</span><span class="w"> </span><span class="n">Recovery</span><span class="p">,</span><span class="w"></span>
+<span class="w">               </span><span class="n">BOOLEAN</span><span class="w"> </span><span class="n">AlarmBoot</span><span class="p">,</span><span class="w"></span>
+<span class="w">               </span><span class="n">CONST</span><span class="w"> </span><span class="n">CHAR8</span><span class="w"> </span><span class="o">*</span><span class="n">VBCmdLine</span><span class="p">,</span><span class="w"></span>
+<span class="w">               </span><span class="n">CHAR8</span><span class="w"> </span><span class="o">**</span><span class="n">FinalCmdLine</span><span class="p">,</span><span class="w"></span>
+<span class="w">               </span><span class="n">UINT32</span><span class="w"> </span><span class="n">HeaderVersion</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="cm">/*Add by PAXSZ*/</span><span class="w"></span>
+<span class="w">  </span><span class="n">update_bootargs</span><span class="p">(</span><span class="n">PaxCmdLine</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="n">CmdLineLen</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="n">AsciiStrLen</span><span class="w"> </span><span class="p">(</span><span class="n">PaxCmdLine</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">  </span><span class="cm">/*Add by PAXSZ*/</span><span class="w"></span>
+<span class="w">  </span><span class="n">Param</span><span class="p">.</span><span class="n">PaxCmdLine</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">PaxCmdLine</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">  </span><span class="n">Status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">UpdateCmdLineParams</span><span class="w"> </span><span class="p">(</span><span class="o">&amp;</span><span class="n">Param</span><span class="p">,</span><span class="w"> </span><span class="n">FinalCmdLine</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">Status</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">EFI_SUCCESS</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">Status</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>通过<code class="docutils literal notranslate"><span class="pre">bootargs_add</span></code>接口追加cmdline，具体库函数如下：</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="k">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">bootargs_add</span><span class="p">(</span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">key</span><span class="p">,</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">cmdline</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="n">AsciiStrCat</span><span class="p">(</span><span class="n">cmdline</span><span class="p">,</span><span class="w"> </span><span class="s">&quot; &quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="n">AsciiStrCat</span><span class="p">(</span><span class="n">cmdline</span><span class="p">,</span><span class="w"> </span><span class="n">key</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="n">AsciiStrCat</span><span class="p">(</span><span class="n">cmdline</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">);</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="kt">void</span><span class="w"> </span><span class="nf">update_bootargs</span><span class="p">(</span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">cmdline</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="c1">//char cmdline[2048] = {0};</span>
+<span class="w">	</span><span class="kt">char</span><span class="w"> </span><span class="n">tmpbuf</span><span class="p">[</span><span class="mi">128</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="mi">0</span><span class="p">};</span><span class="w"></span>
+<span class="w">	</span><span class="kt">char</span><span class="w"> </span><span class="n">cfginfo</span><span class="p">[</span><span class="mi">1024</span><span class="p">];</span><span class="w"></span>
+<span class="w">    </span><span class="kt">char</span><span class="w"> </span><span class="n">mac</span><span class="p">[</span><span class="mi">16</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="mi">0</span><span class="p">};</span><span class="w"></span>
+<span class="w">	</span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">ptr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">NULL</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="kt">char</span><span class="w"> </span><span class="n">cfginfo_bak</span><span class="p">[</span><span class="mi">1024</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="mi">0</span><span class="p">};</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">memset</span><span class="p">(</span><span class="n">cfginfo</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="k">sizeof</span><span class="p">(</span><span class="n">cfginfo</span><span class="p">));</span><span class="w"></span>
+<span class="w">	</span><span class="n">update_cfg_info</span><span class="p">(</span><span class="n">cfginfo</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="n">ptr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">AsciiStrStr</span><span class="p">(</span><span class="n">cfginfo</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;SN=&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ptr</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="nb">NULL</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="n">len</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ptr</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">cfginfo</span><span class="w"> </span><span class="mi">-1</span><span class="p">;</span><span class="w"> </span><span class="c1">//decrease one blank</span>
+<span class="w">		</span><span class="n">memset</span><span class="p">(</span><span class="n">tmpbuf</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="k">sizeof</span><span class="p">(</span><span class="n">tmpbuf</span><span class="p">));</span><span class="w"></span>
+<span class="w">        </span><span class="n">AsciiSPrint</span><span class="p">(</span><span class="n">tmpbuf</span><span class="p">,</span><span class="w"> </span><span class="n">MAX_PATH_SIZE</span><span class="p">,</span><span class="w"> </span><span class="s">&quot; pax_config_begin=%d &quot;</span><span class="p">,</span><span class="n">len</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="n">AsciiStrCat</span><span class="p">(</span><span class="n">cmdline</span><span class="p">,</span><span class="w"> </span><span class="n">tmpbuf</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">		</span><span class="n">memset</span><span class="p">(</span><span class="n">tmpbuf</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="k">sizeof</span><span class="p">(</span><span class="n">tmpbuf</span><span class="p">));</span><span class="w"></span>
+<span class="w">        </span><span class="n">AsciiSPrint</span><span class="p">(</span><span class="n">tmpbuf</span><span class="p">,</span><span class="w"> </span><span class="n">MAX_PATH_SIZE</span><span class="p">,</span><span class="w"> </span><span class="s">&quot; pax_config_end=%d &quot;</span><span class="p">,</span><span class="n">len</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="n">AsciiStrCpy</span><span class="p">(</span><span class="n">cfginfo_bak</span><span class="p">,</span><span class="w"> </span><span class="n">ptr</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="n">AsciiStrCpy</span><span class="p">(</span><span class="n">ptr</span><span class="p">,</span><span class="w"> </span><span class="n">tmpbuf</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="n">AsciiStrCpy</span><span class="p">(</span><span class="n">ptr</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">AsciiStrLen</span><span class="p">(</span><span class="n">tmpbuf</span><span class="p">),</span><span class="w"> </span><span class="n">cfginfo_bak</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="n">AsciiStrCat</span><span class="p">(</span><span class="n">cmdline</span><span class="p">,</span><span class="w"> </span><span class="n">cfginfo</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+<span class="w">	</span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="n">AsciiStrCat</span><span class="p">(</span><span class="n">cmdline</span><span class="p">,</span><span class="n">cfginfo</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">memset</span><span class="p">(</span><span class="n">cfginfo</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="k">sizeof</span><span class="p">(</span><span class="n">cfginfo</span><span class="p">));</span><span class="w"></span>
+<span class="w">	</span><span class="n">update_auth_info</span><span class="p">(</span><span class="n">cfginfo</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="n">AsciiStrCat</span><span class="p">(</span><span class="n">cmdline</span><span class="p">,</span><span class="n">cfginfo</span><span class="p">);</span><span class="w"></span>
+
+<span class="cp">#if 1</span>
+<span class="w">	</span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">console_debug_value</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;enable&quot;</span><span class="p">;</span><span class="w"></span>
+<span class="cp">#ifndef CONFIG_DEBUG</span>
+<span class="w">	</span><span class="n">console_debug_value</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;disable&quot;</span><span class="p">;</span><span class="w"></span>
+<span class="cp">#endif</span>
+<span class="cp">#if 0</span><span class="c"></span>
+<span class="c">	memset(tmpbuf, 0, sizeof(tmpbuf));</span>
+<span class="c">	AsciiSPrint(tmpbuf, MAX_PATH_SIZE, &quot; console_debug=%s&quot;, console_debug_value);</span>
+<span class="c">	AsciiStrCat(cmdline, tmpbuf);</span>
+<span class="cp">#else</span>
+<span class="w">	</span><span class="n">bootargs_add</span><span class="p">(</span><span class="s">&quot;console_debug=&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="n">console_debug_value</span><span class="p">,</span><span class="w"> </span><span class="n">cmdline</span><span class="p">);</span><span class="w"></span>
+<span class="cp">#endif</span>
+<span class="cp">#endif</span>
+
+<span class="c1">//[FEATURE]-Add-BEGIN by xielianxiong@paxsz.com, 2021/12/13, for init other cmdline property</span>
+
+<span class="w">	</span><span class="n">memset</span><span class="p">(</span><span class="n">tmpbuf</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="k">sizeof</span><span class="p">(</span><span class="n">tmpbuf</span><span class="p">));</span><span class="w"></span>
+<span class="w">	</span><span class="k">if</span><span class="p">(</span><span class="n">bootargs_getvalue</span><span class="p">(</span><span class="s">&quot;EXSN=&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">tmpbuf</span><span class="p">,</span><span class="w"> </span><span class="n">cmdline</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"></span>
+<span class="w">	</span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="n">bootargs_delete</span><span class="p">(</span><span class="s">&quot;EXSN=&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">cmdline</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="n">bootargs_add</span><span class="p">(</span><span class="s">&quot;paxspexsn=&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">tmpbuf</span><span class="p">,</span><span class="w"> </span><span class="n">cmdline</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="p">(</span><span class="mi">0</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">GetEXSN</span><span class="p">(</span><span class="n">tmpbuf</span><span class="p">,</span><span class="n">MAX_OTHER_CFG_LENGTH</span><span class="p">)){</span><span class="w"></span>
+<span class="w">        </span><span class="n">bootargs_add</span><span class="p">(</span><span class="s">&quot;paxspexsn=&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">tmpbuf</span><span class="p">,</span><span class="w"> </span><span class="n">cmdline</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">memset</span><span class="p">(</span><span class="n">tmpbuf</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="k">sizeof</span><span class="p">(</span><span class="n">tmpbuf</span><span class="p">));</span><span class="w"></span>
+<span class="w">	</span><span class="k">if</span><span class="p">(</span><span class="n">bootargs_getvalue</span><span class="p">(</span><span class="s">&quot;SN=&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">tmpbuf</span><span class="p">,</span><span class="w"> </span><span class="n">cmdline</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"></span>
+<span class="w">	</span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="n">bootargs_delete</span><span class="p">(</span><span class="s">&quot;SN=&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">cmdline</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="n">bootargs_add</span><span class="p">(</span><span class="s">&quot;paxspsn=&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">tmpbuf</span><span class="p">,</span><span class="w"> </span><span class="n">cmdline</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="p">(</span><span class="mi">0</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">GetSN</span><span class="p">(</span><span class="n">tmpbuf</span><span class="p">,</span><span class="n">MAX_OTHER_CFG_LENGTH</span><span class="p">)){</span><span class="w"></span>
+<span class="w">        </span><span class="n">bootargs_add</span><span class="p">(</span><span class="s">&quot;paxspsn=&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">tmpbuf</span><span class="p">,</span><span class="w"> </span><span class="n">cmdline</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">memset</span><span class="p">(</span><span class="n">tmpbuf</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="k">sizeof</span><span class="p">(</span><span class="n">tmpbuf</span><span class="p">));</span><span class="w"></span>
+<span class="w">	</span><span class="k">if</span><span class="p">(</span><span class="n">bootargs_getvalue</span><span class="p">(</span><span class="s">&quot;MAC=&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">mac</span><span class="p">,</span><span class="w"> </span><span class="n">cmdline</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"></span>
+<span class="w">	</span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="n">bootargs_delete</span><span class="p">(</span><span class="s">&quot;MAC=&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">cmdline</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="n">AsciiSPrint</span><span class="p">(</span><span class="n">tmpbuf</span><span class="p">,</span><span class="w"> </span><span class="n">MAX_PATH_SIZE</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;%c%c:%c%c:%c%c:%c%c:%c%c:%c%c&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">mac</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">mac</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">mac</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span><span class="n">mac</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span><span class="n">mac</span><span class="p">[</span><span class="mi">4</span><span class="p">],</span><span class="n">mac</span><span class="p">[</span><span class="mi">5</span><span class="p">],</span><span class="w"></span>
+<span class="w">				</span><span class="n">mac</span><span class="p">[</span><span class="mi">6</span><span class="p">],</span><span class="n">mac</span><span class="p">[</span><span class="mi">7</span><span class="p">],</span><span class="n">mac</span><span class="p">[</span><span class="mi">8</span><span class="p">],</span><span class="n">mac</span><span class="p">[</span><span class="mi">9</span><span class="p">],</span><span class="n">mac</span><span class="p">[</span><span class="mi">10</span><span class="p">],</span><span class="n">mac</span><span class="p">[</span><span class="mi">11</span><span class="p">]);</span><span class="w"></span>
+<span class="w">		</span><span class="n">bootargs_add</span><span class="p">(</span><span class="s">&quot;paxspmac=&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">tmpbuf</span><span class="p">,</span><span class="w"> </span><span class="n">cmdline</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="p">(</span><span class="mi">0</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">GetMAC</span><span class="p">(</span><span class="n">tmpbuf</span><span class="p">,</span><span class="n">MAC_NV_LENGTH</span><span class="o">*</span><span class="mi">2</span><span class="o">+</span><span class="mi">5</span><span class="p">)){</span><span class="w"></span>
+<span class="w">        </span><span class="n">bootargs_add</span><span class="p">(</span><span class="s">&quot;paxspmac=&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">tmpbuf</span><span class="p">,</span><span class="w"> </span><span class="n">cmdline</span><span class="p">);</span><span class="c1">//ethmac</span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">    </span><span class="n">memset</span><span class="p">(</span><span class="n">tmpbuf</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="k">sizeof</span><span class="p">(</span><span class="n">tmpbuf</span><span class="p">));</span><span class="w"></span>
+<span class="w">	</span><span class="k">if</span><span class="p">(</span><span class="mi">0</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">GetWifiMAC</span><span class="p">(</span><span class="n">tmpbuf</span><span class="p">,</span><span class="n">MAC_NV_LENGTH</span><span class="o">*</span><span class="mi">2</span><span class="o">+</span><span class="mi">5</span><span class="p">)){</span><span class="w"></span>
+<span class="w">        </span><span class="n">bootargs_add</span><span class="p">(</span><span class="s">&quot;paxwifimac=&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">tmpbuf</span><span class="p">,</span><span class="w"> </span><span class="n">cmdline</span><span class="p">);</span><span class="c1">//wifimac</span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">    </span><span class="n">memset</span><span class="p">(</span><span class="n">tmpbuf</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="k">sizeof</span><span class="p">(</span><span class="n">tmpbuf</span><span class="p">));</span><span class="w"></span>
+<span class="w">	</span><span class="k">if</span><span class="p">(</span><span class="mi">0</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">GetBtMAC</span><span class="p">(</span><span class="n">tmpbuf</span><span class="p">,</span><span class="n">MAC_NV_LENGTH</span><span class="o">*</span><span class="mi">2</span><span class="o">+</span><span class="mi">5</span><span class="p">)){</span><span class="w"></span>
+<span class="w">        </span><span class="n">bootargs_add</span><span class="p">(</span><span class="s">&quot;paxbtmac=&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">tmpbuf</span><span class="p">,</span><span class="w"> </span><span class="n">cmdline</span><span class="p">);</span><span class="c1">//btmac</span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">	</span><span class="c1">//[FEATURE]-BEGIN by (wugangnan@paxsz.com), 2022/09/08 for Turn off power off charging mode when no-battery-startup</span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">is_battery_exist</span><span class="p">())</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="n">bootargs_add</span><span class="p">(</span><span class="s">&quot;start_without_battery=&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;1&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">cmdline</span><span class="p">);</span><span class="c1">//Start without battery</span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+<span class="w">	</span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="n">bootargs_add</span><span class="p">(</span><span class="s">&quot;start_without_battery=&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;0&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">cmdline</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+<span class="w">	</span><span class="c1">//[FEATURE]-END by (wugangnan@paxsz.com), 2022/09/08 for Turn off power off charging mode when no-battery-startup</span>
+<span class="c1">//[FEATURE]-Add-END by xielianxiong@paxsz.com, 2021/12/13, for init other cmdline property</span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+</section>
+<section id="id2">
+<h1>调试方法<a class="headerlink" href="#id2" title="此标题的永久链接"></a></h1>
+<p>可以通过<code class="docutils literal notranslate"><span class="pre">cat</span> <span class="pre">/proc/cmdline</span></code>节点的方式查看是否添加成功：</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>console:/ <span class="c1"># cat /proc/cmdline</span>
+<span class="nv">cgroup_disable</span><span class="o">=</span>pressure rcupdate.rcu_expedited<span class="o">=</span><span class="m">1</span> <span class="nv">rcu_nocbs</span><span class="o">=</span><span class="m">0</span>-7 <span class="nv">kpti</span><span class="o">=</span>off <span class="nv">console</span><span class="o">=</span>ttyMSM0,115200n8 <span class="nv">earlycon</span><span class="o">=[</span>   <span class="m">49</span>.397771<span class="o">]</span> Battery: <span class="o">[</span> status:Charging, health:Good, present:1, tech:Li-ion, capcity:5,cap_rm:211 mah, vol:3850 mv, temp:30, curr:3310 ma, ui_soc:5, notify_code: <span class="m">0</span> <span class="o">]</span>
+msm_geni_serial,0x4a90000 androidboot.hardware<span class="o">=</span>qcom androidboot.console<span class="o">=</span>ttyMSM0 androidboot.memcg<span class="o">=</span><span class="m">1</span> lpm_levels.sleep_disabled<span class="o">=</span><span class="m">1</span> <span class="nv">video</span><span class="o">=</span>vfb:640x400,bpp<span class="o">=</span><span class="m">32</span>,memsize<span class="o">=</span><span class="m">3072000</span> msm_rtb.filter<span class="o">=</span>0x237 service_locator.enable<span class="o">=</span><span class="m">1</span> <span class="nv">swiotlb</span><span class="o">=</span><span class="m">2048</span> loop.max_part<span class="o">=</span><span class="m">7</span> <span class="nv">buildvariant</span><span class="o">=</span>userdebug androidboot.verifiedbootstate<span class="o">=</span>orange androidboot.keymaster<span class="o">=</span><span class="m">1</span> androidboot.vbmeta.device<span class="o">=</span><span class="nv">PARTUUID</span><span class="o">=</span>1bc4422a-31a7-12c2-a4b0-737a73250b0f androidboot.vbmeta.avb_version<span class="o">=</span><span class="m">1</span>.0 androidboot.vbmeta.device_state<span class="o">=</span>unlocked androidboot.vbmeta.hash_alg<span class="o">=</span>sha256 androidboot.vbmeta.size<span class="o">=</span><span class="m">7360</span> androidboot.vbmeta.digest<span class="o">=</span>a04754bbd280a596a2c4f1c5d8ec3b4bbf03a5b2790999a2a222bd3eaf9f4972 androidboot.vbmeta.invalidate_on_error<span class="o">=</span>yes androidboot.veritymode<span class="o">=</span>enforcing androidboot.bootdevice<span class="o">=</span><span class="m">4744000</span>.sdhci androidboot.fstab_suffix<span class="o">=</span>emmc androidboot.boot_devices<span class="o">=</span>soc/4744000.sdhci androidboot.serialno<span class="o">=</span>e4e19011 androidboot.baseband<span class="o">=</span>msm msm_drm.dsi_display0<span class="o">=</span>qcom,mdss_dsi_ili7807S_1080p_video_dpi_480: androidboot.slot_suffix<span class="o">=</span>_a rootwait ro <span class="nv">init</span><span class="o">=</span>/init androidboot.dtbo_idx<span class="o">=</span><span class="m">0</span> androidboot.dtb_idx<span class="o">=</span><span class="m">0</span> <span class="nv">TOUCH_SCREEN</span><span class="o">=</span><span class="m">257</span> <span class="nv">LCD</span><span class="o">=</span><span class="m">257</span> <span class="nv">FPM</span><span class="o">=</span><span class="m">11</span> <span class="nv">WIFI</span><span class="o">=</span><span class="m">36</span> <span class="nv">WIFI_PA</span><span class="o">=</span><span class="m">04</span> <span class="nv">CAMERA_NUMBER</span><span class="o">=</span><span class="m">01</span> <span class="nv">CAMERA_FRONT</span><span class="o">=</span><span class="m">80</span> <span class="nv">MAIN_BOARD</span><span class="o">=</span>V01 <span class="nv">PORT_BOARD</span><span class="o">=</span>V01 <span class="nv">PN</span><span class="o">=</span>A6650-AA200-260A-2N0-EA <span class="nv">CONFIG_FILE_VER</span><span class="o">=</span>2570000_V1.0 <span class="nv">TERMINAL_NAME</span><span class="o">=</span>A6650  <span class="nv">SecMode</span><span class="o">=</span><span class="m">3</span>  <span class="nv">security_level</span><span class="o">=</span><span class="m">3</span>  <span class="nv">TamperClear</span><span class="o">=</span><span class="m">0</span>  <span class="nv">LastBblStatus</span><span class="o">=</span><span class="m">0</span>  <span class="nv">AppDebugStatus</span><span class="o">=</span><span class="m">1</span>  <span class="nv">FirmDebugStatus</span><span class="o">=</span><span class="m">1</span>  <span class="nv">SnDownLoadSum</span><span class="o">=</span><span class="m">0</span>  <span class="nv">UsPukLevel</span><span class="o">=</span><span class="m">3</span>  <span class="nv">Customer</span><span class="o">=</span><span class="m">255</span>  <span class="nv">console_debug</span><span class="o">=</span>disable <span class="nv">start_without_battery</span><span class="o">=</span><span class="m">0</span>
+</pre></div>
+</div>
+</section>
+
+
+           </div>
+             <div class="articleComments">
+                <comments>
+  <script src="https://utteranc.es/client.js"
+    repo="iswbm/magic-python"
+    issue-term="pathname"
+    theme="github-light"
+    crossorigin="anonymous"
+    async>
+  </script>
+</comments>
+             </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; 版权所有 2022, wugn.</p>
+  </div>
+
+  利用 <a href="https://www.sphinx-doc.org/">Sphinx</a> 构建，使用了 
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">主题</a>
+    由 <a href="https://readthedocs.org">Read the Docs</a>开发.
+  
+
+<script charset="UTF-8" id="LA_COLLECT" src="//sdk.51.la/js-sdk-pro.min.js"></script>
+<script>LA.init({id: "JoV5csIHTGhHiGQ4",ck: "JoV5csIHTGhHiGQ4"})</script>
+
+<br/>
+<script id="LA-DATA-WIDGET" crossorigin="anonymous" charset="UTF-8" src="https://v6-widget.51.la/v6/JoV5csIHTGhHiGQ4/quote.js?theme=0&f=12&display=1,0,0,0,0,0,1,1"></script>
+
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

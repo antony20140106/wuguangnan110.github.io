@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="zh-CN" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>wugn</title>
+
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script src="../../../_static/translations.js"></script>
+        <script src="../../../_static/js/baidutongji.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="索引" href="../../../genindex.html" />
+    <link rel="search" title="搜索" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../index.html" class="icon icon-home"> wugn_note
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="在文档中搜索" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">概述</a></li>
+<li><a class="reference internal" href="#id2">参考</a></li>
+<li><a class="reference internal" href="#class">class</a><ul>
+<li><a class="reference internal" href="#class-create-class-register">class_create()和class_register()区别</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#device">device</a><ul>
+<li><a class="reference internal" href="#device-create-device-destroy">device_create()、device_destroy()区别</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#class-create-device-create">class_create()和device_create()关系</a></li>
+<li><a class="reference internal" href="#id3">历程</a></li>
+</ul>
+</div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">wugn_note</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs"> 
+<li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+<li>概述</li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.forward()">Forward</a></li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.back()">Go Back</a> | </li>
+<li style="float: right;margin-left: 10px;"><a href="/index.html">Home</a> | </li>
+
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="id1">
+<h1>概述<a class="headerlink" href="#id1" title="此标题的永久链接"></a></h1>
+<p>本文介绍linux中class_create和device_create的相关使用方法。</p>
+<p>在创建设备时，用户空间的udev会根据/sys/classs/目录下的类信息来生成设备节点，因此再编写driver时，需要用到class_create来创建类节点。内核提供了class_create,class_reigster两个接口，两者作用相同，通常我们只用class_create即可。</p>
+<p>从2.6内核至今，统一使用udev来管理设备文件，相关配置文件路径在<code class="docutils literal notranslate"><span class="pre">/etc/uevent/</span></code>。<code class="docutils literal notranslate"><span class="pre">udev</span></code>以守护进程的形式运行，通过侦听内核发出来的<code class="docutils literal notranslate"><span class="pre">uevent</span></code>来管理<code class="docutils literal notranslate"><span class="pre">/dev</span></code>目录下的设备文件。不像之前的设备管理工具，<code class="docutils literal notranslate"><span class="pre">udev</span></code>在用户空间<code class="docutils literal notranslate"><span class="pre">(user</span> <span class="pre">space)</span></code>运行，而不在内核空间<code class="docutils literal notranslate"><span class="pre">(kernel</span> <span class="pre">space)</span></code>运行。</p>
+</section>
+<section id="id2">
+<h1>参考<a class="headerlink" href="#id2" title="此标题的永久链接"></a></h1>
+<ul class="simple">
+<li><p><a class="reference external" href="https://blog.csdn.net/av_geek/article/details/39299345">class_create和class_register</a></p></li>
+</ul>
+</section>
+<section id="class">
+<h1>class<a class="headerlink" href="#class" title="此标题的永久链接"></a></h1>
+<p>内核同时提供了class_create(…)函数，可以用它来创建一个类，这个类存放于sysfs下面，一旦创建好了这个类，再调用device_create(…)函数来在/dev目录下创建相应的设备节点。这样，加载模块的时候，用户空间中的udev会自动响应device_create(…)函数，去/sysfs下寻找对应的类从而创建设备节点。</p>
+<p><img alt="0022_0003.png" src="../../../_images/0022_0003.png" /></p>
+<section id="class-create-class-register">
+<h2>class_create()和class_register()区别<a class="headerlink" href="#class-create-class-register" title="此标题的永久链接"></a></h2>
+<p>（1）通过class_create()、class_destroy()去注册和注销/sys/class/<name>，自动分配并初始化class对象；</p>
+<p>（2）通过class_register()、class_unregister()去注册和注销/sys/class/<name>，需手动分配并初始化class对象；</p>
+<p>简单理解，class_create()是对class_register()的封装</p>
+</section>
+</section>
+<section id="device">
+<h1>device<a class="headerlink" href="#device" title="此标题的永久链接"></a></h1>
+<p>device相关的函数用于字符设备类，device相关的API用于创建/销毁（注册/注销）一个设备并把该设备注册到sysfs。</p>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">device_create</span><span class="w"> </span><span class="p">(</span><span class="w">	</span><span class="k">struct</span><span class="w"> </span><span class="nc">class</span><span class="w"> </span><span class="o">*</span><span class="w">  	</span><span class="k">class</span><span class="p">,</span><span class="w"></span>
+<span class="w"> 	                            </span><span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w"> </span><span class="o">*</span><span class="w">  	</span><span class="n">parent</span><span class="p">,</span><span class="w"></span>
+<span class="w"> 	                            </span><span class="kt">dev_t</span><span class="w">  	</span><span class="n">devt</span><span class="p">,</span><span class="w"></span>
+<span class="w">                             	</span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="w">  	</span><span class="n">fmt</span><span class="p">,</span><span class="w"></span>
+<span class="w">                         	 	</span><span class="p">...);</span><span class="w"></span>
+<span class="kt">void</span><span class="w"> </span><span class="nf">device_destroy</span><span class="w"> </span><span class="p">(</span><span class="w">	</span><span class="k">struct</span><span class="w"> </span><span class="nc">class</span><span class="w"> </span><span class="o">*</span><span class="w">  	</span><span class="k">class</span><span class="p">,</span><span class="w"></span>
+<span class="w">                     	</span><span class="kt">dev_t</span><span class="w">  	</span><span class="n">devt</span><span class="p">);</span><span class="w"></span>
+<span class="kt">int</span><span class="w"> </span><span class="n">__must_check</span><span class="w"> </span><span class="nf">device_register</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w"> </span><span class="o">*</span><span class="n">dev</span><span class="p">);</span><span class="w"></span>
+<span class="kt">void</span><span class="w"> </span><span class="nf">device_unregister</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w"> </span><span class="o">*</span><span class="n">dev</span><span class="p">);</span><span class="w"></span>
+</pre></div>
+</div>
+<section id="device-create-device-destroy">
+<h2>device_create()、device_destroy()区别<a class="headerlink" href="#device-create-device-destroy" title="此标题的永久链接"></a></h2>
+<p>（1）通过device_create()、device_destroy()去注册和注销一个字符设备，并把该字符设备挂载到指定的class上，这两个函数自动分配并初始化设备对象；</p>
+<p>（2）通过device_register()、device_unregister()去注册和注销一个字符设备，并把该字符设备挂载到指定的class上，这两个函数需要手动分配并初始化设备对象；</p>
+<p>简单理解，device_create()是对device_register()的封装</p>
+</section>
+</section>
+<section id="class-create-device-create">
+<h1>class_create()和device_create()关系<a class="headerlink" href="#class-create-device-create" title="此标题的永久链接"></a></h1>
+<p>内核中定义了struct class结构体，顾名思义，一个struct class结构体类型变量对应一个类，内核同时提供了class_create(…)函数，可以用它来创建一个类，这个类存放于sysfs下面，一旦创建好了这个类，再调用device_create(…)函数来在/dev目录下创建相应的设备节点。这样，加载模块的时候，用户空间中的udev会自动响应device_create(…)函数，去/sysfs下寻找对应的类从而创建设备节点。</p>
+<p>说白了，class_create这个函数就是创建一个类，还需device_create在这个类下面创建设备，不然的话这个类没什么用。</p>
+</section>
+<section id="id3">
+<h1>历程<a class="headerlink" href="#id3" title="此标题的永久链接"></a></h1>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="cm">/* charger sysfs in /sys/class/chg_info for debug start */</span><span class="w"></span>
+<span class="k">static</span><span class="w"> </span><span class="kt">ssize_t</span><span class="w"> </span><span class="nf">mp2721_store_registers</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w"> </span><span class="o">*</span><span class="n">dev</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="k">struct</span><span class="w"> </span><span class="nc">device_attribute</span><span class="w"> </span><span class="o">*</span><span class="n">attr</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">buf</span><span class="p">,</span><span class="w"> </span><span class="kt">size_t</span><span class="w"> </span><span class="n">count</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+
+<span class="w">	</span><span class="kt">int</span><span class="w"> </span><span class="n">ret</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">reg</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">val</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sscanf</span><span class="p">(</span><span class="n">buf</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;%x %x&quot;</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">reg</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">val</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="n">chr_mp2721_info</span><span class="p">(</span><span class="s">&quot;reg=0x%02x val=0x%02x</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">reg</span><span class="p">,</span><span class="w"> </span><span class="n">val</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ret</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">reg</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="mh">0x18</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="n">mp2721_write_byte</span><span class="p">(</span><span class="w"> </span><span class="p">(</span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">char</span><span class="p">)</span><span class="n">reg</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">char</span><span class="p">)</span><span class="n">val</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+
+<span class="w">	</span><span class="k">return</span><span class="w"> </span><span class="n">count</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">ssize_t</span><span class="w"> </span><span class="nf">mp2721_show_charge_fault</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w"> </span><span class="o">*</span><span class="n">dev</span><span class="p">,</span><span class="w"></span>
+<span class="w">				</span><span class="k">struct</span><span class="w"> </span><span class="nc">device_attribute</span><span class="w"> </span><span class="o">*</span><span class="n">attr</span><span class="p">,</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">buf</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">g_mp2721_info</span><span class="o">-&gt;</span><span class="n">charge_fault</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">_get_fault_status</span><span class="p">();</span><span class="w"></span>
+<span class="w">	</span><span class="k">return</span><span class="w"> </span><span class="n">scnprintf</span><span class="p">(</span><span class="n">buf</span><span class="p">,</span><span class="w"> </span><span class="n">PAGE_SIZE</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;%s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">psy_chr_fault_text</span><span class="p">[</span><span class="n">g_mp2721_info</span><span class="o">-&gt;</span><span class="n">charge_fault</span><span class="p">]);</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">ssize_t</span><span class="w"> </span><span class="nf">mp2721_show_ichg</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w"> </span><span class="o">*</span><span class="n">dev</span><span class="p">,</span><span class="w"></span>
+<span class="w">				</span><span class="k">struct</span><span class="w"> </span><span class="nc">device_attribute</span><span class="w"> </span><span class="o">*</span><span class="n">attr</span><span class="p">,</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">buf</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="kt">int</span><span class="w"> </span><span class="n">val</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">val</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">_get_charge_cur_limit</span><span class="p">();</span><span class="w"></span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">val</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"></span>
+<span class="w">		</span><span class="k">return</span><span class="w"> </span><span class="n">val</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="k">else</span><span class="w"></span>
+<span class="w">		</span><span class="k">return</span><span class="w"> </span><span class="n">scnprintf</span><span class="p">(</span><span class="n">buf</span><span class="p">,</span><span class="w"> </span><span class="n">PAGE_SIZE</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;%d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">val</span><span class="p">);</span><span class="w">    </span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">ssize_t</span><span class="w"> </span><span class="nf">mp2721_store_ichg</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w"> </span><span class="o">*</span><span class="n">dev</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="k">struct</span><span class="w"> </span><span class="nc">device_attribute</span><span class="w"> </span><span class="o">*</span><span class="n">attr</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">buf</span><span class="p">,</span><span class="w"> </span><span class="kt">size_t</span><span class="w"> </span><span class="n">count</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="kt">int</span><span class="w"> </span><span class="n">val</span><span class="p">,</span><span class="n">ret</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">sscanf</span><span class="p">(</span><span class="n">buf</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;%d&quot;</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">val</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">val</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="n">MP2721_ICC_MAX</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="n">g_mp2721_info</span><span class="o">-&gt;</span><span class="n">cfg</span><span class="p">.</span><span class="n">charge_current</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">val</span><span class="p">;</span><span class="w"></span>
+<span class="w">		</span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">_set_charge_cur_limit</span><span class="p">(</span><span class="n">val</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ret</span><span class="p">)</span><span class="w"></span>
+<span class="w">			</span><span class="k">return</span><span class="w"> </span><span class="n">ret</span><span class="p">;</span><span class="w"></span>
+<span class="w">		</span><span class="k">else</span><span class="w"></span>
+<span class="w">			</span><span class="k">return</span><span class="w"> </span><span class="n">count</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="k">return</span><span class="w"> </span><span class="o">-</span><span class="n">EINVAL</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">ssize_t</span><span class="w"> </span><span class="nf">mp2721_show_aicr</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w"> </span><span class="o">*</span><span class="n">dev</span><span class="p">,</span><span class="w"></span>
+<span class="w">				</span><span class="k">struct</span><span class="w"> </span><span class="nc">device_attribute</span><span class="w"> </span><span class="o">*</span><span class="n">attr</span><span class="p">,</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">buf</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="kt">int</span><span class="w"> </span><span class="n">val</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">val</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">_get_input_cur_limit</span><span class="p">();</span><span class="w"></span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">val</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"></span>
+<span class="w">		</span><span class="k">return</span><span class="w"> </span><span class="n">val</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="k">else</span><span class="w"></span>
+<span class="w">		</span><span class="k">return</span><span class="w"> </span><span class="n">scnprintf</span><span class="p">(</span><span class="n">buf</span><span class="p">,</span><span class="w"> </span><span class="n">PAGE_SIZE</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;%d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">val</span><span class="p">);</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">ssize_t</span><span class="w"> </span><span class="nf">mp2721_store_aicr</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w"> </span><span class="o">*</span><span class="n">dev</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="k">struct</span><span class="w"> </span><span class="nc">device_attribute</span><span class="w"> </span><span class="o">*</span><span class="n">attr</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">buf</span><span class="p">,</span><span class="w"> </span><span class="kt">size_t</span><span class="w"> </span><span class="n">count</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="kt">int</span><span class="w"> </span><span class="n">val</span><span class="p">,</span><span class="n">ret</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">sscanf</span><span class="p">(</span><span class="n">buf</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;%d&quot;</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">val</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">val</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="n">MP2721_ICC_MAX</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="n">g_mp2721_info</span><span class="o">-&gt;</span><span class="n">cfg</span><span class="p">.</span><span class="n">iin_limit</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">val</span><span class="p">;</span><span class="w"></span>
+<span class="w">		</span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">_set_input_cur_limit</span><span class="p">(</span><span class="n">val</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ret</span><span class="p">)</span><span class="w"></span>
+<span class="w">			</span><span class="k">return</span><span class="w"> </span><span class="n">ret</span><span class="p">;</span><span class="w"></span>
+<span class="w">		</span><span class="k">else</span><span class="w"></span>
+<span class="w">			</span><span class="k">return</span><span class="w"> </span><span class="n">count</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="k">return</span><span class="w"> </span><span class="o">-</span><span class="n">EINVAL</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">ssize_t</span><span class="w"> </span><span class="nf">mp2721_show_power_path</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w"> </span><span class="o">*</span><span class="n">dev</span><span class="p">,</span><span class="w"></span>
+<span class="w">				</span><span class="k">struct</span><span class="w"> </span><span class="nc">device_attribute</span><span class="w"> </span><span class="o">*</span><span class="n">attr</span><span class="p">,</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">buf</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="kt">bool</span><span class="w"> </span><span class="n">val</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">val</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">_get_en_buck</span><span class="p">();</span><span class="w"></span>
+
+<span class="w">	</span><span class="k">return</span><span class="w"> </span><span class="n">scnprintf</span><span class="p">(</span><span class="n">buf</span><span class="p">,</span><span class="w"> </span><span class="n">PAGE_SIZE</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;%d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">val</span><span class="p">);</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">ssize_t</span><span class="w"> </span><span class="nf">mp2721_store_power_path</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w"> </span><span class="o">*</span><span class="n">dev</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="k">struct</span><span class="w"> </span><span class="nc">device_attribute</span><span class="w"> </span><span class="o">*</span><span class="n">attr</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">buf</span><span class="p">,</span><span class="w"> </span><span class="kt">size_t</span><span class="w"> </span><span class="n">count</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="kt">int</span><span class="w"> </span><span class="n">val</span><span class="p">,</span><span class="n">ret</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">sscanf</span><span class="p">(</span><span class="n">buf</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;%d&quot;</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">val</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">_set_en_buck</span><span class="p">(</span><span class="n">val</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ret</span><span class="p">)</span><span class="w"></span>
+<span class="w">		</span><span class="k">return</span><span class="w"> </span><span class="n">ret</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="k">else</span><span class="w"></span>
+<span class="w">		</span><span class="k">return</span><span class="w"> </span><span class="n">count</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">ssize_t</span><span class="w"> </span><span class="nf">mp2721_show_charge_type</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w"> </span><span class="o">*</span><span class="n">dev</span><span class="p">,</span><span class="w"></span>
+<span class="w">				</span><span class="k">struct</span><span class="w"> </span><span class="nc">device_attribute</span><span class="w"> </span><span class="o">*</span><span class="n">attr</span><span class="p">,</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">buf</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="k">return</span><span class="w"> </span><span class="n">scnprintf</span><span class="p">(</span><span class="n">buf</span><span class="p">,</span><span class="w"> </span><span class="n">PAGE_SIZE</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;%s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">psy_type_text</span><span class="p">[</span><span class="n">g_mp2721_info</span><span class="o">-&gt;</span><span class="n">charge_type</span><span class="p">]);</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="k">static</span><span class="w"> </span><span class="n">DEVICE_ATTR</span><span class="p">(</span><span class="n">registers</span><span class="p">,</span><span class="w"> </span><span class="mo">0600</span><span class="p">,</span><span class="w"> </span><span class="n">mp2721_show_registers</span><span class="p">,</span><span class="w"> </span><span class="n">mp2721_store_registers</span><span class="p">);</span><span class="w"></span>
+<span class="k">static</span><span class="w"> </span><span class="n">DEVICE_ATTR</span><span class="p">(</span><span class="n">charge_fault</span><span class="p">,</span><span class="w"> </span><span class="n">S_IRUGO</span><span class="p">,</span><span class="w"> </span><span class="n">mp2721_show_charge_fault</span><span class="p">,</span><span class="w"> </span><span class="nb">NULL</span><span class="p">);</span><span class="w"></span>
+<span class="k">static</span><span class="w"> </span><span class="n">DEVICE_ATTR</span><span class="p">(</span><span class="n">ichg</span><span class="p">,</span><span class="w"> </span><span class="mo">0644</span><span class="p">,</span><span class="w"> </span><span class="n">mp2721_show_ichg</span><span class="p">,</span><span class="w"> </span><span class="n">mp2721_store_ichg</span><span class="p">);</span><span class="w"></span>
+<span class="k">static</span><span class="w"> </span><span class="n">DEVICE_ATTR</span><span class="p">(</span><span class="n">aicr</span><span class="p">,</span><span class="w"> </span><span class="mo">0644</span><span class="p">,</span><span class="w"> </span><span class="n">mp2721_show_aicr</span><span class="p">,</span><span class="w"> </span><span class="n">mp2721_store_aicr</span><span class="p">);</span><span class="w"></span>
+<span class="k">static</span><span class="w"> </span><span class="n">DEVICE_ATTR</span><span class="p">(</span><span class="n">power_path</span><span class="p">,</span><span class="w"> </span><span class="mo">0644</span><span class="p">,</span><span class="w"> </span><span class="n">mp2721_show_power_path</span><span class="p">,</span><span class="w"> </span><span class="n">mp2721_store_power_path</span><span class="p">);</span><span class="w"></span>
+<span class="k">static</span><span class="w"> </span><span class="n">DEVICE_ATTR</span><span class="p">(</span><span class="n">charge_type</span><span class="p">,</span><span class="w"> </span><span class="n">S_IRUGO</span><span class="p">,</span><span class="w"> </span><span class="n">mp2721_show_charge_type</span><span class="p">,</span><span class="w"> </span><span class="nb">NULL</span><span class="p">);</span><span class="w"></span>
+<span class="cm">/* charger sysfs in /sys/class/chg_info for debug end */</span><span class="w"></span>
+
+
+<span class="cm">/* cdev file ops */</span><span class="w"></span>
+<span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">cdev_open</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">inode</span><span class="w"> </span><span class="o">*</span><span class="n">inode</span><span class="p">,</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">file</span><span class="w"> </span><span class="o">*</span><span class="n">file</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">cdev_release</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">inode</span><span class="w"> </span><span class="o">*</span><span class="n">inode</span><span class="p">,</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">file</span><span class="w"> </span><span class="o">*</span><span class="n">file</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">long</span><span class="w"> </span><span class="nf">cdev_ioctl</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">file</span><span class="w"> </span><span class="o">*</span><span class="n">file</span><span class="p">,</span><span class="w"> </span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">cmd</span><span class="p">,</span><span class="w"> </span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">long</span><span class="w"> </span><span class="n">arg</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">long</span><span class="w"> </span><span class="nf">cdev_compat_ioctl</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">file</span><span class="w"> </span><span class="o">*</span><span class="n">file</span><span class="p">,</span><span class="w"> </span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">cmd</span><span class="p">,</span><span class="w"> </span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">long</span><span class="w"> </span><span class="n">arg</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="k">return</span><span class="w"> </span><span class="n">cdev_ioctl</span><span class="p">(</span><span class="n">file</span><span class="p">,</span><span class="w"> </span><span class="n">cmd</span><span class="p">,</span><span class="w"> </span><span class="n">arg</span><span class="p">);</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="k">static</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">file_operations</span><span class="w"> </span><span class="n">cdev_file_operations</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">owner</span><span class="w">          </span><span class="o">=</span><span class="w"> </span><span class="n">THIS_MODULE</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">open</span><span class="w">           </span><span class="o">=</span><span class="w"> </span><span class="n">cdev_open</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">release</span><span class="w">        </span><span class="o">=</span><span class="w"> </span><span class="n">cdev_release</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">unlocked_ioctl</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cdev_ioctl</span><span class="p">,</span><span class="w"></span>
+<span class="cp">#ifdef CONFIG_COMPAT</span>
+<span class="w">	</span><span class="p">.</span><span class="n">compat_ioctl</span><span class="w">   </span><span class="o">=</span><span class="w"> </span><span class="n">cdev_compat_ioctl</span><span class="w"></span>
+<span class="cp">#endif</span>
+<span class="p">};</span><span class="w"></span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">mp2721_charger_probe</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">i2c_client</span><span class="w"> </span><span class="o">*</span><span class="n">client</span><span class="p">,</span><span class="w"></span>
+<span class="w">				 </span><span class="k">const</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">i2c_device_id</span><span class="w"> </span><span class="o">*</span><span class="n">id</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="cm">/* cdev */</span><span class="w"></span>
+<span class="w">	</span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">alloc_chrdev_region</span><span class="p">(</span><span class="o">&amp;</span><span class="n">c_devno</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">MP2721_DEVICE_NAME</span><span class="p">))</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">			</span><span class="n">chr_mp2721_err</span><span class="p">(</span><span class="s">&quot;alloc chrdev region fail!&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">			</span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">-1</span><span class="p">;</span><span class="w"></span>
+<span class="w">			</span><span class="k">goto</span><span class="w"> </span><span class="n">cdev_fail_1</span><span class="p">;</span><span class="w"></span>
+<span class="w">		</span><span class="p">}</span><span class="w"></span>
+
+<span class="w">		</span><span class="n">c_dev</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cdev_alloc</span><span class="p">();</span><span class="w"></span>
+<span class="w">		</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">IS_ERR_OR_NULL</span><span class="p">(</span><span class="n">c_dev</span><span class="p">))</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">			</span><span class="n">chr_mp2721_err</span><span class="p">(</span><span class="s">&quot;cdev alloc fail!&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">			</span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">-1</span><span class="p">;</span><span class="w"></span>
+<span class="w">			</span><span class="k">goto</span><span class="w"> </span><span class="n">cdev_fail_2</span><span class="p">;</span><span class="w"></span>
+<span class="w">		</span><span class="p">}</span><span class="w"></span>
+
+<span class="w">		</span><span class="n">cdev_init</span><span class="p">(</span><span class="n">c_dev</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">cdev_file_operations</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cdev_add</span><span class="p">(</span><span class="n">c_dev</span><span class="p">,</span><span class="w"> </span><span class="n">c_devno</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ret</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">			</span><span class="n">chr_mp2721_err</span><span class="p">(</span><span class="s">&quot;cdev add fail!&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">			</span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">-1</span><span class="p">;</span><span class="w"></span>
+<span class="w">			</span><span class="k">goto</span><span class="w"> </span><span class="n">cdev_fail_2</span><span class="p">;</span><span class="w"></span>
+<span class="w">		</span><span class="p">}</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+
+<span class="w">	</span><span class="cm">/* class/pax */</span><span class="w"></span>
+<span class="w">	</span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="n">chg_class</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">class_create</span><span class="p">(</span><span class="n">THIS_MODULE</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;chg_info&quot;</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">		</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">IS_ERR_OR_NULL</span><span class="p">(</span><span class="n">chg_class</span><span class="p">))</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">			</span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">PTR_ERR</span><span class="p">(</span><span class="n">chg_class</span><span class="p">);</span><span class="w"></span>
+<span class="w">			</span><span class="n">chr_mp2721_err</span><span class="p">(</span><span class="s">&quot;Unable to create class, err = %d&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">ret</span><span class="p">);</span><span class="w"></span>
+<span class="w">			</span><span class="k">goto</span><span class="w"> </span><span class="n">class_fail</span><span class="p">;</span><span class="w"></span>
+<span class="w">		</span><span class="p">}</span><span class="w"></span>
+
+<span class="w">		</span><span class="n">dev</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">device_create</span><span class="p">(</span><span class="n">chg_class</span><span class="p">,</span><span class="w"> </span><span class="nb">NULL</span><span class="p">,</span><span class="w"> </span><span class="n">c_devno</span><span class="p">,</span><span class="w"> </span><span class="nb">NULL</span><span class="p">,</span><span class="w"> </span><span class="n">MP2721_DEVICE_NAME</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">		</span><span class="cm">/* device attributes for debugging */</span><span class="w"></span>
+<span class="w">		</span><span class="n">device_create_file</span><span class="p">(</span><span class="n">dev</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">dev_attr_registers</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="n">device_create_file</span><span class="p">(</span><span class="n">dev</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">dev_attr_charge_fault</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="n">device_create_file</span><span class="p">(</span><span class="n">dev</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">dev_attr_ichg</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="n">device_create_file</span><span class="p">(</span><span class="n">dev</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">dev_attr_aicr</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="n">device_create_file</span><span class="p">(</span><span class="n">dev</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">dev_attr_power_path</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="n">device_create_file</span><span class="p">(</span><span class="n">dev</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">dev_attr_charge_type</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>class_create在/sys/class下新建了chg_info目录。</p></li>
+<li><p>device_create在/sys/devices/virtual/mp2721目录下创建新的逻辑设备目录，在/dev/mp2721目录下创建于逻辑类对应的设备文件并绑定了IO操作函数cdev_file_operations。</p></li>
+<li><p>device_create_file在/sys/class/chg_info新建了debug目录。</p></li>
+</ul>
+</section>
+
+
+           </div>
+             <div class="articleComments">
+                <comments>
+  <script src="https://utteranc.es/client.js"
+    repo="iswbm/magic-python"
+    issue-term="pathname"
+    theme="github-light"
+    crossorigin="anonymous"
+    async>
+  </script>
+</comments>
+             </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; 版权所有 2022, wugn.</p>
+  </div>
+
+  利用 <a href="https://www.sphinx-doc.org/">Sphinx</a> 构建，使用了 
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">主题</a>
+    由 <a href="https://readthedocs.org">Read the Docs</a>开发.
+  
+
+<script charset="UTF-8" id="LA_COLLECT" src="//sdk.51.la/js-sdk-pro.min.js"></script>
+<script>LA.init({id: "JoV5csIHTGhHiGQ4",ck: "JoV5csIHTGhHiGQ4"})</script>
+
+<br/>
+<script id="LA-DATA-WIDGET" crossorigin="anonymous" charset="UTF-8" src="https://v6-widget.51.la/v6/JoV5csIHTGhHiGQ4/quote.js?theme=0&f=12&display=1,0,0,0,0,0,1,1"></script>
+
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

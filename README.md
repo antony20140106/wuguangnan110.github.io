@@ -1,6 +1,6 @@
 # README
 
-Android文档记录，整理归档知识体系。
+成功固然值得庆祝，而更值得铭记的是过程，本网站主要为本人学习文档记录，整理归档知识体系。
 
 * [个人早期博客园(CSDN)文档](http://blog.csdn.net/u011784994)
 * [个人GitHub账号：wuguangnan110](https://github.com/wuguangnan110)
@@ -9,16 +9,15 @@ Android文档记录，整理归档知识体系。
 # 常用链接
 
 * [Android官方代码跟踪](https://cs.android.com/android/platform/superproject)
-  * [Android 7 ~ 最新](http://aospxref.com/)
-  * [Android 1 ~ 9](http://androidxref.com/)
+  * [Android最新源码](http://aospxref.com/)
 * [Linux源代码在线检索](https://elixir.bootlin.com/linux/latest/source)
 * [The Linux Kernel’s documentation](https://www.kernel.org/doc/html/latest/)
-* [i.MX驱动测试软件](https://source.codeaurora.org/external/imx/imx-test/)
 
 # docs
 
 NO.|文件名称|摘要
 :--:|:--|:--
+0022| [Android](src/0022_Android/README.md) | 记录一些零散的Android方面的学习知识。
 0021| [Linux](src/0021_Linux/README.md) | 记录一些零散的Linux方面的使用文档
 0020| [battery_gauge](src/0020_battery_gauge/README.md) | 记录一下android平台电量计驱动软件架构和调试过程。
 0019| [display_tp_function](src/0019_display_tp_function/README.md) | 记录一下android平台tp、显示驱动功能实现。

@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="zh-CN" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>wugn</title>
+
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script src="../../../_static/translations.js"></script>
+        <script src="../../../_static/js/baidutongji.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="索引" href="../../../genindex.html" />
+    <link rel="search" title="搜索" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../index.html" class="icon icon-home"> wugn_note
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="在文档中搜索" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">README</a></li>
+<li><a class="reference internal" href="#refers">refers</a></li>
+<li><a class="reference internal" href="#id1">分析</a></li>
+<li><a class="reference internal" href="#androidproducts-mk">AndroidProducts.mk如何被加载</a></li>
+<li><a class="reference internal" href="#bengal-mk">查看bengal.mk包含关系</a></li>
+</ul>
+</div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">wugn_note</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs"> 
+<li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+<li>README</li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.forward()">Forward</a></li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.back()">Go Back</a> | </li>
+<li style="float: right;margin-left: 10px;"><a href="/index.html">Home</a> | </li>
+
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="readme">
+<h1>README<a class="headerlink" href="#readme" title="此标题的永久链接"></a></h1>
+<p>以高通平台qcm229为例，分析一下lunch product到底干了什么，又是如何检索所有的mk文件的，<code class="docutils literal notranslate"><span class="pre">AndroidProducts.mk</span></code>这个是Android lunch的起始文件分析一下，有助于理解device下的架构。</p>
+</section>
+<section id="refers">
+<h1>refers<a class="headerlink" href="#refers" title="此标题的永久链接"></a></h1>
+<ul class="simple">
+<li><p><a class="reference external" href="https://blog.csdn.net/daoshuti/article/details/108513784">七、AndroidProducts.mk</a></p></li>
+</ul>
+</section>
+<section id="id1">
+<h1>分析<a class="headerlink" href="#id1" title="此标题的永久链接"></a></h1>
+<p>我们A6650项目目前编译的项目名为<code class="docutils literal notranslate"><span class="pre">bengal</span></code>，首先看看其目录下<code class="docutils literal notranslate"><span class="pre">AndroidProducts.mk</span></code>内容：</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>wugn@jcrj-tf-compile:UM.9.15$ cat device/qcom/bengal/AndroidProducts.mk
+PRODUCT_MAKEFILES :<span class="o">=</span> <span class="se">\</span>
+        <span class="k">$(</span>LOCAL_DIR<span class="k">)</span>/bengal.mk
+
+COMMON_LUNCH_CHOICES :<span class="o">=</span> <span class="se">\</span>
+        bengal-userdebug <span class="se">\</span>
+        bengal-user <span class="se">\</span>
+        bengal-wifionlyuserdebug <span class="se">\</span>
+        bengal-wifionlyuser
+</pre></div>
+</div>
+<p>从上面的配置可知，qcom在bengal源码中加了如下四个默认的<code class="docutils literal notranslate"><span class="pre">lunch-combo</span></code>配置，lunch-combo会用-分隔，前面的是项目名、后面是版本类型（user、userdebug、eng）。</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>bengal-userdebug 
+bengal-user 
+bengal-wifionlyuserdebug 
+bengal-wifionlyuser
+</pre></div>
+</div>
+</section>
+<section id="androidproducts-mk">
+<h1>AndroidProducts.mk如何被加载<a class="headerlink" href="#androidproducts-mk" title="此标题的永久链接"></a></h1>
+<ul class="simple">
+<li><p>当用户执行lunch命令时会调用get_build_var、build_build_var_cache等shell函数</p></li>
+<li><p>这些shell函数又会调用build/soong/soong_ui.bash –dumpvar-mode</p></li>
+<li><p>soong_ui.bash走到/build/soong/cmd/soong_ui/main.go中的main函数中</p></li>
+<li><p>main函数中调用build.FindSources(buildCtx, config, f)</p></li>
+<li><p>FindSources代码逻辑如下:</p>
+<ul>
+<li><p>在device、vendor、product目录中查找AndroidProducts.mk文件。</p></li>
+<li><p>并将所有的名为AndroidProducts.mk文件路径记录在AndroidProducts.mk.list中
+备注：这函数的作用不止如此，还会查找<code class="docutils literal notranslate"><span class="pre">Android.mk</span></code>、<code class="docutils literal notranslate"><span class="pre">Android.bp</span></code>、<code class="docutils literal notranslate"><span class="pre">CleanSpec.mk</span></code>等文件。</p></li>
+</ul>
+</li>
+</ul>
+</section>
+<section id="bengal-mk">
+<h1>查看bengal.mk包含关系<a class="headerlink" href="#bengal-mk" title="此标题的永久链接"></a></h1>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">device/qcom/bengal/bengal.mk</span></code>主要看<code class="docutils literal notranslate"><span class="pre">common64.mk</span></code>:</p></li>
+</ul>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>ifeq <span class="o">(</span><span class="k">$(</span>ENABLE_VIRTUAL_AB<span class="k">)</span>, <span class="nb">true</span><span class="o">)</span>
+<span class="k">$(</span>call inherit-product, <span class="k">$(</span>SRC_TARGET_DIR<span class="k">)</span>/product/virtual_ab_ota.mk<span class="k">)</span>
+endif
+
+ifneq <span class="o">(</span><span class="k">$(</span>strip <span class="k">$(</span>BOARD_DYNAMIC_PARTITION_ENABLE<span class="k">))</span>,true<span class="o">)</span>
+<span class="k">$(</span>call inherit-product, build/make/target/product/gsi_keys.mk<span class="k">)</span>
+endif
+
+<span class="c1">#这个重要</span>
+<span class="k">$(</span>call inherit-product, device/qcom/vendor-common/common64.mk<span class="k">)</span>
+
+<span class="c1">#下面两个没有：</span>
+<span class="c1">###################################################################################</span>
+<span class="c1"># This is the End of target.mk file.</span>
+<span class="c1"># Now, Pickup other split product.mk files:</span>
+<span class="c1">###################################################################################</span>
+<span class="c1"># TODO: Relocate the system product.mk files pickup into qssi lunch, once it is up.</span>
+<span class="k">$(</span>call inherit-product-if-exists, vendor/qcom/defs/product-defs/system/*.mk<span class="k">)</span>
+<span class="k">$(</span>call inherit-product-if-exists, vendor/qcom/defs/product-defs/vendor/*.mk<span class="k">)</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">vendor-common/common64.mk</span></code>:</p></li>
+</ul>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="k">$(</span>call inherit-product, device/qcom/vendor-common/base.mk<span class="k">)</span>
+
+<span class="c1"># For PRODUCT_COPY_FILES, the first instance takes precedence.</span>
+<span class="c1"># Since we want use QC specific files, we should inherit</span>
+<span class="c1"># device-vendor.mk first to make sure QC specific files gets installed.</span>
+<span class="k">$(</span>call inherit-product-if-exists, <span class="k">$(</span>QCPATH<span class="k">)</span>/common/config/device-vendor-qssi.mk<span class="k">)</span>
+<span class="k">$(</span>call inherit-product, <span class="k">$(</span>SRC_TARGET_DIR<span class="k">)</span>/product/core_64_bit.mk<span class="k">)</span>
+<span class="k">$(</span>call inherit-product, <span class="k">$(</span>SRC_TARGET_DIR<span class="k">)</span>/product/aosp_base_telephony.mk<span class="k">)</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>bengal.mk</p>
+<ul>
+<li><p>common64.mk</p>
+<ul>
+<li><p>base.mk</p></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</section>
+
+
+           </div>
+             <div class="articleComments">
+                <comments>
+  <script src="https://utteranc.es/client.js"
+    repo="iswbm/magic-python"
+    issue-term="pathname"
+    theme="github-light"
+    crossorigin="anonymous"
+    async>
+  </script>
+</comments>
+             </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; 版权所有 2022, wugn.</p>
+  </div>
+
+  利用 <a href="https://www.sphinx-doc.org/">Sphinx</a> 构建，使用了 
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">主题</a>
+    由 <a href="https://readthedocs.org">Read the Docs</a>开发.
+  
+
+<script charset="UTF-8" id="LA_COLLECT" src="//sdk.51.la/js-sdk-pro.min.js"></script>
+<script>LA.init({id: "JoV5csIHTGhHiGQ4",ck: "JoV5csIHTGhHiGQ4"})</script>
+
+<br/>
+<script id="LA-DATA-WIDGET" crossorigin="anonymous" charset="UTF-8" src="https://v6-widget.51.la/v6/JoV5csIHTGhHiGQ4/quote.js?theme=0&f=12&display=1,0,0,0,0,0,1,1"></script>
+
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
