@@ -1,6 +1,6 @@
 # README
 
-以高通平台qcm229为例，分析一下QSSI是什么。
+以高通平台qcm2290为例，分析一下QSSI是什么。
 
 # refers
 

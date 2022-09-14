@@ -1,6 +1,6 @@
 # README
 
-以高通平台qcm229为例，分析一下lunch product到底干了什么，又是如何检索所有的mk文件的，`AndroidProducts.mk`这个是Android lunch的起始文件分析一下，有助于理解device下的架构。
+以高通平台qcm2290为例，分析一下lunch product到底干了什么，又是如何检索所有的mk文件的，`AndroidProducts.mk`这个是Android lunch的起始文件分析一下，有助于理解device下的架构。
 
 # refers
 

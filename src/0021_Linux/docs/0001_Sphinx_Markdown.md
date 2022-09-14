@@ -21,6 +21,8 @@
 * [make: sphinx-build: Command not found](https://blog.csdn.net/Will_Ye/article/details/106319473)
 * [Sphinx_Demo](refers/Sphinx_Demo)
 * [Sphinx入门教程](https://blog.csdn.net/weixin_47319129/article/details/125309657)
+* [Sphinx Themes Gallery](https://sphinx-themes.org/)
+* [Sphinx 使用手册](https://zh-sphinx-doc.readthedocs.io/en/latest/rest.html)
 
 gittee搭建：
 * [利用Gitee+Hexo搭建个人网站](https://zhuanlan.zhihu.com/p/269420507)
@@ -49,6 +51,17 @@ GitHub.io 就是GitPage，GitPage 是一个用于展示你的项目和项目网�
 * [GitHub.io 使用教程](https://www.jianshu.com/p/22b413e3da53)
 
 # sphinx环境配置
+
+这里先简单说明一下各个文件的作用：
+* build：生成的文件的输出目录
+* source: 存放文档源文件
+  * _static：静态文件目录，比如图片等
+  * _templates：模板目录
+  * conf.py：进行 Sphinx 的配置，如主题配置等
+  * index.rst：文档项目起始文件，用于配置文档的显示结构
+* cmd.bat：这是自己加的脚本文件（里面的内容是‘cmd.exe’）,用于快捷的打开windows的命令行
+* make.bat：Windows 命令行中编译用的脚本
+* Makefile：编译脚本，make 命令编译时用
 
 首先保障python3环境正常，并执行以下命令：
 * pip3 install sphinx
@@ -420,7 +433,38 @@ utterances 不支持在评论区直接引用他人的评论进行多级回复
 
 # 增加网站统计
 
+首先在* [51.LA](https://v6.51.la/)中添加自己想要统计的域名：
 
-## 增加网站挂件
+![0001_0011.png](images/0001_0011.png)
 
+## 增加网站统计挂件
+
+进入查看报表->配置->参数配置中，将以下两行代码添加到`_templates/footer.html`文件中：
+
+![0001_0010.png](images/0001_0010.png)
 ![0001_0009.png](images/0001_0009.png)
+
+* 代码添加：
+```xml
+{% extends '!footer.html' %}
+
+{% block extrafooter %}
+
+<script charset="UTF-8" id="LA_COLLECT" src="//sdk.51.la/js-sdk-pro.min.js"></script>
+<script>LA.init({id: "JoV5csIHTGhHiGQ4",ck: "JoV5csIHTGhHiGQ4"})</script>
+
+<br/>
+<script id="LA-DATA-WIDGET" crossorigin="anonymous" charset="UTF-8" src="https://v6-widget.51.la/v6/JoV5csIHTGhHiGQ4/quote.js?theme=#4C8AC2,#BB2626,#040000,#333333,#AE3535,#1690FF,14&f=14"></script>
+
+{% endblock %}
+```
+
+* `conf.py`添加如下：
+```py
+# Add any paths that contain templates here, relative to this directory.
+templates_path = ['_templates']
+```
+
+* 显示效果如下：
+
+![0001_0012.png](images/0001_0012.png)

@@ -16,6 +16,11 @@ Android 11 包含 android.hardware.health HAL 2.1，这是一个从 health@2.0 H
 * 在关机模式充电代码中可以实现更好的 Treble 分离
 * 更好地支持框架来指示设备的电池运行状况
 
+在 Android 11 中，所有healthd代码都被重构为libhealthloop和libhealth2impl ，然后进行修改以实现 health@2.1 HAL。
+这两个库由health@2.0-impl-2.1静态链接，health@2.0-impl-2.1 是 health 2.1 的直通实现。静态链接库使health@2.0-impl-2.1能够执行与healthd相同的工作，例如运行healthd_mainloop和轮询。在 init 中， health@2.1-service将接口IHealth的实现注册到hwservicemanager 。升级具有 Android 8.x 或 9 供应商映像和 Android 11 框架的设备时，供应商映像可能不提供 health@2.1 服务。
+
+![0014_0005.png](images/0014_0005.png)
+
 # Android弃用health@1.0 HIDL
 
 Framework 将继续使用health@1.0直到按标准HAL弃用计划完全弃用为止 。当health@1.0被弃用（条目从 框架兼容性矩阵除去）， healthd和libbatterymonitor必须也系统中除去，以避免未知的healthd行为。由于health@1.0是一个可选的HAL，并且所有 healthd对health@1.0的依赖都受到NULL检查的保护，因此在弃用时不应该中断。
@@ -50,10 +55,12 @@ AOSP包含多个帮助库，旨在帮助您实现2.0 HAL和从旧的1.0 HAL过�
 * [Android 电池管理系统架构总结 Android power and battery management architecture summaries](https://blog.csdn.net/u010632165/article/details/88651035)
 * [Android Uevent 分析，从kernel到framework](https://blog.csdn.net/dfysy/article/details/7330919)
 * [Google 实现 Health 2.1 ](https://source.android.com/docs/core/health/implementation-2-1)
+* [power supply是如何上报电池信息的](https://cloud.tencent.com/developer/article/1847402)
 
-# 架构
+# 软件架构
 
 ![0014_0000.png](images/0014_0000.png)
+![0014_0004.png](images/0014_0004.png)
 
 可以看到文件比较多，主要是通过`BatteryMonitor.cpp`中的`BatteryMonitor::update(void)`函数上报信息，其中，内核首先会更新数据到`/sys/class/power_supply/battery`节点下各个属性，这个在上一个小节有做解释，先来看一下整体的架构，后面再来深入到代码中去分析；具体图片（该图片来自互联网，因为被转载较多，已经不知道出处），具体的流程整理的很清楚，如下所示；
 
@@ -72,7 +79,7 @@ AOSP包含多个帮助库，旨在帮助您实现2.0 HAL和从旧的1.0 HAL过�
 ./vendor/bin/hw/android.hardware.health@2.1-service
 ```
 
-* 涉及文件：
+* healthd涉及文件：
 ```shell
  system/core/healthd：
 .
@@ -112,48 +119,11 @@ AOSP包含多个帮助库，旨在帮助您实现2.0 HAL和从旧的1.0 HAL过�
 └── tests
     ├── Android.mk
     └── AnimationParser_test.cpp
+```
 
-
+* HIDL涉及文件：
+```
 hardware/interfaces/health：
-├── 2.0
-│   ├── Android.bp
-│   ├── default
-│   │   ├── Android.bp
-│   │   ├── Health.cpp
-│   │   ├── healthd_common_adapter.cpp
-│   │   ├── HealthImplDefault.cpp
-│   │   └── include
-│   │       └── health2
-│   │           └── Health.h
-│   ├── IHealth.hal
-│   ├── IHealthInfoCallback.hal
-│   ├── README -> README.md
-│   ├── README.md
-│   ├── types.hal
-│   ├── utils
-│   │   ├── libhealthhalutils
-│   │   │   ├── Android.bp
-│   │   │   ├── HealthHalUtils.cpp
-│   │   │   └── include
-│   │   │       └── healthhalutils
-│   │   │           └── HealthHalUtils.h
-│   │   ├── libhealthservice
-│   │   │   ├── Android.bp
-│   │   │   ├── HealthServiceCommon.cpp
-│   │   │   └── include
-│   │   │       └── health2
-│   │   │           └── service.h
-│   │   ├── libhealthstoragedefault
-│   │   │   ├── Android.bp
-│   │   │   ├── include
-│   │   │   │   └── StorageHealthDefault.h
-│   │   │   └── StorageHealthDefault.cpp
-│   │   └── README.md
-│   └── vts
-│       ├── functional
-│       │   ├── Android.bp
-│       │   └── VtsHalHealthV2_0TargetTest.cpp
-│       └── OWNERS
 ├── 2.1
 │   ├── Android.bp
 │   ├── default
@@ -209,7 +179,6 @@ hardware/interfaces/health：
         │       ├── HealthLoop.h
         │       └── utils.h
         └── utils.cpp
-
 ```
 
 * `system/core/healthd/Android.bp`health编译了一个可执行文件`charger`，该程序用于关机充电模式：
@@ -243,7 +212,13 @@ cc_binary {
 }
 ```
 
-# HIDL
+# 软件流程
+
+由于uevent机制仅将一个简单的字符串传递给了用户空间，而安卓系统建立在kernel之上，需要思考如何将设备属性的变化值及时更新到用户空间，于是就有了healthd服务，healthd目前已经更新到了2.1版本，其主要工作通过epoll_wait来监听kernel中的uevent事件。具体的函数调用流程图如下：
+
+![0014_0003.png](images/0014_0003.png)
+
+# HIDL服务注册
 
 * `hardware/interfaces/health/2.0/README`我们可以从以下得知2.0下是改为实施 2.1 HAL:
 ```
@@ -260,4 +235,43 @@ It is strongly recommended that you implement the 2.1 HAL directly. See
 device/qcom/vendor-common/base.mk
 1103:PRODUCT_PACKAGES += android.hardware.health@2.1-impl-qti
 1104:PRODUCT_PACKAGES += android.hardware.health@2.1-service
+```
+
+* `\hardware\interfaces\health\2.1\default\service.cpp`通过`new BinderHealth`创建HIDL binder服务:
+```C++
+using IHealth_2_0 = ::android::hardware::health::V2_0::IHealth;
+
+static constexpr const char* gInstanceName = "default";
+
+int main(int /* argc */, char* /* argv */[]) {
+    sp<IHealth> passthrough =
+            IHealth::castFrom(IHealth_2_0::getService(gInstanceName, true /* getStub */));
+    CHECK(passthrough != nullptr)
+            << "Cannot find passthrough implementation of health 2.1 HAL for instance "
+            << gInstanceName;
+    sp<BinderHealth> binder = new BinderHealth(gInstanceName, passthrough);
+    return binder->StartLoop();
+}
+```
+
+* 绑定模式的服务通过`registerAsService`接口实现，代码流程:
+```C++
+hardware\interfaces\health\2.1\default\service.cpp
+StartLoop()
+ 
+hardware\interfaces\health\utils\libhealthloop\HealthLoop.cpp
+StartLoop()  >InitInternal()  >   Init(&healthd_config_)
+ 
+hardware\interfaces\health\utils\libhealth2impl\BinderHealth.cpp
+Init(struct healthd_config* config) > CHECK_EQ(registerAsService(instance_name()), android::OK)
+```
+
+到这里从log上看就打开一个android.hardware.health@2.1-service服务了。
+
+![0014_0002.png](images/0014_0002.png)
+
+* ` ps -A | grep health`:
+```
+A6650:/ # ps -A | grep health
+system         646     1 12978784  3608 do_epoll_wait       0 S android.hardware.health@2.1-service
 ```

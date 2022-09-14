@@ -1,6 +1,6 @@
 # README
 
-以高通平台qcm229为例，分析一下Kernel如何确定使用哪个defconfig文件。
+以高通平台qcm2290为例，分析一下Kernel如何确定使用哪个defconfig文件。
 
 # refers
 

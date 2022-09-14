@@ -46,9 +46,10 @@
 <li><a class="reference internal" href="#androidhealth-1-0-hidl">Android弃用health&#64;1.0 HIDL</a></li>
 <li><a class="reference internal" href="#id2">术语</a></li>
 <li><a class="reference internal" href="#id3">参考</a></li>
-<li><a class="reference internal" href="#id4">架构</a></li>
+<li><a class="reference internal" href="#id4">软件架构</a></li>
 <li><a class="reference internal" href="#id5">涉及文件</a></li>
-<li><a class="reference internal" href="#hidl">HIDL</a></li>
+<li><a class="reference internal" href="#id6">软件流程</a></li>
+<li><a class="reference internal" href="#hidl">HIDL服务注册</a></li>
 </ul>
 </div>
         </div>
@@ -130,11 +131,13 @@
 <li><p><a class="reference external" href="https://blog.csdn.net/u010632165/article/details/88651035">Android 电池管理系统架构总结 Android power and battery management architecture summaries</a></p></li>
 <li><p><a class="reference external" href="https://blog.csdn.net/dfysy/article/details/7330919">Android Uevent 分析，从kernel到framework</a></p></li>
 <li><p><a class="reference external" href="https://source.android.com/docs/core/health/implementation-2-1">Google 实现 Health 2.1 </a></p></li>
+<li><p><a class="reference external" href="https://cloud.tencent.com/developer/article/1847402">power supply是如何上报电池信息的</a></p></li>
 </ul>
 </section>
 <section id="id4">
-<h1>架构<a class="headerlink" href="#id4" title="此标题的永久链接"></a></h1>
-<p><img alt="0014_0000.png" src="../../../_images/0014_0000.png" /></p>
+<h1>软件架构<a class="headerlink" href="#id4" title="此标题的永久链接"></a></h1>
+<p><img alt="0014_0000.png" src="../../../_images/0014_0000.png" />
+<img alt="0014_0004.png" src="../../../_images/0014_0004.png" /></p>
 <p>可以看到文件比较多，主要是通过<code class="docutils literal notranslate"><span class="pre">BatteryMonitor.cpp</span></code>中的<code class="docutils literal notranslate"><span class="pre">BatteryMonitor::update(void)</span></code>函数上报信息，其中，内核首先会更新数据到<code class="docutils literal notranslate"><span class="pre">/sys/class/power_supply/battery</span></code>节点下各个属性，这个在上一个小节有做解释，先来看一下整体的架构，后面再来深入到代码中去分析；具体图片（该图片来自互联网，因为被转载较多，已经不知道出处），具体的流程整理的很清楚，如下所示；</p>
 <p><img alt="0014_0001.png" src="../../../_images/0014_0001.png" /></p>
 <p>这幅图片再一次把整体的数据走向具体化，可以看到主要负责工作的是BatteryMonitor，主要分析一下该文件中的init和update就可以搞清楚大部分的问题。</p>
@@ -152,7 +155,7 @@
 </pre></div>
 </div>
 <ul class="simple">
-<li><p>涉及文件：</p></li>
+<li><p>healthd涉及文件：</p></li>
 </ul>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span> system/core/healthd：
 .
@@ -192,49 +195,13 @@
 └── tests
     ├── Android.mk
     └── AnimationParser_test.cpp
-
-
-hardware/interfaces/health：
-├── <span class="m">2</span>.0
-│   ├── Android.bp
-│   ├── default
-│   │   ├── Android.bp
-│   │   ├── Health.cpp
-│   │   ├── healthd_common_adapter.cpp
-│   │   ├── HealthImplDefault.cpp
-│   │   └── include
-│   │       └── health2
-│   │           └── Health.h
-│   ├── IHealth.hal
-│   ├── IHealthInfoCallback.hal
-│   ├── README -&gt; README.md
-│   ├── README.md
-│   ├── types.hal
-│   ├── utils
-│   │   ├── libhealthhalutils
-│   │   │   ├── Android.bp
-│   │   │   ├── HealthHalUtils.cpp
-│   │   │   └── include
-│   │   │       └── healthhalutils
-│   │   │           └── HealthHalUtils.h
-│   │   ├── libhealthservice
-│   │   │   ├── Android.bp
-│   │   │   ├── HealthServiceCommon.cpp
-│   │   │   └── include
-│   │   │       └── health2
-│   │   │           └── service.h
-│   │   ├── libhealthstoragedefault
-│   │   │   ├── Android.bp
-│   │   │   ├── include
-│   │   │   │   └── StorageHealthDefault.h
-│   │   │   └── StorageHealthDefault.cpp
-│   │   └── README.md
-│   └── vts
-│       ├── functional
-│       │   ├── Android.bp
-│       │   └── VtsHalHealthV2_0TargetTest.cpp
-│       └── OWNERS
-├── <span class="m">2</span>.1
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>HIDL涉及文件：</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>hardware/interfaces/health：
+├── 2.1
 │   ├── Android.bp
 │   ├── default
 │   │   ├── Android.bp
@@ -252,7 +219,7 @@ hardware/interfaces/health：
 │       │   └── VtsHalHealthV2_1TargetTest.cpp
 │       └── OWNERS
 ├── storage
-│   └── <span class="m">1</span>.0
+│   └── 1.0
 │       ├── Android.bp
 │       ├── default
 │       │   ├── Android.bp
@@ -324,8 +291,13 @@ hardware/interfaces/health：
 </pre></div>
 </div>
 </section>
+<section id="id6">
+<h1>软件流程<a class="headerlink" href="#id6" title="此标题的永久链接"></a></h1>
+<p>由于uevent机制仅将一个简单的字符串传递给了用户空间，而安卓系统建立在kernel之上，需要思考如何将设备属性的变化值及时更新到用户空间，于是就有了healthd服务，healthd目前已经更新到了2.1版本，其主要工作通过epoll_wait来监听kernel中的uevent事件。具体的函数调用流程图如下：</p>
+<p><img alt="0014_0003.png" src="../../../_images/0014_0003.png" /></p>
+</section>
 <section id="hidl">
-<h1>HIDL<a class="headerlink" href="#hidl" title="此标题的永久链接"></a></h1>
+<h1>HIDL服务注册<a class="headerlink" href="#hidl" title="此标题的永久链接"></a></h1>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">hardware/interfaces/health/2.0/README</span></code>我们可以从以下得知2.0下是改为实施 2.1 HAL:</p></li>
 </ul>
@@ -341,6 +313,46 @@ It is strongly recommended that you implement the 2.1 HAL directly. See
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>device/qcom/vendor-common/base.mk
 <span class="m">1103</span>:PRODUCT_PACKAGES +<span class="o">=</span> android.hardware.health@2.1-impl-qti
 <span class="m">1104</span>:PRODUCT_PACKAGES +<span class="o">=</span> android.hardware.health@2.1-service
+</pre></div>
+</div>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">\hardware\interfaces\health\2.1\default\service.cpp</span></code>通过<code class="docutils literal notranslate"><span class="pre">new</span> <span class="pre">BinderHealth</span></code>创建HIDL binder服务:</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="k">using</span><span class="w"> </span><span class="n">IHealth_2_0</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">::</span><span class="n">android</span><span class="o">::</span><span class="n">hardware</span><span class="o">::</span><span class="n">health</span><span class="o">::</span><span class="n">V2_0</span><span class="o">::</span><span class="n">IHealth</span><span class="p">;</span><span class="w"></span>
+
+<span class="k">static</span><span class="w"> </span><span class="k">constexpr</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">gInstanceName</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;default&quot;</span><span class="p">;</span><span class="w"></span>
+
+<span class="kt">int</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="cm">/* argc */</span><span class="p">,</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="cm">/* argv */</span><span class="p">[])</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">sp</span><span class="o">&lt;</span><span class="n">IHealth</span><span class="o">&gt;</span><span class="w"> </span><span class="n">passthrough</span><span class="w"> </span><span class="o">=</span><span class="w"></span>
+<span class="w">            </span><span class="n">IHealth</span><span class="o">::</span><span class="n">castFrom</span><span class="p">(</span><span class="n">IHealth_2_0</span><span class="o">::</span><span class="n">getService</span><span class="p">(</span><span class="n">gInstanceName</span><span class="p">,</span><span class="w"> </span><span class="nb">true</span><span class="w"> </span><span class="cm">/* getStub */</span><span class="p">));</span><span class="w"></span>
+<span class="w">    </span><span class="n">CHECK</span><span class="p">(</span><span class="n">passthrough</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="k">nullptr</span><span class="p">)</span><span class="w"></span>
+<span class="w">            </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;Cannot find passthrough implementation of health 2.1 HAL for instance &quot;</span><span class="w"></span>
+<span class="w">            </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">gInstanceName</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="n">sp</span><span class="o">&lt;</span><span class="n">BinderHealth</span><span class="o">&gt;</span><span class="w"> </span><span class="n">binder</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">BinderHealth</span><span class="p">(</span><span class="n">gInstanceName</span><span class="p">,</span><span class="w"> </span><span class="n">passthrough</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">binder</span><span class="o">-&gt;</span><span class="n">StartLoop</span><span class="p">();</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>绑定模式的服务通过<code class="docutils literal notranslate"><span class="pre">registerAsService</span></code>接口实现，代码流程:</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span>hardware\interfaces\health\2.1\default\service.cpp
+StartLoop()
+ 
+hardware\interfaces\health\utils\libhealthloop\HealthLoop.cpp
+StartLoop()  &gt;InitInternal()  &gt;   Init(&amp;healthd_config_)
+ 
+hardware\interfaces\health\utils\libhealth2impl\BinderHealth.cpp
+Init(struct healthd_config* config) &gt; CHECK_EQ(registerAsService(instance_name()), android::OK)
+</pre></div>
+</div>
+<p>到这里从log上看就打开一个android.hardware.health&#64;2.1-service服务了。</p>
+<p><img alt="0014_0002.png" src="../../../_images/0014_00021.png" /></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"> <span class="pre">ps</span> <span class="pre">-A</span> <span class="pre">|</span> <span class="pre">grep</span> <span class="pre">health</span></code>:</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">A6650</span><span class="p">:</span><span class="o">/</span> <span class="c1"># ps -A | grep health</span>
+<span class="n">system</span>         <span class="mi">646</span>     <span class="mi">1</span> <span class="mi">12978784</span>  <span class="mi">3608</span> <span class="n">do_epoll_wait</span>       <span class="mi">0</span> <span class="n">S</span> <span class="n">android</span><span class="o">.</span><span class="n">hardware</span><span class="o">.</span><span class="n">health</span><span class="o">@</span><span class="mf">2.1</span><span class="o">-</span><span class="n">service</span>
 </pre></div>
 </div>
 </section>
