@@ -78,7 +78,7 @@ QcomPkg/SocPkg/AgattiPkg/LAA/Core.dsc:
 * 识别流程如下：
   * 1. usb配置驱动将启动timer每1s轮询一次usb状态。
   * 2. 
-```C++
+```shell
 * UsbConfigDriverEntryPoint // QcomPkg/Drivers/UsbConfigDxe/UsbConfig.c
   └── Status = UsbConfigInit(); // AgattiPkg/Library/UsbConfigLib/UsbConfigLib.c
       ├── if (!FeaturePcdGet(HostModeSupported)) // Check if host mode is supported in UEFI.
@@ -218,6 +218,7 @@ UsbConfigPortsQueryConnectionChange(
 ```
 
 能正常检测到vbus和连接状态，但就是没法识别usb，打印如下：
+
 ![0006_0000.png](images/0006_0000.png)
 
 我还以是bc1.2检测出错了。

@@ -2,8 +2,6 @@
 
 之前学习的lk阶段点亮LCD的流程算是比较经典，但是高通已经推出了很多种基于UEFI方案的启动架构。所以需要对这块比较新的技术进行学习。在学习之前，有必要了解一下高通UEFI启动流程。
 
-原文（有删改）：https://blog.csdn.net/Ciellee/article/details/113519478
-
 # refer
 
 * [Android XBL开机流程](https://blog.csdn.net/ciellee/category_10787948.html)
@@ -18,7 +16,7 @@ Flash Image Definition   = /home/wugn/A6650-project/Unpacking_Tool/BOOT.XF.4.1/b
 ```
 
 # 总览
-先来看下SDM660芯片冷启动的流程。可以看出，在设备上电后，先跑的是 APPS PBL，接着运行XBL SEC、XBL Loader，通过Loader引出XBL CORE APPSBL，最后进入HLOS。
+先来看下高通SDM660芯片冷启动的流程。可以看出，在设备上电后，先跑的是 APPS PBL，接着运行XBL SEC、XBL Loader，通过Loader引出XBL CORE APPSBL，最后进入HLOS。
 
 ![0005_0000.png](images/0005_0000.png)
 
@@ -90,11 +88,13 @@ SEC(安全验证)--->PEI(EFI前期初始化)--->DXE(驱动执行环境)--->BDS(�
 ## PEI：
 
 很基本的Chipset 初始化、 Memory Sizing、 BIOS Recovery、 ACPI S3 Resume 、切换Stack to Memory、启动DxeIpl。这个阶段就是开始一些CPU、主板、芯片的初始化了，也就是EFI前期初始化，这个阶段后期才是内存的初始化，知道内存初始化的地方可以便于debug。PEI阶段对系统的初始化主要是PEIM完成的，PEIM之间的通信又是通过PPI完成，进入DXE阶段需要HOB列表。
+
 ![0005_0002.png](images/0005_0002.png)
 
 ## HOB : Hand off Block
 
 有些 information 要从 PEI Phase 传到 DXE Phase 组成 ，每一个Block有自己的GUID & Structure 。HOB的Block List是动态的，没有顺序要求。
+
 ![0005_0003.png](images/0005_0003.png)
 
 ## DXE：
@@ -761,6 +761,5 @@ VOID EFIAPI BdsEntry(IN EFI_BDS_ARCH_PROTOCOL  *This)
 # RT(Run Time)
 
 代码位于:
-```C++
+>
 amss\BOOT.XF.1.4\boot_images\MdeModulePkg\Core\RuntimeDxe\Runtime.c的 RuntimeDriverInitialize 中
-```C++
