@@ -174,6 +174,111 @@ void update_bootargs(char *cmdline)
 }
 ```
 
+# kernel验证
+
+* kernel驱动api如下：
+```C++
+/* Copyright (C) 2017-2021  PAX
+ * parse command line and provide cmdline_get_value() to get the value
+ */
+
+#include <linux/module.h>
+#include <linux/init.h>
+#include <linux/kernel.h>
+#include <linux/slab.h>
+
+#define CMDLINE_SIZE	2048
+#define CMDPARA_SIZE	200
+
+struct cmd_para {
+	const char *key;
+	const char *value;
+};
+
+extern char *saved_command_line;
+static char *cmdline_buf = NULL;
+static struct cmd_para cmd_paras[CMDPARA_SIZE] = {{0}};
+
+const char *cmdline_get_value(const char *key)
+{
+	int i = 0;
+
+	while((i < CMDPARA_SIZE) && cmd_paras[i].key != NULL) {
+		if (!strcmp(key, cmd_paras[i].key))
+			return cmd_paras[i].value;
+		i++;
+	}
+
+	return NULL;
+}
+EXPORT_SYMBOL_GPL(cmdline_get_value);
+
+static int cmdops_init(void)
+{
+	int i = 0;
+	char *ptr;
+	char *x;
+	char *value;
+
+	//printk("saved_command_line: %s\n", saved_command_line);
+	cmdline_buf = (char *)kzalloc(CMDLINE_SIZE, GFP_KERNEL);
+
+	if (NULL == cmdline_buf) {
+		printk("can not malloc buffer!\n");
+		return -1;
+	}
+	memcpy(cmdline_buf, saved_command_line, strlen(saved_command_line));
+	//printk("cmdline_buf: %s\n", cmdline_buf);
+
+	ptr = cmdline_buf;
+	while (ptr && *ptr && (i < CMDPARA_SIZE)) {
+		x = strchr(ptr, ' ');
+		if (NULL != x)
+			*x++ = '\0';
+		value = strchr(ptr, '=');
+		if (NULL == value) {
+			ptr = x;
+			continue;
+		}
+		*value++ = '\0';
+		//printk("key:%s, val:%s\n", ptr, value);
+		cmd_paras[i].key = ptr;
+		cmd_paras[i].value = value;
+
+		ptr = x;
+		i++;
+	}
+	printk("total %d parameters\n", i);
+
+	//printk("test get %s\n", cmdline_get_value("TERMINAL_NAME"));
+
+	return 0;
+}
+
+static void cmdops_exit(void)
+{
+	if(NULL != cmdline_buf)
+		kfree(cmdline_buf);
+}
+
+postcore_initcall(cmdops_init);
+module_exit(cmdops_exit);
+
+MODULE_LICENSE("GPL v2");
+MODULE_AUTHOR("fuzk@paxsz.com");
+```
+
+* 例如查看`start_without_battery`参数，验证方案：
+```C++
+extern const char *cmdline_get_value(const char *key);
+
+int pax_bat_exist_from_cmdline(void)
+{
+        int ret = !!strcmp(cmdline_get_value("start_without_battery"), "0");
+        return ret;
+}
+```
+
 # 调试方法
 
 可以通过`cat /proc/cmdline`节点的方式查看是否添加成功：
