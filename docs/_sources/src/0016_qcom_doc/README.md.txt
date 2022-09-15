@@ -6,6 +6,8 @@
 
 NO.|文件名称|摘要
 :--:|:--|:--
+0010| [qcom_SBL运行流程](docs/0010_qcom_SBL运行流程.md) | 高通qcm2290 PBL-SBL1流程分析。全称：Secondary boot loader,SBL1是XBL前运行的一个流程，今天就要分析一下开机前几秒钟起着关键作用的sbl1.
+0009| [qcom_UEFI学习](docs/0009_qcom_UEFI学习.md) | 高通UEFI学习。
 0008| [qcom_ABL_增加i2c接口](docs/0008_qcom_ABL_增加i2c接口.md) | ABL阶段有时需要读取某些i2c设备状态，但默认没有i2c驱动，需要添加。
 0007| [qcom_ABL_运行流程](docs/0007_qcom_ABL_运行流程.md) | 在前面[0005_qcom_XBL运行流程.md](0005_qcom_XBL运行流程.md)中，我们分析到，在BdsEntry() 中会调用 LaunchDefaultBDSApps() 回载默认app，包含ABL。
 0006| [qcom_XBL_USB运行流程](docs/0006_qcom_XBL_USB运行流程.md) | 目前usb在fastboot模式下无法识别，跟进一下代码看看什么原因。

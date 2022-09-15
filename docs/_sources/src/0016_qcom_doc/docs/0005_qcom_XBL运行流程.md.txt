@@ -16,7 +16,7 @@ Flash Image Definition   = /home/wugn/A6650-project/Unpacking_Tool/BOOT.XF.4.1/b
 ```
 
 # 总览
-先来看下高通SDM660芯片冷启动的流程。可以看出，在设备上电后，先跑的是 APPS PBL，接着运行XBL SEC、XBL Loader，通过Loader引出XBL CORE APPSBL，最后进入HLOS。
+先来看下高通SDM660芯片冷启动的流程。可以看出，在设备上电后，先跑的是 APPS PBL，然后SBL1 ，接着运行XBL SEC、XBL Loader，通过Loader引出XBL CORE APPSBL，最后进入HLOS。
 
 ![0005_0000.png](images/0005_0000.png)
 
@@ -763,3 +763,154 @@ VOID EFIAPI BdsEntry(IN EFI_BDS_ARCH_PROTOCOL  *This)
 代码位于:
 >
 amss\BOOT.XF.1.4\boot_images\MdeModulePkg\Core\RuntimeDxe\Runtime.c的 RuntimeDriverInitialize 中
+
+# log
+
+XBL开机打印如下：
+```
+UEFI Start     [ 2057]
+ - 0x05FC01000 [ 2062] Sec.efi
+ASLR        : ON
+DEP         : ON (RTB)
+Timer Delta : +5 mS
+RAM Entry 0 : Base 0x0000000040000000  Size 0x000000003E580000
+RAM Entry 1 : Base 0x00000000A0000000  Size 0x0000000060000000
+RAM Entry 2 : Base 0x0000000080000000  Size 0x0000000020000000
+UART Buffer size set to 0x8000
+Wrong CPU core 4
+                Wrong CPU core 5
+                                Wrong CPU core 6
+                                                Wrong CPU core 7
+                                                                UEFI Ver    : 5.0.220619.BOOT.XF.4.1-00343-KAMORTALAZ-1
+Build Info  : 64b Jun 19 2022 17:43:43
+Boot Device : eMMC
+PROD Mode   : TRUE
+Retail      : TRUE
+Module cannot re-initialize DAL module environment
+Embedded Images Supported and Commonlibs loaded
+Read: NumHalfSectors 0x1, ReliableWriteCount 0x0
+Read: NumHalfSectors 0x1, ReliableWriteCount 0x0
+Read: NumHalfSectors 0x8, ReliableWriteCount 0x0
+Read: NumHalfSectors 0x4, ReliableWriteCount 0x0
+Read: NumHalfSectors 0x2, ReliableWriteCount 0x0
+Read: NumHalfSectors 0x2, ReliableWriteCount 0x0
+Read: NumHalfSectors 0x2, ReliableWriteCount 0x0
+Read: NumHalfSectors 0x2, ReliableWriteCount 0x0
+Read: NumHalfSectors 0x2, ReliableWriteCount 0x0
+Read: NumHalfSectors 0x2, ReliableWriteCount 0x0
+Read: NumHalfSectors 0x2, ReliableWriteCount 0x0
+Read: NumHalfSectors 0x2, ReliableWriteCount 0x0
+Read: NumHalfSectors 0x2, ReliableWriteCount 0x0
+Read: NumHalfSectors 0x2, ReliableWriteCount 0x0
+Read: NumHalfSectors 0x2, ReliableWriteCount 0x0
+Read: NumHalfSectors 0x2, ReliableWriteCount 0x0
+Read: NumHalfSectors 0x2, ReliableWriteCount 0x0
+Read: NumHalfSectors 0x2, ReliableWriteCount 0x0
+Read: NumHalfSectors 0x2, ReliableWriteCount 0x0
+HW Wdog Setting from PCD : Disabled
+PM0: 55,
+UsbConfigPortsQueryConnectionChange: UFP and Type-C
+UsbConfigPortsQueryConnectionChange: usbport->connectstate: ATT
+Setvariable returned Success
+DisplayDxe: Resolution 720x1280 (1 intf)
+MinidumpTADxe: Minidump TA loading not enabled.
+Disp init wait [ 2667]
+input CTRL+C enter ALLPIN mode
+-----------------------------
+Platform Init  [ 3208] BDS
+UEFI Ver   : 5.0.220619.BOOT.XF.4.1-00343-KAMORTALAZ-1
+Platform           : IDP
+Chip Name          : QCM_AGATTI
+Chip Ver           : 1.0
+Chip Serial Number : 0xC54520C0
+-----------------------------
+UEFI Total : 1175 ms
+POST Time      [ 3232] OS Loader
+Loader Build Info: Jun 13 2022 07:51:52
+Read: NumHalfSectors 0x10, ReliableWriteCount 0x0
+VB: RWDeviceState: Succeed using rpmb!
+****** SUCCESS ENTER ANDROID ******
+Total DDR Size: 0x00000000BE580000
+=====sp init======
+Loading Image Start : 3255 ms
+Loading Image Done : 3256 ms
+Total Image Read size : 20480 Bytes
+victor,OtpInit,OTP_INIT_FLAG = ,OTP_INIT,
+victor,authinfo use values from emmc
+Loading Image Start : 3257 ms
+Loading Image Done : 3258 ms
+Total Image Read size : 1024 Bytes
+victor,Load cfg Partition in,,find = 1,ImageSize = 505,
+verify OK.
+Loading Image Start : 3260 ms
+Loading Image Done : 3262 ms
+Total Image Read size : 20480 Bytes
+ ---ShowAuthinfo---
+authinfo.SecMode = 3
+authinfo.security_level = 3
+authinfo.TamperClear = 0
+authinfo.LastBblStatus = 0
+authinfo.AppDebugStatus = 1
+authinfo.FirmDebugStatus = 1
+authinfo.SnDownLoadSum = 0
+authinfo.UsPukLevel = 3
+authinfo.Customer = 255
+ShowCfginfo
+g_cfg_info.cfgContent :TOUCH_SCREEN=257 LCD=257 FPM=11 WIFI=36 WIFI_PA=04 CAMERA_NUMBER=01 CAMERA_FRONT=80 MAIN_BOARD=V01 PORT_BOARD=V01 PN=A6650-AA200-260A-2N0-EA CONFIG_FILE_VER=2570000_V1.0 TERMINAL_NAME=A6650
+KeyPress:1539461080, BootReason:0
+Fastboot=0, Recovery:0
+GetVmData: No Vm data present! Status = (0x3)
+VM Hyp calls not present
+Booting from slot (_a)
+Booting Into Mission Mode
+Loading Image Start : 3263 ms
+Loading Image Done : 3264 ms
+Total Image Read size : 4096 Bytes
+Invalid vendor_boot partition. Skipping
+Load Image vbmeta_a total time: 1 ms
+avb_vbmeta_image.c:206: ERROR: Hash does not match!
+avb_slot_verify.c:575: ERROR: vbmeta_a: Error verifying vbmeta image: HASH_MISMATCH
+Load Image vbmeta_system_a total time: 1 ms
+Load Image boot_a total time: 327 ms
+avb_slot_verify.c:256: ERROR: boot_a: Hash of data does not match digest in descriptor.
+Load Image dtbo_a total time: 82 ms
+avb_slot_verify.c:256: ERROR: dtbo_a: Hash of data does not match digest in descriptor.
+VB2: Authenticate complete! boot state is: orange
+VB2: boot state: orange(1)
+Memory Base Address: 0x40000000
+Decompressing kernel image total time: 447 ms
+Get Pax Board info success[V01:V01:A6650].
+Cmp Pax Terminal Name Failed[A6650:A7000].
+Get Pax Board info success[V01:V01:A6650].
+Cmp Pax Terminal Name Failed[A6650:A7000].
+Override DTB: GetBlkIOHandles failed loading user_dtbo!
+Apply Overlay total time: 229 ms
+victor,UpdateCmdLine in
+StrSerialNum = ,>n,
+VB: RWDeviceState: read_req err ! status: 0 read status: -15
+VBRwDevice failed with: 00000050
+Unable to read display cmdline: 00000050
+detected buffer overflow in AsciiStrLen, line 1412
+detected buffer overflow in AsciiStrLen, line 1412
+detected buffer overflow in AsciiStrLen, line 1412
+Cmdline: console=ttyMSM0,115200n8 earlycon=msm_geni_serial,0x4a90000 androidboot.hardware=qcom androidboot.console=ttyMSM0 androidboot.memcg=1 lpm_levels.sleep_disabled=1 video=vfb:640x400,bpp=32,memsize=3072000 msm_rtb.filter=0x237 service_locator.enable
+RAM Partitions
+Add Base: 0x0000000040000000 Available Length: 0x000000003E580000
+Add Base: 0x00000000A0000000 Available Length: 0x0000000060000000
+Add Base: 0x0000000080000000 Available Length: 0x0000000020000000
+ERROR: Could not get splash memory region node
+Update Device Tree total time: 67 ms
+
+Shutting Down UEFI Boot Services: 4574 ms
+Start EBS        [ 4574]
+BDS: LogFs sync skipped, Unsupported
+Write: NumHalfSectors 0x2, ReliableWriteCount 0x2
+Write: NumHalfSectors 0x2, ReliableWriteCount 0x2
+Write: NumHalfSectors 0x2, ReliableWriteCount 0x2
+Write: NumHalfSectors 0x2, ReliableWriteCount 0x2
+Write: NumHalfSectors 0x2, ReliableWriteCount 0x2
+Write: NumHalfSectors 0x2, ReliableWriteCount 0x2
+App Log Flush : 34 ms
+Exit EBS        [ 4659] UEFI End
+[    0.000000] Booting Linux on physical CPU 0x0000000000 [0x51af8014]
+```
