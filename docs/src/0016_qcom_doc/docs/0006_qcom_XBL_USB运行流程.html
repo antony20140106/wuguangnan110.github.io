@@ -175,69 +175,69 @@
 </ul>
 </li>
 </ul>
-<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span>* UsbConfigDriverEntryPoint // QcomPkg/Drivers/UsbConfigDxe/UsbConfig.c
-  └── Status = UsbConfigInit(); // AgattiPkg/Library/UsbConfigLib/UsbConfigLib.c
-      ├── if (!FeaturePcdGet(HostModeSupported)) // Check if host mode is supported in UEFI.
-      │   └── gUsbConfigDevice[USB_CORE_0_NICOBAR].EnableStaticCfg.UsbMode = USB_DEVICE_MODE_SS; //默认配置成HOST
-      ├── Status = gBS-&gt;CreateEvent(EVT_TIMER | EVT_NOTIFY_SIGNAL,TPL_CALLBACK,UsbPortStateChgCb, NULL,&amp;PortStateChgEvt);// Create a timer to poll USB Type-C CC Status
-      ├──  gBS-&gt;SignalEvent(PortStateChgEvt); //立即出发timer
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>* UsbConfigDriverEntryPoint // QcomPkg/Drivers/UsbConfigDxe/UsbConfig.c
+  └── <span class="nv">Status</span> <span class="o">=</span> UsbConfigInit<span class="o">()</span><span class="p">;</span> // AgattiPkg/Library/UsbConfigLib/UsbConfigLib.c
+      ├── <span class="k">if</span> <span class="o">(</span>!FeaturePcdGet<span class="o">(</span>HostModeSupported<span class="o">))</span> // Check <span class="k">if</span> host mode is supported <span class="k">in</span> UEFI.
+      │   └── gUsbConfigDevice<span class="o">[</span>USB_CORE_0_NICOBAR<span class="o">]</span>.EnableStaticCfg.UsbMode <span class="o">=</span> USB_DEVICE_MODE_SS<span class="p">;</span> //默认配置成HOST
+      ├── <span class="nv">Status</span> <span class="o">=</span> gBS-&gt;CreateEvent<span class="o">(</span>EVT_TIMER <span class="p">|</span> EVT_NOTIFY_SIGNAL,TPL_CALLBACK,UsbPortStateChgCb, NULL,<span class="p">&amp;</span>PortStateChgEvt<span class="o">)</span><span class="p">;</span>// Create a timer to poll USB Type-C CC Status
+      ├──  gBS-&gt;SignalEvent<span class="o">(</span>PortStateChgEvt<span class="o">)</span><span class="p">;</span> //立即出发timer
       ├── UsbPortStateChgCb // timer的处理函数
-      │   ├── Status = UsbConfigPortsEventHandler（...）//AgattiPkg/Library/UsbConfigLib/UsbConfigUsbPorts.c
-      │   │   └── Status = UsbConfigPortsQueryConnectionChange(...)
-      │   │       ├── if(FeaturePcdGet(UsbNoPmic) //重要如果配置成UsbNoPmic，直接赋值状态Attach，UFP，接下来在HandlePortPartnerXtach继续获取充电类型
-      │   │       │   └── if (UsbPort-&gt;ConnectState == FALSE)
-      │   │       │       ├── UsbPort-&gt;ConnectState = TRUE;
-      │   │       │       ├── Message = UsbCfgPortMsgPartnerAttach;
-      │   │       │       ├── Payload-&gt;UsbTypeCPortMode = USB_TYPEC_PORT_MODE_UFP;
-      │   │       │       └── goto ON_EXIT; //直接跳转到出来，下面的都不跑
-      │   │       ├── Status = gPwrCtrlProtocol-&gt;GetHwInfo(&amp;UsbPortHwInfo); //获取硬件信息，看是支持typec还是micro usb
-      │   │       ├── if( (EFI_SUCCESS == Status) &amp;&amp; (UsbPortHwInfo.ConnectorType[0] == EFI_USB_PWR_CTRL_USB_CONNECTOR_TYPE_TYPEC)) //如果硬件支持typec
-      │   │       │   └── Status = gPwrCtrlProtocol-&gt;GetTypeCPortStatus(CoreNum, &amp;UsbPort-&gt;PortStatus); //重要，获取typec状态
-      │   │       │       └── switch (UsbPort-&gt;PortStatus.DataRole) //
-      │   │       │           └── case EFI_USB_PWR_CTRL_TYPEC_DATAROLE_UFP: //UFP连接，一般接电脑会走这
-      │   │       │               ├── DBG(EFI_D_INFO, &quot;USB Type-C Device Mode(UFP mode)&quot;);
-      │   │       │               ├── Message = UsbCfgPortMsgPartnerAttach;
-      │   │       │               └── DBG(EFI_D_ERROR, &quot;UFP and Type-C&quot;);
-      │   │       ├── else if(UsbPortHwInfo.ConnectorType[0] == EFI_USB_PWR_CTRL_USB_CONNECTOR_TYPE_uUSB) //支持micro usb
-      │   │       │   ├── Status = gPwrCtrlProtocol-&gt;GetVbusDetectStatus(CoreNum, &amp;VbusStatus); //获取vbus状态
-      │   │       │   │   └── EFI_UsbPwrCtrl_GetVbusDetectStatus() // Drivers/UsbPwrCtrlDxe/UsbPwrCtrl.c
-      │   │       │   │       └── UsbPwrCtrlLib_GetVbusDetect(PortIndex, bVbusDetect);
-      │   │       │   │           └── UsbPwrCtrlLibPmSchg_GetVbusDetect(pUsbPwrCtrlHwInfo-&gt;Ports[PortIndex].VbusDetect.HwInfo, bVbusDetect); // QcomPkg/Library/UsbPwrCtrlLib/UsbPwrCtrlLib.c
-      │   │       │   │               └── PmicSchgProtocol-&gt;UsbinValid(HwInfo.ResourceIndex,bVbusDetect);
-      │   │       │   │                   ├── errFlag = pm_schg_usb_irq_status(PmicDeviceIndex, PM_SCHG_USB_IRQ_USBIN_PLUGIN, PM_IRQ_STATUS_RT,(boolean*)&amp;UsbinPlugedIn); //跟到最后还是读取pmic是否有中断信号
-      │   │       │   │                   └── Valid = (UsbinPlugedIn) ? TRUE : FALSE; // Drivers/PmicDxe/PmicSchgProtocol.c
-      │   │       │   └── if(VbusStatus)
-      │   │       │       └── if (UsbPort-&gt;ConnectState == USBC_STATE_DETACHED)
-      │   │       │           ├── Message = UsbCfgPortMsgPartnerAttach;
-      │   │       │           ├── Payload-&gt;UsbTypeCPortMode = USB_TYPEC_PORT_MODE_UFP;
-      │   │       │           └── DBG(EFI_D_ERROR, &quot;UFP and micro-USB&quot;);
-      │   │       └── UsbConfigPortsPrintPortStatus(EFI_D_WARN, UsbPort, *Message, CoreNum); //纯打印
-      │   └── switch (Message) { case UsbCfgPortMsgPartnerAttach: case UsbCfgPortMsgPartnerDetach: //承接UsbConfigPortsEventHandler函数获取连接状态及主从模式后，继续获取充电类型。
-      │       └── HandlePortPartnerXtach(Index, Message, Payload.UsbTypeCPortMode);
-      │           ├── (FeaturePcdGet(UsbNoPmic))//如果配置成UsbNoPmic，这里直接赋值SDP device模式
-      │           │   ├── ChargerType = EFI_USB_PWR_CTRL_HSUSB_CHGPORT_SDP;
-      │           │   └── PortMode = USB_TYPEC_PORT_MODE_UFP; 
-      │           └── if (Message == UsbCfgPortMsgPartnerAttach) { //Attach
-      │               └── if (IS_HARDWARE_CONFIUGRED(gUsbConfigDevice[CoreNum].UsbConfig.modeType)) 
-      │                   ├── if (IS_USB_PERIPHERAL_MODE(gUsbConfigDevice[CoreNum].UsbConfig.modeType)) 
-      │                   │   ├── Status = GetChargerPortType(CoreNum, &amp;ChargerType); //BC1.2获取充电类型
-      │                   │   │   ├── Status = gRT-&gt;GetVariable(L&quot;UsbfnForceComplianceMode&quot;, &amp;gQcomTokenSpaceGuid, NULL, &amp;UefiVarSize, &amp;UefiVar); //BC1.2获取接口
-      │                   │   │   └── if (!EFI_ERROR(Status) &amp;&amp; (UefiVar != 0)) 
-      │                   │   │       └── *ChargerPortType = EFI_USB_PWR_CTRL_HSUSB_CHGPORT_SDP;
-      │                   │   └── if(FeaturePcdGet(UsbNoPmic)) //如果配置成UsbNoPmic，充电类型直接SDP
-      │                   │       └── ChargerType = EFI_USB_PWR_CTRL_HSUSB_CHGPORT_SDP;
-      │                   └── if (FeaturePcdGet(InitUsbControllerOnBoot)) //Pcd配置成启动初始化
-      │                       └── if (gUsbConfigDevice[CoreNum].EnableStaticCfg.Enabled == TRUE &amp;&amp; gUsbConfigDevice[USB_CORE_0_NICOBAR].EnableStaticCfg.UsbMode == USB_HOST_MODE_XHCI) //如果默认是host模式，则开始使能usb Controller
-      │                           └── Status = UsbStartController(CoreNum, UsbCfgMode); //使能usb host
-      ├── Status = gBS-&gt;SetTimer(PortStateChgEvt,TimerPeriodic,USB_PORT_POLL_INTERVAL);// Set the polling period for the USB Type-C periodic event callback
-      ├── if (!FeaturePcdGet(HostModeSupported))  //Pcd默认配置成host模式为false则配置成device
-      │   ├── gUsbConfigDevice[USB_CORE_0_NICOBAR].EnableStaticCfg.Enabled = TRUE;
-      │   └── gUsbConfigDevice[USB_CORE_0_NICOBAR].EnableStaticCfg.UsbMode = USB_DEVICE_MODE_SS;
-      ├── else // // If the user plugs in the host cable during the boot time, configure the USB hardware in the host mode  
-      │   └── Status = UsbPortGetRtConnectionMode(gUsbConfigDevice[USB_CORE_0_NICOBAR].UsbPortHandle, &amp;PortMode, USB_CORE_0_NICOBAR); //检测是否有ota线插入
-      │       └── if (PortMode == USB_TYPEC_PORT_MODE_DFP)
-      │           └── gUsbConfigDevice[USB_CORE_0_NICOBAR].UsbCoreInterface-&gt;ModeType = USB_HOST_MODE; //默认配置成host模式
-      └── #define USB_PORT_POLL_INTERVAL (1000 * 1000U) //timer是1s轮询一次
+      │   ├── <span class="nv">Status</span> <span class="o">=</span> UsbConfigPortsEventHandler（...）//AgattiPkg/Library/UsbConfigLib/UsbConfigUsbPorts.c
+      │   │   └── <span class="nv">Status</span> <span class="o">=</span> UsbConfigPortsQueryConnectionChange<span class="o">(</span>...<span class="o">)</span>
+      │   │       ├── <span class="k">if</span><span class="o">(</span>FeaturePcdGet<span class="o">(</span>UsbNoPmic<span class="o">)</span> //重要如果配置成UsbNoPmic，直接赋值状态Attach，UFP，接下来在HandlePortPartnerXtach继续获取充电类型
+      │   │       │   └── <span class="k">if</span> <span class="o">(</span>UsbPort-&gt;ConnectState <span class="o">==</span> FALSE<span class="o">)</span>
+      │   │       │       ├── UsbPort-&gt;ConnectState <span class="o">=</span> TRUE<span class="p">;</span>
+      │   │       │       ├── <span class="nv">Message</span> <span class="o">=</span> UsbCfgPortMsgPartnerAttach<span class="p">;</span>
+      │   │       │       ├── Payload-&gt;UsbTypeCPortMode <span class="o">=</span> USB_TYPEC_PORT_MODE_UFP<span class="p">;</span>
+      │   │       │       └── goto ON_EXIT<span class="p">;</span> //直接跳转到出来，下面的都不跑
+      │   │       ├── <span class="nv">Status</span> <span class="o">=</span> gPwrCtrlProtocol-&gt;GetHwInfo<span class="o">(</span><span class="p">&amp;</span>UsbPortHwInfo<span class="o">)</span><span class="p">;</span> //获取硬件信息，看是支持typec还是micro usb
+      │   │       ├── <span class="k">if</span><span class="o">(</span> <span class="o">(</span><span class="nv">EFI_SUCCESS</span> <span class="o">==</span> Status<span class="o">)</span> <span class="o">&amp;&amp;</span> <span class="o">(</span>UsbPortHwInfo.ConnectorType<span class="o">[</span><span class="m">0</span><span class="o">]</span> <span class="o">==</span> EFI_USB_PWR_CTRL_USB_CONNECTOR_TYPE_TYPEC<span class="o">))</span> //如果硬件支持typec
+      │   │       │   └── <span class="nv">Status</span> <span class="o">=</span> gPwrCtrlProtocol-&gt;GetTypeCPortStatus<span class="o">(</span>CoreNum, <span class="p">&amp;</span>UsbPort-&gt;PortStatus<span class="o">)</span><span class="p">;</span> //重要，获取typec状态
+      │   │       │       └── switch <span class="o">(</span>UsbPort-&gt;PortStatus.DataRole<span class="o">)</span> //
+      │   │       │           └── <span class="k">case</span> EFI_USB_PWR_CTRL_TYPEC_DATAROLE_UFP: //UFP连接，一般接电脑会走这
+      │   │       │               ├── DBG<span class="o">(</span>EFI_D_INFO, <span class="s2">&quot;USB Type-C Device Mode(UFP mode)&quot;</span><span class="o">)</span><span class="p">;</span>
+      │   │       │               ├── <span class="nv">Message</span> <span class="o">=</span> UsbCfgPortMsgPartnerAttach<span class="p">;</span>
+      │   │       │               └── DBG<span class="o">(</span>EFI_D_ERROR, <span class="s2">&quot;UFP and Type-C&quot;</span><span class="o">)</span><span class="p">;</span>
+      │   │       ├── <span class="k">else</span> <span class="k">if</span><span class="o">(</span>UsbPortHwInfo.ConnectorType<span class="o">[</span><span class="m">0</span><span class="o">]</span> <span class="o">==</span> EFI_USB_PWR_CTRL_USB_CONNECTOR_TYPE_uUSB<span class="o">)</span> //支持micro usb
+      │   │       │   ├── <span class="nv">Status</span> <span class="o">=</span> gPwrCtrlProtocol-&gt;GetVbusDetectStatus<span class="o">(</span>CoreNum, <span class="p">&amp;</span>VbusStatus<span class="o">)</span><span class="p">;</span> //获取vbus状态
+      │   │       │   │   └── EFI_UsbPwrCtrl_GetVbusDetectStatus<span class="o">()</span> // Drivers/UsbPwrCtrlDxe/UsbPwrCtrl.c
+      │   │       │   │       └── UsbPwrCtrlLib_GetVbusDetect<span class="o">(</span>PortIndex, bVbusDetect<span class="o">)</span><span class="p">;</span>
+      │   │       │   │           └── UsbPwrCtrlLibPmSchg_GetVbusDetect<span class="o">(</span>pUsbPwrCtrlHwInfo-&gt;Ports<span class="o">[</span>PortIndex<span class="o">]</span>.VbusDetect.HwInfo, bVbusDetect<span class="o">)</span><span class="p">;</span> // QcomPkg/Library/UsbPwrCtrlLib/UsbPwrCtrlLib.c
+      │   │       │   │               └── PmicSchgProtocol-&gt;UsbinValid<span class="o">(</span>HwInfo.ResourceIndex,bVbusDetect<span class="o">)</span><span class="p">;</span>
+      │   │       │   │                   ├── <span class="nv">errFlag</span> <span class="o">=</span> pm_schg_usb_irq_status<span class="o">(</span>PmicDeviceIndex, PM_SCHG_USB_IRQ_USBIN_PLUGIN, PM_IRQ_STATUS_RT,<span class="o">(</span>boolean*<span class="o">)</span><span class="p">&amp;</span>UsbinPlugedIn<span class="o">)</span><span class="p">;</span> //跟到最后还是读取pmic是否有中断信号
+      │   │       │   │                   └── <span class="nv">Valid</span> <span class="o">=</span> <span class="o">(</span>UsbinPlugedIn<span class="o">)</span> ? TRUE : FALSE<span class="p">;</span> // Drivers/PmicDxe/PmicSchgProtocol.c
+      │   │       │   └── <span class="k">if</span><span class="o">(</span>VbusStatus<span class="o">)</span>
+      │   │       │       └── <span class="k">if</span> <span class="o">(</span>UsbPort-&gt;ConnectState <span class="o">==</span> USBC_STATE_DETACHED<span class="o">)</span>
+      │   │       │           ├── <span class="nv">Message</span> <span class="o">=</span> UsbCfgPortMsgPartnerAttach<span class="p">;</span>
+      │   │       │           ├── Payload-&gt;UsbTypeCPortMode <span class="o">=</span> USB_TYPEC_PORT_MODE_UFP<span class="p">;</span>
+      │   │       │           └── DBG<span class="o">(</span>EFI_D_ERROR, <span class="s2">&quot;UFP and micro-USB&quot;</span><span class="o">)</span><span class="p">;</span>
+      │   │       └── UsbConfigPortsPrintPortStatus<span class="o">(</span>EFI_D_WARN, UsbPort, *Message, CoreNum<span class="o">)</span><span class="p">;</span> //纯打印
+      │   └── switch <span class="o">(</span>Message<span class="o">)</span> <span class="o">{</span> <span class="k">case</span> UsbCfgPortMsgPartnerAttach: <span class="k">case</span> UsbCfgPortMsgPartnerDetach: //承接UsbConfigPortsEventHandler函数获取连接状态及主从模式后，继续获取充电类型。
+      │       └── HandlePortPartnerXtach<span class="o">(</span>Index, Message, Payload.UsbTypeCPortMode<span class="o">)</span><span class="p">;</span>
+      │           ├── <span class="o">(</span>FeaturePcdGet<span class="o">(</span>UsbNoPmic<span class="o">))</span>//如果配置成UsbNoPmic，这里直接赋值SDP device模式
+      │           │   ├── <span class="nv">ChargerType</span> <span class="o">=</span> EFI_USB_PWR_CTRL_HSUSB_CHGPORT_SDP<span class="p">;</span>
+      │           │   └── <span class="nv">PortMode</span> <span class="o">=</span> USB_TYPEC_PORT_MODE_UFP<span class="p">;</span> 
+      │           └── <span class="k">if</span> <span class="o">(</span><span class="nv">Message</span> <span class="o">==</span> UsbCfgPortMsgPartnerAttach<span class="o">)</span> <span class="o">{</span> //Attach
+      │               └── <span class="k">if</span> <span class="o">(</span>IS_HARDWARE_CONFIUGRED<span class="o">(</span>gUsbConfigDevice<span class="o">[</span>CoreNum<span class="o">]</span>.UsbConfig.modeType<span class="o">))</span> 
+      │                   ├── <span class="k">if</span> <span class="o">(</span>IS_USB_PERIPHERAL_MODE<span class="o">(</span>gUsbConfigDevice<span class="o">[</span>CoreNum<span class="o">]</span>.UsbConfig.modeType<span class="o">))</span> 
+      │                   │   ├── <span class="nv">Status</span> <span class="o">=</span> GetChargerPortType<span class="o">(</span>CoreNum, <span class="p">&amp;</span>ChargerType<span class="o">)</span><span class="p">;</span> //BC1.2获取充电类型
+      │                   │   │   ├── <span class="nv">Status</span> <span class="o">=</span> gRT-&gt;GetVariable<span class="o">(</span>L<span class="s2">&quot;UsbfnForceComplianceMode&quot;</span>, <span class="p">&amp;</span>gQcomTokenSpaceGuid, NULL, <span class="p">&amp;</span>UefiVarSize, <span class="p">&amp;</span>UefiVar<span class="o">)</span><span class="p">;</span> //BC1.2获取接口
+      │                   │   │   └── <span class="k">if</span> <span class="o">(</span>!EFI_ERROR<span class="o">(</span>Status<span class="o">)</span> <span class="o">&amp;&amp;</span> <span class="o">(</span>UefiVar !<span class="o">=</span> <span class="m">0</span><span class="o">))</span> 
+      │                   │   │       └── *ChargerPortType <span class="o">=</span> EFI_USB_PWR_CTRL_HSUSB_CHGPORT_SDP<span class="p">;</span>
+      │                   │   └── <span class="k">if</span><span class="o">(</span>FeaturePcdGet<span class="o">(</span>UsbNoPmic<span class="o">))</span> //如果配置成UsbNoPmic，充电类型直接SDP
+      │                   │       └── <span class="nv">ChargerType</span> <span class="o">=</span> EFI_USB_PWR_CTRL_HSUSB_CHGPORT_SDP<span class="p">;</span>
+      │                   └── <span class="k">if</span> <span class="o">(</span>FeaturePcdGet<span class="o">(</span>InitUsbControllerOnBoot<span class="o">))</span> //Pcd配置成启动初始化
+      │                       └── <span class="k">if</span> <span class="o">(</span>gUsbConfigDevice<span class="o">[</span>CoreNum<span class="o">]</span>.EnableStaticCfg.Enabled <span class="o">==</span> TRUE <span class="o">&amp;&amp;</span> gUsbConfigDevice<span class="o">[</span>USB_CORE_0_NICOBAR<span class="o">]</span>.EnableStaticCfg.UsbMode <span class="o">==</span> USB_HOST_MODE_XHCI<span class="o">)</span> //如果默认是host模式，则开始使能usb Controller
+      │                           └── <span class="nv">Status</span> <span class="o">=</span> UsbStartController<span class="o">(</span>CoreNum, UsbCfgMode<span class="o">)</span><span class="p">;</span> //使能usb host
+      ├── <span class="nv">Status</span> <span class="o">=</span> gBS-&gt;SetTimer<span class="o">(</span>PortStateChgEvt,TimerPeriodic,USB_PORT_POLL_INTERVAL<span class="o">)</span><span class="p">;</span>// Set the polling period <span class="k">for</span> the USB Type-C periodic event callback
+      ├── <span class="k">if</span> <span class="o">(</span>!FeaturePcdGet<span class="o">(</span>HostModeSupported<span class="o">))</span>  //Pcd默认配置成host模式为false则配置成device
+      │   ├── gUsbConfigDevice<span class="o">[</span>USB_CORE_0_NICOBAR<span class="o">]</span>.EnableStaticCfg.Enabled <span class="o">=</span> TRUE<span class="p">;</span>
+      │   └── gUsbConfigDevice<span class="o">[</span>USB_CORE_0_NICOBAR<span class="o">]</span>.EnableStaticCfg.UsbMode <span class="o">=</span> USB_DEVICE_MODE_SS<span class="p">;</span>
+      ├── <span class="k">else</span> // // If the user plugs <span class="k">in</span> the host cable during the boot time, configure the USB hardware <span class="k">in</span> the host mode  
+      │   └── <span class="nv">Status</span> <span class="o">=</span> UsbPortGetRtConnectionMode<span class="o">(</span>gUsbConfigDevice<span class="o">[</span>USB_CORE_0_NICOBAR<span class="o">]</span>.UsbPortHandle, <span class="p">&amp;</span>PortMode, USB_CORE_0_NICOBAR<span class="o">)</span><span class="p">;</span> //检测是否有ota线插入
+      │       └── <span class="k">if</span> <span class="o">(</span><span class="nv">PortMode</span> <span class="o">==</span> USB_TYPEC_PORT_MODE_DFP<span class="o">)</span>
+      │           └── gUsbConfigDevice<span class="o">[</span>USB_CORE_0_NICOBAR<span class="o">]</span>.UsbCoreInterface-&gt;ModeType <span class="o">=</span> USB_HOST_MODE<span class="p">;</span> //默认配置成host模式
+      └── <span class="c1">#define USB_PORT_POLL_INTERVAL (1000 * 1000U) //timer是1s轮询一次</span>
 </pre></div>
 </div>
 </section>
@@ -312,8 +312,8 @@ UsbConfigPortsQueryConnectionChange: usbport-&gt;connectstate: DEATT
 <span class="p">}</span><span class="w"></span>
 </pre></div>
 </div>
-<p>能正常检测到vbus和连接状态，但就是没法识别usb，打印如下：
-<img alt="0006_0000.png" src="../../../_images/0006_00002.png" /></p>
+<p>能正常检测到vbus和连接状态，但就是没法识别usb，打印如下：</p>
+<p><img alt="0006_0000.png" src="../../../_images/0006_00002.png" /></p>
 <p>我还以是bc1.2检测出错了。</p>
 </section>
 <section id="usbnopmic">

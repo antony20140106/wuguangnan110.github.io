@@ -16,6 +16,11 @@ Android 11 包含 android.hardware.health HAL 2.1，这是一个从 health@2.0 H
 * 在关机模式充电代码中可以实现更好的 Treble 分离
 * 更好地支持框架来指示设备的电池运行状况
 
+在 Android 11 中，所有healthd代码都被重构为libhealthloop和libhealth2impl ，然后进行修改以实现 health@2.1 HAL。
+这两个库由health@2.0-impl-2.1静态链接，health@2.0-impl-2.1 是 health 2.1 的直通实现。静态链接库使health@2.0-impl-2.1能够执行与healthd相同的工作，例如运行healthd_mainloop和轮询。在 init 中， health@2.1-service将接口IHealth的实现注册到hwservicemanager 。升级具有 Android 8.x 或 9 供应商映像和 Android 11 框架的设备时，供应商映像可能不提供 health@2.1 服务。
+
+![0014_0005.png](images/0014_0005.png)
+
 # Android弃用health@1.0 HIDL
 
 Framework 将继续使用health@1.0直到按标准HAL弃用计划完全弃用为止 。当health@1.0被弃用（条目从 框架兼容性矩阵除去）， healthd和libbatterymonitor必须也系统中除去，以避免未知的healthd行为。由于health@1.0是一个可选的HAL，并且所有 healthd对health@1.0的依赖都受到NULL检查的保护，因此在弃用时不应该中断。

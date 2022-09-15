@@ -31,6 +31,7 @@ https://www.dreamsourcelab.com/download/
 
 不同的硬件设备，设备选项窗口的具体内容也会不同，对于 DSLogic 设备，
 会出现如下图（图 2-6） 所示的硬件选项设置窗口：
+
 ![0002_0005.png](images/0002_0005.png)
 
 * 运行模式：

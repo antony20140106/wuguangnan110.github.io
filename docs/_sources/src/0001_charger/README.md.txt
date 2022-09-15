@@ -20,7 +20,6 @@ NO.|文件名称|摘要
 0015| [power_supply子系统-基础概括](docs/0015_power_supply子系统-基础概括.md) | kernel中为了方便对battery的管理，专门提供了power supply framework
 0014| [qcom_healthd软件流程分析](docs/0014_qcom_healthd软件流程分析.md) | 高通A6650 healthd 守护进程分析。
 0013| [qcom_charger_mp2712调试记录](docs/0013_qcom_charger_mp2712调试记录.md) | 高通A6650 charger mp2721调试记录，该款ic不做bc1.2检测，没有adc采样功能，电流电压检测都将放到电池IC里面。
-0012| [qcom_qcm2290_pm4125_软件架构](docs/0012_qcom_qcm2290_pm4125_软件架构.md) | 高通A6650 charger mp2250架构理解。
 0011| [mt6762_charger_相关参数说明](docs/0011_mt6762_charger_相关参数说明.md) | mtk平台charger相关参数说明
 0010| [mt6762_charger_相关调试经验](docs/0010_mt6762_charger_相关调试经验.md) | charger相关改动经验
 0009| [charger_BMS驱动及整体架构简介](docs/0009_charger_BMS驱动及整体架构简介.md) | BMS功能介绍
