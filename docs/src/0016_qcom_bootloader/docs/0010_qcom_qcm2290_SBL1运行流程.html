@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="zh-CN" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>wugn</title>
+
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script src="../../../_static/translations.js"></script>
+        <script src="../../../_static/js/baidutongji.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="索引" href="../../../genindex.html" />
+    <link rel="search" title="搜索" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../index.html" class="icon icon-home"> wugn_note
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="在文档中搜索" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">qcom</a></li>
+<li><a class="reference internal" href="#refer">refer</a></li>
+<li><a class="reference internal" href="#id1">框架</a></li>
+<li><a class="reference internal" href="#id2">启动流程</a></li>
+<li><a class="reference internal" href="#sbl1">SBL1软件流程分析</a></li>
+<li><a class="reference internal" href="#sbl1-sbl1-aarch64-s">SBL1入口：sbl1_Aarch64.s</a></li>
+<li><a class="reference internal" href="#sbl1-main-ctl">SBL1_MAIN_CTL</a></li>
+<li><a class="reference internal" href="#sbl1-config-table">SBL1_CONFIG_TABLE</a></li>
+<li><a class="reference internal" href="#apdp-pre-procs">apdp_pre_procs</a></li>
+<li><a class="reference internal" href="#apdp-post-procs">apdp_post_procs</a></li>
+<li><a class="reference internal" href="#sbl1pmic">SBL1阶段pmic初始化及开机电压检测</a></li>
+<li><a class="reference internal" href="#log">log</a></li>
+</ul>
+</div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">wugn_note</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs"> 
+<li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+<li>qcom</li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.forward()">Forward</a></li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.back()">Go Back</a> | </li>
+<li style="float: right;margin-left: 10px;"><a href="/index.html">Home</a> | </li>
+
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="qcom">
+<h1>qcom<a class="headerlink" href="#qcom" title="此标题的永久链接"></a></h1>
+<p>高通qcm2290 PBL-SBL1流程分析。全称：Secondary boot loader,SBL1是XBL前运行的一个流程，今天就要分析一下开机前几秒钟起着关键作用的sbl1.</p>
+</section>
+<section id="refer">
+<h1>refer<a class="headerlink" href="#refer" title="此标题的永久链接"></a></h1>
+<ul class="simple">
+<li><p><a class="reference external" href="https://www.freesion.com/article/2106235017/">高通平台ANDROID源码BOOTLOADER分析之SBL1(一)</a></p></li>
+<li><p><a class="reference external" href="https://www.cnblogs.com/linux-xin/p/8124509.html">linux驱动由浅入深系列：PBL-SBL1-(bootloader)LK-Android启动过程详解之一（高通MSM8953启动实例）</a></p></li>
+<li><p><a class="reference external" href="https://www.cnblogs.com/linux-xin/p/8125988.html">高通 MSM8K bootloader之一： SBL1</a></p></li>
+</ul>
+<p>启动相关image介绍</p>
+<ol class="arabic simple">
+<li><p>PBL(Primary Boot Loader)   位于rom中，是芯片上电后执行的真正第一行代码，在正常启动流程中会加载SBL1。如果启动异常会虚拟出9008端口用于紧急下载（短接板子上的force_boot_from_usb引脚(MSM8953 为gpio37)到1.8v可以强制进入紧急下载模式）。</p></li>
+<li><p>SBL1(Second BootLoader stage 1) 位于eMMC中，由PBL加载，初始化buses、DDR、clocks等，会虚拟出9006端口，用于不能开机时dump ram</p></li>
+<li><p>QSEE/TrustZone安全相关，如fuse</p></li>
+<li><p>DEVCFG OEM配置信息（如OEMLock）</p></li>
+<li><p>Debug Policy 调试相关</p></li>
+<li><p>APPSBL即为BootLoader，目前使用LK（littlekernel）</p></li>
+<li><p>HLOS(High LevelOperating System) 即为Linux/Android</p></li>
+<li><p>Modem PBL  即为Modem处理器的PBL</p></li>
+<li><p>MBA(Modem BootAuthenticator) Modem处理器启动鉴权</p></li>
+</ol>
+</section>
+<section id="id1">
+<h1>框架<a class="headerlink" href="#id1" title="此标题的永久链接"></a></h1>
+<p>首先来看一下高通的bootloader流程框图，主要由ap、RPM及modem三部分构成，由于我工作主要涉及到ap侧，所以对RPM和modem侧代码不了解，以后有空时间的话到可以研究一下，框图如下：</p>
+<p><img alt="0010_0000.png" src="../../../_images/0010_00002.png" /></p>
+</section>
+<section id="id2">
+<h1>启动流程<a class="headerlink" href="#id2" title="此标题的永久链接"></a></h1>
+<p>启动流程</p>
+<ol class="arabic simple">
+<li><p>系统上电，使芯片从上电复位开始运行。</p></li>
+<li><p>在Cortex A53中运行的PBL会加载：</p></li>
+</ol>
+<ul class="simple">
+<li><p>a. 从启动设备（如eMMC）加载SBL1 segment1到L2（即为TCM）</p></li>
+<li><p>b. 加载SBL1 segment2到RPM处理器的RAM中。</p></li>
+</ul>
+<ol class="arabic simple" start="3">
+<li><p>SBL1 segment1会初始化DDR，然后完成如下加载：
+a. 从启动设备加载QSEE image到DDR
+b. 从启动设备加载DEVCFG image到DDR
+c. 从启动设备加载Debug Policy image到DDR
+d. 从启动设备加载HLOS APPSBL image到DDR
+e. 从启动设备加载RPMfirmware image到RPM的RAM中。</p></li>
+<li><p>SBL1移交运行控制权给QSEE。QSEE建立安全运行环境，配置xPU，支持fuse。
+a. SBL1运行在AArch32（译者注：名词相关知识见文末“附件介绍一”）模式，而QSEE运行在AArch64模式。为了切换到AArch64模式，SBL1会启动重映射器，操作RMR寄存器，然后触发warm-reset，QSEE就能够运行在AArch64模式了。</p></li>
+<li><p>QSEE通知RPM启动RPM 固件的执行。</p></li>
+<li><p>QSEE移交运行控制权给HLOS APPSBL。
+a. APPSBL只能在AArch32模式开始运行。
+b. 这时AArch32的运行模式切换是在EL3/Monitor模式（译者注：名词相关知识见文末“附件介绍二”）完成的。通过查看APPSBL的ELF头能够得知其需要运行在32位指令集架构下。EL3/Monitor模式改变到32位模式，然后再启动APPSBL。</p></li>
+<li><p>APPSBL加载、验证kernel。APPSBL通过SCM调用改变到HLOS kernel需要的AArch64模式。这和之前LK直接跳转到kernel运行是不同的。</p></li>
+<li><p>HLOS kernel通过PIL加载MBA到DDR</p></li>
+<li><p>HLOS kernel对Hexagon modem DSP进行解复位。</p></li>
+<li><p>Modem PBL继续它的启动。</p></li>
+<li><p>HLOS kernel 通过PIL加载AMSS modemimage到DDR</p></li>
+<li><p>Modem PBL验证MBA然后跳转到MBA。</p></li>
+<li><p>HLOS通过PIL加载WCNSS(Pronto)image到DDR</p></li>
+<li><p>HLOS对WCNSS(Pronto)进行解复位以便Prontoimage开始执行。</p></li>
+<li><p>HLOS通过PIL加载LPASS image到DDR</p></li>
+<li><p>HLOS对LPSAA进行解复位以便LPASSimage开始执行。</p></li>
+</ol>
+<p>下面是流程的简化图，其中区分了AArch32和AArch64位的QSEE/TrustZone：</p>
+<p><img alt="0010_0001.png" src="../../../_images/0010_0001.png" /></p>
+<ul class="simple">
+<li><p>关于eMMC和DDR的初始化时间问题</p></li>
+</ul>
+<p>从上面的描述中已经可以看清，为避免迷惑，在分离出来看看：</p>
+<ol class="arabic simple">
+<li><p>PBL中是含有eMMC驱动的，有访问eMMC的能力，自身运行在MCU内部SRAM中。</p></li>
+<li><p>除了PBL程序的img在MCU片内ROM外，其余img均存储在eMMC中。</p></li>
+<li><p>PBL首先从eMMC加载SBL1到L2（内部缓存并非DDR），SBL1同样运行在片内SRAM。</p></li>
+<li><p>有SBL1初始化DDR各种时序后，DDR自此可用（eMMC一直可用）</p></li>
+<li><p>再由SBL1加载其余各个img到DDR，然后XBL按照linux的正常顺序启动^-^….</p></li>
+</ol>
+</section>
+<section id="sbl1">
+<h1>SBL1软件流程分析<a class="headerlink" href="#sbl1" title="此标题的永久链接"></a></h1>
+<p>下面将SBL1我比较关注的点调用流程总结成如下图，图中的LK指的是XBL，后面再针对关注点展开，逐个分析:</p>
+<p><img alt="0010_0002.png" src="../../../_images/0010_0002.png" /></p>
+</section>
+<section id="sbl1-sbl1-aarch64-s">
+<h1>SBL1入口：sbl1_Aarch64.s<a class="headerlink" href="#sbl1-sbl1-aarch64-s" title="此标题的永久链接"></a></h1>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">QcomPkg\SocPkg\Library\XBLLoaderLib\sbl1_Aarch64.s</span></code>:</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">/*====*====*====*====*====*====*====*====*====*====*====*====*====*====*====*</span>
+
+                              <span class="n">SBL1</span> <span class="n">Aarch64</span>
+
+ <span class="n">GENERAL</span> <span class="n">DESCRIPTION</span>
+   <span class="n">This</span> <span class="n">file</span> <span class="n">bootstraps</span> <span class="n">the</span> <span class="n">processor</span><span class="o">.</span> <span class="n">The</span> <span class="n">Start</span><span class="o">-</span><span class="n">up</span> <span class="n">Primary</span> <span class="n">Bootloader</span>
+   <span class="p">(</span><span class="n">SBL1</span><span class="p">)</span> <span class="n">performs</span> <span class="n">the</span> <span class="n">following</span> <span class="n">functions</span><span class="p">:</span>
+
+      <span class="o">-</span> <span class="n">Set</span> <span class="n">up</span> <span class="n">the</span> <span class="n">hardware</span> <span class="n">to</span> <span class="k">continue</span> <span class="n">boot</span> <span class="n">process</span><span class="o">.</span>
+      <span class="o">-</span> <span class="n">Initialize</span> <span class="n">DDR</span> <span class="n">memory</span>
+      <span class="o">-</span> <span class="n">Load</span> <span class="n">Trust</span><span class="o">-</span><span class="n">Zone</span> <span class="n">OS</span>
+      <span class="o">-</span> <span class="n">Load</span> <span class="n">APPSBL</span> <span class="ow">and</span> <span class="k">continue</span> <span class="n">boot</span> <span class="n">process</span>
+
+   <span class="n">The</span> <span class="n">SBL1</span> <span class="ow">is</span> <span class="n">written</span> <span class="n">to</span> <span class="n">perform</span> <span class="n">the</span> <span class="n">above</span> <span class="n">functions</span> <span class="k">with</span> <span class="n">optimal</span> <span class="n">speed</span><span class="o">.</span>
+   <span class="n">It</span> <span class="n">also</span> <span class="n">attempts</span> <span class="n">to</span> <span class="n">minimize</span> <span class="n">the</span> <span class="n">execution</span> <span class="n">time</span> <span class="ow">and</span> <span class="n">hence</span> <span class="n">reduce</span> <span class="n">boot</span> <span class="n">time</span><span class="o">.</span>
+
+ <span class="n">Copyright</span> <span class="mi">2013</span> <span class="o">-</span> <span class="mi">2018</span> <span class="n">by</span> <span class="n">Qualcomm</span> <span class="n">Technologies</span><span class="p">,</span> <span class="n">Inc</span><span class="o">.</span>
+ <span class="n">All</span> <span class="n">Rights</span> <span class="n">Reserved</span><span class="o">.</span>
+<span class="o">*====*====*====*====*====*====*====*====*====*====*====*====*====*====*====*/</span>
+
+<span class="o">/*====*====*====*====*====*====*====*====*====*====*====*====*====*====*====*/</span>
+
+<span class="n">sbl1_entry_init_stack</span><span class="p">:</span>  
+  <span class="o">//</span> <span class="o">-------------------------------</span>
+  <span class="o">//</span> <span class="n">add</span> <span class="n">more</span> <span class="n">assembly</span> <span class="n">init</span> <span class="n">code</span> <span class="n">here</span> <span class="k">for</span> <span class="n">entering</span> <span class="n">sbl1_main_ctl</span>	
+  <span class="o">//</span> 
+  <span class="o">//</span> <span class="n">restore</span> <span class="n">PBL</span> <span class="n">parameter</span> <span class="ow">and</span> <span class="n">enter</span> <span class="n">sbl1_main_ctl</span>
+  <span class="o">//</span> <span class="o">-------------------------------</span>
+  <span class="n">MOV</span> <span class="n">w0</span><span class="p">,</span> <span class="n">w7</span>
+  <span class="n">BL</span> <span class="n">sbl1_main_ctl</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>此文件引导处理器，主要有实现如下操作：</p>
+<ul>
+<li><p>设置硬件，继续boot进程。</p></li>
+<li><p>初始化ddr。</p></li>
+<li><p>加载Trust_Zone操作系统。</p></li>
+<li><p>加载RPM固件。</p></li>
+<li><p>加载APPSBL然后继续boot进程。</p></li>
+</ul>
+</li>
+</ul>
+</section>
+<section id="sbl1-main-ctl">
+<h1>SBL1_MAIN_CTL<a class="headerlink" href="#sbl1-main-ctl" title="此标题的永久链接"></a></h1>
+<p>此函数位于<code class="docutils literal notranslate"><span class="pre">boot_images/QcomPkg/SocPkg/Library/XBLLoaderLib/sbl1_mc.c</span></code>，主要完成初始化RAM等工作， 注此函数决不return。部分关键源码如下，我加汉字解释的是我认为我们应该关注的部分：</p>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="o">**</span><span class="w"> </span><span class="o">==========================================================================</span><span class="w"></span>
+<span class="o">*/</span><span class="w"></span>
+<span class="cm">/*!</span>
+<span class="cm">*</span>
+<span class="cm">* @brief</span>
+<span class="cm">*   The  Main Controller performs the following functions:</span>
+<span class="cm">*       - Initializes ram</span>
+<span class="cm">*       - And so on...</span>
+<span class="cm">*</span>
+<span class="cm">* @param[in] pbl_shared Pointer to shared data</span>
+<span class="cm">*</span>
+<span class="cm">* @par Dependencies</span>
+<span class="cm">*   None</span>
+<span class="cm">*</span>
+<span class="cm">* @retval</span>
+<span class="cm">*   None</span>
+<span class="cm">*</span>
+<span class="cm">* @par Side Effects</span>
+<span class="cm">*   This function never returns.</span>
+<span class="cm">*</span>
+<span class="cm">*/</span><span class="w"></span>
+<span class="kt">void</span><span class="w"> </span><span class="n">sbl1_main_ctl</span><span class="p">(</span><span class="n">boot_pbl_shared_data_type</span><span class="w"> </span><span class="o">*</span><span class="n">pbl_shared</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">      </span><span class="n">DALResult</span><span class="w"> </span><span class="n">bsy_wait_init</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">  </span><span class="cm">/* Configure Domain access control register */</span><span class="w"></span>
+<span class="w">  </span><span class="n">mmu_set_dacr</span><span class="p">(</span><span class="n">DACR_ALL_DOMAIN_CLIENTS</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">  </span><span class="cm">/* Retrieve info passed from PBL*/</span><span class="w"></span>
+<span class="w">  </span><span class="n">sbl1_retrieve_shared_info_from_pbl</span><span class="p">(</span><span class="n">pbl_shared</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">  </span><span class="cm">/* Initialize shared functions structure - provides other images with function pointers in Loader */</span><span class="w"></span>
+<span class="w">  </span><span class="n">boot_shared_functions_register</span><span class="p">();</span><span class="w"></span>
+
+<span class="w">  </span><span class="cm">/* Initialize SBL memory map */</span><span class="w"></span>
+<span class="w">  </span><span class="n">sbl1_populate_initial_mem_map</span><span class="p">(</span><span class="o">&amp;</span><span class="n">bl_shared_data</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">  </span><span class="cm">/* Calculate the SBL start time for use during boot logger initialization. */</span><span class="w"></span>
+<span class="w">  </span><span class="n">sbl_start_time</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">CALCULATE_TIMESTAMP</span><span class="p">(</span><span class="n">HWIO_IN</span><span class="p">(</span><span class="n">TIMETICK_QTIMER_CLK</span><span class="p">));</span><span class="w"></span>
+<span class="w">  </span><span class="n">sbl_start_time_mpm</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">CALCULATE_MPM_TIMESTAMP</span><span class="p">(</span><span class="n">HWIO_IN</span><span class="p">(</span><span class="n">TIMETICK_CLK</span><span class="p">));</span><span class="w"></span>
+
+<span class="w">  </span><span class="cm">/* Initialize busywait module Note: required before logger init due to uart driver dependency on busywait */</span><span class="w"></span>
+<span class="w">  </span><span class="n">BL_VERIFY</span><span class="p">((</span><span class="n">bsy_wait_init</span><span class="o">=</span><span class="n">boot_busywait_init</span><span class="p">())</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">DAL_SUCCESS</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">uint16</span><span class="p">)</span><span class="n">bsy_wait_init</span><span class="o">|</span><span class="n">BL_ERROR_GROUP_BUSYWAIT</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">  </span><span class="cm">/* Enable qdss workaround*/</span><span class="w"></span>
+<span class="w">  </span><span class="n">BL_VERIFY</span><span class="p">(</span><span class="n">boot_clock_debug_init</span><span class="p">()</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">TRUE</span><span class="p">,</span><span class="w"> </span><span class="n">FALSE</span><span class="o">|</span><span class="n">BL_ERROR_GROUP_CLK</span><span class="w"> </span><span class="p">);</span><span class="w"></span>
+
+<span class="w">  </span><span class="cm">/* Enter debug mode if debug cookie is set */</span><span class="w"></span>
+<span class="w">  </span><span class="n">sbl1_debug_mode_enter</span><span class="p">();</span><span class="w"></span>
+
+<span class="w">  </span><span class="cm">/* Initialize the stack protection canary */</span><span class="w"></span>
+<span class="w">  </span><span class="n">boot_init_stack_chk_canary</span><span class="p">();</span><span class="w"></span>
+
+<span class="w">  </span><span class="cm">/* Initialize boot shared imem */</span><span class="w"></span>
+<span class="w">  </span><span class="n">boot_shared_imem_init</span><span class="p">(</span><span class="o">&amp;</span><span class="n">bl_shared_data</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">  </span><span class="cm">/* Initialize the ChipInfo driver */</span><span class="w"></span>
+<span class="w">  </span><span class="n">ChipInfo_Init</span><span class="p">();</span><span class="w"></span>
+
+<span class="w">  </span><span class="cm">/* Initialize the QSEE interface */</span><span class="w"></span>
+<span class="w">  </span><span class="n">sbl1_init_sbl_qsee_interface</span><span class="p">(</span><span class="o">&amp;</span><span class="n">bl_shared_data</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">sbl_verified_info</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">  </span><span class="cm">/* Initialize dal heap using internal memory */</span><span class="w"></span>
+<span class="w">  </span><span class="n">boot_DALSYS_HeapInit</span><span class="p">(</span><span class="n">boot_internal_heap</span><span class="p">,</span><span class="w"> </span><span class="n">BOOT_INTERNAL_HEAP_SIZE</span><span class="p">,</span><span class="w"> </span><span class="n">FALSE</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">  </span><span class="cm">/*Initialize DAL, needs to be called before modules that uses DAL */</span><span class="w"></span>
+<span class="w">  </span><span class="n">boot_DALSYS_InitMod</span><span class="p">(</span><span class="nb">NULL</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">  </span><span class="cm">/* Initialize boot logger and start the log timer.</span>
+<span class="cm">     This must be done after sbl1_retrieve_shared_info_from_pbl</span>
+<span class="cm">     and boot_secboot_ftbl_init. */</span><span class="w"></span>
+<span class="w">  </span><span class="cm">/*初始化log系统，即串口驱动*/</span><span class="w"></span>
+<span class="w">  </span><span class="n">sbl1_boot_logger_init</span><span class="p">(</span><span class="o">&amp;</span><span class="n">boot_log_data</span><span class="p">,</span><span class="w"> </span><span class="n">pbl_shared</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">  </span><span class="n">boot_log_set_meta_info</span><span class="p">(</span><span class="n">boot_log_data</span><span class="p">.</span><span class="n">meta_info_start</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">  </span><span class="cm">/* Set hash algorithm */</span><span class="w"></span>
+<span class="w">  </span><span class="n">BL_VERIFY</span><span class="p">(</span><span class="n">boot_set_hash_algo</span><span class="p">(</span><span class="n">SBL_HASH_SHA256</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">BL_ERR_NONE</span><span class="p">,</span><span class="w"> </span><span class="n">BL_ERR_UNSUPPORTED_HASH_ALGO</span><span class="o">|</span><span class="n">BL_ERROR_GROUP_BOOT</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="cm">/* Call sbl1_hw_init to config pmic device so we can use PS_HOLD to reset */</span><span class="w"></span>
+<span class="w">  </span><span class="cm">/*配置PMIC芯片，以便我们能通过PS_HOLD复位*/</span><span class="w"></span>
+<span class="w">  </span><span class="n">sbl1_hw_init</span><span class="p">();</span><span class="w"></span>
+
+<span class="cp">#if defined (FEATURE_DEVICEPROGRAMMER_IMAGE) || defined (FEATURE_DDI_IMAGE)</span>
+<span class="w">  </span><span class="cm">/* Enter device programmer does not return */</span><span class="w"></span>
+<span class="w">  </span><span class="n">device_programmer_init</span><span class="p">(</span><span class="o">&amp;</span><span class="n">bl_shared_data</span><span class="p">,</span><span class="w"> </span><span class="n">pbl_shared</span><span class="p">);</span><span class="w"></span>
+<span class="cp">#else</span>
+
+<span class="w">  </span><span class="cm">/* Store the sbl1 hash to shared imem */</span><span class="w"></span>
+<span class="w">  </span><span class="n">boot_store_tpm_hash_block</span><span class="p">(</span><span class="o">&amp;</span><span class="n">bl_shared_data</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">sbl_verified_info</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">  </span><span class="cm">/*-----------------------------------------------------------------------</span>
+<span class="cm">    Process the target-dependent SBL1 procedures</span>
+<span class="cm">  -----------------------------------------------------------------------*/</span><span class="w"></span>
+<span class="w">  </span><span class="cm">/*执行sbl1的目标依赖进程*/</span><span class="w"></span>
+<span class="w">  </span><span class="n">boot_config_process_bl</span><span class="p">(</span><span class="o">&amp;</span><span class="n">bl_shared_data</span><span class="p">,</span><span class="w"> </span><span class="n">SBL1_IMG</span><span class="p">,</span><span class="w"> </span><span class="n">sbl1_config_table</span><span class="p">);</span><span class="w"></span>
+<span class="cp">#endif</span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+</section>
+<section id="sbl1-config-table">
+<h1>SBL1_CONFIG_TABLE<a class="headerlink" href="#sbl1-config-table" title="此标题的永久链接"></a></h1>
+<p>sbl1_config_table为一个结构体数组，里面存储了加载QSEE、RPM、APPSBL等镜像所需要的配置参数及执行函数，位于<code class="docutils literal notranslate"><span class="pre">boot_images/QcomPkg/SocPkg/Library/XBLLoaderLib/sbl1_config.c</span></code>。其关键代码如下：</p>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="cm">/*==========================================================================</span>
+<span class="cm">                      DEFINE TARGET BOOT CONFIG TABLE</span>
+<span class="cm">===========================================================================*/</span><span class="w"></span>
+<span class="n">boot_configuration_table_entry</span><span class="w"> </span><span class="n">sbl1_config_table</span><span class="p">[]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>
+<span class="p">{</span><span class="w"></span>
+<span class="cm">/* host_img_id host_img_type target_img_id target_img_type target_img_sec_type        load   auth   exec   jump   exec_func jump_func   pre_procs       post_procs         load_cancel              target_img_partition_id         target_img_str            boot_ssa_enabled enable_xpu xpu_proc_id sbl_qsee_interface_index seg_elf_entry_point whitelist_ptr */</span><span class="w"></span>
+<span class="w">  </span><span class="cm">/* 省略 */</span><span class="w"></span>
+<span class="w">  </span><span class="p">{</span><span class="n">SBL1_IMG</span><span class="p">,</span><span class="w"> </span><span class="n">CONFIG_IMG_QC</span><span class="p">,</span><span class="w"> </span><span class="n">GEN_IMG</span><span class="p">,</span><span class="w"> </span><span class="n">CONFIG_IMG_ELF</span><span class="p">,</span><span class="w">     </span><span class="n">SECBOOT_APDP_SW_TYPE</span><span class="p">,</span><span class="w">        </span><span class="n">TRUE</span><span class="p">,</span><span class="w">  </span><span class="n">TRUE</span><span class="p">,</span><span class="w">  </span><span class="n">FALSE</span><span class="p">,</span><span class="w"> </span><span class="n">FALSE</span><span class="p">,</span><span class="w"> </span><span class="nb">NULL</span><span class="p">,</span><span class="w"> </span><span class="nb">NULL</span><span class="p">,</span><span class="w">           </span><span class="n">apdp_pre_procs</span><span class="p">,</span><span class="w"> </span><span class="n">apdp_post_procs</span><span class="p">,</span><span class="w">   </span><span class="n">apdp_load_cancel</span><span class="p">,</span><span class="w">        </span><span class="n">apdp_partition_id</span><span class="p">,</span><span class="w">              </span><span class="n">APDP_BOOT_LOG_STR</span><span class="p">,</span><span class="w">        </span><span class="n">FALSE</span><span class="p">,</span><span class="w"> </span><span class="n">FALSE</span><span class="p">,</span><span class="w"> </span><span class="mh">0x0</span><span class="p">,</span><span class="w"> </span><span class="mh">0x0</span><span class="p">,</span><span class="w"> </span><span class="mh">0x0</span><span class="p">,</span><span class="w">                    </span><span class="n">apdp_img_whitelist</span><span class="w">    </span><span class="p">},</span><span class="w"></span>
+<span class="w">  </span><span class="cm">/* SBL1 -&gt; QSEE */</span><span class="w"></span>
+<span class="w">  </span><span class="p">{</span><span class="n">SBL1_IMG</span><span class="p">,</span><span class="w"> </span><span class="n">CONFIG_IMG_QC</span><span class="p">,</span><span class="w"> </span><span class="n">GEN_IMG</span><span class="p">,</span><span class="w"> </span><span class="n">CONFIG_IMG_ELF</span><span class="p">,</span><span class="w">     </span><span class="n">SECBOOT_APPSBL_SW_TYPE</span><span class="p">,</span><span class="w">      </span><span class="n">TRUE</span><span class="p">,</span><span class="w">  </span><span class="n">TRUE</span><span class="p">,</span><span class="w">  </span><span class="n">FALSE</span><span class="p">,</span><span class="w"> </span><span class="n">TRUE</span><span class="p">,</span><span class="w">  </span><span class="nb">NULL</span><span class="p">,</span><span class="w"> </span><span class="n">qsee_jump_func</span><span class="p">,</span><span class="w"> </span><span class="nb">NULL</span><span class="p">,</span><span class="w">           </span><span class="n">appsbl_post_procs</span><span class="p">,</span><span class="w"> </span><span class="n">appsbl_load_cancel</span><span class="p">,</span><span class="w">      </span><span class="n">appsbl_partition_id</span><span class="p">,</span><span class="w">            </span><span class="n">APPSBL_BOOT_LOG_STR</span><span class="p">,</span><span class="w">      </span><span class="n">FALSE</span><span class="p">,</span><span class="w"> </span><span class="n">FALSE</span><span class="p">,</span><span class="w"> </span><span class="mh">0x0</span><span class="p">,</span><span class="w"> </span><span class="mh">0x0</span><span class="p">,</span><span class="w"> </span><span class="n">SCL_XBL_CORE_CODE_BASE</span><span class="p">,</span><span class="w"> </span><span class="n">xbl_core_img_whitelist</span><span class="p">},</span><span class="w"></span>
+<span class="w">  </span><span class="p">{</span><span class="n">NONE_IMG</span><span class="p">,</span><span class="w"> </span><span class="p">}</span><span class="w"></span>
+<span class="p">};</span><span class="w"></span>
+</pre></div>
+</div>
+</section>
+<section id="apdp-pre-procs">
+<h1>apdp_pre_procs<a class="headerlink" href="#apdp-pre-procs" title="此标题的永久链接"></a></h1>
+<p>apdp_pre_procs为一个函数结构体数组，在QSEE加载之前执行。源码注释写得很清楚并且容易理解，我就不多此一举去翻译了，关键源码如下：</p>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="cm">/*==========================================================================</span>
+<span class="cm">              FUNCTIONS TO EXECUTE BEFORE APDP IMAGE LOADING</span>
+<span class="cm">===========================================================================*/</span><span class="w"></span>
+<span class="n">boot_function_table_type</span><span class="w"> </span><span class="n">apdp_pre_procs</span><span class="p">[]</span><span class="w"> </span><span class="o">=</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="cm">/* Initialize the flash device */</span><span class="w"></span>
+<span class="w">  </span><span class="p">{</span><span class="n">boot_flash_init</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;boot_flash_init&quot;</span><span class="p">},</span><span class="w"></span>
+
+<span class="w">  </span><span class="cm">/* Initialize XBL config Lib */</span><span class="w"></span>
+<span class="w">  </span><span class="p">{</span><span class="n">sbl1_xblconfig_init</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;sbl1_xblconfig_init&quot;</span><span class="p">},</span><span class="w"></span>
+
+<span class="w">  </span><span class="cm">/*Initialize feature configuration from xbl config image*/</span><span class="w"></span>
+<span class="w">  </span><span class="p">{</span><span class="n">sbl1_feature_config_init</span><span class="p">,</span><span class="s">&quot;sbl1_feature_config_init&quot;</span><span class="p">},</span><span class="w"></span>
+
+<span class="w">  </span><span class="cm">/* Initialize the default CDT before reading CDT from flash */</span><span class="w"></span>
+<span class="w">  </span><span class="p">{</span><span class="n">boot_config_data_table_default_init</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;boot_config_data_table_default_init&quot;</span><span class="p">},</span><span class="w"></span>
+
+<span class="w">  </span><span class="cm">/* Set default DDR params */</span><span class="w"></span>
+<span class="w">  </span><span class="p">{</span><span class="n">sbl1_ddr_set_default_params</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;sbl1_ddr_set_default_params&quot;</span><span class="p">},</span><span class="w"></span>
+
+<span class="w">  </span><span class="cm">/* Copy the configure data table from flash */</span><span class="w"></span>
+<span class="w">  </span><span class="p">{</span><span class="n">boot_config_data_table_init</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;boot_config_data_table_init&quot;</span><span class="p">},</span><span class="w"></span>
+
+<span class="w">  </span><span class="cm">/* Store platform id */</span><span class="w"></span>
+<span class="w">  </span><span class="p">{</span><span class="n">sbl1_hw_platform_pre_ddr</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;sbl1_hw_platform_pre_ddr&quot;</span><span class="p">},</span><span class="w"></span>
+
+<span class="w">  </span><span class="cm">/* Initialize PMIC and railway driver */</span><span class="w"></span>
+<span class="w">  </span><span class="p">{</span><span class="n">sbl1_hw_pre_ddr_init</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;sbl1_hw_pre_ddr_init&quot;</span><span class="p">},</span><span class="w"></span>
+
+<span class="w">  </span><span class="cm">/* Check if forced dload timeout reset cookie is set */</span><span class="w"></span>
+<span class="w">  </span><span class="p">{</span><span class="n">boot_dload_handle_forced_dload_timeout</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;boot_dload_handle_forced_dload_timeout&quot;</span><span class="p">},</span><span class="w"></span>
+
+<span class="w">  </span><span class="cm">/* Configure ddr parameters based on eeprom CDT table data. */</span><span class="w"></span>
+<span class="w">  </span><span class="p">{</span><span class="n">sbl1_ddr_set_params</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;sbl1_ddr_set_params&quot;</span><span class="p">},</span><span class="w"></span>
+
+<span class="w">  </span><span class="cm">/* Initialize DDR */</span><span class="w"></span>
+<span class="w">  </span><span class="p">{</span><span class="n">sbl1_ddr_init</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;sbl1_ddr_init&quot;</span><span class="p">},</span><span class="w"></span>
+
+<span class="w">  </span><span class="cm">/* Train DDR if applicable */</span><span class="w"></span>
+<span class="w">  </span><span class="p">{</span><span class="n">sbl1_do_ddr_training</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;sbl1_do_ddr_training&quot;</span><span class="p">},</span><span class="w"></span>
+
+<span class="w">  </span><span class="cm">/*----------------------------------------------------------------------</span>
+<span class="cm">   Run deviceprogrammer if compiling the deviceprogrammer_ddr image.</span>
+<span class="cm">   In XBL builds the function below is stubbed out (does nothing)</span>
+<span class="cm">  ----------------------------------------------------------------------*/</span><span class="w"></span>
+<span class="w">  </span><span class="p">{</span><span class="n">sbl1_hand_control_to_devprog_ddr_or_ddi</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;sbl1_hand_control_to_devprog_ddr_or_ddi&quot;</span><span class="p">},</span><span class="w"></span>
+
+<span class="cp">#ifndef FEATURE_DEVICEPROGRAMMER_IMAGE</span>
+
+<span class="w">  </span><span class="cm">/* Initialize SBL1 DDR ZI region, relocate boot log to DDR */</span><span class="w"></span>
+<span class="w">  </span><span class="p">{</span><span class="n">sbl1_post_ddr_init</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;sbl1_post_ddr_init&quot;</span><span class="p">},</span><span class="w"></span>
+
+<span class="w">  </span><span class="p">{</span><span class="n">sbl1_hw_init_secondary</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;sbl1_hw_init_secondary&quot;</span><span class="p">},</span><span class="w"></span>
+
+<span class="cp">#endif </span><span class="cm">/*FEATURE_DEVICEPROGRAMMER_IMAGE*/</span><span class="cp"></span>
+
+<span class="w">  </span><span class="cm">/* Last entry in the table. */</span><span class="w"></span>
+<span class="w">  </span><span class="nb">NULL</span><span class="w"></span>
+<span class="p">};</span><span class="w"></span>
+</pre></div>
+</div>
+</section>
+<section id="apdp-post-procs">
+<h1>apdp_post_procs<a class="headerlink" href="#apdp-post-procs" title="此标题的永久链接"></a></h1>
+<p>post_procs同样也为一个函数结构体数组，其在加载QSEE之后执行。关键源码如下：</p>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="cm">/*==========================================================================</span>
+<span class="cm">   FUNCTIONS TO EXECUTE AFTER APDP LOADING</span>
+<span class="cm">===========================================================================*/</span><span class="w"></span>
+<span class="n">boot_function_table_type</span><span class="w"> </span><span class="n">apdp_post_procs</span><span class="p">[]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>
+<span class="p">{</span><span class="w"></span>
+<span class="cp">#ifndef FEATURE_DEVICEPROGRAMMER_IMAGE</span>
+
+<span class="cm">/* Backup QSEE and QHEE region for ramdumps */</span><span class="w">  </span>
+<span class="w">  </span><span class="p">{</span><span class="n">boot_dload_dump_security_regions</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;boot_dload_dump_security_regions&quot;</span><span class="p">},</span><span class="w"></span>
+
+<span class="w">  </span><span class="cm">/* Check to see if DLOAD mode needs to be entered */</span><span class="w"></span>
+<span class="w">  </span><span class="p">{</span><span class="n">boot_dload_check</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;boot_dload_check&quot;</span><span class="p">},</span><span class="w"></span>
+
+<span class="w">  </span><span class="cm">/* Set the memory barrier pointer to shared memory */</span><span class="w"></span>
+<span class="w">  </span><span class="p">{</span><span class="n">boot_cache_set_memory_barrier</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;boot_cache_set_memory_barrier&quot;</span><span class="p">},</span><span class="w"></span>
+
+<span class="w">  </span><span class="cm">/*----------------------------------------------------------------------</span>
+<span class="cm">   Put SMEM in debug state such that smem_alloc() calls will return NULL. </span>
+<span class="cm">   The state is changed back to normal once smem_boot_init() is called.</span>
+<span class="cm">   This call has to be made after setting the memory barrier.</span>
+<span class="cm">  ----------------------------------------------------------------------*/</span><span class="w"></span>
+<span class="w">  </span><span class="p">{</span><span class="n">boot_smem_debug_init</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;boot_smem_debug_init&quot;</span><span class="p">},</span><span class="w">  </span>
+<span class="w">    </span>
+<span class="w">  </span><span class="cm">/* Initialize shared memory after dload to preserve logs */</span><span class="w"></span>
+<span class="w">  </span><span class="p">{</span><span class="n">boot_smem_init</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;boot_smem_init&quot;</span><span class="p">},</span><span class="w"></span>
+
+<span class="w">  </span><span class="cm">/* Initialize SMEM minidump table */</span><span class="w"></span>
+<span class="w">  </span><span class="p">{</span><span class="n">boot_smem_alloc_for_minidump</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;boot_smem_alloc_for_minidump&quot;</span><span class="p">},</span><span class="w"></span>
+
+<span class="w">  </span><span class="cm">/* Store Power on Status in SMEM. */</span><span class="w">  </span>
+<span class="w">  </span><span class="p">{</span><span class="n">boot_smem_store_pon_status</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;boot_smem_store_pon_status&quot;</span><span class="p">},</span><span class="w"></span>
+
+<span class="w">  </span><span class="cm">/* Store the platform id to smem */</span><span class="w"></span>
+<span class="w">  </span><span class="p">{</span><span class="n">sbl1_hw_platform_smem</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;sbl1_hw_platform_smem&quot;</span><span class="p">},</span><span class="w"></span>
+
+<span class="w">  </span><span class="p">{(</span><span class="n">boot_procedure_func_type</span><span class="p">)</span><span class="w"> </span><span class="n">boot_clock_init_rpm</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;boot_clock_init_rpm&quot;</span><span class="p">},</span><span class="w"></span>
+
+<span class="w">  </span><span class="p">{</span><span class="n">boot_vsense_copy_to_smem</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;boot_vsense_copy_to_smem&quot;</span><span class="p">},</span><span class="w"></span>
+
+<span class="w">  </span><span class="cm">/*----------------------------------------------------------------------</span>
+<span class="cm">   Get shared data out of the flash device module</span>
+<span class="cm">  ----------------------------------------------------------------------*/</span><span class="w"></span>
+<span class="w">  </span><span class="p">{</span><span class="n">boot_share_flash_data</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;boot_share_flash_data&quot;</span><span class="p">},</span><span class="w"></span>
+<span class="w">  </span>
+<span class="w">  </span><span class="cm">/*----------------------------------------------------------------------</span>
+<span class="cm">   populate the ram partition table</span>
+<span class="cm">  ----------------------------------------------------------------------*/</span><span class="w"></span>
+<span class="w">  </span><span class="p">{</span><span class="n">boot_populate_ram_partition_table</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;boot_populate_ram_partition_table&quot;</span><span class="p">},</span><span class="w"></span>
+
+<span class="w">  </span><span class="cm">/*populate ddr details shared memory*/</span><span class="w"></span>
+<span class="w">  </span><span class="p">{</span><span class="n">boot_populate_ddr_details_shared_table</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;boot_populate_ddr_details_shared_table&quot;</span><span class="p">},</span><span class="w"></span>
+
+<span class="w">  </span><span class="cm">/*----------------------------------------------------------------------</span>
+<span class="cm">   Initialize GPIO for low power configuration</span>
+<span class="cm">  ----------------------------------------------------------------------*/</span><span class="w"></span>
+<span class="w">  </span><span class="p">{</span><span class="n">sbl1_tlmm_init</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;sbl1_tlmm_init&quot;</span><span class="p">},</span><span class="w"></span>
+<span class="w">  </span>
+<span class="w">  </span><span class="cm">/*-----------------------------------------------------------------------</span>
+<span class="cm">   Calls efs cookie handling api to perform efs backup/restore</span>
+<span class="cm">  -----------------------------------------------------------------------*/</span><span class="w">  </span>
+<span class="w">  </span><span class="p">{</span><span class="n">sbl1_efs_handle_cookies</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;sbl1_efs_handle_cookies&quot;</span><span class="p">},</span><span class="w"></span>
+<span class="w">    </span>
+<span class="w">  </span><span class="cm">/*-----------------------------------------------------------------------</span>
+<span class="cm">   APT Security Test</span>
+<span class="cm">   ----------------------------------------------------------------------*/</span><span class="w"></span>
+<span class="w">   </span><span class="p">{(</span><span class="n">boot_procedure_func_type</span><span class="p">)</span><span class="w"> </span><span class="n">boot_apt_test</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;boot_apt_test&quot;</span><span class="p">},</span><span class="w"></span>
+
+<span class="cp">#endif </span><span class="cm">/* FEATURE_DEVICEPROGRAMMER_IMAGE */</span><span class="cp"></span>
+
+<span class="w">  </span><span class="cm">/* Last entry in the table. */</span><span class="w"></span>
+<span class="w">  </span><span class="nb">NULL</span><span class="w"> </span>
+<span class="p">};</span><span class="w"></span>
+</pre></div>
+</div>
+</section>
+<section id="sbl1pmic">
+<h1>SBL1阶段pmic初始化及开机电压检测<a class="headerlink" href="#sbl1pmic" title="此标题的永久链接"></a></h1>
+<p>我们从<code class="docutils literal notranslate"><span class="pre">apdp_pre_func</span></code>中了解到，在这里会对pmic进行初始化和开机电压检测：</p>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="w">  </span><span class="cm">/* Initialize PMIC and railway driver */</span><span class="w"></span>
+<span class="w">  </span><span class="p">{</span><span class="n">sbl1_hw_pre_ddr_init</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;sbl1_hw_pre_ddr_init&quot;</span><span class="p">},</span><span class="w"></span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">QcomPkg/SocPkg/Library/XBLLoaderLib/sbl1_hw.c</span></code>程序流程：</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span>* sbl1_hw_pre_ddr_init
+  ├── BL_VERIFY((pm_device_init=boot_pm_device_init()) == PM_ERR_FLAG__SUCCESS, (uint16)pm_device_init|BL_ERROR_GROUP_PMIC);
+  │   └── pm_device_init(); #QcomPkg/XBLLoader/boot_extern_pmic_interface.c
+  │       ├── pm_target_information_init();
+  │       ├── pm_device_pre_init();
+  │       ├── pm_pon_init();
+  │       ├── pm_pbs_info_rom_init();  /* Read PBS INFO for the pmic rom devices */
+  │       ├── pm_sbl_pre_config(); /* SBL Pre Configuration */
+  │       ├── pm_sbl_config(); /* SBL Configuration */
+  │       ├── pm_sbl_config_test(); /* SBL Configuration validation, only executes complete code if spare reg 0x88F bit 0 is set*/
+  │       ├── pm_pbs_info_ram_init();  /* Read PBS INFO for the pmic ram devices */
+  │       ├── pm_pbs_ram_version_validation_test(); /* PBS RAM Version validation, only executes complete code if spare reg 0x88F bit 0 is set*/
+  │       └──  pm_device_post_init(); /* Initialize PMIC with the ones PDM can not perform */
+  ├── BL_VERIFY((pm_driver_init=boot_pm_driver_init()) == PM_ERR_FLAG__SUCCESS, (uint16)pm_driver_init|BL_ERROR_GROUP_PMIC);
+  │   └── pm_driver_init();
+  │       ├── pm_device_init_status()
+  │       ├── pm_driver_pre_init ();
+  │       └── pm_driver_post_init ();
+  └── BL_VERIFY((pm_sbl_chg_init=boot_pm_sbl_chg_init()) == PM_ERR_FLAG__SUCCESS, (uint16)pm_sbl_chg_init|BL_ERROR_GROUP_PMIC);
+      └── pm_sbl_chg_init();
+          └── if(pm_sbl_is_charging_applicable()) //判断是否是支持充电的平台，支持
+              ├── pm_chg_is_debug_board_present(&amp;debug_board_present);
+              │   ├── pm_chg_get_batt_id(PM_BATT_ID_PU_30K, &amp;battery_id); //获取Battery ID，如果有，表示is_debug_board
+              │   └── pm_log_message(&quot;Battery ID: %dOhm&quot;, battery_id); 
+              ├── pm_chg_is_battery_present(&amp;battery_present); //判断电池是否在位，这里貌似有没有电池都是在位状态
+              │   └── pm_bmd_get_battery_missing_rt_status(pm_chg_get_pmic_index(), PM_BMD_BAT_MISS_STS_DEB, &amp;battery_missing);
+              │       └── pm_comm_read_byte(SLAVE_ID, ADDRESS(bmd_bat_miss_sts), &amp;data, 0);
+              ├── if(battery_present == FALSE) return err_flag; //没电池，不往下跑了
+              ├── pm_chg_enable_usb_charging(TRUE); //使能充电
+              │   └── pm_scpq_chgr_enable_charging(pm_chg_get_pmic_index(), enable);
+              │       └── pm_comm_write_byte_mask(SLAVE_ID, reg, mask, data, 0);
+              ├── pm_app_chg_check_weak_battery_status(); //检测电池电压是否低压
+              │   └── while(TRUE) //循环检测电池电压，直达大于阈值，才继续往下走
+              │       ├── pm_chg_get_vbatt(&amp;battery_voltage);
+              │       ├── pm_chg_get_ibatt(&amp;battery_current);
+              │       ├── if(battery_voltage &gt; charger_config-&gt;dead_battery_threshold) break; //如果电压大于dead_battery_threshold跳出循环
+              │       ├── pm_chg_is_charging_ongoing(&amp;charging_ongoing);
+              │       └── if(FALSE == charging_ongoing) err_flag |= pm_device_shutdown(); //如果没有在充电则关机
+              └── pm_sbl_chg_post_init();
+                  └── pm_err_flag_type err_flag = PM_ERR_FLAG_SUCCESS;
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>正常启动log打印如下：</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">B</span> <span class="o">-</span>    <span class="mi">531310</span> <span class="o">-</span> <span class="n">PM</span><span class="p">:</span> <span class="n">Battery</span> <span class="n">ID</span><span class="p">:</span> <span class="mi">99615</span><span class="n">Ohm</span>
+<span class="n">B</span> <span class="o">-</span>    <span class="mi">984878</span> <span class="o">-</span> <span class="n">PM</span><span class="p">:</span> <span class="n">Charger</span> <span class="n">SRC</span><span class="p">:</span> <span class="n">SDP</span>
+<span class="n">B</span> <span class="o">-</span>    <span class="mi">984964</span> <span class="o">-</span> <span class="n">PM</span><span class="p">:</span> <span class="n">VBAT</span><span class="p">:</span> <span class="mi">4592</span><span class="n">mV</span> <span class="n">IBAT</span><span class="p">:</span> <span class="mi">106</span><span class="n">mA</span>
+<span class="n">B</span> <span class="o">-</span>    <span class="mi">988249</span> <span class="o">-</span> <span class="n">PM</span><span class="p">:</span> <span class="n">CHG</span> <span class="n">Init</span> <span class="c1"># SPMI Transn: 4251</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>低压状态，不接USB充电，直接关机：</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">B</span> <span class="o">-</span>    <span class="mi">420999</span> <span class="o">-</span> <span class="n">PM</span><span class="p">:</span> <span class="n">Battery</span> <span class="n">ID</span><span class="p">:</span> <span class="mi">99480</span><span class="n">Ohm</span>
+<span class="n">B</span> <span class="o">-</span>    <span class="mi">421081</span> <span class="o">-</span> <span class="n">PM</span><span class="p">:</span> <span class="n">USB</span> <span class="ow">not</span> <span class="n">inserted</span>
+<span class="n">B</span> <span class="o">-</span>    <span class="mi">424830</span> <span class="o">-</span> <span class="n">PM</span><span class="p">:</span> <span class="n">VBAT</span><span class="p">:</span> <span class="mi">3222</span><span class="n">mV</span> <span class="n">IBAT</span><span class="p">:</span> <span class="mi">3</span><span class="n">mA</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>低压接USB充电，充电过程中会循环检测电池电压：</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">B</span> <span class="o">-</span>    <span class="mi">414931</span> <span class="o">-</span> <span class="n">PM</span><span class="p">:</span> <span class="n">Battery</span> <span class="n">ID</span><span class="p">:</span> <span class="mi">99422</span><span class="n">Ohm</span>
+<span class="n">B</span> <span class="o">-</span>    <span class="mi">868498</span> <span class="o">-</span> <span class="n">PM</span><span class="p">:</span> <span class="n">Charger</span> <span class="n">SRC</span><span class="p">:</span> <span class="n">SDP</span>
+<span class="n">B</span> <span class="o">-</span>    <span class="mi">868670</span> <span class="o">-</span> <span class="n">PM</span><span class="p">:</span> <span class="n">VBAT</span><span class="p">:</span> <span class="mi">3253</span><span class="n">mV</span> <span class="n">IBAT</span><span class="p">:</span> <span class="mi">0</span><span class="n">mA</span>
+<span class="n">B</span> <span class="o">-</span>   <span class="mi">1322490</span> <span class="o">-</span> <span class="n">PM</span><span class="p">:</span> <span class="n">Charger</span> <span class="n">SRC</span><span class="p">:</span> <span class="n">SDP</span>
+<span class="n">B</span> <span class="o">-</span>   <span class="mi">1822601</span> <span class="o">-</span> <span class="n">PM</span><span class="p">:</span> <span class="n">VBAT</span><span class="p">:</span> <span class="mi">3252</span><span class="n">mV</span> <span class="n">IBAT</span><span class="p">:</span> <span class="mi">0</span><span class="n">mA</span>
+<span class="n">B</span> <span class="o">-</span>   <span class="mi">2273280</span> <span class="o">-</span> <span class="n">PM</span><span class="p">:</span> <span class="n">Charger</span> <span class="n">SRC</span><span class="p">:</span> <span class="n">SDP</span>
+<span class="n">B</span> <span class="o">-</span>   <span class="mi">2773510</span> <span class="o">-</span> <span class="n">PM</span><span class="p">:</span> <span class="n">VBAT</span><span class="p">:</span> <span class="mi">3252</span><span class="n">mV</span> <span class="n">IBAT</span><span class="p">:</span> <span class="mi">0</span><span class="n">mA</span>
+</pre></div>
+</div>
+<p>由于SBL阶段检测电池电量没有低电量图片显示，而XBL阶段也做了相同方式的检测，建议去掉该阶段的检测，将电压阈值降低，修改如下：</p>
+<div class="highlight-diff notranslate"><div class="highlight"><pre><span></span><span class="gd">--- a/A6650_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/SocPkg/AgattiPkg/Settings/PMIC/pm_config_target.c</span><span class="w"></span>
+<span class="gi">+++ b/A6650_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/SocPkg/AgattiPkg/Settings/PMIC/pm_config_target.c</span><span class="w"></span>
+<span class="gu">@@ -133,7 +133,7 @@ sbl_pon_specific_data[1] =</span><span class="w"></span>
+<span class="w"> </span>pm_chg_charger_config_type pm_charger_config =<span class="w"></span>
+<span class="w"> </span>{<span class="w"></span>
+<span class="w"> </span>  .pmic_index_charger                 = 0,                                          // PMIC_A, Cocos<span class="w"></span>
+<span class="gd">-  .dead_battery_threshold             = 3450,                                       // Increase UEFI bootup threshold to 3.45V. This will allow UEFI to draw additional current from USBIN</span><span class="w"></span>
+<span class="gi">+  .dead_battery_threshold             = 3200,                                       // Increase UEFI bootup threshold to 3.45V. This will allow UEFI to draw additional current from USBIN</span><span class="w"></span>
+</pre></div>
+</div>
+</section>
+<section id="log">
+<h1>log<a class="headerlink" href="#log" title="此标题的永久链接"></a></h1>
+<ul class="simple">
+<li><p>qcm2290 SBL1启动log如下：</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">B</span> <span class="o">-</span>    <span class="mi">266600</span> <span class="o">-</span> <span class="n">SBL1</span><span class="p">,</span> <span class="n">Start</span> <span class="p">(</span><span class="n">MPM</span> <span class="n">timestamp</span> <span class="o">=</span> <span class="mi">271419</span><span class="p">)</span>
+<span class="n">B</span> <span class="o">-</span>    <span class="mi">371193</span> <span class="o">-</span> <span class="n">SBL1</span> <span class="n">BUILD</span> <span class="o">@</span> <span class="mi">17</span><span class="p">:</span><span class="mi">43</span><span class="p">:</span><span class="mi">08</span> <span class="n">on</span> <span class="n">Jun</span> <span class="mi">19</span> <span class="mi">2022</span>
+<span class="n">B</span> <span class="o">-</span>    <span class="mi">376524</span> <span class="o">-</span> <span class="n">usb</span><span class="p">:</span> <span class="n">hs_phy_nondrive_start</span>
+<span class="n">B</span> <span class="o">-</span>    <span class="mi">380893</span> <span class="o">-</span> <span class="n">usb</span><span class="p">:</span> <span class="n">hs_phy_nondrive_finish</span>
+<span class="n">D</span> <span class="o">-</span>      <span class="mi">8528</span> <span class="o">-</span> <span class="n">sbl1_hw_init</span>
+<span class="n">D</span> <span class="o">-</span>        <span class="mi">13</span> <span class="o">-</span> <span class="n">boot_flash_init</span>
+<span class="n">D</span> <span class="o">-</span>      <span class="mi">5929</span> <span class="o">-</span> <span class="n">Auth</span> <span class="n">Metadata</span>
+<span class="n">D</span> <span class="o">-</span>     <span class="mi">30154</span> <span class="o">-</span> <span class="n">sbl1_xblconfig_init</span>
+<span class="n">D</span> <span class="o">-</span>         <span class="mi">4</span> <span class="o">-</span> <span class="n">sbl1_feature_config_init</span>
+<span class="n">D</span> <span class="o">-</span>         <span class="mi">2</span> <span class="o">-</span> <span class="n">boot_config_data_table_default_init</span>
+<span class="n">D</span> <span class="o">-</span>        <span class="mi">18</span> <span class="o">-</span> <span class="n">sbl1_ddr_set_default_params</span>
+<span class="n">B</span> <span class="o">-</span>    <span class="mi">434294</span> <span class="o">-</span> <span class="n">Using</span> <span class="n">default</span> <span class="n">CDT</span>
+<span class="n">D</span> <span class="o">-</span>      <span class="mi">3914</span> <span class="o">-</span> <span class="n">boot_config_data_table_init</span>
+<span class="n">B</span> <span class="o">-</span>    <span class="mi">441262</span> <span class="o">-</span> <span class="n">CDT</span> <span class="n">Version</span><span class="p">:</span><span class="mi">3</span><span class="p">,</span><span class="n">Platform</span> <span class="n">ID</span><span class="p">:</span><span class="mi">34</span><span class="p">,</span><span class="n">Major</span> <span class="n">ID</span><span class="p">:</span><span class="mi">1</span><span class="p">,</span><span class="n">Minor</span> <span class="n">ID</span><span class="p">:</span><span class="mi">0</span><span class="p">,</span><span class="n">Subtype</span><span class="p">:</span><span class="mi">0</span>
+<span class="n">D</span> <span class="o">-</span>      <span class="mi">9483</span> <span class="o">-</span> <span class="n">sbl1_hw_platform_pre_ddr</span>
+<span class="n">D</span> <span class="o">-</span>      <span class="mi">2488</span> <span class="o">-</span> <span class="n">devcfg</span> <span class="n">init</span>
+<span class="n">B</span> <span class="o">-</span>    <span class="mi">458658</span> <span class="o">-</span> <span class="n">PM</span><span class="p">:</span> <span class="n">PM</span> <span class="mi">0</span><span class="o">=</span><span class="mh">0x8000028000000010</span><span class="p">:</span><span class="mh">0x0</span>
+<span class="n">B</span> <span class="o">-</span>    <span class="mi">458725</span> <span class="o">-</span> <span class="n">PM</span><span class="p">:</span> <span class="n">POWER</span> <span class="n">ON</span> <span class="n">by</span> <span class="n">USB_CHG</span><span class="p">,</span> <span class="n">POWER</span> <span class="n">OFF</span> <span class="n">by</span> <span class="n">PS_HOLD</span>
+<span class="n">B</span> <span class="o">-</span>    <span class="mi">518522</span> <span class="o">-</span> <span class="n">PM</span><span class="p">:</span> <span class="n">SET_VAL</span><span class="p">:</span><span class="n">Skip</span>
+<span class="n">B</span> <span class="o">-</span>    <span class="mi">518690</span> <span class="o">-</span> <span class="n">PM</span><span class="p">:</span> <span class="n">PSI</span><span class="p">:</span> <span class="n">b0x00_v0x14</span>
+<span class="n">B</span> <span class="o">-</span>    <span class="mi">525025</span> <span class="o">-</span> <span class="n">PM</span><span class="p">:</span> <span class="n">Device</span> <span class="n">Init</span> <span class="c1"># SPMI Transn: 3996</span>
+<span class="n">B</span> <span class="o">-</span>    <span class="mi">528139</span> <span class="o">-</span> <span class="n">PM</span><span class="p">:</span> <span class="n">Driver</span> <span class="n">Init</span> <span class="c1"># SPMI Transn: 230</span>
+<span class="n">B</span> <span class="o">-</span>    <span class="mi">531310</span> <span class="o">-</span> <span class="n">PM</span><span class="p">:</span> <span class="n">Battery</span> <span class="n">ID</span><span class="p">:</span> <span class="mi">99615</span><span class="n">Ohm</span>
+<span class="n">B</span> <span class="o">-</span>    <span class="mi">984878</span> <span class="o">-</span> <span class="n">PM</span><span class="p">:</span> <span class="n">Charger</span> <span class="n">SRC</span><span class="p">:</span> <span class="n">SDP</span>
+<span class="n">B</span> <span class="o">-</span>    <span class="mi">984964</span> <span class="o">-</span> <span class="n">PM</span><span class="p">:</span> <span class="n">VBAT</span><span class="p">:</span> <span class="mi">4592</span><span class="n">mV</span> <span class="n">IBAT</span><span class="p">:</span> <span class="mi">106</span><span class="n">mA</span>
+<span class="n">B</span> <span class="o">-</span>    <span class="mi">988249</span> <span class="o">-</span> <span class="n">PM</span><span class="p">:</span> <span class="n">CHG</span> <span class="n">Init</span> <span class="c1"># SPMI Transn: 4251</span>
+<span class="n">D</span> <span class="o">-</span>    <span class="mi">536606</span> <span class="o">-</span> <span class="n">pmic</span> <span class="n">XBL</span> <span class="n">init</span>
+<span class="n">D</span> <span class="o">-</span>     <span class="mi">10396</span> <span class="o">-</span> <span class="n">vsense_railway_cpr</span> <span class="n">init</span>
+<span class="n">D</span> <span class="o">-</span>    <span class="mi">555182</span> <span class="o">-</span> <span class="n">sbl1_hw_pre_ddr_init</span>
+<span class="n">D</span> <span class="o">-</span>         <span class="mi">3</span> <span class="o">-</span> <span class="n">boot_dload_handle_forced_dload_timeout</span>
+<span class="n">D</span> <span class="o">-</span>       <span class="mi">499</span> <span class="o">-</span> <span class="n">sbl1_load_ddr_training_data</span>
+<span class="n">D</span> <span class="o">-</span>      <span class="mi">4972</span> <span class="o">-</span> <span class="n">sbl1_ddr_set_params</span>
+<span class="n">B</span> <span class="o">-</span>   <span class="mi">1025998</span> <span class="o">-</span> <span class="n">DSF</span> <span class="n">version</span> <span class="o">=</span> <span class="mf">20.0</span><span class="p">,</span> <span class="n">DSF</span> <span class="n">RPM</span> <span class="n">version</span> <span class="o">=</span> <span class="mf">11.0</span>
+<span class="n">B</span> <span class="o">-</span>   <span class="mi">1026038</span> <span class="o">-</span> <span class="n">Manufacturer</span> <span class="n">ID</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">Device</span> <span class="n">Type</span> <span class="o">=</span> <span class="mi">7</span>
+<span class="n">B</span> <span class="o">-</span>   <span class="mi">1031256</span> <span class="o">-</span> <span class="n">Rank</span> <span class="mi">0</span> <span class="n">size</span> <span class="o">=</span> <span class="mi">1536</span> <span class="n">MB</span><span class="p">,</span> <span class="n">Rank</span> <span class="mi">1</span> <span class="n">size</span> <span class="o">=</span> <span class="mi">1536</span> <span class="n">MB</span>
+<span class="n">B</span> <span class="o">-</span>   <span class="mi">1035957</span> <span class="o">-</span> <span class="n">Max</span> <span class="n">Frequency</span> <span class="o">=</span> <span class="mi">1804</span> <span class="n">MHz</span>
+<span class="n">B</span> <span class="o">-</span>   <span class="mi">1041354</span> <span class="o">-</span> <span class="n">Row</span> <span class="n">Hammer</span> <span class="n">Check</span> <span class="p">:</span> <span class="n">DRAM</span> <span class="n">supports</span> <span class="n">unlimited</span> <span class="n">MAC</span> <span class="n">Value</span> <span class="p">:</span> <span class="n">MR24</span><span class="p">[</span><span class="n">OP2</span><span class="p">:</span><span class="mi">0</span> <span class="o">=</span> <span class="mi">0</span><span class="p">]</span> <span class="o">&amp;</span> <span class="n">MR24</span><span class="p">[</span><span class="n">OP3</span> <span class="o">=</span> <span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">CH0</span> <span class="o">&amp;</span> <span class="n">CS0</span>
+<span class="n">B</span> <span class="o">-</span>   <span class="mi">1050582</span> <span class="o">-</span> <span class="n">Row</span> <span class="n">Hammer</span> <span class="n">Check</span> <span class="p">:</span> <span class="n">DRAM</span> <span class="n">supports</span> <span class="n">unlimited</span> <span class="n">MAC</span> <span class="n">Value</span> <span class="p">:</span> <span class="n">MR24</span><span class="p">[</span><span class="n">OP2</span><span class="p">:</span><span class="mi">0</span> <span class="o">=</span> <span class="mi">0</span><span class="p">]</span> <span class="o">&amp;</span> <span class="n">MR24</span><span class="p">[</span><span class="n">OP3</span> <span class="o">=</span> <span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">CH0</span> <span class="o">&amp;</span> <span class="n">CS1</span>
+<span class="n">D</span> <span class="o">-</span>     <span class="mi">38365</span> <span class="o">-</span> <span class="n">sbl1_ddr_init</span>
+<span class="n">B</span> <span class="o">-</span>   <span class="mi">1065532</span> <span class="o">-</span> <span class="n">do_ddr_training</span><span class="p">,</span> <span class="n">Start</span>
+<span class="n">B</span> <span class="o">-</span>   <span class="mi">1073521</span> <span class="o">-</span> <span class="n">Bootup</span> <span class="n">frequency</span> <span class="nb">set</span> <span class="n">to</span> <span class="mi">1555200</span>
+<span class="n">D</span> <span class="o">-</span>      <span class="mi">5338</span> <span class="o">-</span> <span class="n">do_ddr_training</span><span class="p">,</span> <span class="n">Delta</span>
+<span class="n">D</span> <span class="o">-</span>     <span class="mi">12288</span> <span class="o">-</span> <span class="n">sbl1_do_ddr_training</span>
+<span class="n">D</span> <span class="o">-</span>         <span class="mi">2</span> <span class="o">-</span> <span class="n">sbl1_hand_control_to_devprog_ddr_or_ddi</span>
+<span class="n">B</span> <span class="o">-</span>   <span class="mi">1084618</span> <span class="o">-</span> <span class="n">Pimem</span> <span class="n">init</span> <span class="n">cmd</span><span class="p">,</span> <span class="n">entry</span>
+<span class="n">D</span> <span class="o">-</span>      <span class="mi">9919</span> <span class="o">-</span> <span class="n">Pimem</span> <span class="n">init</span> <span class="n">cmd</span><span class="p">,</span> <span class="n">exit</span>
+<span class="n">D</span> <span class="o">-</span>     <span class="mi">15619</span> <span class="o">-</span> <span class="n">sbl1_post_ddr_init</span>
+<span class="n">D</span> <span class="o">-</span>         <span class="mi">7</span> <span class="o">-</span> <span class="n">sbl1_hw_init_secondary</span>
+<span class="n">B</span> <span class="o">-</span>   <span class="mi">1106276</span> <span class="o">-</span> <span class="n">APDP</span> <span class="n">Image</span> <span class="n">Loaded</span><span class="p">,</span> <span class="n">Start</span>
+<span class="n">D</span> <span class="o">-</span>      <span class="mi">3179</span> <span class="o">-</span> <span class="n">APDP</span> <span class="n">Image</span> <span class="n">Loaded</span><span class="p">,</span> <span class="n">Delta</span> <span class="o">-</span> <span class="p">(</span><span class="mi">0</span> <span class="n">Bytes</span><span class="p">)</span>
+<span class="n">D</span> <span class="o">-</span>         <span class="mi">4</span> <span class="o">-</span> <span class="n">boot_dload_dump_security_regions</span>
+<span class="n">B</span> <span class="o">-</span>   <span class="mi">1117818</span> <span class="o">-</span> <span class="n">usb</span><span class="p">:</span> <span class="n">Serial</span> <span class="o">-</span> <span class="mi">4299</span><span class="n">ce11</span>
+<span class="n">B</span> <span class="o">-</span>   <span class="mi">1572751</span> <span class="o">-</span> <span class="n">usb</span> <span class="n">phy</span><span class="p">:</span> <span class="n">chgr</span> <span class="o">-</span>  <span class="n">USB_SDP_CHARGER</span>
+<span class="n">D</span> <span class="o">-</span>    <span class="mi">455632</span> <span class="o">-</span> <span class="n">boot_dload_check</span>
+<span class="n">D</span> <span class="o">-</span>         <span class="mi">2</span> <span class="o">-</span> <span class="n">boot_cache_set_memory_barrier</span>
+<span class="n">D</span> <span class="o">-</span>         <span class="mi">2</span> <span class="o">-</span> <span class="n">boot_smem_debug_init</span>
+<span class="n">D</span> <span class="o">-</span>       <span class="mi">331</span> <span class="o">-</span> <span class="n">boot_smem_init</span>
+<span class="n">D</span> <span class="o">-</span>         <span class="mi">4</span> <span class="o">-</span> <span class="n">boot_smem_alloc_for_minidump</span>
+<span class="n">D</span> <span class="o">-</span>        <span class="mi">46</span> <span class="o">-</span> <span class="n">boot_smem_store_pon_status</span>
+<span class="n">D</span> <span class="o">-</span>        <span class="mi">14</span> <span class="o">-</span> <span class="n">sbl1_hw_platform_smem</span>
+<span class="n">D</span> <span class="o">-</span>       <span class="mi">120</span> <span class="o">-</span> <span class="n">boot_clock_init_rpm</span>
+<span class="n">D</span> <span class="o">-</span>         <span class="mi">2</span> <span class="o">-</span> <span class="n">boot_vsense_copy_to_smem</span>
+<span class="n">D</span> <span class="o">-</span>         <span class="mi">1</span> <span class="o">-</span> <span class="n">boot_share_flash_data</span>
+<span class="n">D</span> <span class="o">-</span>         <span class="mi">9</span> <span class="o">-</span> <span class="n">boot_populate_ram_partition_table</span>
+<span class="n">D</span> <span class="o">-</span>         <span class="mi">7</span> <span class="o">-</span> <span class="n">boot_populate_ddr_details_shared_table</span>
+<span class="n">D</span> <span class="o">-</span>         <span class="mi">4</span> <span class="o">-</span> <span class="n">sbl1_tlmm_init</span>
+<span class="n">D</span> <span class="o">-</span>         <span class="mi">2</span> <span class="o">-</span> <span class="n">sbl1_efs_handle_cookies</span>
+<span class="n">D</span> <span class="o">-</span>         <span class="mi">1</span> <span class="o">-</span> <span class="n">boot_apt_test</span>
+<span class="n">B</span> <span class="o">-</span>   <span class="mi">1627729</span> <span class="o">-</span> <span class="n">OEM_MISC</span> <span class="n">Image</span> <span class="n">Loaded</span><span class="p">,</span> <span class="n">Start</span>
+<span class="n">D</span> <span class="o">-</span>      <span class="mi">5581</span> <span class="o">-</span> <span class="n">Auth</span> <span class="n">Metadata</span>
+<span class="n">D</span> <span class="o">-</span>       <span class="mi">251</span> <span class="o">-</span> <span class="n">Segments</span> <span class="nb">hash</span> <span class="n">check</span>
+<span class="n">D</span> <span class="o">-</span>     <span class="mi">11614</span> <span class="o">-</span> <span class="n">OEM_MISC</span> <span class="n">Image</span> <span class="n">Loaded</span><span class="p">,</span> <span class="n">Delta</span> <span class="o">-</span> <span class="p">(</span><span class="mi">8024</span> <span class="n">Bytes</span><span class="p">)</span>
+<span class="n">B</span> <span class="o">-</span>   <span class="mi">1642975</span> <span class="o">-</span> <span class="n">QTI_MISC</span> <span class="n">Image</span> <span class="n">Loaded</span><span class="p">,</span> <span class="n">Start</span>
+<span class="n">D</span> <span class="o">-</span>      <span class="mi">4895</span> <span class="o">-</span> <span class="n">QTI_MISC</span> <span class="n">Image</span> <span class="n">Loaded</span><span class="p">,</span> <span class="n">Delta</span> <span class="o">-</span> <span class="p">(</span><span class="mi">0</span> <span class="n">Bytes</span><span class="p">)</span>
+<span class="n">B</span> <span class="o">-</span>   <span class="mi">1653972</span> <span class="o">-</span> <span class="n">PM</span><span class="p">:</span> <span class="n">PM</span> <span class="n">Total</span> <span class="n">Mem</span> <span class="n">Allocated</span><span class="p">:</span> <span class="mi">1249</span>
+<span class="n">D</span> <span class="o">-</span>      <span class="mi">5045</span> <span class="o">-</span> <span class="n">sbl1_pm_aop_pre_init_wrapper</span>
+<span class="n">B</span> <span class="o">-</span>   <span class="mi">1661361</span> <span class="o">-</span> <span class="n">RPM</span> <span class="n">Image</span> <span class="n">Loaded</span><span class="p">,</span> <span class="n">Start</span>
+<span class="n">D</span> <span class="o">-</span>       <span class="mi">960</span> <span class="o">-</span> <span class="n">Auth</span> <span class="n">Metadata</span>
+<span class="n">D</span> <span class="o">-</span>      <span class="mi">1388</span> <span class="o">-</span> <span class="n">Segments</span> <span class="nb">hash</span> <span class="n">check</span>
+<span class="n">D</span> <span class="o">-</span>     <span class="mi">13561</span> <span class="o">-</span> <span class="n">RPM</span> <span class="n">Image</span> <span class="n">Loaded</span><span class="p">,</span> <span class="n">Delta</span> <span class="o">-</span> <span class="p">(</span><span class="mi">220788</span> <span class="n">Bytes</span><span class="p">)</span>
+<span class="n">B</span> <span class="o">-</span>   <span class="mi">1678151</span> <span class="o">-</span> <span class="n">QSEE</span> <span class="n">Dev</span> <span class="n">Config</span> <span class="n">Image</span> <span class="n">Loaded</span><span class="p">,</span> <span class="n">Start</span>
+<span class="n">D</span> <span class="o">-</span>      <span class="mi">1017</span> <span class="o">-</span> <span class="n">Auth</span> <span class="n">Metadata</span>
+<span class="n">D</span> <span class="o">-</span>       <span class="mi">495</span> <span class="o">-</span> <span class="n">Segments</span> <span class="nb">hash</span> <span class="n">check</span>
+<span class="n">D</span> <span class="o">-</span>     <span class="mi">12358</span> <span class="o">-</span> <span class="n">QSEE</span> <span class="n">Dev</span> <span class="n">Config</span> <span class="n">Image</span> <span class="n">Loaded</span><span class="p">,</span> <span class="n">Delta</span> <span class="o">-</span> <span class="p">(</span><span class="mi">36552</span> <span class="n">Bytes</span><span class="p">)</span>
+<span class="n">B</span> <span class="o">-</span>   <span class="mi">1699285</span> <span class="o">-</span> <span class="n">QSEE</span> <span class="n">Image</span> <span class="n">Loaded</span><span class="p">,</span> <span class="n">Start</span>
+<span class="n">D</span> <span class="o">-</span>     <span class="mi">17843</span> <span class="o">-</span> <span class="n">Auth</span> <span class="n">Metadata</span>
+<span class="n">D</span> <span class="o">-</span>     <span class="mi">17709</span> <span class="o">-</span> <span class="n">Segments</span> <span class="nb">hash</span> <span class="n">check</span>
+<span class="n">D</span> <span class="o">-</span>     <span class="mi">87644</span> <span class="o">-</span> <span class="n">QSEE</span> <span class="n">Image</span> <span class="n">Loaded</span><span class="p">,</span> <span class="n">Delta</span> <span class="o">-</span> <span class="p">(</span><span class="mi">3293200</span> <span class="n">Bytes</span><span class="p">)</span>
+<span class="n">D</span> <span class="o">-</span>        <span class="mi">50</span> <span class="o">-</span> <span class="n">sbl1_hw_play_vibr</span>
+<span class="n">B</span> <span class="o">-</span>   <span class="mi">1795627</span> <span class="o">-</span> <span class="n">SEC</span> <span class="n">Image</span> <span class="n">Loaded</span><span class="p">,</span> <span class="n">Start</span>
+<span class="n">D</span> <span class="o">-</span>      <span class="mi">5613</span> <span class="o">-</span> <span class="n">Auth</span> <span class="n">Metadata</span>
+<span class="n">D</span> <span class="o">-</span>       <span class="mi">234</span> <span class="o">-</span> <span class="n">Segments</span> <span class="nb">hash</span> <span class="n">check</span>
+<span class="n">D</span> <span class="o">-</span>     <span class="mi">11891</span> <span class="o">-</span> <span class="n">SEC</span> <span class="n">Image</span> <span class="n">Loaded</span><span class="p">,</span> <span class="n">Delta</span> <span class="o">-</span> <span class="p">(</span><span class="mi">7460</span> <span class="n">Bytes</span><span class="p">)</span>
+<span class="n">B</span> <span class="o">-</span>   <span class="mi">1810743</span> <span class="o">-</span> <span class="n">QHEE</span> <span class="n">Image</span> <span class="n">Loaded</span><span class="p">,</span> <span class="n">Start</span>
+<span class="n">D</span> <span class="o">-</span>       <span class="mi">940</span> <span class="o">-</span> <span class="n">Auth</span> <span class="n">Metadata</span>
+<span class="n">D</span> <span class="o">-</span>      <span class="mi">2455</span> <span class="o">-</span> <span class="n">Segments</span> <span class="nb">hash</span> <span class="n">check</span>
+<span class="n">D</span> <span class="o">-</span>     <span class="mi">13760</span> <span class="o">-</span> <span class="n">QHEE</span> <span class="n">Image</span> <span class="n">Loaded</span><span class="p">,</span> <span class="n">Delta</span> <span class="o">-</span> <span class="p">(</span><span class="mi">374328</span> <span class="n">Bytes</span><span class="p">)</span>
+<span class="n">B</span> <span class="o">-</span>   <span class="mi">1828148</span> <span class="o">-</span> <span class="n">STI</span> <span class="n">Image</span> <span class="n">Loaded</span><span class="p">,</span> <span class="n">Start</span>
+<span class="n">D</span> <span class="o">-</span>      <span class="mi">4710</span> <span class="o">-</span> <span class="n">STI</span> <span class="n">Image</span> <span class="n">Loaded</span><span class="p">,</span> <span class="n">Delta</span> <span class="o">-</span> <span class="p">(</span><span class="mi">0</span> <span class="n">Bytes</span><span class="p">)</span>
+<span class="n">B</span> <span class="o">-</span>   <span class="mi">1837185</span> <span class="o">-</span> <span class="n">APPSBL</span> <span class="n">Image</span> <span class="n">Loaded</span><span class="p">,</span> <span class="n">Start</span>
+<span class="n">D</span> <span class="o">-</span>      <span class="mi">1019</span> <span class="o">-</span> <span class="n">Auth</span> <span class="n">Metadata</span>
+<span class="n">D</span> <span class="o">-</span>      <span class="mi">8816</span> <span class="o">-</span> <span class="n">Segments</span> <span class="nb">hash</span> <span class="n">check</span>
+<span class="n">D</span> <span class="o">-</span>     <span class="mi">25182</span> <span class="o">-</span> <span class="n">APPSBL</span> <span class="n">Image</span> <span class="n">Loaded</span><span class="p">,</span> <span class="n">Delta</span> <span class="o">-</span> <span class="p">(</span><span class="mi">2171904</span> <span class="n">Bytes</span><span class="p">)</span>
+<span class="n">D</span> <span class="o">-</span>         <span class="mi">6</span> <span class="o">-</span> <span class="n">sbl1_appsbl_arch_determination</span>
+<span class="n">B</span> <span class="o">-</span>   <span class="mi">1871741</span> <span class="o">-</span> <span class="n">SBL1</span><span class="p">,</span> <span class="n">End</span>
+</pre></div>
+</div>
+</section>
+
+
+           </div>
+             <div class="articleComments">
+                <comments>
+  <script src="https://utteranc.es/client.js"
+    repo="iswbm/magic-python"
+    issue-term="pathname"
+    theme="github-light"
+    crossorigin="anonymous"
+    async>
+  </script>
+</comments>
+             </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; 版权所有 2022, wugn.</p>
+  </div>
+
+  利用 <a href="https://www.sphinx-doc.org/">Sphinx</a> 构建，使用了 
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">主题</a>
+    由 <a href="https://readthedocs.org">Read the Docs</a>开发.
+  
+
+<script charset="UTF-8" id="LA_COLLECT" src="//sdk.51.la/js-sdk-pro.min.js"></script>
+<script>LA.init({id: "JoV5csIHTGhHiGQ4",ck: "JoV5csIHTGhHiGQ4"})</script>
+
+<br/>
+<script id="LA-DATA-WIDGET" crossorigin="anonymous" charset="UTF-8" src="https://v6-widget.51.la/v6/JoV5csIHTGhHiGQ4/quote.js?theme=#4C8AC2,#BB2626,#040000,#333333,#AE3535,#1690FF,14&f=14"></script>
+
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

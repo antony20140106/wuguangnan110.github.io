@@ -8,6 +8,8 @@
 * [高通Android UEFI XBL 代码流程分析](https://www.cnblogs.com/schips/p/qualcomm_uefi_boot_sequence.html)
 * [UEFI原理与编程实践--UEFI系统的启动过程](https://blog.csdn.net/u011397314/article/details/121515314)
 
+Core.fdf:UEFI的配置文件
+
 # 打印
 
 ```

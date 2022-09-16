@@ -8,6 +8,8 @@
 
 # 流程图
 
+![0027_0000.png](images/0027_0000.png)
+
 # 加载 UEFI 默认应用程序
 
 在高通代码中，QcomChargerApp是作为默认应用程序配置在uefiplat.cfg中`QcomPkg/SocPkg/AgattiPkg/LAA/uefiplat.cfg`：
@@ -186,8 +188,8 @@ EFI_QCOM_CHARGER_PROTOCOL QcomChargerProtocolImplementation =
 #  充电初始化 QcomChargerApp_Initialize()
 
 * 在 QcomChargerApp_Initialize() 中主要动作就是:
-  * 根据获取到的电池状态显示充电图片，有
-  * 创建一个定时事件，定时时间为5s，如果时间到达则会发送EVT_NOTIFY_SIGNAL事件
+  * 根据获取到的电池状态显示充电图片。
+  * 创建一个定时事件刷新UI显示，定时时间为500ms，显示7秒并灭屏，达到休眠效果。
 ```C++
 EFI_STATUS QcomChargerApp_Initialize( EFI_QCOM_CHARGER_ACTION_TYPE ChargingAction )
 {
@@ -260,7 +262,7 @@ EFI_STATUS QcomChargerAppEvent_DisplayTimerEvent(BOOLEAN bDispOffTimer, BOOLEAN 
           CHARGERAPP_DEBUG((EFI_D_ERROR, "QcomChargerApp:: %a locate protocol error = %r \r\n", __FUNCTION__, Status));
           return Status;
         }
-        // 创建一个定时事件，定时时间为5s，如果时间到达则会发送EVT_NOTIFY_SIGNAL事件
+        // 创建一个定时事件，定时时间为500ms，如果时间到达则会发送EVT_NOTIFY_SIGNAL事件
         Status |= gBS->CreateEvent(EVT_TIMER | EVT_NOTIFY_SIGNAL, TPL_CALLBACK, QcomChargerAppEvent_AnimImgTimer, NULL, /*GUID Display guys provide*/ &EventAnimImg);
 
       }
@@ -456,6 +458,105 @@ EFI_STATUS QcomChargerApp_MonitorCharging( VOID )
 }
 ```
 
+#  显示充电图标 QcomChargerAppDisplay_DispBattSymbol
+
+1. 通过QcomChargerAppDisplay_AsciiStrNDup() 显示当前的充电状态图标。
+2. 通过DrawBmpFile() 绘制 BMP图片。
+```C++
+EFI_STATUS QcomChargerAppDisplay_DispBattSymbol(EFI_QCOM_CHARGER_DISP_IMAGE_TYPE DispImage, BOOLEAN ClearScreen)
+{
+  EFI_STATUS Status = EFI_SUCCESS;
+  EFI_PIL_PROTOCOL  *PILProtocol = NULL;
+  char   *str = NULL;  
+
+  switch (DispImage)
+  {
+  case EFI_QCOM_CHARGER_DISP_IMAGE_ABOVE_THRESHOLD:
+    str = QcomChargerAppDisplay_AsciiStrNDup(CHARGER_BATTERY_SYMBOL_ABOVE_THRESHOLD, AsciiStrLen(CHARGER_BATTERY_SYMBOL_ABOVE_THRESHOLD));
+    break;
+  case EFI_QCOM_CHARGER_DISP_IMAGE_NOBATTERY:
+    str = QcomChargerAppDisplay_AsciiStrNDup(CHARGER_BATTERY_SYMBOL_NOBATTERY, AsciiStrLen(CHARGER_BATTERY_SYMBOL_NOBATTERY));
+    break;
+  case EFI_QCOM_CHARGER_DISP_IMAGE_NOCHARGER:
+    str = QcomChargerAppDisplay_AsciiStrNDup(CHARGER_BATTERY_SYMBOL_NOCHARGER, AsciiStrLen(CHARGER_BATTERY_SYMBOL_NOCHARGER));
+    break;
+  case EFI_QCOM_CHARGER_DISP_IMAGE_LOWBATTERYCHARGING:
+    str = QcomChargerAppDisplay_AsciiStrNDup(CHARGER_BATTERY_SYMBOL_LOWBATTERYCHARGING, AsciiStrLen(CHARGER_BATTERY_SYMBOL_LOWBATTERYCHARGING));
+    break;
+  case EFI_QCOM_CHARGER_DISP_IMAGE_LOWBATTERY:
+    str = QcomChargerAppDisplay_AsciiStrNDup(CHARGER_BATTERY_SYMBOL_LOWBATTERY, AsciiStrLen(CHARGER_BATTERY_SYMBOL_LOWBATTERY));
+    break;
+  case EFI_QCOM_CHARGER_DISP_IMAGE_TSENS_THERMAL_SYMBOL:
+    str = QcomChargerAppDisplay_AsciiStrNDup(CHARGER_TSENS_THERMAL_SYMBOL, AsciiStrLen(CHARGER_TSENS_THERMAL_SYMBOL));
+    break;
+  case EFI_QCOM_CHARGER_DISP_IMAGE_TSENS_CRITICAL_SYMBOL:
+    str = QcomChargerAppDisplay_AsciiStrNDup(CHARGER_TSENS_CRITICAL_SYMBOL, AsciiStrLen(CHARGER_TSENS_CRITICAL_SYMBOL));
+    break;
+  case EFI_QCOM_CHARGER_DISP_IMAGE_DEBUG_BOOT_SYMBOL:
+    str = QcomChargerAppDisplay_AsciiStrNDup(CHARGER_BATTERY_SYMBOL_DEBUG_BOARD_BOOT, AsciiStrLen(CHARGER_BATTERY_SYMBOL_DEBUG_BOARD_BOOT));
+    break;
+  case EFI_QCOM_CHARGER_DISP_IMAGE_DEBUG_LOW_SYMBOL:
+    str = QcomChargerAppDisplay_AsciiStrNDup(CHARGER_BATTERY_SYMBOL_DEBUG_BOARD_STAY, AsciiStrLen(CHARGER_BATTERY_SYMBOL_DEBUG_BOARD_STAY));
+    break;
+  default:
+    break;
+  }
+
+  /*Clear Screen when requested*/
+  if(TRUE == ClearScreen)
+  {
+    if (EFI_SUCCESS != (Status = QcomChargeAppDisplay_ClearScreen()))
+    {
+      DEBUG((EFI_D_ERROR, "QcomChargerApp:: %a ChgAppClearScreen() returned error = %r\n\r", __FUNCTION__,Status));
+    }
+    /* CHARGER_DEBUG((EFI_D_ERROR, "QcomChargerApp: QcomChargerAppEvent_DispBattSymbol ChgAppClearScreen Cleared: %d\n\r", Status)); */
+  }
+
+  if(ImageFvLoadedFlag == FALSE)
+  {
+    Status = gBS->LocateProtocol (&gEfiPilProtocolGuid,NULL, (VOID **) &PILProtocol);
+    if ((EFI_SUCCESS != Status) || (NULL == PILProtocol))
+    {
+      DEBUG(( EFI_D_ERROR, "ChargerLib:: %a %r \r\n", __FUNCTION__, Status));
+      return Status;
+    }
+
+    Status = PILProtocol->ProcessPilImage(L"ImageFv");
+    if ((EFI_SUCCESS != Status))
+    {
+      DEBUG(( EFI_D_ERROR, "ChargerLib:: %a %r \r\n", __FUNCTION__, Status));
+      return Status;
+    }
+    ImageFvLoadedFlag = TRUE;
+  }
+
+  /* Draw BMP image with default options, the screen will be cleared and the image
+     will be drawn at the center of the screen*/
+  Status = DrawBmpFile(str, NULL, 0, &gEfiImageFvNameGuid);
+
+  if(NULL != str )
+  {
+    FreePool(str);
+    str = NULL;
+  }
+
+  return Status;
+}
+```
+
+* `boot_images\QcomPkg\Application\QcomChargerApp\QcomChargerAppDisplay.h`图片资源定义如下：
+```C++
+#define CHARGER_BATTERY_SYMBOL_NOBATTERY            "battery_symbol_NoBattery.bmp"
+#define CHARGER_BATTERY_SYMBOL_NOCHARGER            "battery_symbol_Nocharger.bmp"
+#define CHARGER_BATTERY_SYMBOL_ABOVE_THRESHOLD      "battery_symbol_Soc10.bmp"
+#define CHARGER_BATTERY_SYMBOL_LOWBATTERYCHARGING   "battery_symbol_LowBatteryCharging.bmp"
+#define CHARGER_BATTERY_SYMBOL_LOWBATTERY           "battery_symbol_LowBattery.bmp"
+#define CHARGER_TSENS_THERMAL_SYMBOL                "tsens_thermal_symbol.bmp"
+#define CHARGER_TSENS_CRITICAL_SYMBOL               "tsens_thermal_err_symbol.bmp"
+#define CHARGER_BATTERY_SYMBOL_DEBUG_BOARD_BOOT     "battery_symbol_DebugBoot.bmp"
+#define CHARGER_BATTERY_SYMBOL_DEBUG_BOARD_STAY     "battery_symbol_DebugStay.bmp"
+```
+
 # 充电驱动各函数分析
 
 通过前面代码`gBS->LocateProtocol( &gQcomChargerProtocolGuid, NULL, (VOID **)&pQcomChargerProtocol )`
@@ -498,7 +599,7 @@ EFI_STATUS QcomChargerApp_MonitorCharging( VOID )
   }
 ```
 
-## 入口函数：QcomChargerInitialize()
+## 入口函数 QcomChargerInitialize()
 
 * `BOOT.XF.1.4\boot_images\QcomPkg\Drivers\QcomChargerDxe\QcomCharger.c`:
 ```C++
@@ -515,7 +616,7 @@ EFI_STATUS QcomChargerInitialize(IN EFI_HANDLE ImageHandle,IN EFI_SYSTEM_TABLE *
 1. 获取平台类型，如： EFI_PLATFORMINFO_TYPE_MTP
 2. 加载充电配置文件 QcomChargerCfg.cfg，解析的内容保存在QCOM_CHARGER_PLATFORM_CFGDATA_TYPE gChargerPlatformCfgData 结构体中
 3. 根据gChargerPlatformCfgData 中的配置信息，初始化充电相关的lib 库
-4. 获取充电配置文件中的 BootToHLOSThresholdInMv = 3600, OsStandardBootSocThreshold = 7
+4. 获取充电配置文件中的 BootToHLOSThresholdInMv = 3450, OsStandardBootSocThreshold = 7
 5. 使能充电硬件 JEITA
 6. 根据配置文件决定是否开启看门狗
 
@@ -555,6 +656,8 @@ EFI_STATUS ChargerPlatform_Init( VOID )
 }
 ```
 
+## 配置文件 QcomChargerConfig_VbattTh.cfg
+
 充电配置文件实际路径为`QcomPkg/SocPkg/AgattiPkg/Settings/Charger/QcomChargerConfig_VbattTh.cfg`，在该文件中定义了一系列的充电参数。
 ```C++
 //QcomPkg\SocPkg\AgattiPkg\LAA\Core.fdf:
@@ -564,7 +667,7 @@ EFI_STATUS ChargerPlatform_Init( VOID )
   }
 
 //充电电流配置为200mA  	Charging termination current in milliamps
-ChargingTermCurrent = 200
+ChargingTermCurrent = 200 
 
 //电流ID电压误差容量8%  	Battery ID Tolerance Percentage 8%
 BatteryIdTolerance = 8

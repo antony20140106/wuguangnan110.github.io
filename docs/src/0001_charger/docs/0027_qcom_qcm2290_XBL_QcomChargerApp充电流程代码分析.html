@@ -50,8 +50,10 @@
 <li><a class="reference internal" href="#qcomchargerapp-entry">入口函数 QcomChargerApp_Entry()</a></li>
 <li><a class="reference internal" href="#qcomchargerapp-initialize">充电初始化 QcomChargerApp_Initialize()</a></li>
 <li><a class="reference internal" href="#qcomchargerapp-monitorcharging">循环监控充电状态 QcomChargerApp_MonitorCharging()</a></li>
+<li><a class="reference internal" href="#qcomchargerappdisplay-dispbattsymbol">显示充电图标 QcomChargerAppDisplay_DispBattSymbol</a></li>
 <li><a class="reference internal" href="#id4">充电驱动各函数分析</a><ul>
-<li><a class="reference internal" href="#qcomchargerinitialize">入口函数：QcomChargerInitialize()</a></li>
+<li><a class="reference internal" href="#qcomchargerinitialize">入口函数 QcomChargerInitialize()</a></li>
+<li><a class="reference internal" href="#qcomchargerconfig-vbattth-cfg">配置文件 QcomChargerConfig_VbattTh.cfg</a></li>
 <li><a class="reference internal" href="#pqcomchargerprotocol-takeaction">充电状态 pQcomChargerProtocol-&gt;TakeAction()</a></li>
 <li><a class="reference internal" href="#pqcomchargerprotocol-getchargingaction">获取当前充电状态 pQcomChargerProtocol-&gt;GetChargingAction()</a></li>
 </ul>
@@ -97,6 +99,7 @@
 </section>
 <section id="id3">
 <h1>流程图<a class="headerlink" href="#id3" title="此标题的永久链接"></a></h1>
+<p><img alt="0027_0000.png" src="../../../_images/0027_0000.png" /></p>
 </section>
 <section id="uefi">
 <h1>加载 UEFI 默认应用程序<a class="headerlink" href="#uefi" title="此标题的永久链接"></a></h1>
@@ -286,8 +289,8 @@
 <ul class="simple">
 <li><p>在 QcomChargerApp_Initialize() 中主要动作就是:</p>
 <ul>
-<li><p>根据获取到的电池状态显示充电图片，有</p></li>
-<li><p>创建一个定时事件，定时时间为5s，如果时间到达则会发送EVT_NOTIFY_SIGNAL事件</p></li>
+<li><p>根据获取到的电池状态显示充电图片。</p></li>
+<li><p>创建一个定时事件刷新UI显示，定时时间为500ms，显示7秒并灭屏，达到休眠效果。</p></li>
 </ul>
 </li>
 </ul>
@@ -362,7 +365,7 @@
 <span class="w">          </span><span class="n">CHARGERAPP_DEBUG</span><span class="p">((</span><span class="n">EFI_D_ERROR</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;QcomChargerApp:: %a locate protocol error = %r </span><span class="se">\r\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">__FUNCTION__</span><span class="p">,</span><span class="w"> </span><span class="n">Status</span><span class="p">));</span><span class="w"></span>
 <span class="w">          </span><span class="k">return</span><span class="w"> </span><span class="n">Status</span><span class="p">;</span><span class="w"></span>
 <span class="w">        </span><span class="p">}</span><span class="w"></span>
-<span class="w">        </span><span class="c1">// 创建一个定时事件，定时时间为5s，如果时间到达则会发送EVT_NOTIFY_SIGNAL事件</span>
+<span class="w">        </span><span class="c1">// 创建一个定时事件，定时时间为500ms，如果时间到达则会发送EVT_NOTIFY_SIGNAL事件</span>
 <span class="w">        </span><span class="n">Status</span><span class="w"> </span><span class="o">|=</span><span class="w"> </span><span class="n">gBS</span><span class="o">-&gt;</span><span class="n">CreateEvent</span><span class="p">(</span><span class="n">EVT_TIMER</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">EVT_NOTIFY_SIGNAL</span><span class="p">,</span><span class="w"> </span><span class="n">TPL_CALLBACK</span><span class="p">,</span><span class="w"> </span><span class="n">QcomChargerAppEvent_AnimImgTimer</span><span class="p">,</span><span class="w"> </span><span class="nb">NULL</span><span class="p">,</span><span class="w"> </span><span class="cm">/*GUID Display guys provide*/</span><span class="w"> </span><span class="o">&amp;</span><span class="n">EventAnimImg</span><span class="p">);</span><span class="w"></span>
 
 <span class="w">      </span><span class="p">}</span><span class="w"></span>
@@ -561,6 +564,108 @@
 </pre></div>
 </div>
 </section>
+<section id="qcomchargerappdisplay-dispbattsymbol">
+<h1>显示充电图标 QcomChargerAppDisplay_DispBattSymbol<a class="headerlink" href="#qcomchargerappdisplay-dispbattsymbol" title="此标题的永久链接"></a></h1>
+<ol class="arabic simple">
+<li><p>通过QcomChargerAppDisplay_AsciiStrNDup() 显示当前的充电状态图标。</p></li>
+<li><p>通过DrawBmpFile() 绘制 BMP图片。</p></li>
+</ol>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="n">EFI_STATUS</span><span class="w"> </span><span class="nf">QcomChargerAppDisplay_DispBattSymbol</span><span class="p">(</span><span class="n">EFI_QCOM_CHARGER_DISP_IMAGE_TYPE</span><span class="w"> </span><span class="n">DispImage</span><span class="p">,</span><span class="w"> </span><span class="n">BOOLEAN</span><span class="w"> </span><span class="n">ClearScreen</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="n">EFI_STATUS</span><span class="w"> </span><span class="n">Status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">EFI_SUCCESS</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="n">EFI_PIL_PROTOCOL</span><span class="w">  </span><span class="o">*</span><span class="n">PILProtocol</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">NULL</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="kt">char</span><span class="w">   </span><span class="o">*</span><span class="n">str</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">NULL</span><span class="p">;</span><span class="w">  </span>
+
+<span class="w">  </span><span class="k">switch</span><span class="w"> </span><span class="p">(</span><span class="n">DispImage</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="k">case</span><span class="w"> </span><span class="no">EFI_QCOM_CHARGER_DISP_IMAGE_ABOVE_THRESHOLD</span><span class="p">:</span><span class="w"></span>
+<span class="w">    </span><span class="n">str</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">QcomChargerAppDisplay_AsciiStrNDup</span><span class="p">(</span><span class="n">CHARGER_BATTERY_SYMBOL_ABOVE_THRESHOLD</span><span class="p">,</span><span class="w"> </span><span class="n">AsciiStrLen</span><span class="p">(</span><span class="n">CHARGER_BATTERY_SYMBOL_ABOVE_THRESHOLD</span><span class="p">));</span><span class="w"></span>
+<span class="w">    </span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="k">case</span><span class="w"> </span><span class="no">EFI_QCOM_CHARGER_DISP_IMAGE_NOBATTERY</span><span class="p">:</span><span class="w"></span>
+<span class="w">    </span><span class="n">str</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">QcomChargerAppDisplay_AsciiStrNDup</span><span class="p">(</span><span class="n">CHARGER_BATTERY_SYMBOL_NOBATTERY</span><span class="p">,</span><span class="w"> </span><span class="n">AsciiStrLen</span><span class="p">(</span><span class="n">CHARGER_BATTERY_SYMBOL_NOBATTERY</span><span class="p">));</span><span class="w"></span>
+<span class="w">    </span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="k">case</span><span class="w"> </span><span class="no">EFI_QCOM_CHARGER_DISP_IMAGE_NOCHARGER</span><span class="p">:</span><span class="w"></span>
+<span class="w">    </span><span class="n">str</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">QcomChargerAppDisplay_AsciiStrNDup</span><span class="p">(</span><span class="n">CHARGER_BATTERY_SYMBOL_NOCHARGER</span><span class="p">,</span><span class="w"> </span><span class="n">AsciiStrLen</span><span class="p">(</span><span class="n">CHARGER_BATTERY_SYMBOL_NOCHARGER</span><span class="p">));</span><span class="w"></span>
+<span class="w">    </span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="k">case</span><span class="w"> </span><span class="no">EFI_QCOM_CHARGER_DISP_IMAGE_LOWBATTERYCHARGING</span><span class="p">:</span><span class="w"></span>
+<span class="w">    </span><span class="n">str</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">QcomChargerAppDisplay_AsciiStrNDup</span><span class="p">(</span><span class="n">CHARGER_BATTERY_SYMBOL_LOWBATTERYCHARGING</span><span class="p">,</span><span class="w"> </span><span class="n">AsciiStrLen</span><span class="p">(</span><span class="n">CHARGER_BATTERY_SYMBOL_LOWBATTERYCHARGING</span><span class="p">));</span><span class="w"></span>
+<span class="w">    </span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="k">case</span><span class="w"> </span><span class="no">EFI_QCOM_CHARGER_DISP_IMAGE_LOWBATTERY</span><span class="p">:</span><span class="w"></span>
+<span class="w">    </span><span class="n">str</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">QcomChargerAppDisplay_AsciiStrNDup</span><span class="p">(</span><span class="n">CHARGER_BATTERY_SYMBOL_LOWBATTERY</span><span class="p">,</span><span class="w"> </span><span class="n">AsciiStrLen</span><span class="p">(</span><span class="n">CHARGER_BATTERY_SYMBOL_LOWBATTERY</span><span class="p">));</span><span class="w"></span>
+<span class="w">    </span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="k">case</span><span class="w"> </span><span class="no">EFI_QCOM_CHARGER_DISP_IMAGE_TSENS_THERMAL_SYMBOL</span><span class="p">:</span><span class="w"></span>
+<span class="w">    </span><span class="n">str</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">QcomChargerAppDisplay_AsciiStrNDup</span><span class="p">(</span><span class="n">CHARGER_TSENS_THERMAL_SYMBOL</span><span class="p">,</span><span class="w"> </span><span class="n">AsciiStrLen</span><span class="p">(</span><span class="n">CHARGER_TSENS_THERMAL_SYMBOL</span><span class="p">));</span><span class="w"></span>
+<span class="w">    </span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="k">case</span><span class="w"> </span><span class="no">EFI_QCOM_CHARGER_DISP_IMAGE_TSENS_CRITICAL_SYMBOL</span><span class="p">:</span><span class="w"></span>
+<span class="w">    </span><span class="n">str</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">QcomChargerAppDisplay_AsciiStrNDup</span><span class="p">(</span><span class="n">CHARGER_TSENS_CRITICAL_SYMBOL</span><span class="p">,</span><span class="w"> </span><span class="n">AsciiStrLen</span><span class="p">(</span><span class="n">CHARGER_TSENS_CRITICAL_SYMBOL</span><span class="p">));</span><span class="w"></span>
+<span class="w">    </span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="k">case</span><span class="w"> </span><span class="no">EFI_QCOM_CHARGER_DISP_IMAGE_DEBUG_BOOT_SYMBOL</span><span class="p">:</span><span class="w"></span>
+<span class="w">    </span><span class="n">str</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">QcomChargerAppDisplay_AsciiStrNDup</span><span class="p">(</span><span class="n">CHARGER_BATTERY_SYMBOL_DEBUG_BOARD_BOOT</span><span class="p">,</span><span class="w"> </span><span class="n">AsciiStrLen</span><span class="p">(</span><span class="n">CHARGER_BATTERY_SYMBOL_DEBUG_BOARD_BOOT</span><span class="p">));</span><span class="w"></span>
+<span class="w">    </span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="k">case</span><span class="w"> </span><span class="no">EFI_QCOM_CHARGER_DISP_IMAGE_DEBUG_LOW_SYMBOL</span><span class="p">:</span><span class="w"></span>
+<span class="w">    </span><span class="n">str</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">QcomChargerAppDisplay_AsciiStrNDup</span><span class="p">(</span><span class="n">CHARGER_BATTERY_SYMBOL_DEBUG_BOARD_STAY</span><span class="p">,</span><span class="w"> </span><span class="n">AsciiStrLen</span><span class="p">(</span><span class="n">CHARGER_BATTERY_SYMBOL_DEBUG_BOARD_STAY</span><span class="p">));</span><span class="w"></span>
+<span class="w">    </span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="k">default</span><span class="o">:</span><span class="w"></span>
+<span class="w">    </span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">  </span><span class="cm">/*Clear Screen when requested*/</span><span class="w"></span>
+<span class="w">  </span><span class="k">if</span><span class="p">(</span><span class="n">TRUE</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">ClearScreen</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">EFI_SUCCESS</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="p">(</span><span class="n">Status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">QcomChargeAppDisplay_ClearScreen</span><span class="p">()))</span><span class="w"></span>
+<span class="w">    </span><span class="p">{</span><span class="w"></span>
+<span class="w">      </span><span class="n">DEBUG</span><span class="p">((</span><span class="n">EFI_D_ERROR</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;QcomChargerApp:: %a ChgAppClearScreen() returned error = %r</span><span class="se">\n\r</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">__FUNCTION__</span><span class="p">,</span><span class="n">Status</span><span class="p">));</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="cm">/* CHARGER_DEBUG((EFI_D_ERROR, &quot;QcomChargerApp: QcomChargerAppEvent_DispBattSymbol ChgAppClearScreen Cleared: %d\n\r&quot;, Status)); */</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">  </span><span class="k">if</span><span class="p">(</span><span class="n">ImageFvLoadedFlag</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">FALSE</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">Status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">gBS</span><span class="o">-&gt;</span><span class="n">LocateProtocol</span><span class="w"> </span><span class="p">(</span><span class="o">&amp;</span><span class="n">gEfiPilProtocolGuid</span><span class="p">,</span><span class="nb">NULL</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">VOID</span><span class="w"> </span><span class="o">**</span><span class="p">)</span><span class="w"> </span><span class="o">&amp;</span><span class="n">PILProtocol</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">((</span><span class="n">EFI_SUCCESS</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">Status</span><span class="p">)</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="p">(</span><span class="nb">NULL</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">PILProtocol</span><span class="p">))</span><span class="w"></span>
+<span class="w">    </span><span class="p">{</span><span class="w"></span>
+<span class="w">      </span><span class="n">DEBUG</span><span class="p">((</span><span class="w"> </span><span class="n">EFI_D_ERROR</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;ChargerLib:: %a %r </span><span class="se">\r\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">__FUNCTION__</span><span class="p">,</span><span class="w"> </span><span class="n">Status</span><span class="p">));</span><span class="w"></span>
+<span class="w">      </span><span class="k">return</span><span class="w"> </span><span class="n">Status</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">    </span><span class="n">Status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">PILProtocol</span><span class="o">-&gt;</span><span class="n">ProcessPilImage</span><span class="p">(</span><span class="sa">L</span><span class="s">&quot;ImageFv&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">((</span><span class="n">EFI_SUCCESS</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">Status</span><span class="p">))</span><span class="w"></span>
+<span class="w">    </span><span class="p">{</span><span class="w"></span>
+<span class="w">      </span><span class="n">DEBUG</span><span class="p">((</span><span class="w"> </span><span class="n">EFI_D_ERROR</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;ChargerLib:: %a %r </span><span class="se">\r\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">__FUNCTION__</span><span class="p">,</span><span class="w"> </span><span class="n">Status</span><span class="p">));</span><span class="w"></span>
+<span class="w">      </span><span class="k">return</span><span class="w"> </span><span class="n">Status</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="n">ImageFvLoadedFlag</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">TRUE</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">  </span><span class="cm">/* Draw BMP image with default options, the screen will be cleared and the image</span>
+<span class="cm">     will be drawn at the center of the screen*/</span><span class="w"></span>
+<span class="w">  </span><span class="n">Status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">DrawBmpFile</span><span class="p">(</span><span class="n">str</span><span class="p">,</span><span class="w"> </span><span class="nb">NULL</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">gEfiImageFvNameGuid</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">  </span><span class="k">if</span><span class="p">(</span><span class="nb">NULL</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">str</span><span class="w"> </span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">FreePool</span><span class="p">(</span><span class="n">str</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="n">str</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">NULL</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">Status</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">boot_images\QcomPkg\Application\QcomChargerApp\QcomChargerAppDisplay.h</span></code>图片资源定义如下：</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="cp">#define CHARGER_BATTERY_SYMBOL_NOBATTERY            &quot;battery_symbol_NoBattery.bmp&quot;</span>
+<span class="cp">#define CHARGER_BATTERY_SYMBOL_NOCHARGER            &quot;battery_symbol_Nocharger.bmp&quot;</span>
+<span class="cp">#define CHARGER_BATTERY_SYMBOL_ABOVE_THRESHOLD      &quot;battery_symbol_Soc10.bmp&quot;</span>
+<span class="cp">#define CHARGER_BATTERY_SYMBOL_LOWBATTERYCHARGING   &quot;battery_symbol_LowBatteryCharging.bmp&quot;</span>
+<span class="cp">#define CHARGER_BATTERY_SYMBOL_LOWBATTERY           &quot;battery_symbol_LowBattery.bmp&quot;</span>
+<span class="cp">#define CHARGER_TSENS_THERMAL_SYMBOL                &quot;tsens_thermal_symbol.bmp&quot;</span>
+<span class="cp">#define CHARGER_TSENS_CRITICAL_SYMBOL               &quot;tsens_thermal_err_symbol.bmp&quot;</span>
+<span class="cp">#define CHARGER_BATTERY_SYMBOL_DEBUG_BOARD_BOOT     &quot;battery_symbol_DebugBoot.bmp&quot;</span>
+<span class="cp">#define CHARGER_BATTERY_SYMBOL_DEBUG_BOARD_STAY     &quot;battery_symbol_DebugStay.bmp&quot;</span>
+</pre></div>
+</div>
+</section>
 <section id="id4">
 <h1>充电驱动各函数分析<a class="headerlink" href="#id4" title="此标题的永久链接"></a></h1>
 <p>通过前面代码<code class="docutils literal notranslate"><span class="pre">gBS-&gt;LocateProtocol(</span> <span class="pre">&amp;gQcomChargerProtocolGuid,</span> <span class="pre">NULL,</span> <span class="pre">(VOID</span> <span class="pre">**)&amp;pQcomChargerProtocol</span> <span class="pre">)</span></code>
@@ -605,7 +710,7 @@
 </pre></div>
 </div>
 <section id="qcomchargerinitialize">
-<h2>入口函数：QcomChargerInitialize()<a class="headerlink" href="#qcomchargerinitialize" title="此标题的永久链接"></a></h2>
+<h2>入口函数 QcomChargerInitialize()<a class="headerlink" href="#qcomchargerinitialize" title="此标题的永久链接"></a></h2>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">BOOT.XF.1.4\boot_images\QcomPkg\Drivers\QcomChargerDxe\QcomCharger.c</span></code>:</p></li>
 </ul>
@@ -623,7 +728,7 @@
 <li><p>获取平台类型，如： EFI_PLATFORMINFO_TYPE_MTP</p></li>
 <li><p>加载充电配置文件 QcomChargerCfg.cfg，解析的内容保存在QCOM_CHARGER_PLATFORM_CFGDATA_TYPE gChargerPlatformCfgData 结构体中</p></li>
 <li><p>根据gChargerPlatformCfgData 中的配置信息，初始化充电相关的lib 库</p></li>
-<li><p>获取充电配置文件中的 BootToHLOSThresholdInMv = 3600, OsStandardBootSocThreshold = 7</p></li>
+<li><p>获取充电配置文件中的 BootToHLOSThresholdInMv = 3450, OsStandardBootSocThreshold = 7</p></li>
 <li><p>使能充电硬件 JEITA</p></li>
 <li><p>根据配置文件决定是否开启看门狗</p></li>
 </ol>
@@ -664,6 +769,9 @@
 <span class="p">}</span><span class="w"></span>
 </pre></div>
 </div>
+</section>
+<section id="qcomchargerconfig-vbattth-cfg">
+<h2>配置文件 QcomChargerConfig_VbattTh.cfg<a class="headerlink" href="#qcomchargerconfig-vbattth-cfg" title="此标题的永久链接"></a></h2>
 <p>充电配置文件实际路径为<code class="docutils literal notranslate"><span class="pre">QcomPkg/SocPkg/AgattiPkg/Settings/Charger/QcomChargerConfig_VbattTh.cfg</span></code>，在该文件中定义了一系列的充电参数。</p>
 <div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="c1">//QcomPkg\SocPkg\AgattiPkg\LAA\Core.fdf:</span>
 <span class="w">  </span><span class="kt">FILE</span><span class="w"> </span><span class="n">FREEFORM</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">45F</span><span class="n">E4B7C</span><span class="mi">-150</span><span class="n">C</span><span class="mi">-45</span><span class="n">da</span><span class="o">-</span><span class="n">A021</span><span class="mi">-4</span><span class="n">BEB2048EC6F</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
@@ -672,7 +780,7 @@
 <span class="w">  </span><span class="p">}</span><span class="w"></span>
 
 <span class="c1">//充电电流配置为200mA  	Charging termination current in milliamps</span>
-<span class="n">ChargingTermCurrent</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">200</span><span class="w"></span>
+<span class="n">ChargingTermCurrent</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">200</span><span class="w"> </span>
 
 <span class="c1">//电流ID电压误差容量8%  	Battery ID Tolerance Percentage 8%</span>
 <span class="n">BatteryIdTolerance</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">8</span><span class="w"></span>

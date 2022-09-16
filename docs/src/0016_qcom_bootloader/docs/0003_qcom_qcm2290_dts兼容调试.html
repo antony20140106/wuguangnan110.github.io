@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="zh-CN" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>wugn</title>
+
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script src="../../../_static/translations.js"></script>
+        <script src="../../../_static/js/baidutongji.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="索引" href="../../../genindex.html" />
+    <link rel="search" title="搜索" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../index.html" class="icon icon-home"> wugn_note
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="在文档中搜索" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">概述</a></li>
+<li><a class="reference internal" href="#id2">参考</a></li>
+<li><a class="reference internal" href="#id3">调试流程</a><ul>
+<li><a class="reference internal" href="#dtb">拷贝dtb文件</a></li>
+<li><a class="reference internal" href="#id4">报错分析</a></li>
+<li><a class="reference internal" href="#id5">继续报错</a></li>
+</ul>
+</li>
+</ul>
+</div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">wugn_note</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs"> 
+<li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+<li>概述</li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.forward()">Forward</a></li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.back()">Go Back</a> | </li>
+<li style="float: right;margin-left: 10px;"><a href="/index.html">Home</a> | </li>
+
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="id1">
+<h1>概述<a class="headerlink" href="#id1" title="此标题的永久链接"></a></h1>
+<p>将高通A6650平台的dts整合在一起。</p>
+</section>
+<section id="id2">
+<h1>参考<a class="headerlink" href="#id2" title="此标题的永久链接"></a></h1>
+<ul class="simple">
+<li><p><a class="reference external" href="https://blog.csdn.net/linux_player_c/article/details/50965855">shell实用脚本：批量拷贝相同类型的文件</a></p></li>
+</ul>
+</section>
+<section id="id3">
+<h1>调试流程<a class="headerlink" href="#id3" title="此标题的永久链接"></a></h1>
+<section id="dtb">
+<h2>拷贝dtb文件<a class="headerlink" href="#dtb" title="此标题的永久链接"></a></h2>
+<ul class="simple">
+<li><p>参考1400代码，在dtb根目录下修改Makefile如下：</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>ifeq ($(CONFIG_BUILD_ARM64_DT_OVERLAY),y)
+dts-dirs += a6650
+dts-dirs += m9200
+endif
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>目录结构：</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>wugn@jcrj-tf-compile:qcom$ tree a6650/
+a6650/
+├── a6650-scuba-iot.dts
+├── a6650-scuba-iot-idp-overlay.dts
+├── Makefile
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>a6650目录下Makefile如下：</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>ifeq ($(CONFIG_BUILD_ARM64_DT_OVERLAY),y)
+dtbo-$(CONFIG_ARCH_SCUBA) += a6650-scuba-iot-idp-overlay.dtbo
+a6650-scuba-iot-idp-overlay.dtbo-base := a6650-scuba-iot.dtb
+endif
+
+always		:= $(dtb-y)
+subdir-y	:= $(dts-dirs)
+
+clean-files	:= *.dtb *.dtbo
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>根据dts文件中<code class="docutils literal notranslate"><span class="pre">#include</span> <span class="pre">&quot;scuba-iot.dtsi&quot;</span></code>和<code class="docutils literal notranslate"><span class="pre">#include</span> <span class="pre">&quot;scuba-iot-idp.dtsi&quot;</span></code>将这几个文件加进来，加进来后直接搜索include关键字如下：</p></li>
+</ul>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span>scuba-audio.dtsi
+1:#include &lt;dt-bindings/clock/qcom,audio-ext-clk.h&gt;
+2:#include &quot;msm-audio-lpass.dtsi&quot;
+22:#include &quot;scuba-lpi.dtsi&quot;
+
+scuba.dtsi
+2394:#include &quot;pm2250.dtsi&quot;
+2395:#include &quot;scuba-thermal.dtsi&quot;
+2396:#include &quot;scuba-coresight.dtsi&quot;
+2397:#include &quot;scuba-pinctrl.dtsi&quot;
+2398:#include &quot;scuba-ion.dtsi&quot;
+2399:#include &quot;pm2250-rpm-regulator.dtsi&quot;
+2400:#include &quot;scuba-regulator.dtsi&quot;
+2401:#include &quot;scuba-gdsc.dtsi&quot;
+2402:#include &quot;scuba-qupv3.dtsi&quot;
+2403:#include &quot;scuba-audio.dtsi&quot;
+2404:#include &quot;scuba-usb.dtsi&quot;
+2405:#include &quot;msm-arm-smmu-scuba.dtsi&quot;
+2406:#include &quot;scuba-bus.dtsi&quot;
+2407:#include &quot;scuba-gpu.dtsi&quot;
+2408:#include &quot;scuba-vidc.dtsi&quot;
+2412:   #include &quot;pm8008.dtsi&quot;
+2684:#include &quot;scuba-pm.dtsi&quot;
+2685:#include &quot;scuba-sde.dtsi&quot;
+2686:#include &quot;scuba-sde-pll.dtsi&quot;
+2687:#include &quot;camera/scuba-camera.dtsi&quot;
+2694:#include &quot;msm-rdbg-scuba.dtsi&quot;
+
+scuba-sde-display.dtsi
+2:#include &quot;dsi-panel-nt36525-truly-hd-plus-vid.dtsi&quot;
+3:#include &quot;dsi-panel-td4330-truly-v2-singlemipi-fhd-vid.dtsi&quot;
+4:#include &quot;dsi-panel-td4330-truly-v2-singlemipi-fhd-cmd.dtsi&quot;
+5:#include &quot;dsi-panel-hx8394f-720p-video.dtsi&quot;
+6:#include &quot;dsi-panel-ili9881d-720p-video.dtsi&quot;
+
+1:#include &quot;scuba-audio-overlay.dtsi&quot;
+5:#include &quot;scuba-thermal-overlay.dtsi&quot;
+6:#include &quot;scuba-sde-display.dtsi&quot;
+7:#include &quot;camera/scuba-camera-sensor-idp.dtsi&quot;
+12:#include &quot;qg-batterydata-alium-3600mah.dtsi&quot;
+13:#include &quot;qg-batterydata-atl466271_3300mAh.dtsi&quot;
+
+scuba-iot.dtsi
+1:#include &quot;scuba.dtsi&quot;
+</pre></div>
+</div>
+<p>将以上关联的dtsi文件全部加进来，目前目录如下：</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span>wugn@jcrj-tf-compile:a6650$ tree
+.
+├── a6650-scuba-iot.dts
+├── a6650-scuba-iot-idp-overlay.dts
+├── camera
+│   ├── scuba-camera.dtsi
+│   └── scuba-camera-sensor-idp.dtsi
+├── dsi-panel-hx8394f-720p-video.dtsi
+├── dsi-panel-ili9881d-720p-video.dtsi
+├── dsi-panel-nt36525-truly-hd-plus-vid.dtsi
+├── dsi-panel-td4330-truly-v2-singlemipi-fhd-cmd.dtsi
+├── dsi-panel-td4330-truly-v2-singlemipi-fhd-vid.dtsi
+├── Makefile
+├── msm-arm-smmu-scuba.dtsi
+├── msm-audio-lpass.dtsi
+├── msm-rdbg-scuba.dtsi
+├── pm2250.dtsi
+├── pm2250-rpm-regulator.dtsi
+├── pm8008.dtsi
+├── qg-batterydata-alium-3600mah.dtsi
+├── qg-batterydata-atl466271_3300mAh.dtsi
+├── scuba-audio.dtsi
+├── scuba-audio-overlay.dtsi
+├── scuba-bus.dtsi
+├── scuba-coresight.dtsi
+├── scuba.dtsi
+├── scuba-gdsc.dtsi
+├── scuba-gpu.dtsi
+├── scuba-ion.dtsi
+├── scuba-iot.dtsi
+├── scuba-iot-idp.dtsi
+├── scuba-lpi.dtsi
+├── scuba-pinctrl.dtsi
+├── scuba-pm.dtsi
+├── scuba-qupv3.dtsi
+├── scuba-regulator.dtsi
+├── scuba-rumi.dtsi
+├── scuba-sde-display.dtsi
+├── scuba-sde.dtsi
+├── scuba-sde-pll.dtsi
+├── scuba-thermal.dtsi
+├── scuba-thermal-overlay.dtsi
+├── scuba-usb.dtsi
+└── scuba-vidc.dtsi
+</pre></div>
+</div>
+</section>
+<section id="id4">
+<h2>报错分析<a class="headerlink" href="#id4" title="此标题的永久链接"></a></h2>
+<p>编译报错如下：</p>
+<div class="highlight-log notranslate"><div class="highlight"><pre><span></span>Copying kernel image to prebuilt
+=============
+Copying target dtb/dtbo files to prebuilt
+cp: bad &#39;/home/wugn/A6650-project/UM.9.15/out/target/product/bengal/obj/kernel/msm-4.19/arch/arm64/boot/dts/vendor/qcom/*.dtb&#39;: No such file or directory
+[ 93% 2501/2665] target SharedLib: libril-qc-hal-qmi (out/target/product/bengal/obj/SHARED_LIBRARIES/libril-qc-hal-qmi_intermediates/LINKED/libril-qc-hal-qmi.so)
+[ 93% 2502/2665] target SharedLib: camera.qcom (out/target/product/bengal/obj/SHARED_LIBRARIES/camera.qcom_intermediates/LINKED/camera.qcom.so)
+ninja: build stopped: subcommand failed.
+09:19:47 ninja failed with: exit status 1
+</pre></div>
+</div>
+<p>以上可知dtb生成目录为<code class="docutils literal notranslate"><span class="pre">out/target/product/bengal/obj/kernel/msm-4.19/arch/arm64/boot/dts/vendor/qcom/</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>wugn@jcrj-tf-compile:qcom$ tree
+.
+├── a6650
+│   ├── a6650-scuba-iot.dtb
+│   ├── a6650-scuba-iot-idp-overlay.dtbo
+│   └── modules.order
+├── m9200
+│   ├── m9200-scuba-iot.dtb
+│   ├── m9200-scuba-iot-idp-overlay.dtbo
+│   └── modules.order
+└── modules.order
+</pre></div>
+</div>
+<p>定位到脚本，原因是生成的dtb文件都放进a6650文件夹里面，找不到路径<code class="docutils literal notranslate"><span class="pre">device/qcom/kernelscripts/buildkernel.sh</span> <span class="pre">+185</span></code>修改如下，将<code class="docutils literal notranslate"><span class="pre">a6650</span></code>和<code class="docutils literal notranslate"><span class="pre">m9200</span></code>两个文件夹下的<code class="docutils literal notranslate"><span class="pre">dtb</span></code>和<code class="docutils literal notranslate"><span class="pre">dtbo</span></code>都拷贝过去：</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="nv">PAX_DTBO_FILE</span><span class="o">=</span><span class="s2">&quot;</span>
+<span class="s2">a6650</span>
+<span class="s2">m9200</span>
+<span class="s2">&quot;</span>
+
+copy_all_to_prebuilt<span class="o">()</span>
+<span class="o">{</span>
+    <span class="k">for</span> FILE <span class="k">in</span> <span class="nv">$PAX_DTBO_FILE</span>
+    <span class="k">do</span>
+            <span class="c1">#cp -p -r ${OUT_DIR}/${IMAGE_FILE_PATH}/dts/vendor/qcom/*.dtb ${PREBUILT_OUT}/${IMAGE_FILE_PATH}/dts/vendor/qcom/</span>
+            <span class="c1">#if [[ -e ${OUT_DIR}/${IMAGE_FILE_PATH}/dts/vendor/qcom/*.dtbo ]]; then</span>
+            cp -p -r <span class="si">${</span><span class="nv">OUT_DIR</span><span class="si">}</span>/<span class="si">${</span><span class="nv">IMAGE_FILE_PATH</span><span class="si">}</span>/dts/vendor/qcom/<span class="nv">$FILE</span>/*.dtb <span class="si">${</span><span class="nv">PREBUILT_OUT</span><span class="si">}</span>/<span class="si">${</span><span class="nv">IMAGE_FILE_PATH</span><span class="si">}</span>/dts/vendor/qcom
+            <span class="k">if</span> <span class="o">[[</span> -e <span class="si">${</span><span class="nv">OUT_DIR</span><span class="si">}</span>/<span class="si">${</span><span class="nv">IMAGE_FILE_PATH</span><span class="si">}</span>/dts/vendor/qcom/<span class="nv">$FILE</span>/*.dtbo <span class="o">]]</span><span class="p">;</span> <span class="k">then</span>
+                    cp -p -r <span class="si">${</span><span class="nv">OUT_DIR</span><span class="si">}</span>/<span class="si">${</span><span class="nv">IMAGE_FILE_PATH</span><span class="si">}</span>/dts/vendor/qcom/<span class="nv">$FILE</span>/*.dtbo <span class="si">${</span><span class="nv">PREBUILT_OUT</span><span class="si">}</span>/<span class="si">${</span><span class="nv">IMAGE_FILE_PATH</span><span class="si">}</span>/dts/vendor/qcom/
+            <span class="k">fi</span>
+            <span class="nb">echo</span> <span class="s2">&quot;</span><span class="si">${</span><span class="nv">OUT_DIR</span><span class="si">}</span><span class="s2">/</span><span class="nv">$PAX_DTBO_FILE</span><span class="s2"> copied to </span><span class="si">${</span><span class="nv">PREBUILT_OUT</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="k">done</span>
+<span class="o">}</span>
+</pre></div>
+</div>
+</section>
+<section id="id5">
+<h2>继续报错<a class="headerlink" href="#id5" title="此标题的永久链接"></a></h2>
+<p>可以看到拷贝动作是没问题了，哪个地方cat之前错误的路径有问题。</p>
+<div class="highlight-log notranslate"><div class="highlight"><pre><span></span>Copying kernel image to prebuilt
+=============
+Copying target dtb/dtbo files to prebuilt
+/home/wugn/A6650-project/UM.9.15/out/target/product/bengal/obj/kernel/msm-4.19/
+a6650
+m9200
+ copied to /home/wugn/A6650-project/UM.9.15/kernel/ship_prebuilt/primary_kernel
+/home/wugn/A6650-project/UM.9.15/out/target/product/bengal/obj/kernel/msm-4.19/
+a6650
+m9200
+ copied to /home/wugn/A6650-project/UM.9.15/kernel/ship_prebuilt/primary_kernel
+=============
+Copying arch-specific generated headers to prebuilt
+=============
+Copying kernel generated headers to prebuilt
+============
+Copying userspace headers to prebuilt
+============
+Copying kernel scripts to prebuilt
+[ 93% 2501/2665] Prebuilt:  (out/target/product/bengal/kernel)
+[ 93% 2502/2665] build out/target/product/bengal/obj/KERNEL_OBJ/rtic_mp.dtb
+[ 93% 2503/2665] Target dtbo image: out/target/product/bengal/prebuilt_dtbo.img
+create image file: out/target/product/bengal/prebuilt_dtbo.img...
+Total 2 entries.
+[ 93% 2504/2665] build out/target/product/bengal/dtb.img
+FAILED: out/target/product/bengal/dtb.img
+/bin/bash -c &quot;cat out/target/product/bengal/obj/kernel/msm-4.19/arch/arm64/boot/dts/vendor/qcom/*.dtb out/target/product/bengal/obj/KERNEL_OBJ/rtic_mp.dtb &gt; out/target/product/bengal/dtb.img&quot;
+cat: out/target/product/bengal/obj/kernel/msm-4.19/arch/arm64/boot/dts/vendor/qcom/*.dtb: No such file or directory
+</pre></div>
+</div>
+<p>解决方案：将dtb和dtbo文件直接挪出来。</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>copy_all_to_prebuilt<span class="o">()</span>
+<span class="o">{</span>
+	<span class="c1">#[NEW FEATURE]-BEGIN by wugangnan@paxsz.com 2022-07-08, for multi dtb</span>
+	<span class="nv">PAX_DTB_FILE</span><span class="o">=</span><span class="sb">`</span>find <span class="si">${</span><span class="nv">OUT_DIR</span><span class="si">}</span>/<span class="si">${</span><span class="nv">IMAGE_FILE_PATH</span><span class="si">}</span>/dts/vendor/qcom -name <span class="s2">&quot;*.dtb&quot;</span><span class="sb">`</span>
+	<span class="nv">PAX_DTBO_FILE</span><span class="o">=</span><span class="sb">`</span>find <span class="si">${</span><span class="nv">OUT_DIR</span><span class="si">}</span>/<span class="si">${</span><span class="nv">IMAGE_FILE_PATH</span><span class="si">}</span>/dts/vendor/qcom -name <span class="s2">&quot;*.dtbo&quot;</span><span class="sb">`</span>
+
+	<span class="k">for</span> FILE <span class="k">in</span> <span class="nv">$PAX_DTB_FILE</span>
+	<span class="k">do</span>
+		mv <span class="si">${</span><span class="nv">FILE</span><span class="si">}</span> <span class="si">${</span><span class="nv">OUT_DIR</span><span class="si">}</span>/<span class="si">${</span><span class="nv">IMAGE_FILE_PATH</span><span class="si">}</span>/dts/vendor/qcom/
+		<span class="nb">echo</span> <span class="s2">&quot;</span><span class="si">${</span><span class="nv">FILE</span><span class="si">}</span><span class="s2"> move to </span><span class="si">${</span><span class="nv">OUT_DIR</span><span class="si">}</span><span class="s2">/</span><span class="si">${</span><span class="nv">IMAGE_FILE_PATH</span><span class="si">}</span><span class="s2">/dts/vendor/qcom/&quot;</span>
+	<span class="k">done</span>
+	<span class="k">for</span> FILE <span class="k">in</span> <span class="nv">$PAX_DTBO_FILE</span>
+	<span class="k">do</span>
+		<span class="k">if</span> <span class="o">[[</span> -e <span class="si">${</span><span class="nv">FILE</span><span class="si">}</span> <span class="o">]]</span><span class="p">;</span> <span class="k">then</span>
+			mv <span class="si">${</span><span class="nv">FILE</span><span class="si">}</span> <span class="si">${</span><span class="nv">OUT_DIR</span><span class="si">}</span>/<span class="si">${</span><span class="nv">IMAGE_FILE_PATH</span><span class="si">}</span>/dts/vendor/qcom/
+		<span class="k">fi</span>
+		<span class="nb">echo</span> <span class="s2">&quot;</span><span class="si">${</span><span class="nv">FILE</span><span class="si">}</span><span class="s2"> move to </span><span class="si">${</span><span class="nv">OUT_DIR</span><span class="si">}</span><span class="s2">/</span><span class="si">${</span><span class="nv">IMAGE_FILE_PATH</span><span class="si">}</span><span class="s2">/dts/vendor/qcom/&quot;</span>
+	<span class="k">done</span>
+	<span class="c1">#[NEW FEATURE]-END by wugangnan@paxsz.com 2022-07-08, for multi dtb</span>
+<span class="o">}</span>
+</pre></div>
+</div>
+</section>
+</section>
+
+
+           </div>
+             <div class="articleComments">
+                <comments>
+  <script src="https://utteranc.es/client.js"
+    repo="iswbm/magic-python"
+    issue-term="pathname"
+    theme="github-light"
+    crossorigin="anonymous"
+    async>
+  </script>
+</comments>
+             </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; 版权所有 2022, wugn.</p>
+  </div>
+
+  利用 <a href="https://www.sphinx-doc.org/">Sphinx</a> 构建，使用了 
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">主题</a>
+    由 <a href="https://readthedocs.org">Read the Docs</a>开发.
+  
+
+<script charset="UTF-8" id="LA_COLLECT" src="//sdk.51.la/js-sdk-pro.min.js"></script>
+<script>LA.init({id: "JoV5csIHTGhHiGQ4",ck: "JoV5csIHTGhHiGQ4"})</script>
+
+<br/>
+<script id="LA-DATA-WIDGET" crossorigin="anonymous" charset="UTF-8" src="https://v6-widget.51.la/v6/JoV5csIHTGhHiGQ4/quote.js?theme=#4C8AC2,#BB2626,#040000,#333333,#AE3535,#1690FF,14&f=14"></script>
+
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
