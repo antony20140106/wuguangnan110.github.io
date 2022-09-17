@@ -45,7 +45,10 @@
 <li><a class="reference internal" href="#">README</a></li>
 <li><a class="reference internal" href="#refer">refer</a></li>
 <li><a class="reference internal" href="#module-package">模块(Module)和包(Package)</a></li>
-<li><a class="reference internal" href="#protocol">Protocol服务</a></li>
+<li><a class="reference internal" href="#protocol">Protocol服务</a><ul>
+<li><a class="reference internal" href="#id1">如何通过protocol找到驱动对应接口</a></li>
+</ul>
+</li>
 </ul>
 </div>
         </div>
@@ -98,6 +101,115 @@
 <p>UEFI 驱动程序使用Protocol服务来访问其他模块产生的Protocol接口。 UEFI 规范定义了一组引导服务来处理Protocol，
 包含：
 实现动态链接时使用Protocol。 对于静态链接使用库。 要实现任何想要动态使用的新服务，请使用Protocol。</p>
+<section id="id1">
+<h2>如何通过protocol找到驱动对应接口<a class="headerlink" href="#id1" title="此标题的永久链接"></a></h2>
+<ul class="simple">
+<li><p>如何通过protocol找到驱动对应接口，比如驱动调用<code class="docutils literal notranslate"><span class="pre">ChargerLib_GetBatteryStatus</span></code>这个接口，我们跟进代码如下：</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">QcomPkg/Library/ChargerLib/ChargerLibCommon.c</span></code>:</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>* EFI_STATUS ChargerLib_GetBatteryStatus(chargerlib_batt_status_info *pBatteryStatus)
+  └── ChargerLibTarget_GetBatteryStatus(pBatteryStatus)
+      └── PmicQgProtocol-&gt;GetBatteryStatus(BatteryGaugeInfo.QGaugePmicInfo.PmicIndex,(EFI_PM_QG_BATT_STATUS_INFO *)&amp;BatteryStatus);//QcomPkg/Library/ChargerLib/target/Agatti/ChargerLibTarget.c
+</pre></div>
+</div>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">EFI_PM_QG_BATT_STATUS_INFO</span></code>结构体如下，定义了所有protocol支持的函数：</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="k">typedef</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">_EFI_PM_QG_BATT_STATUS_INFO</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="n">UINT32</span><span class="w"> </span><span class="n">StateOfCharge</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="n">INT32</span><span class="w">  </span><span class="n">ChargeCurrent</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="n">INT32</span><span class="w">  </span><span class="n">BatteryVoltage</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="n">INT32</span><span class="w">  </span><span class="n">BatteryTemperature</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="n">EFI_PM_QG_BATT_STATUS_INFO</span><span class="p">;</span><span class="w"></span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>我们通过检索<code class="docutils literal notranslate"><span class="pre">EFI_PM_QG_BATT_STATUS_INFO</span></code>结构体可以找到定义它的驱动位置：</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">QcomPkg</span><span class="o">/</span><span class="n">Drivers</span><span class="o">/</span><span class="n">PmicDxe</span><span class="o">/</span><span class="n">Qg</span><span class="o">/</span><span class="n">PmicQg</span><span class="o">.</span><span class="n">c</span>
+<span class="mi">203</span><span class="p">:</span>   <span class="n">OUT</span> <span class="n">EFI_PM_QG_BATT_STATUS_INFO</span> <span class="o">*</span><span class="n">BattStsInfo</span>
+<span class="mi">207</span><span class="p">:</span>  <span class="n">EFI_PM_QG_BATT_STATUS_INFO</span> <span class="n">stsInfo</span> <span class="o">=</span> <span class="p">{</span><span class="mi">0</span><span class="p">};</span>
+<span class="mi">294</span><span class="p">:</span>   <span class="n">OUT</span> <span class="n">EFI_PM_QG_BATT_STATUS_INFO</span> <span class="o">*</span><span class="n">BattStsInfo</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>找到定义函数如下，可以看到该接口主要是获取电池电流电压和温度：</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="cm">/**</span>
+<span class="cm">EFI_PmicQgBatteryStatus()</span>
+
+<span class="cm">@brief</span>
+<span class="cm">Returns Battery Status parameters such as State of Charge (SOC)</span>
+<span class="cm">*/</span><span class="w"></span>
+<span class="n">EFI_STATUS</span><span class="w"></span>
+<span class="n">EFIAPI</span><span class="w"></span>
+<span class="n">EFI_PmicQgGetBatteryStatus</span><span class="w"></span>
+
+<span class="p">(</span><span class="w"></span>
+<span class="w">   </span><span class="n">IN</span><span class="w">  </span><span class="n">UINT32</span><span class="w">         </span><span class="n">PmicDeviceIndex</span><span class="p">,</span><span class="w"></span>
+<span class="w">   </span><span class="n">OUT</span><span class="w"> </span><span class="n">EFI_PM_QG_BATT_STATUS_INFO</span><span class="w"> </span><span class="o">*</span><span class="n">BattStsInfo</span><span class="w"></span>
+<span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="n">EFI_STATUS</span><span class="w"> </span><span class="n">Status</span><span class="w">   </span><span class="o">=</span><span class="w"> </span><span class="n">EFI_SUCCESS</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="n">EFI_PM_QG_BATT_STATUS_INFO</span><span class="w"> </span><span class="n">stsInfo</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="mi">0</span><span class="p">};</span><span class="w"></span>
+
+<span class="w">  </span><span class="k">if</span><span class="p">(</span><span class="nb">NULL</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">BattStsInfo</span><span class="w"> </span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">EFI_INVALID_PARAMETER</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
+<span class="w">  </span><span class="n">Status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">PmicQg_GetBatteryStatus</span><span class="p">(</span><span class="n">PmicDeviceIndex</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">stsInfo</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">  </span><span class="o">*</span><span class="n">BattStsInfo</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">stsInfo</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">Status</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="cm">/**</span>
+<span class="cm">PmicQg_GetBatteryStatus</span>
+
+<span class="cm">@brief</span>
+<span class="cm">Returns Battery Status parameters such as Voltage</span>
+<span class="cm">*/</span><span class="w"></span>
+<span class="n">EFI_STATUS</span><span class="w"></span>
+<span class="n">PmicQg_GetBatteryStatus</span><span class="w"></span>
+<span class="p">(</span><span class="w"></span>
+<span class="w">   </span><span class="n">IN</span><span class="w">  </span><span class="n">UINT32</span><span class="w">         </span><span class="n">PmicDeviceIndex</span><span class="p">,</span><span class="w"></span>
+<span class="w">   </span><span class="n">OUT</span><span class="w"> </span><span class="n">EFI_PM_QG_BATT_STATUS_INFO</span><span class="w"> </span><span class="o">*</span><span class="n">BattStsInfo</span><span class="w"></span>
+<span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="n">EFI_STATUS</span><span class="w">       </span><span class="n">Status</span><span class="w">   </span><span class="o">=</span><span class="w"> </span><span class="n">EFI_SUCCESS</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="n">pm_err_flag_type</span><span class="w"> </span><span class="n">errFlag</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="n">PM_ERR_FLAG_SUCCESS</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="n">UINT32</span><span class="w">           </span><span class="n">VBat</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="n">INT32</span><span class="w">            </span><span class="n">ibat</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="n">INT32</span><span class="w">            </span><span class="n">BattTemp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">  </span><span class="k">if</span><span class="p">(</span><span class="nb">NULL</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">BattStsInfo</span><span class="w"> </span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">EFI_INVALID_PARAMETER</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">  </span><span class="cm">/* Get Battery voltage */</span><span class="w"></span>
+<span class="w">  </span><span class="n">errFlag</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pm_qgauge_get_vbat</span><span class="p">(</span><span class="n">PmicDeviceIndex</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">VBat</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="n">Status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">PM_ERR_FLAG_SUCCESS</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">errFlag</span><span class="p">)</span><span class="o">?</span><span class="w"> </span><span class="n">EFI_SUCCESS</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">EFI_DEVICE_ERROR</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">  </span><span class="n">BattStsInfo</span><span class="o">-&gt;</span><span class="n">BatteryVoltage</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">VBat</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">  </span><span class="cm">/* Get Battery charge current */</span><span class="w"></span>
+<span class="w">  </span><span class="n">errFlag</span><span class="w"> </span><span class="o">|=</span><span class="w"> </span><span class="n">pm_qgauge_get_ibat</span><span class="p">(</span><span class="n">PmicDeviceIndex</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">ibat</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">  </span><span class="n">BattStsInfo</span><span class="o">-&gt;</span><span class="n">ChargeCurrent</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ibat</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">  </span><span class="n">errFlag</span><span class="w"> </span><span class="o">|=</span><span class="w"> </span><span class="n">PmicQg_ReadBattTemp</span><span class="p">(</span><span class="o">&amp;</span><span class="n">BattTemp</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">  </span><span class="n">BattStsInfo</span><span class="o">-&gt;</span><span class="n">BatteryTemperature</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">BattTemp</span><span class="p">;</span><span class="w"></span>
+
+
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="p">(</span><span class="n">Status</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">errFlag</span><span class="p">);</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+</section>
 </section>
 
 

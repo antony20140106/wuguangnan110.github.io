@@ -8,7 +8,12 @@
 
 # 流程图
 
-![0027_0000.png](images/0027_0000.png)
+![0011_0000.png](images/0011_0000.png)
+
+* 摘要：
+  * 1. 循环监控程序中获取电池电压电流温度，这里主要用来判断开机条件，硬件上一定要接正确。
+  * 2. 开机条件实际上只有一个，DC和Soc的方式默认关闭，只需配置`BootToHLOSThresholdInMv`值即可，目前配置的是`3.45v`。
+  * 3. App访问驱动通过LocateProtocol接口，也就是Protocol方式，这种是UEFI通用的方式。
 
 # 加载 UEFI 默认应用程序
 
@@ -433,19 +438,8 @@ EFI_STATUS QcomChargerApp_MonitorCharging( VOID )
       break;
       case EFI_QCOM_CHARGER_ACTION_CONTINUE:
       default:
-        /* Take Action */
-        Status |= pQcomChargerProtocol->TakeAction(ChargingAction, &ChargerActionInfo);
-        QcomChargerApp_LogParam(&ChargerActionInfo);
-        CHARGERAPP_FILE_UART_DEBUG((EFI_D_WARN, "QcomChargerApp:: %a Waiting for %d ms \r\n", __FUNCTION__, Timeoutms));
-        /* Now wait for set Timeout */
-        WaitForTimeout (Timeoutms, QCOM_CHARGER_TIMEOUT_WAIT_FOR_KEY, &UserKey);
-        /*Check if WaitForTimeout returned due to key press */
-        if((UserKey.UnicodeChar != 0x00) || (UserKey.ScanCode != 0x00))
-        {
-          DEBUG((EFI_D_WARN, "QcomChargerApp:: %a Keypress detected \r\n", __FUNCTION__));
-          QcomChargerAppEvent_KeyPressHandler(QCOMCHARGERAPP_EVENT_ANIMATION__CHARGING_ANIM);
-        }
-      break;
+           Status = QcomChargerApp_ContinueCharging(ChargingAction, &ChargerActionInfo);
+           break;
     }
   }while (FALSE == ExitChargingLoop);
   // 6. 开启10分钟的看门狗定时器
@@ -682,7 +676,7 @@ EmergencyShutdownVbatt = 3200
 LoadBatteryProfile   = FALSE
 ```
 
-## 充电状态 pQcomChargerProtocol->TakeAction()
+## 设置充电状态 pQcomChargerProtocol->TakeAction()
 
 在函数EFI_QcomChargerTakeAction() 中调用的是ChargerPlatform_TakeAction() 函数，我们来分析下：
 电池状态的处理情况，分类如下几种：
@@ -1084,3 +1078,9 @@ EFI_STATUS ChargerPlatform_CheckIfOkToBoot
   return EFI_SUCCESS;
 }
 ```
+
+# 充电图标显示流程
+
+* 从上面的章节我们知道以下几点：
+  * 1. 获取充电状态是`GetChargingAction`接口。
+  * 2. 专门有刷新UI的定时器`AnimImgTimer`，500ms轮询一次，显示`LOW_BATT_CHARGING`和`LOW_BATTERY`充电两个状态的闪烁效果。

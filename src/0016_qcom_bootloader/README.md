@@ -6,6 +6,8 @@
 
 NO.|文件名称|摘要
 :--:|:--|:--
+0012| [rttdr](docs/0012_rttdr.md) | 高度公分的
+0011| [qcom_qcm2290_XBL_QcomChargerApp充电流程代码分析](docs/0011_qcom_qcm2290_XBL_QcomChargerApp充电流程代码分析.md) | 高通平台如果达不到开机状态，也就是电池电压过低，会在XBL阶段运行comChargerApp进行充电，直到电池电压大于开机阈值则进入kernel，类似mtk平台lk阶段充电。
 0010| [qcom_qcm2290_SBL1运行流程](docs/0010_qcom_qcm2290_SBL1运行流程.md) | 高通qcm2290 PBL-SBL1流程分析。全称：Secondary boot loader,SBL1是XBL前运行的一个流程，今天就要分析一下开机前几秒钟起着关键作用的sbl1.
 0009| [qcom_UEFI学习](docs/0009_qcom_UEFI学习.md) | 高通UEFI学习。
 0008| [qcom_qcm2290_ABL_增加i2c接口](docs/0008_qcom_qcm2290_ABL_增加i2c接口.md) | ABL阶段有时需要读取某些i2c设备状态，但默认没有i2c驱动，需要添加。

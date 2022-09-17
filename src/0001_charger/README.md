@@ -6,7 +6,6 @@ Android平台charger、BMS相关知识及调试整理。
 
 NO.|文件名称|摘要
 :--:|:--|:--
-0027| [qcom_qcm2290_XBL_QcomChargerApp充电流程代码分析](docs/0027_qcom_qcm2290_XBL_QcomChargerApp充电流程代码分析.md) | 高通平台如果达不到开机状态，也就是电池电压过低，会在XBL阶段运行comChargerApp进行充电，直到电池电压大于开机阈值则进入kernel，类似mtk平台lk阶段充电。
 0026| [Android充电相关代码简单总结](docs/0026_Android充电相关代码简单总结.md) | charger/gauge相关，从上层到底层软件简单做个总结。
 0025| [qcom_qcm2290_qpnp_power_on驱动分析](docs/0025_qcom_qcm2290_qpnp_power_on驱动分析.md) | 高通qcm2290平台，目前有专门的开关机原因检测驱动，分析一下。
 0024| [qcom_qcm2290_无电池启动功能开发](docs/0024_qcom_qcm2290_无电池启动功能开发.md) | 高通qcm2290平台，目前要求无电池启动功能，开发一下。
