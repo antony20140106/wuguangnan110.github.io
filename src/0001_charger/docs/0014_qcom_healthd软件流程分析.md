@@ -56,6 +56,7 @@ AOSP包含多个帮助库，旨在帮助您实现2.0 HAL和从旧的1.0 HAL过�
 * [2021-12-22 AndroidR 电池信息 简单分析记录](https://blog.csdn.net/qq_37858386/article/details/122087237#comments_23271353)
 * [Google 实现 Health 2.1](https://source.android.com/docs/core/health/implementation-2-1)
 * [power supply是如何上报电池信息的](https://cloud.tencent.com/developer/article/1847402)
+* [c++：继承（超详解）](https://blog.csdn.net/qq_62718027/article/details/125922249)
 
 # 软件架构
 
@@ -312,7 +313,7 @@ system         646     1 12978784  3608 do_epoll_wait       0 S android.hardware
 
 # Init获取所有psy属性节点的路径
 
-* `Main`函数中，我们看到第一行是`sp<IHealth> passthrough`，创建了一个`Ihealth`类，那必然会跑它的构造函数，跟踪发现`Health`继承`Ihealth`类：
+* `Main`函数中，我们看到第一行是`sp<IHealth> passthrough`，创建了一个`Ihealth`类，那必然会跑它的构造函数，跟踪发现`Health`继承`Ihealth`类，编译器会默认先调用父类的构造函数，再调用子类的构造函数，如下：
 * `utils/libhealth2impl/include/health2impl/Health.h`:
 
 ```C++
