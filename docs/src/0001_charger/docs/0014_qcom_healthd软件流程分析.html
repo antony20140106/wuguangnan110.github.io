@@ -50,6 +50,8 @@
 <li><a class="reference internal" href="#id5">涉及文件</a></li>
 <li><a class="reference internal" href="#id6">软件流程</a></li>
 <li><a class="reference internal" href="#hidl">HIDL服务注册</a></li>
+<li><a class="reference internal" href="#initpsy">Init获取所有psy属性节点的路径</a></li>
+<li><a class="reference internal" href="#id7">上报流程</a></li>
 </ul>
 </div>
         </div>
@@ -132,18 +134,18 @@
 <ul class="simple">
 <li><p><a class="reference external" href="https://source.android.com/devices/tech/health?hl=zh-cn">Android 运行状况</a></p></li>
 <li><p><a class="reference external" href="https://blog.csdn.net/u010632165/article/details/88651035">Android 电池管理系统架构总结 Android power and battery management architecture summaries</a></p></li>
-<li><p><a class="reference external" href="https://blog.csdn.net/dfysy/article/details/7330919">Android Uevent 分析，从kernel到framework</a></p></li>
-<li><p><a class="reference external" href="https://source.android.com/docs/core/health/implementation-2-1">Google 实现 Health 2.1 </a></p></li>
+<li><p><a class="reference external" href="https://blog.csdn.net/qq_37858386/article/details/122087237#comments_23271353">2021-12-22 AndroidR 电池信息 简单分析记录</a></p></li>
+<li><p><a class="reference external" href="https://source.android.com/docs/core/health/implementation-2-1">Google 实现 Health 2.1</a></p></li>
 <li><p><a class="reference external" href="https://cloud.tencent.com/developer/article/1847402">power supply是如何上报电池信息的</a></p></li>
 </ul>
 </section>
 <section id="id4">
 <h1>软件架构<a class="headerlink" href="#id4" title="此标题的永久链接"></a></h1>
-<p><img alt="0014_0000.png" src="../../../_images/0014_0000.png" />
+<p><img alt="0014_0006.png" src="../../../_images/0014_0006.png" />
 <img alt="0014_0004.png" src="../../../_images/0014_0004.png" /></p>
 <p>可以看到文件比较多，主要是通过<code class="docutils literal notranslate"><span class="pre">BatteryMonitor.cpp</span></code>中的<code class="docutils literal notranslate"><span class="pre">BatteryMonitor::update(void)</span></code>函数上报信息，其中，内核首先会更新数据到<code class="docutils literal notranslate"><span class="pre">/sys/class/power_supply/battery</span></code>节点下各个属性，这个在上一个小节有做解释，先来看一下整体的架构，后面再来深入到代码中去分析；具体图片（该图片来自互联网，因为被转载较多，已经不知道出处），具体的流程整理的很清楚，如下所示；</p>
 <p><img alt="0014_0001.png" src="../../../_images/0014_0001.png" /></p>
-<p>这幅图片再一次把整体的数据走向具体化，可以看到主要负责工作的是BatteryMonitor，主要分析一下该文件中的init和update就可以搞清楚大部分的问题。</p>
+<p>这幅图片再一次把整体的数据走向具体化，可以看到主要负责工作的是<code class="docutils literal notranslate"><span class="pre">BatteryMonitor</span></code>，主要分析一下该文件中的init和update就可以搞清楚大部分的问题。</p>
 </section>
 <section id="id5">
 <h1>涉及文件<a class="headerlink" href="#id5" title="此标题的永久链接"></a></h1>
@@ -298,6 +300,20 @@
 <h1>软件流程<a class="headerlink" href="#id6" title="此标题的永久链接"></a></h1>
 <p>由于uevent机制仅将一个简单的字符串传递给了用户空间，而安卓系统建立在kernel之上，需要思考如何将设备属性的变化值及时更新到用户空间，于是就有了healthd服务，healthd目前已经更新到了2.1版本，其主要工作通过epoll_wait来监听kernel中的uevent事件。具体的函数调用流程图如下：</p>
 <p><img alt="0014_0003.png" src="../../../_images/0014_0003.png" /></p>
+<ul class="simple">
+<li><ol class="arabic simple">
+<li><p>从service.cpp开始理一下调用流程，可以整理出上述的调用流程，构造函数为初始化流程，<code class="docutils literal notranslate"><span class="pre">Uevent</span></code>那条虚线为当psy-uevent上报后触发epoll之后的调用流程。与底层节点交互的逻辑都在<code class="docutils literal notranslate"><span class="pre">BatteryMonitor</span></code>中，在初始化过程中会初始化healthd_config结构体，用于保存psy属性节点的路径。</p></li>
+</ol>
+</li>
+<li><ol class="arabic simple" start="2">
+<li><p>在监听循环MainLoop函数中，一个while(1)循环，调用epoll_wait()函数来监听uevent，收到事件之后会调用初始化时注册好的func（UeventEvent），该函数会通过uevent_kernel_multicast_recv接口去读取netlink发送的sk_buff-&gt;data，通过查找其中的字符串来判断事件是否为psy子系统发送的，如果不是的话，不会进行处理。进一步的处理流程主要是调用到BatteryMonitor中的updateValues，在该函数中会遍历读取psy属性节点，存储在HealthInfo结构体中，之后通过BinderHealth中注册好的回调函数IHealthInfoCallback通知BatterySerice，具体的通知函数为BinderHealth：OnHealthInfoChanged。</p></li>
+</ol>
+</li>
+<li><ol class="arabic simple" start="3">
+<li><p>Healthd是一个根植于powersupply子系统，并采用了epoll监听底层节点的uevent事件，之后轮询底层属性节点的守护进程。在安卓R版本中，Healthd相关代码重构为libhealthloop和libhealth2impl，但为了保证向后兼容，可以看到在ScheduleBatteryUpdate()函数中调用了两次updateValues，这样会遍历两次底层节点造成了冗余。另外在psy-uevent机制中，也有一次属性节点的遍历，一共三次遍历，这就要求底层驱动在更新属性值时，不能加入耗时的IO操作，否则会影响系统性能。</p></li>
+</ol>
+</li>
+</ul>
 </section>
 <section id="hidl">
 <h1>HIDL服务注册<a class="headerlink" href="#hidl" title="此标题的永久链接"></a></h1>
@@ -337,6 +353,27 @@ It is strongly recommended that you implement the 2.1 HAL directly. See
 </pre></div>
 </div>
 <ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">BinderHealth</span></code>实际上是继承<code class="docutils literal notranslate"><span class="pre">HalHealthLoop</span></code>类，<code class="docutils literal notranslate"><span class="pre">HalHealthLoop</span></code>继承<code class="docutils literal notranslate"><span class="pre">HealthLoop</span></code>，所以<code class="docutils literal notranslate"><span class="pre">binder-&gt;StartLoop</span></code>调用的是<code class="docutils literal notranslate"><span class="pre">HealthLoop.cpp</span></code>里面的<code class="docutils literal notranslate"><span class="pre">StartLoop()</span></code>函数：</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="c1">//health/utils/libhealth2impl/BinderHealth.cpp:</span>
+<span class="n">BinderHealth</span><span class="o">::</span><span class="n">BinderHealth</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span><span class="w"> </span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">sp</span><span class="o">&lt;</span><span class="n">IHealth</span><span class="o">&gt;&amp;</span><span class="w"> </span><span class="n">impl</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="o">:</span><span class="w"> </span><span class="n">HalHealthLoop</span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="n">impl</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="c1">//继承</span>
+<span class="w">    </span><span class="n">CHECK_NE</span><span class="p">(</span><span class="k">this</span><span class="p">,</span><span class="w"> </span><span class="n">impl</span><span class="p">.</span><span class="n">get</span><span class="p">());</span><span class="w"></span>
+<span class="w">    </span><span class="n">CHECK</span><span class="p">(</span><span class="o">!</span><span class="n">impl</span><span class="o">-&gt;</span><span class="n">isRemote</span><span class="p">());</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+<span class="c1">//health/utils/libhealth2impl/include/health2impl/HalHealthLoop.h:</span>
+<span class="w">  </span><span class="c1">// An implementation of HealthLoop for using a given health HAL. This is useful</span>
+<span class="w">  </span><span class="c1">// for services that opens the passthrough implementation and starts the HealthLoop</span>
+<span class="w">  </span><span class="c1">// to periodically poll data from the implementation.</span>
+<span class="w">  </span><span class="k">class</span><span class="w"> </span><span class="nc">HalHealthLoop</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">HealthLoop</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="c1">//继承</span>
+<span class="w">    </span><span class="n">CHECK_NE</span><span class="p">(</span><span class="k">this</span><span class="p">,</span><span class="w"> </span><span class="n">impl</span><span class="p">.</span><span class="n">get</span><span class="p">());</span><span class="w"></span>
+<span class="w">    </span><span class="k">public</span><span class="o">:</span><span class="w"></span>
+<span class="w">      </span><span class="n">HalHealthLoop</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span><span class="w"> </span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">sp</span><span class="o">&lt;</span><span class="n">IHealth</span><span class="o">&gt;&amp;</span><span class="w"> </span><span class="n">service</span><span class="p">)</span><span class="w"></span>
+<span class="w">          </span><span class="o">:</span><span class="w"> </span><span class="n">instance_name_</span><span class="p">(</span><span class="n">name</span><span class="p">),</span><span class="w"> </span><span class="n">service_</span><span class="p">(</span><span class="n">service</span><span class="p">)</span><span class="w"> </span><span class="p">{}</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<ul class="simple">
 <li><p>绑定模式的服务通过<code class="docutils literal notranslate"><span class="pre">registerAsService</span></code>接口实现，代码流程:</p></li>
 </ul>
 <div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span>hardware\interfaces\health\2.1\default\service.cpp
@@ -350,20 +387,351 @@ Init(struct healthd_config* config) &gt; CHECK_EQ(registerAsService(instance_nam
 </pre></div>
 </div>
 <p>到这里从log上看就打开一个android.hardware.health&#64;2.1-service服务了。</p>
-<p><img alt="0014_0002.png" src="../../../_images/0014_00021.png" /></p>
+<p><img alt="0014_0002.png" src="../../../_images/0014_0002.png" /></p>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"> <span class="pre">ps</span> <span class="pre">-A</span> <span class="pre">|</span> <span class="pre">grep</span> <span class="pre">health</span></code>:</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ps</span> <span class="pre">-A</span> <span class="pre">|</span> <span class="pre">grep</span> <span class="pre">health</span></code>:</p></li>
 </ul>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">A6650</span><span class="p">:</span><span class="o">/</span> <span class="c1"># ps -A | grep health</span>
 <span class="n">system</span>         <span class="mi">646</span>     <span class="mi">1</span> <span class="mi">12978784</span>  <span class="mi">3608</span> <span class="n">do_epoll_wait</span>       <span class="mi">0</span> <span class="n">S</span> <span class="n">android</span><span class="o">.</span><span class="n">hardware</span><span class="o">.</span><span class="n">health</span><span class="o">@</span><span class="mf">2.1</span><span class="o">-</span><span class="n">service</span>
 </pre></div>
 </div>
 </section>
+<section id="initpsy">
+<h1>Init获取所有psy属性节点的路径<a class="headerlink" href="#initpsy" title="此标题的永久链接"></a></h1>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">Main</span></code>函数中，我们看到第一行是<code class="docutils literal notranslate"><span class="pre">sp&lt;IHealth&gt;</span> <span class="pre">passthrough</span></code>，创建了一个<code class="docutils literal notranslate"><span class="pre">Ihealth</span></code>类，那必然会跑它的构造函数，跟踪发现<code class="docutils literal notranslate"><span class="pre">Health</span></code>继承<code class="docutils literal notranslate"><span class="pre">Ihealth</span></code>类：</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">utils/libhealth2impl/include/health2impl/Health.h</span></code>:</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">Health</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">IHealth</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="mi">43</span><span class="w">    </span><span class="k">public</span><span class="o">:</span><span class="w"></span>
+
+<span class="c1">//utils/libhealth2impl/Health.cpp:</span>
+<span class="n">Health</span><span class="o">::</span><span class="n">Health</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">healthd_config</span><span class="o">&gt;&amp;&amp;</span><span class="w"> </span><span class="n">config</span><span class="p">)</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">healthd_config_</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">config</span><span class="p">))</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">     </span><span class="n">battery_monitor_</span><span class="p">.</span><span class="n">init</span><span class="p">(</span><span class="n">healthd_config_</span><span class="p">.</span><span class="n">get</span><span class="p">());</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">BatteryMonitor::init</span></code>函数主要是先读取psy节点的type类型，<code class="docutils literal notranslate"><span class="pre">ANDROID_POWER_SUPPLY_TYPE_USB</span></code>和<code class="docutils literal notranslate"><span class="pre">ANDROID_POWER_SUPPLY_TYPE_AC</span></code>充电器类型只需要保存<code class="docutils literal notranslate"><span class="pre">online</span></code>值，而<code class="docutils literal notranslate"><span class="pre">ANDROID_POWER_SUPPLY_TYPE_BATTERY</span></code>电池类型保存的比较多，下面有个表：</p>
+<table class="colwidths-auto docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>sys节点</p></th>
+<th class="head"><p>名词解释</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>/sys/class/power_supply/ac/online</p></td>
+<td><p>AC 电源连接状态</p></td>
+</tr>
+<tr class="row-odd"><td><p>/sys/class/power_supply/usb/online</p></td>
+<td><p>USB电源连接状态</p></td>
+</tr>
+<tr class="row-even"><td><p>/sys/class/power_supply/*/capacity_level （在健康 2.1 中添加）</p></td>
+<td><p>容量等级</p></td>
+</tr>
+<tr class="row-odd"><td><p>/sys/class/power_supply/*/capacity</p></td>
+<td><p>电池电量百分比</p></td>
+</tr>
+<tr class="row-even"><td><p>/sys/class/power_supply/*/charge_counter</p></td>
+<td><p>剩余容量 uAh</p></td>
+</tr>
+<tr class="row-odd"><td><p>/sys/class/power_supply/*/charge_full</p></td>
+<td><p>最大容量</p></td>
+</tr>
+<tr class="row-even"><td><p>/sys/class/power_supply/*/charge_full_design （在健康 2.1 中添加）</p></td>
+<td><p>最大容量</p></td>
+</tr>
+<tr class="row-odd"><td><p>/sys/class/power_supply/*/current_avg</p></td>
+<td><p>平均电流</p></td>
+</tr>
+<tr class="row-even"><td><p>/sys/class/power_supply/*/current_max</p></td>
+<td><p>最大电流</p></td>
+</tr>
+<tr class="row-odd"><td><p>/sys/class/power_supply/*/current_now</p></td>
+<td><p>当前电流</p></td>
+</tr>
+<tr class="row-even"><td><p>/sys/class/power_supply/*/cycle_count</p></td>
+<td><p>循环次数</p></td>
+</tr>
+<tr class="row-odd"><td><p>/sys/class/power_supply/*/health</p></td>
+<td><p>电池状态</p></td>
+</tr>
+<tr class="row-even"><td><p>/sys/class/power_supply/*/present</p></td>
+<td><p>在位状态</p></td>
+</tr>
+<tr class="row-odd"><td><p>/sys/class/power_supply/*/status</p></td>
+<td><p>充电状态</p></td>
+</tr>
+<tr class="row-even"><td><p>/sys/class/power_supply/*/technology</p></td>
+<td><p>电池技术</p></td>
+</tr>
+<tr class="row-odd"><td><p>/sys/class/power_supply/*/temp</p></td>
+<td><p>电池温度</p></td>
+</tr>
+<tr class="row-even"><td><p>/sys/class/power_supply/*/time_to_full_now （在健康 2.1 中添加）</p></td>
+<td><p>充电到100%需要的时间</p></td>
+</tr>
+<tr class="row-odd"><td><p>/sys/class/power_supply/*/voltage_max</p></td>
+<td><p>最大电压</p></td>
+</tr>
+<tr class="row-even"><td><p>/sys/class/power_supply/*/voltage_now</p></td>
+<td><p>目前电压</p></td>
+</tr>
+</tbody>
+</table>
+<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="nf">BatteryMonitor::init</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">healthd_config</span><span class="w"> </span><span class="o">*</span><span class="n">hc</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">      </span><span class="n">String8</span><span class="w"> </span><span class="n">path</span><span class="p">;</span><span class="w"></span>
+<span class="w">      </span><span class="kt">char</span><span class="w"> </span><span class="n">pval</span><span class="p">[</span><span class="n">PROPERTY_VALUE_MAX</span><span class="p">];</span><span class="w"></span>
+<span class="w">  </span>
+<span class="w">      </span><span class="n">mHealthdConfig</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">hc</span><span class="p">;</span><span class="w"></span>
+<span class="w">      </span><span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="kt">DIR</span><span class="p">,</span><span class="w"> </span><span class="n">decltype</span><span class="p">(</span><span class="o">&amp;</span><span class="n">closedir</span><span class="p">)</span><span class="o">&gt;</span><span class="w"> </span><span class="n">dir</span><span class="p">(</span><span class="n">opendir</span><span class="p">(</span><span class="n">POWER_SUPPLY_SYSFS_PATH</span><span class="p">),</span><span class="w"> </span><span class="n">closedir</span><span class="p">);</span><span class="w"></span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">dir</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="nb">NULL</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">          </span><span class="n">KLOG_ERROR</span><span class="p">(</span><span class="n">LOG_TAG</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Could not open %s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">POWER_SUPPLY_SYSFS_PATH</span><span class="p">);</span><span class="w"></span>
+<span class="w">      </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">          </span><span class="k">struct</span><span class="w"> </span><span class="nc">dirent</span><span class="o">*</span><span class="w"> </span><span class="n">entry</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span>
+<span class="w">          </span><span class="k">while</span><span class="w"> </span><span class="p">((</span><span class="n">entry</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">readdir</span><span class="p">(</span><span class="n">dir</span><span class="p">.</span><span class="n">get</span><span class="p">())))</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">              </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">entry</span><span class="o">-&gt;</span><span class="n">d_name</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span>
+<span class="w">              </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">strcmp</span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;.&quot;</span><span class="p">)</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="o">!</span><span class="n">strcmp</span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;..&quot;</span><span class="p">))</span><span class="w"></span>
+<span class="w">                  </span><span class="k">continue</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span>
+<span class="w">              </span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">String8</span><span class="o">&gt;::</span><span class="n">iterator</span><span class="w"> </span><span class="n">itIgnoreName</span><span class="w"> </span><span class="o">=</span><span class="w"></span>
+<span class="w">                      </span><span class="n">find</span><span class="p">(</span><span class="n">hc</span><span class="o">-&gt;</span><span class="n">ignorePowerSupplyNames</span><span class="p">.</span><span class="n">begin</span><span class="p">(),</span><span class="w"> </span><span class="n">hc</span><span class="o">-&gt;</span><span class="n">ignorePowerSupplyNames</span><span class="p">.</span><span class="n">end</span><span class="p">(),</span><span class="w"></span>
+<span class="w">                           </span><span class="n">String8</span><span class="p">(</span><span class="n">name</span><span class="p">));</span><span class="w"></span>
+<span class="w">              </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">itIgnoreName</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">hc</span><span class="o">-&gt;</span><span class="n">ignorePowerSupplyNames</span><span class="p">.</span><span class="n">end</span><span class="p">())</span><span class="w"></span>
+<span class="w">                  </span><span class="k">continue</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span>
+<span class="w">              </span><span class="c1">// Look for &quot;type&quot; file in each subdirectory</span>
+<span class="w">              </span><span class="n">path</span><span class="p">.</span><span class="n">clear</span><span class="p">();</span><span class="w"></span>
+<span class="w">              </span><span class="n">path</span><span class="p">.</span><span class="n">appendFormat</span><span class="p">(</span><span class="s">&quot;%s/%s/type&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">POWER_SUPPLY_SYSFS_PATH</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="p">);</span><span class="w"></span>
+<span class="w">              </span><span class="k">switch</span><span class="p">(</span><span class="n">readPowerSupplyType</span><span class="p">(</span><span class="n">path</span><span class="p">))</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">              </span><span class="k">case</span><span class="w"> </span><span class="no">ANDROID_POWER_SUPPLY_TYPE_AC</span><span class="p">:</span><span class="w"></span>
+<span class="w">              </span><span class="k">case</span><span class="w"> </span><span class="no">ANDROID_POWER_SUPPLY_TYPE_USB</span><span class="p">:</span><span class="w"></span>
+<span class="w">              </span><span class="k">case</span><span class="w"> </span><span class="no">ANDROID_POWER_SUPPLY_TYPE_WIRELESS</span><span class="p">:</span><span class="w"></span>
+<span class="w">              </span><span class="k">case</span><span class="w"> </span><span class="no">ANDROID_POWER_SUPPLY_TYPE_DOCK</span><span class="p">:</span><span class="w"></span>
+<span class="w">                  </span><span class="n">path</span><span class="p">.</span><span class="n">clear</span><span class="p">();</span><span class="w"></span>
+<span class="w">                  </span><span class="n">path</span><span class="p">.</span><span class="n">appendFormat</span><span class="p">(</span><span class="s">&quot;%s/%s/online&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">POWER_SUPPLY_SYSFS_PATH</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="p">);</span><span class="w"></span>
+<span class="w">                  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">access</span><span class="p">(</span><span class="n">path</span><span class="p">.</span><span class="n">string</span><span class="p">(),</span><span class="w"> </span><span class="n">R_OK</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"></span>
+<span class="w">                      </span><span class="n">mChargerNames</span><span class="p">.</span><span class="n">add</span><span class="p">(</span><span class="n">String8</span><span class="p">(</span><span class="n">name</span><span class="p">));</span><span class="w"></span>
+<span class="w">                  </span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span>
+<span class="w">              </span><span class="k">case</span><span class="w"> </span><span class="no">ANDROID_POWER_SUPPLY_TYPE_BATTERY</span><span class="p">:</span><span class="w"></span>
+<span class="w">                  </span><span class="c1">// Some devices expose the battery status of sub-component like</span>
+<span class="w">                  </span><span class="c1">// stylus. Such a device-scoped battery info needs to be skipped</span>
+<span class="w">                  </span><span class="c1">// in BatteryMonitor, which is intended to report the status of</span>
+<span class="w">                  </span><span class="c1">// the battery supplying the power to the whole system.</span>
+<span class="w">                  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">isScopedPowerSupply</span><span class="p">(</span><span class="n">name</span><span class="p">))</span><span class="w"> </span><span class="k">continue</span><span class="p">;</span><span class="w"></span>
+<span class="w">                  </span><span class="n">mBatteryDevicePresent</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">true</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span>
+<span class="w">                  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mHealthdConfig</span><span class="o">-&gt;</span><span class="n">batteryStatusPath</span><span class="p">.</span><span class="n">isEmpty</span><span class="p">())</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                      </span><span class="n">path</span><span class="p">.</span><span class="n">clear</span><span class="p">();</span><span class="w"></span>
+<span class="w">                      </span><span class="n">path</span><span class="p">.</span><span class="n">appendFormat</span><span class="p">(</span><span class="s">&quot;%s/%s/status&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">POWER_SUPPLY_SYSFS_PATH</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                        </span><span class="n">name</span><span class="p">);</span><span class="w"></span>
+<span class="w">                      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">access</span><span class="p">(</span><span class="n">path</span><span class="p">,</span><span class="w"> </span><span class="n">R_OK</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"></span>
+<span class="w">                          </span><span class="n">mHealthdConfig</span><span class="o">-&gt;</span><span class="n">batteryStatusPath</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">path</span><span class="p">;</span><span class="w"></span>
+<span class="w">                  </span><span class="p">}</span><span class="w"></span>
+<span class="w">  </span>
+<span class="w">                  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mHealthdConfig</span><span class="o">-&gt;</span><span class="n">batteryHealthPath</span><span class="p">.</span><span class="n">isEmpty</span><span class="p">())</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                      </span><span class="n">path</span><span class="p">.</span><span class="n">clear</span><span class="p">();</span><span class="w"></span>
+<span class="w">                      </span><span class="n">path</span><span class="p">.</span><span class="n">appendFormat</span><span class="p">(</span><span class="s">&quot;%s/%s/health&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">POWER_SUPPLY_SYSFS_PATH</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                        </span><span class="n">name</span><span class="p">);</span><span class="w"></span>
+<span class="w">                      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">access</span><span class="p">(</span><span class="n">path</span><span class="p">,</span><span class="w"> </span><span class="n">R_OK</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"></span>
+<span class="w">                          </span><span class="n">mHealthdConfig</span><span class="o">-&gt;</span><span class="n">batteryHealthPath</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">path</span><span class="p">;</span><span class="w"></span>
+<span class="w">                  </span><span class="p">}</span><span class="w"></span>
+<span class="w">  </span>
+<span class="w">                  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mHealthdConfig</span><span class="o">-&gt;</span><span class="n">batteryPresentPath</span><span class="p">.</span><span class="n">isEmpty</span><span class="p">())</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                      </span><span class="n">path</span><span class="p">.</span><span class="n">clear</span><span class="p">();</span><span class="w"></span>
+<span class="w">                      </span><span class="n">path</span><span class="p">.</span><span class="n">appendFormat</span><span class="p">(</span><span class="s">&quot;%s/%s/present&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">POWER_SUPPLY_SYSFS_PATH</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                        </span><span class="n">name</span><span class="p">);</span><span class="w"></span>
+<span class="w">                      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">access</span><span class="p">(</span><span class="n">path</span><span class="p">,</span><span class="w"> </span><span class="n">R_OK</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"></span>
+<span class="w">                          </span><span class="n">mHealthdConfig</span><span class="o">-&gt;</span><span class="n">batteryPresentPath</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">path</span><span class="p">;</span><span class="w"></span>
+<span class="w">                  </span><span class="p">}</span><span class="w"></span>
+<span class="w">  </span>
+<span class="w">                  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mHealthdConfig</span><span class="o">-&gt;</span><span class="n">batteryCapacityPath</span><span class="p">.</span><span class="n">isEmpty</span><span class="p">())</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                      </span><span class="n">path</span><span class="p">.</span><span class="n">clear</span><span class="p">();</span><span class="w"></span>
+<span class="w">                      </span><span class="n">path</span><span class="p">.</span><span class="n">appendFormat</span><span class="p">(</span><span class="s">&quot;%s/%s/capacity&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">POWER_SUPPLY_SYSFS_PATH</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                        </span><span class="n">name</span><span class="p">);</span><span class="w"></span>
+<span class="w">                      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">access</span><span class="p">(</span><span class="n">path</span><span class="p">,</span><span class="w"> </span><span class="n">R_OK</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"></span>
+<span class="w">                          </span><span class="n">mHealthdConfig</span><span class="o">-&gt;</span><span class="n">batteryCapacityPath</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">path</span><span class="p">;</span><span class="w"></span>
+<span class="w">                  </span><span class="p">}</span><span class="w"></span>
+<span class="w">  </span>
+<span class="w">                  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mHealthdConfig</span><span class="o">-&gt;</span><span class="n">batteryVoltagePath</span><span class="p">.</span><span class="n">isEmpty</span><span class="p">())</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                      </span><span class="n">path</span><span class="p">.</span><span class="n">clear</span><span class="p">();</span><span class="w"></span>
+<span class="w">                      </span><span class="n">path</span><span class="p">.</span><span class="n">appendFormat</span><span class="p">(</span><span class="s">&quot;%s/%s/voltage_now&quot;</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                        </span><span class="n">POWER_SUPPLY_SYSFS_PATH</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="p">);</span><span class="w"></span>
+<span class="w">                      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">access</span><span class="p">(</span><span class="n">path</span><span class="p">,</span><span class="w"> </span><span class="n">R_OK</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                          </span><span class="n">mHealthdConfig</span><span class="o">-&gt;</span><span class="n">batteryVoltagePath</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">path</span><span class="p">;</span><span class="w"></span>
+<span class="w">                      </span><span class="p">}</span><span class="w"></span>
+<span class="w">                  </span><span class="p">}</span><span class="w"></span>
+<span class="w">  </span>
+<span class="w">                  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mHealthdConfig</span><span class="o">-&gt;</span><span class="n">batteryFullChargePath</span><span class="p">.</span><span class="n">isEmpty</span><span class="p">())</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                      </span><span class="n">path</span><span class="p">.</span><span class="n">clear</span><span class="p">();</span><span class="w"></span>
+<span class="w">                      </span><span class="n">path</span><span class="p">.</span><span class="n">appendFormat</span><span class="p">(</span><span class="s">&quot;%s/%s/charge_full&quot;</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                        </span><span class="n">POWER_SUPPLY_SYSFS_PATH</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="p">);</span><span class="w"></span>
+<span class="w">                      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">access</span><span class="p">(</span><span class="n">path</span><span class="p">,</span><span class="w"> </span><span class="n">R_OK</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"></span>
+<span class="w">                          </span><span class="n">mHealthdConfig</span><span class="o">-&gt;</span><span class="n">batteryFullChargePath</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">path</span><span class="p">;</span><span class="w"></span>
+<span class="w">                  </span><span class="p">}</span><span class="w"></span>
+<span class="w">  </span>
+<span class="w">                  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mHealthdConfig</span><span class="o">-&gt;</span><span class="n">batteryCurrentNowPath</span><span class="p">.</span><span class="n">isEmpty</span><span class="p">())</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                      </span><span class="n">path</span><span class="p">.</span><span class="n">clear</span><span class="p">();</span><span class="w"></span>
+<span class="w">                      </span><span class="n">path</span><span class="p">.</span><span class="n">appendFormat</span><span class="p">(</span><span class="s">&quot;%s/%s/current_now&quot;</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                        </span><span class="n">POWER_SUPPLY_SYSFS_PATH</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="p">);</span><span class="w"></span>
+<span class="w">                      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">access</span><span class="p">(</span><span class="n">path</span><span class="p">,</span><span class="w"> </span><span class="n">R_OK</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"></span>
+<span class="w">                          </span><span class="n">mHealthdConfig</span><span class="o">-&gt;</span><span class="n">batteryCurrentNowPath</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">path</span><span class="p">;</span><span class="w"></span>
+<span class="w">                  </span><span class="p">}</span><span class="w"></span>
+<span class="w">  </span>
+<span class="w">                  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mHealthdConfig</span><span class="o">-&gt;</span><span class="n">batteryCycleCountPath</span><span class="p">.</span><span class="n">isEmpty</span><span class="p">())</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                      </span><span class="n">path</span><span class="p">.</span><span class="n">clear</span><span class="p">();</span><span class="w"></span>
+<span class="w">                      </span><span class="n">path</span><span class="p">.</span><span class="n">appendFormat</span><span class="p">(</span><span class="s">&quot;%s/%s/cycle_count&quot;</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                        </span><span class="n">POWER_SUPPLY_SYSFS_PATH</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="p">);</span><span class="w"></span>
+<span class="w">                      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">access</span><span class="p">(</span><span class="n">path</span><span class="p">,</span><span class="w"> </span><span class="n">R_OK</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"></span>
+<span class="w">                          </span><span class="n">mHealthdConfig</span><span class="o">-&gt;</span><span class="n">batteryCycleCountPath</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">path</span><span class="p">;</span><span class="w"></span>
+<span class="w">                  </span><span class="p">}</span><span class="w"></span>
+<span class="w">  </span>
+<span class="w">                  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mHealthdConfig</span><span class="o">-&gt;</span><span class="n">batteryCapacityLevelPath</span><span class="p">.</span><span class="n">isEmpty</span><span class="p">())</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                      </span><span class="n">path</span><span class="p">.</span><span class="n">clear</span><span class="p">();</span><span class="w"></span>
+<span class="w">                      </span><span class="n">path</span><span class="p">.</span><span class="n">appendFormat</span><span class="p">(</span><span class="s">&quot;%s/%s/capacity_level&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">POWER_SUPPLY_SYSFS_PATH</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="p">);</span><span class="w"></span>
+<span class="w">                      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">access</span><span class="p">(</span><span class="n">path</span><span class="p">,</span><span class="w"> </span><span class="n">R_OK</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="n">mHealthdConfig</span><span class="o">-&gt;</span><span class="n">batteryCapacityLevelPath</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">path</span><span class="p">;</span><span class="w"></span>
+<span class="w">                  </span><span class="p">}</span><span class="w"></span>
+<span class="w">  </span>
+<span class="w">                  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mHealthdConfig</span><span class="o">-&gt;</span><span class="n">batteryChargeTimeToFullNowPath</span><span class="p">.</span><span class="n">isEmpty</span><span class="p">())</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                      </span><span class="n">path</span><span class="p">.</span><span class="n">clear</span><span class="p">();</span><span class="w"></span>
+<span class="w">                      </span><span class="n">path</span><span class="p">.</span><span class="n">appendFormat</span><span class="p">(</span><span class="s">&quot;%s/%s/time_to_full_now&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">POWER_SUPPLY_SYSFS_PATH</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="p">);</span><span class="w"></span>
+<span class="w">                      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">access</span><span class="p">(</span><span class="n">path</span><span class="p">,</span><span class="w"> </span><span class="n">R_OK</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"></span>
+<span class="w">                          </span><span class="n">mHealthdConfig</span><span class="o">-&gt;</span><span class="n">batteryChargeTimeToFullNowPath</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">path</span><span class="p">;</span><span class="w"></span>
+<span class="w">                  </span><span class="p">}</span><span class="w"></span>
+<span class="w">  </span>
+<span class="w">                  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mHealthdConfig</span><span class="o">-&gt;</span><span class="n">batteryFullChargeDesignCapacityUahPath</span><span class="p">.</span><span class="n">isEmpty</span><span class="p">())</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                      </span><span class="n">path</span><span class="p">.</span><span class="n">clear</span><span class="p">();</span><span class="w"></span>
+<span class="w">                      </span><span class="n">path</span><span class="p">.</span><span class="n">appendFormat</span><span class="p">(</span><span class="s">&quot;%s/%s/charge_full_design&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">POWER_SUPPLY_SYSFS_PATH</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="p">);</span><span class="w"></span>
+<span class="w">                      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">access</span><span class="p">(</span><span class="n">path</span><span class="p">,</span><span class="w"> </span><span class="n">R_OK</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"></span>
+<span class="w">                          </span><span class="n">mHealthdConfig</span><span class="o">-&gt;</span><span class="n">batteryFullChargeDesignCapacityUahPath</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">path</span><span class="p">;</span><span class="w"></span>
+<span class="w">                  </span><span class="p">}</span><span class="w"></span>
+<span class="w">  </span>
+<span class="w">                  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mHealthdConfig</span><span class="o">-&gt;</span><span class="n">batteryCurrentAvgPath</span><span class="p">.</span><span class="n">isEmpty</span><span class="p">())</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                      </span><span class="n">path</span><span class="p">.</span><span class="n">clear</span><span class="p">();</span><span class="w"></span>
+<span class="w">                      </span><span class="n">path</span><span class="p">.</span><span class="n">appendFormat</span><span class="p">(</span><span class="s">&quot;%s/%s/current_avg&quot;</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                        </span><span class="n">POWER_SUPPLY_SYSFS_PATH</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="p">);</span><span class="w"></span>
+<span class="w">                      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">access</span><span class="p">(</span><span class="n">path</span><span class="p">,</span><span class="w"> </span><span class="n">R_OK</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"></span>
+<span class="w">                          </span><span class="n">mHealthdConfig</span><span class="o">-&gt;</span><span class="n">batteryCurrentAvgPath</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">path</span><span class="p">;</span><span class="w"></span>
+<span class="w">                  </span><span class="p">}</span><span class="w"></span>
+<span class="w">  </span>
+<span class="w">                  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mHealthdConfig</span><span class="o">-&gt;</span><span class="n">batteryChargeCounterPath</span><span class="p">.</span><span class="n">isEmpty</span><span class="p">())</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                      </span><span class="n">path</span><span class="p">.</span><span class="n">clear</span><span class="p">();</span><span class="w"></span>
+<span class="w">                      </span><span class="n">path</span><span class="p">.</span><span class="n">appendFormat</span><span class="p">(</span><span class="s">&quot;%s/%s/charge_counter&quot;</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                        </span><span class="n">POWER_SUPPLY_SYSFS_PATH</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="p">);</span><span class="w"></span>
+<span class="w">                      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">access</span><span class="p">(</span><span class="n">path</span><span class="p">,</span><span class="w"> </span><span class="n">R_OK</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"></span>
+<span class="w">                          </span><span class="n">mHealthdConfig</span><span class="o">-&gt;</span><span class="n">batteryChargeCounterPath</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">path</span><span class="p">;</span><span class="w"></span>
+<span class="w">                  </span><span class="p">}</span><span class="w"></span>
+<span class="w">  </span>
+<span class="w">                  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mHealthdConfig</span><span class="o">-&gt;</span><span class="n">batteryTemperaturePath</span><span class="p">.</span><span class="n">isEmpty</span><span class="p">())</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                      </span><span class="n">path</span><span class="p">.</span><span class="n">clear</span><span class="p">();</span><span class="w"></span>
+<span class="w">                      </span><span class="n">path</span><span class="p">.</span><span class="n">appendFormat</span><span class="p">(</span><span class="s">&quot;%s/%s/temp&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">POWER_SUPPLY_SYSFS_PATH</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                        </span><span class="n">name</span><span class="p">);</span><span class="w"></span>
+<span class="w">                      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">access</span><span class="p">(</span><span class="n">path</span><span class="p">,</span><span class="w"> </span><span class="n">R_OK</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                          </span><span class="n">mHealthdConfig</span><span class="o">-&gt;</span><span class="n">batteryTemperaturePath</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">path</span><span class="p">;</span><span class="w"></span>
+<span class="w">                      </span><span class="p">}</span><span class="w"></span>
+<span class="w">                  </span><span class="p">}</span><span class="w"></span>
+<span class="w">  </span>
+<span class="w">                  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mHealthdConfig</span><span class="o">-&gt;</span><span class="n">batteryTechnologyPath</span><span class="p">.</span><span class="n">isEmpty</span><span class="p">())</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                      </span><span class="n">path</span><span class="p">.</span><span class="n">clear</span><span class="p">();</span><span class="w"></span>
+<span class="w">                      </span><span class="n">path</span><span class="p">.</span><span class="n">appendFormat</span><span class="p">(</span><span class="s">&quot;%s/%s/technology&quot;</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                        </span><span class="n">POWER_SUPPLY_SYSFS_PATH</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="p">);</span><span class="w"></span>
+<span class="w">                      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">access</span><span class="p">(</span><span class="n">path</span><span class="p">,</span><span class="w"> </span><span class="n">R_OK</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"></span>
+<span class="w">                          </span><span class="n">mHealthdConfig</span><span class="o">-&gt;</span><span class="n">batteryTechnologyPath</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">path</span><span class="p">;</span><span class="w"></span>
+<span class="w">                  </span><span class="p">}</span><span class="w"></span>
+<span class="w">  </span>
+<span class="w">                  </span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span>
+<span class="w">              </span><span class="k">case</span><span class="w"> </span><span class="no">ANDROID_POWER_SUPPLY_TYPE_UNKNOWN</span><span class="p">:</span><span class="w"></span>
+<span class="w">                  </span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+<span class="w">              </span><span class="p">}</span><span class="w"></span>
+<span class="w">  </span>
+<span class="w">              </span><span class="c1">// Look for &quot;is_dock&quot; file</span>
+<span class="w">              </span><span class="n">path</span><span class="p">.</span><span class="n">clear</span><span class="p">();</span><span class="w"></span>
+<span class="w">              </span><span class="n">path</span><span class="p">.</span><span class="n">appendFormat</span><span class="p">(</span><span class="s">&quot;%s/%s/is_dock&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">POWER_SUPPLY_SYSFS_PATH</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="p">);</span><span class="w"></span>
+<span class="w">              </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">access</span><span class="p">(</span><span class="n">path</span><span class="p">.</span><span class="n">string</span><span class="p">(),</span><span class="w"> </span><span class="n">R_OK</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                  </span><span class="n">path</span><span class="p">.</span><span class="n">clear</span><span class="p">();</span><span class="w"></span>
+<span class="w">                  </span><span class="n">path</span><span class="p">.</span><span class="n">appendFormat</span><span class="p">(</span><span class="s">&quot;%s/%s/online&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">POWER_SUPPLY_SYSFS_PATH</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="p">);</span><span class="w"></span>
+<span class="w">                  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">access</span><span class="p">(</span><span class="n">path</span><span class="p">.</span><span class="n">string</span><span class="p">(),</span><span class="w"> </span><span class="n">R_OK</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"></span>
+<span class="w">                      </span><span class="n">mChargerNames</span><span class="p">.</span><span class="n">add</span><span class="p">(</span><span class="n">String8</span><span class="p">(</span><span class="n">name</span><span class="p">));</span><span class="w"></span>
+<span class="w">  </span>
+<span class="w">              </span><span class="p">}</span><span class="w"></span>
+<span class="w">          </span><span class="p">}</span><span class="w"></span>
+<span class="w">      </span><span class="p">}</span><span class="w"></span>
+<span class="w">  </span>
+<span class="w">      </span><span class="c1">// Typically the case for devices which do not have a battery and</span>
+<span class="w">      </span><span class="c1">// and are always plugged into AC mains.</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">mBatteryDevicePresent</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">          </span><span class="n">KLOG_WARNING</span><span class="p">(</span><span class="n">LOG_TAG</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;No battery devices found</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">          </span><span class="n">hc</span><span class="o">-&gt;</span><span class="n">periodic_chores_interval_fast</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">-1</span><span class="p">;</span><span class="w"></span>
+<span class="w">          </span><span class="n">hc</span><span class="o">-&gt;</span><span class="n">periodic_chores_interval_slow</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">-1</span><span class="p">;</span><span class="w"></span>
+<span class="w">      </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">          </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mHealthdConfig</span><span class="o">-&gt;</span><span class="n">batteryStatusPath</span><span class="p">.</span><span class="n">isEmpty</span><span class="p">())</span><span class="w"></span>
+<span class="w">              </span><span class="n">KLOG_WARNING</span><span class="p">(</span><span class="n">LOG_TAG</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;BatteryStatusPath not found</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">          </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mHealthdConfig</span><span class="o">-&gt;</span><span class="n">batteryHealthPath</span><span class="p">.</span><span class="n">isEmpty</span><span class="p">())</span><span class="w"></span>
+<span class="w">              </span><span class="n">KLOG_WARNING</span><span class="p">(</span><span class="n">LOG_TAG</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;BatteryHealthPath not found</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">          </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mHealthdConfig</span><span class="o">-&gt;</span><span class="n">batteryPresentPath</span><span class="p">.</span><span class="n">isEmpty</span><span class="p">())</span><span class="w"></span>
+<span class="w">              </span><span class="n">KLOG_WARNING</span><span class="p">(</span><span class="n">LOG_TAG</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;BatteryPresentPath not found</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">          </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mHealthdConfig</span><span class="o">-&gt;</span><span class="n">batteryCapacityPath</span><span class="p">.</span><span class="n">isEmpty</span><span class="p">())</span><span class="w"></span>
+<span class="w">              </span><span class="n">KLOG_WARNING</span><span class="p">(</span><span class="n">LOG_TAG</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;BatteryCapacityPath not found</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">          </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mHealthdConfig</span><span class="o">-&gt;</span><span class="n">batteryVoltagePath</span><span class="p">.</span><span class="n">isEmpty</span><span class="p">())</span><span class="w"></span>
+<span class="w">              </span><span class="n">KLOG_WARNING</span><span class="p">(</span><span class="n">LOG_TAG</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;BatteryVoltagePath not found</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">          </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mHealthdConfig</span><span class="o">-&gt;</span><span class="n">batteryTemperaturePath</span><span class="p">.</span><span class="n">isEmpty</span><span class="p">())</span><span class="w"></span>
+<span class="w">              </span><span class="n">KLOG_WARNING</span><span class="p">(</span><span class="n">LOG_TAG</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;BatteryTemperaturePath not found</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">          </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mHealthdConfig</span><span class="o">-&gt;</span><span class="n">batteryTechnologyPath</span><span class="p">.</span><span class="n">isEmpty</span><span class="p">())</span><span class="w"></span>
+<span class="w">              </span><span class="n">KLOG_WARNING</span><span class="p">(</span><span class="n">LOG_TAG</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;BatteryTechnologyPath not found</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">          </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mHealthdConfig</span><span class="o">-&gt;</span><span class="n">batteryCurrentNowPath</span><span class="p">.</span><span class="n">isEmpty</span><span class="p">())</span><span class="w"></span>
+<span class="w">              </span><span class="n">KLOG_WARNING</span><span class="p">(</span><span class="n">LOG_TAG</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;BatteryCurrentNowPath not found</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">          </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mHealthdConfig</span><span class="o">-&gt;</span><span class="n">batteryFullChargePath</span><span class="p">.</span><span class="n">isEmpty</span><span class="p">())</span><span class="w"></span>
+<span class="w">              </span><span class="n">KLOG_WARNING</span><span class="p">(</span><span class="n">LOG_TAG</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;BatteryFullChargePath not found</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">          </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mHealthdConfig</span><span class="o">-&gt;</span><span class="n">batteryCycleCountPath</span><span class="p">.</span><span class="n">isEmpty</span><span class="p">())</span><span class="w"></span>
+<span class="w">              </span><span class="n">KLOG_WARNING</span><span class="p">(</span><span class="n">LOG_TAG</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;BatteryCycleCountPath not found</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">          </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mHealthdConfig</span><span class="o">-&gt;</span><span class="n">batteryCapacityLevelPath</span><span class="p">.</span><span class="n">isEmpty</span><span class="p">())</span><span class="w"></span>
+<span class="w">              </span><span class="n">KLOG_WARNING</span><span class="p">(</span><span class="n">LOG_TAG</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;batteryCapacityLevelPath not found</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">          </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mHealthdConfig</span><span class="o">-&gt;</span><span class="n">batteryChargeTimeToFullNowPath</span><span class="p">.</span><span class="n">isEmpty</span><span class="p">())</span><span class="w"></span>
+<span class="w">              </span><span class="n">KLOG_WARNING</span><span class="p">(</span><span class="n">LOG_TAG</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;batteryChargeTimeToFullNowPath. not found</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">          </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mHealthdConfig</span><span class="o">-&gt;</span><span class="n">batteryFullChargeDesignCapacityUahPath</span><span class="p">.</span><span class="n">isEmpty</span><span class="p">())</span><span class="w"></span>
+<span class="w">              </span><span class="n">KLOG_WARNING</span><span class="p">(</span><span class="n">LOG_TAG</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;batteryFullChargeDesignCapacityUahPath. not found</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">      </span><span class="p">}</span><span class="w"></span>
+<span class="w">  </span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">property_get</span><span class="p">(</span><span class="s">&quot;ro.boot.fake_battery&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">pval</span><span class="p">,</span><span class="w"> </span><span class="nb">NULL</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="w"></span>
+<span class="w">                                                 </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">strtol</span><span class="p">(</span><span class="n">pval</span><span class="p">,</span><span class="w"> </span><span class="nb">NULL</span><span class="p">,</span><span class="w"> </span><span class="mi">10</span><span class="p">)</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">          </span><span class="n">mBatteryFixedCapacity</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">FAKE_BATTERY_CAPACITY</span><span class="p">;</span><span class="w"></span>
+<span class="w">          </span><span class="n">mBatteryFixedTemperature</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">FAKE_BATTERY_TEMPERATURE</span><span class="p">;</span><span class="w"></span>
+<span class="w">      </span><span class="p">}</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+</section>
+<section id="id7">
+<h1>上报流程<a class="headerlink" href="#id7" title="此标题的永久链接"></a></h1>
+<p>跟踪得到上面的大概流程如下，最后的打印在BatteryMonitor.cpp里面的logValues。</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">hardware</span>\<span class="n">interfaces</span>\<span class="n">health</span>\<span class="mf">2.1</span>\<span class="n">default</span>\<span class="n">service</span><span class="o">.</span><span class="n">cpp</span>
+<span class="n">binder</span><span class="o">-&gt;</span><span class="n">StartLoop</span><span class="p">();</span>
+ 
+<span class="n">hardware</span>\<span class="n">interfaces</span>\<span class="n">health</span>\<span class="n">utils</span>\<span class="n">libhealthloop</span>\<span class="n">HealthLoop</span><span class="o">.</span><span class="n">cpp</span>
+<span class="n">StartLoop</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">MainLoop</span><span class="o">-&gt;</span>  <span class="n">PeriodicChores</span>    <span class="o">-&gt;</span>  <span class="n">ScheduleBatteryUpdate</span><span class="p">();</span>  <span class="o">-&gt;</span>
+ 
+<span class="n">hardware</span>\<span class="n">interfaces</span>\<span class="n">health</span>\<span class="n">utils</span>\<span class="n">libhealth2impl</span>\<span class="n">HalHealthLoop</span><span class="o">.</span><span class="n">cpp</span>
+<span class="n">ScheduleBatteryUpdate</span><span class="p">()</span> <span class="n">_</span><span class="o">&gt;</span><span class="n">update</span><span class="p">();</span>
+<span class="n">ScheduleBatteryUpdate</span><span class="p">()</span> <span class="n">_</span><span class="o">&gt;</span> <span class="n">OnHealthInfoChanged</span><span class="p">(</span><span class="n">health_info</span><span class="p">);</span> <span class="o">//</span><span class="n">通知BatterySevices</span>
+ 
+\<span class="n">hardware</span>\<span class="n">interfaces</span>\<span class="n">health</span>\<span class="n">utils</span>\<span class="n">libhealth2impl</span>\<span class="n">Health</span><span class="o">.</span><span class="n">cpp</span>
+<span class="n">update</span><span class="p">()</span> <span class="o">&gt;</span><span class="n">logValues</span><span class="p">()</span>
+<span class="n">update</span><span class="p">()</span> <span class="o">&gt;</span> <span class="n">getHealthInfo_2_1</span><span class="p">([</span><span class="o">&amp;</span><span class="p">](</span><span class="n">auto</span> <span class="n">res</span><span class="p">,</span> <span class="n">const</span> <span class="n">auto</span><span class="o">&amp;</span> <span class="n">health_info</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">battery_monitor_</span><span class="o">.</span><span class="n">updateValues</span><span class="p">();</span>
+
+\<span class="n">system</span>\<span class="n">core</span>\<span class="n">healthd</span>\<span class="n">BatteryMonitor</span><span class="o">.</span><span class="n">cpp</span>
+<span class="n">logValues</span>
+<span class="n">updateValues</span>
+</pre></div>
+</div>
+</section>
 
 
            </div>
-             <div class="articleComments">
-                <comments>
+         <div class="articleComments">
+               <comments>
   <script src="https://utteranc.es/client.js"
     repo="iswbm/magic-python"
     issue-term="pathname"
@@ -372,7 +740,7 @@ Init(struct healthd_config* config) &gt; CHECK_EQ(registerAsService(instance_nam
     async>
   </script>
 </comments>
-             </div>
+           </div>
           </div>
           <footer>
 

@@ -133,7 +133,6 @@ ac和usb只创建了一个online属性，上层通过判断ac和usb的online状�
 ```
 /sys/class/power_supply/ac/online AC 电源连接状态
 /sys/class/power_supply/usb/online USB电源连接状态
-/sys/class/power_supply/battery/status 
 ```
 
 * healthd守护进程和默认实现android.hardware.health@2.0-impl-2.1访问以下内核接口以检索电池信息：

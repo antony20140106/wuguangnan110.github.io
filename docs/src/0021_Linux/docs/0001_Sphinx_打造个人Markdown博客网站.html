@@ -18,6 +18,7 @@
         <script src="../../../_static/underscore.js"></script>
         <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="../../../_static/doctools.js"></script>
+        <script src="../../../_static/js/baidutongji.js"></script>
     <script src="../../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" /> 
@@ -55,6 +56,12 @@
 <li><a class="reference internal" href="#github">github配置</a></li>
 <li><a class="reference internal" href="#id3">个人网址配置</a></li>
 <li><a class="reference internal" href="#id4">显示效果</a></li>
+<li><a class="reference internal" href="#id5">增加评论系统</a><ul>
+<li><a class="reference internal" href="#utterances">安装 utterances</a></li>
+<li><a class="reference internal" href="#id6">编译查看效果</a></li>
+<li><a class="reference internal" href="#id7">总结一下</a></li>
+</ul>
+</li>
 </ul>
 </div>
         </div>
@@ -451,8 +458,72 @@ F:CNAME
 <img alt="0001_0003.png" src="../../../_images/0001_00036.png" /></p>
 <p><img alt="0001_0004.png" src="../../../_images/0001_00045.png" /></p>
 </section>
+<section id="id5">
+<h1>增加评论系统<a class="headerlink" href="#id5" title="Permalink to this heading"></a></h1>
+<ul class="simple">
+<li><p><a class="reference external" href="https://iswbm.com/678.html">基于 utterance 插件为博客部署评论系统（适用于 Sphinx 文档）</a></p></li>
+</ul>
+<section id="utterances">
+<h2>安装 utterances<a class="headerlink" href="#utterances" title="Permalink to this heading"></a></h2>
+<p>访问<a class="reference external" href="https://github.com/apps/utterances">utterances</a>应用程序 ，然后点击 Install 按钮进行安装</p>
+<p><img alt="0001_0005.png" src="../../../_images/0001_00054.png" /></p>
+<p>在安装时，可以立即选择是否限制其访问的仓库，若安装时忘记设置了，也可以在安装后再次选择。</p>
+<p>只要再次访问 utterances 应用程序，就会显示配置的界面</p>
+<p>点进去就能更新配置，选择完直接 Save 。</p>
+<p><img alt="0001_0006.png" src="../../../_images/0001_00063.png" /></p>
+<p>我的文档使用的是 Sphinx + rtd 主题，因此找到 sphinx_rtd_theme 所在的目录，比如我的目录是<code class="docutils literal notranslate"><span class="pre">C:\Users\Administrator\AppData\Local\Programs\Python\Python310\Lib\site-packages\sphinx_rtd_theme</span></code></p>
+<p>在该目录下新建 comments.html 文件，内容如下:</p>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="o">&lt;</span><span class="n">comments</span><span class="o">&gt;</span><span class="w"></span>
+<span class="w">  </span><span class="o">&lt;</span><span class="n">script</span><span class="w"> </span><span class="n">src</span><span class="o">=</span><span class="s">&quot;https://utteranc.es/client.js&quot;</span><span class="w"></span>
+<span class="w">    </span><span class="n">repo</span><span class="o">=</span><span class="s">&quot;iswbm/magic-python&quot;</span><span class="w"></span>
+<span class="w">    </span><span class="n">issue</span><span class="o">-</span><span class="n">term</span><span class="o">=</span><span class="s">&quot;pathname&quot;</span><span class="w"></span>
+<span class="w">    </span><span class="n">theme</span><span class="o">=</span><span class="s">&quot;github-light&quot;</span><span class="w"></span>
+<span class="w">    </span><span class="n">crossorigin</span><span class="o">=</span><span class="s">&quot;anonymous&quot;</span><span class="w"></span>
+<span class="w">    </span><span class="n">async</span><span class="o">&gt;</span><span class="w"></span>
+<span class="w">  </span><span class="o">&lt;/</span><span class="n">script</span><span class="o">&gt;</span><span class="w"></span>
+<span class="o">&lt;/</span><span class="n">comments</span><span class="o">&gt;</span><span class="w"></span>
+</pre></div>
+</div>
+<p>其中你需要根据自己的情况进行调整的字段只有 repo，填写你评论要存放在哪个 github 仓库。</p>
+<p>定义了 comments 的模板文件后，要在 layout.html 中引用它</p>
+<p>但由于原先 layout.html 已经预留了 comments 的内容，先将其删除</p>
+<p><img alt="0001_0007.png" src="../../../_images/0001_00071.png" /></p>
+<p>替换成</p>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span>        &lt;div class=&quot;articleComments&quot;&gt;
+               {% include &quot;comments.html&quot; %}
+           &lt;/div&gt;
+</pre></div>
+</div>
+</section>
+<section id="id6">
+<h2>编译查看效果<a class="headerlink" href="#id6" title="Permalink to this heading"></a></h2>
+<p>执行 make html 重新编译文档的静态 html 文件，再次查看网页，就会发现在文档的尾部出现了期待的评论区</p>
+<p><img alt="0001_0008.png" src="../../../_images/0001_00082.png" /></p>
+<p>想要在文章下评论，就得先登陆 Github 授权一下,登陆并授权之后，你的 Github 头像出现了，是可以评论的状态,utterances 的评论是放在 issue 里的，因此评论这边也是要支持 markdown</p>
+</section>
+<section id="id7">
+<h2>总结一下<a class="headerlink" href="#id7" title="Permalink to this heading"></a></h2>
+<p>utterances 与 gitalk 对比一下，缺点不少，比如：</p>
+<p>gitalk 可以通过 如下容器定义评论区的位置，而 utterances 则不行（反正我没有找到对应方法），需要你有动手能力去定义模板。
+utterances 不支持在评论区直接引用他人的评论进行多级回复
+当有评论时 utterances 的评论框是在所有的评论的下方，不太符合用户逻辑
+即使 utterances 有如此之多的缺点，但 utterances 不需要手动去创建 issue ，仅凭这一点，在我看来，就可以秒杀 gitalk ，希望 gitalk 早日改进支持吧。</p>
+<p>现在我的六个在线文档，都已经加上 utterances，大家在查阅学习时，若有问题可以在评论区提出来噢：</p>
+</section>
+</section>
 
 
+           </div>
+         <div class="articleComments">
+               <comments>
+  <script src="https://utteranc.es/client.js"
+    repo="iswbm/magic-python"
+    issue-term="pathname"
+    theme="github-light"
+    crossorigin="anonymous"
+    async>
+  </script>
+</comments>
            </div>
           </div>
           <footer>

@@ -1,6 +1,6 @@
 # 概述
 
-高通A6650 healthd 守护进程分析。 
+高通A6650 healthd 守护进程分析。
 
 Android 9 引入了从 health@1.0 HAL 升级的主要版本 android.hardware.health HAL 2.0。这一新 HAL 具有以下优势：
 
@@ -53,24 +53,25 @@ AOSP包含多个帮助库，旨在帮助您实现2.0 HAL和从旧的1.0 HAL过�
 
 * [Android 运行状况](https://source.android.com/devices/tech/health?hl=zh-cn)
 * [Android 电池管理系统架构总结 Android power and battery management architecture summaries](https://blog.csdn.net/u010632165/article/details/88651035)
-* [Android Uevent 分析，从kernel到framework](https://blog.csdn.net/dfysy/article/details/7330919)
-* [Google 实现 Health 2.1 ](https://source.android.com/docs/core/health/implementation-2-1)
+* [2021-12-22 AndroidR 电池信息 简单分析记录](https://blog.csdn.net/qq_37858386/article/details/122087237#comments_23271353)
+* [Google 实现 Health 2.1](https://source.android.com/docs/core/health/implementation-2-1)
 * [power supply是如何上报电池信息的](https://cloud.tencent.com/developer/article/1847402)
 
 # 软件架构
 
-![0014_0000.png](images/0014_0000.png)
+![0014_0006.png](images/0014_0006.png)
 ![0014_0004.png](images/0014_0004.png)
 
 可以看到文件比较多，主要是通过`BatteryMonitor.cpp`中的`BatteryMonitor::update(void)`函数上报信息，其中，内核首先会更新数据到`/sys/class/power_supply/battery`节点下各个属性，这个在上一个小节有做解释，先来看一下整体的架构，后面再来深入到代码中去分析；具体图片（该图片来自互联网，因为被转载较多，已经不知道出处），具体的流程整理的很清楚，如下所示；
 
 ![0014_0001.png](images/0014_0001.png)
 
-这幅图片再一次把整体的数据走向具体化，可以看到主要负责工作的是BatteryMonitor，主要分析一下该文件中的init和update就可以搞清楚大部分的问题。
+这幅图片再一次把整体的数据走向具体化，可以看到主要负责工作的是`BatteryMonitor`，主要分析一下该文件中的init和update就可以搞清楚大部分的问题。
 
 # 涉及文件
 
 * 编译文件
+
 ```shell
 ./vendor/lib64/hw/android.hardware.health@2.0-impl-2.1-qti.so
 ./vendor/lib64/libsystem_health_mon.so
@@ -80,6 +81,7 @@ AOSP包含多个帮助库，旨在帮助您实现2.0 HAL和从旧的1.0 HAL过�
 ```
 
 * healthd涉及文件：
+
 ```shell
  system/core/healthd：
 .
@@ -122,6 +124,7 @@ AOSP包含多个帮助库，旨在帮助您实现2.0 HAL和从旧的1.0 HAL过�
 ```
 
 * HIDL涉及文件：
+
 ```
 hardware/interfaces/health：
 ├── 2.1
@@ -182,6 +185,7 @@ hardware/interfaces/health：
 ```
 
 * `system/core/healthd/Android.bp`health编译了一个可执行文件`charger`，该程序用于关机充电模式：
+
 ```shell
 cc_binary {
     name: "charger",
@@ -218,9 +222,14 @@ cc_binary {
 
 ![0014_0003.png](images/0014_0003.png)
 
+* 1. 从service.cpp开始理一下调用流程，可以整理出上述的调用流程，构造函数为初始化流程，`Uevent`那条虚线为当psy-uevent上报后触发epoll之后的调用流程。与底层节点交互的逻辑都在`BatteryMonitor`中，在初始化过程中会初始化healthd_config结构体，用于保存psy属性节点的路径。
+* 2. 在监听循环MainLoop函数中，一个while(1)循环，调用epoll_wait()函数来监听uevent，收到事件之后会调用初始化时注册好的func（UeventEvent），该函数会通过uevent_kernel_multicast_recv接口去读取netlink发送的sk_buff->data，通过查找其中的字符串来判断事件是否为psy子系统发送的，如果不是的话，不会进行处理。进一步的处理流程主要是调用到BatteryMonitor中的updateValues，在该函数中会遍历读取psy属性节点，存储在HealthInfo结构体中，之后通过BinderHealth中注册好的回调函数IHealthInfoCallback通知BatterySerice，具体的通知函数为BinderHealth：OnHealthInfoChanged。
+* 3. Healthd是一个根植于powersupply子系统，并采用了epoll监听底层节点的uevent事件，之后轮询底层属性节点的守护进程。在安卓R版本中，Healthd相关代码重构为libhealthloop和libhealth2impl，但为了保证向后兼容，可以看到在ScheduleBatteryUpdate()函数中调用了两次updateValues，这样会遍历两次底层节点造成了冗余。另外在psy-uevent机制中，也有一次属性节点的遍历，一共三次遍历，这就要求底层驱动在更新属性值时，不能加入耗时的IO操作，否则会影响系统性能。
+
 # HIDL服务注册
 
 * `hardware/interfaces/health/2.0/README`我们可以从以下得知2.0下是改为实施 2.1 HAL:
+
 ```
 # Implement the 2.1 HAL instead!
 
@@ -231,6 +240,7 @@ It is strongly recommended that you implement the 2.1 HAL directly. See
 ```
 
 查看package情况：
+
 ```shell
 device/qcom/vendor-common/base.mk
 1103:PRODUCT_PACKAGES += android.hardware.health@2.1-impl-qti
@@ -238,6 +248,7 @@ device/qcom/vendor-common/base.mk
 ```
 
 * `\hardware\interfaces\health\2.1\default\service.cpp`通过`new BinderHealth`创建HIDL binder服务:
+
 ```C++
 using IHealth_2_0 = ::android::hardware::health::V2_0::IHealth;
 
@@ -254,7 +265,29 @@ int main(int /* argc */, char* /* argv */[]) {
 }
 ```
 
+* `BinderHealth`实际上是继承`HalHealthLoop`类，`HalHealthLoop`继承`HealthLoop`，所以`binder->StartLoop`调用的是`HealthLoop.cpp`里面的`StartLoop()`函数：
+
+```C++
+//health/utils/libhealth2impl/BinderHealth.cpp:
+BinderHealth::BinderHealth(const std::string& name, const sp<IHealth>& impl)
+    : HalHealthLoop(name, impl) { //继承
+    CHECK_NE(this, impl.get());
+    CHECK(!impl->isRemote());
+}
+//health/utils/libhealth2impl/include/health2impl/HalHealthLoop.h:
+  // An implementation of HealthLoop for using a given health HAL. This is useful
+  // for services that opens the passthrough implementation and starts the HealthLoop
+  // to periodically poll data from the implementation.
+  class HalHealthLoop : public HealthLoop { //继承
+    CHECK_NE(this, impl.get());
+    public:
+      HalHealthLoop(const std::string& name, const sp<IHealth>& service)
+          : instance_name_(name), service_(service) {}
+}
+```
+
 * 绑定模式的服务通过`registerAsService`接口实现，代码流程:
+
 ```C++
 hardware\interfaces\health\2.1\default\service.cpp
 StartLoop()
@@ -270,8 +303,297 @@ Init(struct healthd_config* config) > CHECK_EQ(registerAsService(instance_name()
 
 ![0014_0002.png](images/0014_0002.png)
 
-* ` ps -A | grep health`:
+* `ps -A | grep health`:
+
 ```
 A6650:/ # ps -A | grep health
 system         646     1 12978784  3608 do_epoll_wait       0 S android.hardware.health@2.1-service
+```
+
+# Init获取所有psy属性节点的路径
+
+* `Main`函数中，我们看到第一行是`sp<IHealth> passthrough`，创建了一个`Ihealth`类，那必然会跑它的构造函数，跟踪发现`Health`继承`Ihealth`类：
+* `utils/libhealth2impl/include/health2impl/Health.h`:
+
+```C++
+ class Health : public IHealth {
+43    public:
+
+//utils/libhealth2impl/Health.cpp:
+Health::Health(std::unique_ptr<healthd_config>&& config) : healthd_config_(std::move(config)) {
+     battery_monitor_.init(healthd_config_.get());
+}
+```
+
+`BatteryMonitor::init`函数主要是先读取psy节点的type类型，`ANDROID_POWER_SUPPLY_TYPE_USB`和`ANDROID_POWER_SUPPLY_TYPE_AC`充电器类型只需要保存`online`值，而`ANDROID_POWER_SUPPLY_TYPE_BATTERY`电池类型保存的比较多，下面有个表：
+
+| sys节点                                                       | 名词解释         |
+|-------------------------------------------------------------|--------------|
+| /sys/class/power_supply/ac/online                           | AC 电源连接状态    |
+| /sys/class/power_supply/usb/online                          | USB电源连接状态    |
+| /sys/class/power_supply/*/capacity_level （在健康 2.1 中添加）      | 容量等级         |
+| /sys/class/power_supply/*/capacity                          | 电池电量百分比      |
+| /sys/class/power_supply/*/charge_counter                    | 剩余容量 uAh     |
+| /sys/class/power_supply/*/charge_full                       | 最大容量         |
+| /sys/class/power_supply/*/charge_full_design （在健康 2.1 中添加）  | 最大容量         |
+| /sys/class/power_supply/*/current_avg                       | 平均电流         |
+| /sys/class/power_supply/*/current_max                       | 最大电流         |
+| /sys/class/power_supply/*/current_now                       | 当前电流         |
+| /sys/class/power_supply/*/cycle_count                       |  循环次数        |
+| /sys/class/power_supply/*/health                            | 电池状态         |
+| /sys/class/power_supply/*/present                           |  在位状态        |
+| /sys/class/power_supply/*/status                            | 充电状态         |
+| /sys/class/power_supply/*/technology                        | 电池技术         |
+| /sys/class/power_supply/*/temp                              | 电池温度         |
+| /sys/class/power_supply/*/time_to_full_now （在健康 2.1 中添加）    | 充电到100%需要的时间 |
+| /sys/class/power_supply/*/voltage_max                       | 最大电压         |
+| /sys/class/power_supply/*/voltage_now                       | 目前电压         |
+```C
+  void BatteryMonitor::init(struct healthd_config *hc) {
+      String8 path;
+      char pval[PROPERTY_VALUE_MAX];
+  
+      mHealthdConfig = hc;
+      std::unique_ptr<DIR, decltype(&closedir)> dir(opendir(POWER_SUPPLY_SYSFS_PATH), closedir);
+      if (dir == NULL) {
+          KLOG_ERROR(LOG_TAG, "Could not open %s\n", POWER_SUPPLY_SYSFS_PATH);
+      } else {
+          struct dirent* entry;
+  
+          while ((entry = readdir(dir.get()))) {
+              const char* name = entry->d_name;
+  
+              if (!strcmp(name, ".") || !strcmp(name, ".."))
+                  continue;
+  
+              std::vector<String8>::iterator itIgnoreName =
+                      find(hc->ignorePowerSupplyNames.begin(), hc->ignorePowerSupplyNames.end(),
+                           String8(name));
+              if (itIgnoreName != hc->ignorePowerSupplyNames.end())
+                  continue;
+  
+              // Look for "type" file in each subdirectory
+              path.clear();
+              path.appendFormat("%s/%s/type", POWER_SUPPLY_SYSFS_PATH, name);
+              switch(readPowerSupplyType(path)) {
+              case ANDROID_POWER_SUPPLY_TYPE_AC:
+              case ANDROID_POWER_SUPPLY_TYPE_USB:
+              case ANDROID_POWER_SUPPLY_TYPE_WIRELESS:
+              case ANDROID_POWER_SUPPLY_TYPE_DOCK:
+                  path.clear();
+                  path.appendFormat("%s/%s/online", POWER_SUPPLY_SYSFS_PATH, name);
+                  if (access(path.string(), R_OK) == 0)
+                      mChargerNames.add(String8(name));
+                  break;
+  
+              case ANDROID_POWER_SUPPLY_TYPE_BATTERY:
+                  // Some devices expose the battery status of sub-component like
+                  // stylus. Such a device-scoped battery info needs to be skipped
+                  // in BatteryMonitor, which is intended to report the status of
+                  // the battery supplying the power to the whole system.
+                  if (isScopedPowerSupply(name)) continue;
+                  mBatteryDevicePresent = true;
+  
+                  if (mHealthdConfig->batteryStatusPath.isEmpty()) {
+                      path.clear();
+                      path.appendFormat("%s/%s/status", POWER_SUPPLY_SYSFS_PATH,
+                                        name);
+                      if (access(path, R_OK) == 0)
+                          mHealthdConfig->batteryStatusPath = path;
+                  }
+  
+                  if (mHealthdConfig->batteryHealthPath.isEmpty()) {
+                      path.clear();
+                      path.appendFormat("%s/%s/health", POWER_SUPPLY_SYSFS_PATH,
+                                        name);
+                      if (access(path, R_OK) == 0)
+                          mHealthdConfig->batteryHealthPath = path;
+                  }
+  
+                  if (mHealthdConfig->batteryPresentPath.isEmpty()) {
+                      path.clear();
+                      path.appendFormat("%s/%s/present", POWER_SUPPLY_SYSFS_PATH,
+                                        name);
+                      if (access(path, R_OK) == 0)
+                          mHealthdConfig->batteryPresentPath = path;
+                  }
+  
+                  if (mHealthdConfig->batteryCapacityPath.isEmpty()) {
+                      path.clear();
+                      path.appendFormat("%s/%s/capacity", POWER_SUPPLY_SYSFS_PATH,
+                                        name);
+                      if (access(path, R_OK) == 0)
+                          mHealthdConfig->batteryCapacityPath = path;
+                  }
+  
+                  if (mHealthdConfig->batteryVoltagePath.isEmpty()) {
+                      path.clear();
+                      path.appendFormat("%s/%s/voltage_now",
+                                        POWER_SUPPLY_SYSFS_PATH, name);
+                      if (access(path, R_OK) == 0) {
+                          mHealthdConfig->batteryVoltagePath = path;
+                      }
+                  }
+  
+                  if (mHealthdConfig->batteryFullChargePath.isEmpty()) {
+                      path.clear();
+                      path.appendFormat("%s/%s/charge_full",
+                                        POWER_SUPPLY_SYSFS_PATH, name);
+                      if (access(path, R_OK) == 0)
+                          mHealthdConfig->batteryFullChargePath = path;
+                  }
+  
+                  if (mHealthdConfig->batteryCurrentNowPath.isEmpty()) {
+                      path.clear();
+                      path.appendFormat("%s/%s/current_now",
+                                        POWER_SUPPLY_SYSFS_PATH, name);
+                      if (access(path, R_OK) == 0)
+                          mHealthdConfig->batteryCurrentNowPath = path;
+                  }
+  
+                  if (mHealthdConfig->batteryCycleCountPath.isEmpty()) {
+                      path.clear();
+                      path.appendFormat("%s/%s/cycle_count",
+                                        POWER_SUPPLY_SYSFS_PATH, name);
+                      if (access(path, R_OK) == 0)
+                          mHealthdConfig->batteryCycleCountPath = path;
+                  }
+  
+                  if (mHealthdConfig->batteryCapacityLevelPath.isEmpty()) {
+                      path.clear();
+                      path.appendFormat("%s/%s/capacity_level", POWER_SUPPLY_SYSFS_PATH, name);
+                      if (access(path, R_OK) == 0) mHealthdConfig->batteryCapacityLevelPath = path;
+                  }
+  
+                  if (mHealthdConfig->batteryChargeTimeToFullNowPath.isEmpty()) {
+                      path.clear();
+                      path.appendFormat("%s/%s/time_to_full_now", POWER_SUPPLY_SYSFS_PATH, name);
+                      if (access(path, R_OK) == 0)
+                          mHealthdConfig->batteryChargeTimeToFullNowPath = path;
+                  }
+  
+                  if (mHealthdConfig->batteryFullChargeDesignCapacityUahPath.isEmpty()) {
+                      path.clear();
+                      path.appendFormat("%s/%s/charge_full_design", POWER_SUPPLY_SYSFS_PATH, name);
+                      if (access(path, R_OK) == 0)
+                          mHealthdConfig->batteryFullChargeDesignCapacityUahPath = path;
+                  }
+  
+                  if (mHealthdConfig->batteryCurrentAvgPath.isEmpty()) {
+                      path.clear();
+                      path.appendFormat("%s/%s/current_avg",
+                                        POWER_SUPPLY_SYSFS_PATH, name);
+                      if (access(path, R_OK) == 0)
+                          mHealthdConfig->batteryCurrentAvgPath = path;
+                  }
+  
+                  if (mHealthdConfig->batteryChargeCounterPath.isEmpty()) {
+                      path.clear();
+                      path.appendFormat("%s/%s/charge_counter",
+                                        POWER_SUPPLY_SYSFS_PATH, name);
+                      if (access(path, R_OK) == 0)
+                          mHealthdConfig->batteryChargeCounterPath = path;
+                  }
+  
+                  if (mHealthdConfig->batteryTemperaturePath.isEmpty()) {
+                      path.clear();
+                      path.appendFormat("%s/%s/temp", POWER_SUPPLY_SYSFS_PATH,
+                                        name);
+                      if (access(path, R_OK) == 0) {
+                          mHealthdConfig->batteryTemperaturePath = path;
+                      }
+                  }
+  
+                  if (mHealthdConfig->batteryTechnologyPath.isEmpty()) {
+                      path.clear();
+                      path.appendFormat("%s/%s/technology",
+                                        POWER_SUPPLY_SYSFS_PATH, name);
+                      if (access(path, R_OK) == 0)
+                          mHealthdConfig->batteryTechnologyPath = path;
+                  }
+  
+                  break;
+  
+              case ANDROID_POWER_SUPPLY_TYPE_UNKNOWN:
+                  break;
+              }
+  
+              // Look for "is_dock" file
+              path.clear();
+              path.appendFormat("%s/%s/is_dock", POWER_SUPPLY_SYSFS_PATH, name);
+              if (access(path.string(), R_OK) == 0) {
+                  path.clear();
+                  path.appendFormat("%s/%s/online", POWER_SUPPLY_SYSFS_PATH, name);
+                  if (access(path.string(), R_OK) == 0)
+                      mChargerNames.add(String8(name));
+  
+              }
+          }
+      }
+  
+      // Typically the case for devices which do not have a battery and
+      // and are always plugged into AC mains.
+      if (!mBatteryDevicePresent) {
+          KLOG_WARNING(LOG_TAG, "No battery devices found\n");
+          hc->periodic_chores_interval_fast = -1;
+          hc->periodic_chores_interval_slow = -1;
+      } else {
+          if (mHealthdConfig->batteryStatusPath.isEmpty())
+              KLOG_WARNING(LOG_TAG, "BatteryStatusPath not found\n");
+          if (mHealthdConfig->batteryHealthPath.isEmpty())
+              KLOG_WARNING(LOG_TAG, "BatteryHealthPath not found\n");
+          if (mHealthdConfig->batteryPresentPath.isEmpty())
+              KLOG_WARNING(LOG_TAG, "BatteryPresentPath not found\n");
+          if (mHealthdConfig->batteryCapacityPath.isEmpty())
+              KLOG_WARNING(LOG_TAG, "BatteryCapacityPath not found\n");
+          if (mHealthdConfig->batteryVoltagePath.isEmpty())
+              KLOG_WARNING(LOG_TAG, "BatteryVoltagePath not found\n");
+          if (mHealthdConfig->batteryTemperaturePath.isEmpty())
+              KLOG_WARNING(LOG_TAG, "BatteryTemperaturePath not found\n");
+          if (mHealthdConfig->batteryTechnologyPath.isEmpty())
+              KLOG_WARNING(LOG_TAG, "BatteryTechnologyPath not found\n");
+          if (mHealthdConfig->batteryCurrentNowPath.isEmpty())
+              KLOG_WARNING(LOG_TAG, "BatteryCurrentNowPath not found\n");
+          if (mHealthdConfig->batteryFullChargePath.isEmpty())
+              KLOG_WARNING(LOG_TAG, "BatteryFullChargePath not found\n");
+          if (mHealthdConfig->batteryCycleCountPath.isEmpty())
+              KLOG_WARNING(LOG_TAG, "BatteryCycleCountPath not found\n");
+          if (mHealthdConfig->batteryCapacityLevelPath.isEmpty())
+              KLOG_WARNING(LOG_TAG, "batteryCapacityLevelPath not found\n");
+          if (mHealthdConfig->batteryChargeTimeToFullNowPath.isEmpty())
+              KLOG_WARNING(LOG_TAG, "batteryChargeTimeToFullNowPath. not found\n");
+          if (mHealthdConfig->batteryFullChargeDesignCapacityUahPath.isEmpty())
+              KLOG_WARNING(LOG_TAG, "batteryFullChargeDesignCapacityUahPath. not found\n");
+      }
+  
+      if (property_get("ro.boot.fake_battery", pval, NULL) > 0
+                                                 && strtol(pval, NULL, 10) != 0) {
+          mBatteryFixedCapacity = FAKE_BATTERY_CAPACITY;
+          mBatteryFixedTemperature = FAKE_BATTERY_TEMPERATURE;
+      }
+}
+```
+
+# 上报流程
+
+跟踪得到上面的大概流程如下，最后的打印在BatteryMonitor.cpp里面的logValues。
+
+```
+hardware\interfaces\health\2.1\default\service.cpp
+binder->StartLoop();
+ 
+hardware\interfaces\health\utils\libhealthloop\HealthLoop.cpp
+StartLoop()->MainLoop->  PeriodicChores    ->  ScheduleBatteryUpdate();  ->
+ 
+hardware\interfaces\health\utils\libhealth2impl\HalHealthLoop.cpp
+ScheduleBatteryUpdate() _>update();
+ScheduleBatteryUpdate() _> OnHealthInfoChanged(health_info); //通知BatterySevices
+ 
+\hardware\interfaces\health\utils\libhealth2impl\Health.cpp
+update() >logValues()
+update() > getHealthInfo_2_1([&](auto res, const auto& health_info) > battery_monitor_.updateValues();
+
+\system\core\healthd\BatteryMonitor.cpp
+logValues
+updateValues
 ```
