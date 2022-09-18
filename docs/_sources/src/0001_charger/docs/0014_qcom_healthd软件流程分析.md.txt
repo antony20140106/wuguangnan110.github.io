@@ -597,3 +597,30 @@ update() > getHealthInfo_2_1([&](auto res, const auto& health_info) > battery_mo
 logValues
 updateValues
 ```
+
+# Healthd 2.1要求
+
+健康 2.0 HAL 对 HAL 接口提出了一组要求，但相应的 VTS 测试在执行方面相对宽松。在 Android 11 中，添加了新的 VTS 测试以对搭载 Android 11 及更高版本的设备强制执行以下要求：
+
+* 无电流和平均电池电流的单位必须是微安 (μA)。
+* 瞬时和平均电池电流的符号必须正确。具体来说：
+  * current == 0 当电池状态为UNKNOWN时
+  * 当电池状态为CHARGING时，电流 > 0
+  * 当电池状态为NOT_CHARGING时，电流 <= 0
+  * 当电池状态为DISCHARGING时，电流 < 0
+  * 电池状态为FULL时不强制执行
+* 电池状态必须与是否连接电源正确。具体来说：
+  * 当且仅当连接了电源时，电池状态必须是CHARGING 、 NOT_CHARGING或FULL之一；
+  * 当且仅当电源断开时，电池状态必须为DISCHARGING 。
+
+如果您在实现中使用libbatterymonitor并传递来自内核接口的值，请确保 sysfs 节点报告正确的值：
+* 确保使用正确的符号和单位报告电池电流。这包括以下 sysfs 节点：
+  * /sys/class/power_supply/*/current_avg
+  * /sys/class/power_supply/*/current_max
+  * /sys/class/power_supply/*/current_now
+  * 正值表示进入电池的电流。
+  * 值应以微安 (μA) 为单位。
+* 确保以微伏 (μV) 为单位报告电池电压。这包括以下 sysfs 节点：
+  * /sys/class/power_supply/*/voltage_max
+  * /sys/class/power_supply/*/voltage_now
+  * 请注意，默认 HAL 实现将voltage_now除以 1000 并以毫伏 (mV) 为单位报告值。

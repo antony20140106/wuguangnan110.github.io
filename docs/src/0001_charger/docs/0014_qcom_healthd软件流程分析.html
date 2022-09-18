@@ -52,6 +52,7 @@
 <li><a class="reference internal" href="#hidl">HIDL服务注册</a></li>
 <li><a class="reference internal" href="#initpsy">Init获取所有psy属性节点的路径</a></li>
 <li><a class="reference internal" href="#id7">上报流程</a></li>
+<li><a class="reference internal" href="#healthd-2-1">Healthd 2.1要求</a></li>
 </ul>
 </div>
         </div>
@@ -726,6 +727,47 @@ Init(struct healthd_config* config) &gt; CHECK_EQ(registerAsService(instance_nam
 <span class="n">updateValues</span>
 </pre></div>
 </div>
+</section>
+<section id="healthd-2-1">
+<h1>Healthd 2.1要求<a class="headerlink" href="#healthd-2-1" title="此标题的永久链接"></a></h1>
+<p>健康 2.0 HAL 对 HAL 接口提出了一组要求，但相应的 VTS 测试在执行方面相对宽松。在 Android 11 中，添加了新的 VTS 测试以对搭载 Android 11 及更高版本的设备强制执行以下要求：</p>
+<ul class="simple">
+<li><p>无电流和平均电池电流的单位必须是微安 (μA)。</p></li>
+<li><p>瞬时和平均电池电流的符号必须正确。具体来说：</p>
+<ul>
+<li><p>current == 0 当电池状态为UNKNOWN时</p></li>
+<li><p>当电池状态为CHARGING时，电流 &gt; 0</p></li>
+<li><p>当电池状态为NOT_CHARGING时，电流 &lt;= 0</p></li>
+<li><p>当电池状态为DISCHARGING时，电流 &lt; 0</p></li>
+<li><p>电池状态为FULL时不强制执行</p></li>
+</ul>
+</li>
+<li><p>电池状态必须与是否连接电源正确。具体来说：</p>
+<ul>
+<li><p>当且仅当连接了电源时，电池状态必须是CHARGING 、 NOT_CHARGING或FULL之一；</p></li>
+<li><p>当且仅当电源断开时，电池状态必须为DISCHARGING 。</p></li>
+</ul>
+</li>
+</ul>
+<p>如果您在实现中使用libbatterymonitor并传递来自内核接口的值，请确保 sysfs 节点报告正确的值：</p>
+<ul class="simple">
+<li><p>确保使用正确的符号和单位报告电池电流。这包括以下 sysfs 节点：</p>
+<ul>
+<li><p>/sys/class/power_supply/*/current_avg</p></li>
+<li><p>/sys/class/power_supply/*/current_max</p></li>
+<li><p>/sys/class/power_supply/*/current_now</p></li>
+<li><p>正值表示进入电池的电流。</p></li>
+<li><p>值应以微安 (μA) 为单位。</p></li>
+</ul>
+</li>
+<li><p>确保以微伏 (μV) 为单位报告电池电压。这包括以下 sysfs 节点：</p>
+<ul>
+<li><p>/sys/class/power_supply/*/voltage_max</p></li>
+<li><p>/sys/class/power_supply/*/voltage_now</p></li>
+<li><p>请注意，默认 HAL 实现将voltage_now除以 1000 并以毫伏 (mV) 为单位报告值。</p></li>
+</ul>
+</li>
+</ul>
 </section>
 
 
