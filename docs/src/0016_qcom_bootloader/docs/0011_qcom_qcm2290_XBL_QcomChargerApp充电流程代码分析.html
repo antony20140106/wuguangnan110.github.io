@@ -58,7 +58,13 @@
 <li><a class="reference internal" href="#pqcomchargerprotocol-getchargingaction">获取当前充电状态 pQcomChargerProtocol-&gt;GetChargingAction()</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#id5">充电图标显示流程</a></li>
+<li><a class="reference internal" href="#id5">充电图标显示流程</a><ul>
+<li><a class="reference internal" href="#id6">图片资源存储</a></li>
+<li><a class="reference internal" href="#id7">图片资源配置</a></li>
+<li><a class="reference internal" href="#id8">图片显示软件逻辑</a></li>
+<li><a class="reference internal" href="#id9">图片显示函数</a></li>
+</ul>
+</li>
 </ul>
 </div>
         </div>
@@ -100,7 +106,7 @@
 </section>
 <section id="id3">
 <h1>流程图<a class="headerlink" href="#id3" title="此标题的永久链接"></a></h1>
-<p><img alt="0011_0000.png" src="../../../_images/0011_00002.png" /></p>
+<p><img alt="0011_0002.png" src="../../../_images/0011_00021.png" /></p>
 <ul class="simple">
 <li><p>摘要：</p>
 <ul>
@@ -1221,18 +1227,469 @@
 </ol>
 </li>
 <li><ol class="arabic simple" start="2">
-<li><p>专门有刷新UI的定时器<code class="docutils literal notranslate"><span class="pre">AnimImgTimer</span></code>，500ms轮询一次，显示<code class="docutils literal notranslate"><span class="pre">LOW_BATT_CHARGING</span></code>和<code class="docutils literal notranslate"><span class="pre">LOW_BATTERY</span></code>充电两个状态的闪烁效果。</p></li>
+<li><p>如果是充电状态，专门有刷新UI的定时器<code class="docutils literal notranslate"><span class="pre">AnimImgTimer</span></code>，500ms轮询一次，显示<code class="docutils literal notranslate"><span class="pre">LOW_BATT_CHARGING</span></code>和<code class="docutils literal notranslate"><span class="pre">LOW_BATTERY</span></code>充电两个状态的闪烁效果。</p></li>
 </ol>
 </li>
 </ul>
 </li>
 </ul>
+<section id="id6">
+<h2>图片资源存储<a class="headerlink" href="#id6" title="此标题的永久链接"></a></h2>
+<ul class="simple">
+<li><p>图片资源存储路径是<code class="docutils literal notranslate"><span class="pre">boot_images/QcomPkg/SocPkg/AgattiPkg/LAA/ImageFv.fdf.inc</span></code>:</p></li>
+</ul>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="o">[</span>FV.ImageFv<span class="o">]</span>
+<span class="nv">BlockSize</span>          <span class="o">=</span> 0x40
+<span class="nv">NumBlocks</span>          <span class="o">=</span> 0x0
+<span class="nv">FvAlignment</span>        <span class="o">=</span> <span class="m">8</span>
+<span class="nv">ERASE_POLARITY</span>     <span class="o">=</span> <span class="m">1</span>
+<span class="nv">MEMORY_MAPPED</span>      <span class="o">=</span> TRUE
+<span class="nv">STICKY_WRITE</span>       <span class="o">=</span> TRUE
+<span class="nv">LOCK_CAP</span>           <span class="o">=</span> TRUE
+<span class="nv">LOCK_STATUS</span>        <span class="o">=</span> TRUE
+<span class="nv">WRITE_DISABLED_CAP</span> <span class="o">=</span> TRUE
+<span class="nv">WRITE_ENABLED_CAP</span>  <span class="o">=</span> TRUE
+<span class="nv">WRITE_STATUS</span>       <span class="o">=</span> TRUE
+<span class="nv">WRITE_LOCK_CAP</span>     <span class="o">=</span> TRUE
+<span class="nv">WRITE_LOCK_STATUS</span>  <span class="o">=</span> TRUE
+<span class="nv">READ_DISABLED_CAP</span>  <span class="o">=</span> TRUE
+<span class="nv">READ_ENABLED_CAP</span>   <span class="o">=</span> TRUE
+<span class="nv">READ_STATUS</span>        <span class="o">=</span> TRUE
+<span class="nv">READ_LOCK_CAP</span>      <span class="o">=</span> TRUE
+<span class="nv">READ_LOCK_STATUS</span>   <span class="o">=</span> TRUE
+<span class="nv">FvNameGuid</span>         <span class="o">=</span> a8169396-d0f7-49cb-890a-25e1a9767406
+
+  FILE <span class="nv">FREEFORM</span> <span class="o">=</span> 3E5584ED-05D4-4267-9048-0D47F76F4248 <span class="o">{</span>
+    SECTION <span class="nv">UI</span> <span class="o">=</span> <span class="s2">&quot;battery_symbol_Soc10.bmp&quot;</span>
+    SECTION <span class="nv">RAW</span> <span class="o">=</span> QcomPkg/Application/QcomChargerApp/battery_symbol_Soc10.bmp
+  <span class="o">}</span>
+
+  FILE <span class="nv">FREEFORM</span> <span class="o">=</span> 4753E815-DDD8-402d-BF69-9B8C4EB7573E <span class="o">{</span>
+      SECTION <span class="nv">UI</span> <span class="o">=</span> <span class="s2">&quot;battery_symbol_NoBattery.bmp&quot;</span>
+      SECTION <span class="nv">RAW</span> <span class="o">=</span> QcomPkg/Application/QcomChargerApp/battery_symbol_NoBattery.bmp
+  <span class="o">}</span>
+
+  FILE <span class="nv">FREEFORM</span> <span class="o">=</span> 03DED53E-BECD-428f-9F79-5ABA64C58445 <span class="o">{</span>
+      SECTION <span class="nv">UI</span> <span class="o">=</span> <span class="s2">&quot;battery_symbol_Nocharger.bmp&quot;</span>
+      SECTION <span class="nv">RAW</span> <span class="o">=</span> QcomPkg/Application/QcomChargerApp/battery_symbol_Nocharger.bmp
+  <span class="o">}</span>
+
+  FILE <span class="nv">FREEFORM</span> <span class="o">=</span> 8b86cd38-c772-4fcf-85aa-345b2b3c1ab4 <span class="o">{</span>
+      SECTION <span class="nv">UI</span> <span class="o">=</span> <span class="s2">&quot;battery_symbol_LowBatteryCharging.bmp&quot;</span>
+      SECTION <span class="nv">RAW</span> <span class="o">=</span> QcomPkg/Application/QcomChargerApp/battery_symbol_LowBatteryCharging.bmp
+  <span class="o">}</span>
+
+  FILE <span class="nv">FREEFORM</span> <span class="o">=</span> 3FD97907-93F1-4349-AF3C-3B68B0A5E626 <span class="o">{</span>
+      SECTION <span class="nv">UI</span> <span class="o">=</span> <span class="s2">&quot;battery_symbol_LowBattery.bmp&quot;</span>
+      SECTION <span class="nv">RAW</span> <span class="o">=</span> QcomPkg/Application/QcomChargerApp/battery_symbol_LowBattery.bmp
+  <span class="o">}</span>
+
+  FILE <span class="nv">FREEFORM</span> <span class="o">=</span> E2EA5A4F-98BD-4203-AB49-399505DDFB7D <span class="o">{</span>
+      SECTION <span class="nv">UI</span> <span class="o">=</span> <span class="s2">&quot;tsens_thermal_symbol.bmp&quot;</span>
+      SECTION <span class="nv">RAW</span> <span class="o">=</span> QcomPkg/Application/QcomChargerApp/tsens_thermal_symbol.bmp
+  <span class="o">}</span>
+
+  FILE <span class="nv">FREEFORM</span> <span class="o">=</span> C72FB1A9-5527-4E13-BAC4-F671D0330145 <span class="o">{</span>
+      SECTION <span class="nv">UI</span> <span class="o">=</span> <span class="s2">&quot;tsens_thermal_err_symbol.bmp&quot;</span>
+      SECTION <span class="nv">RAW</span> <span class="o">=</span> QcomPkg/Application/QcomChargerApp/tsens_thermal_err_symbol.bmp
+  <span class="o">}</span>
+
+  FILE <span class="nv">FREEFORM</span> <span class="o">=</span> B0F8D1BE-5353-4812-B1F6-07E7768204CC <span class="o">{</span>
+      SECTION <span class="nv">UI</span> <span class="o">=</span> <span class="s2">&quot;battery_symbol_DebugBoot.bmp&quot;</span>
+      SECTION <span class="nv">RAW</span> <span class="o">=</span> QcomPkg/Application/QcomChargerApp/battery_symbol_DebugBoot.bmp
+  <span class="o">}</span>
+
+  FILE <span class="nv">FREEFORM</span> <span class="o">=</span> F9E8F683-E065-4E09-B4F9-0230D7CECD08 <span class="o">{</span>
+      SECTION <span class="nv">UI</span> <span class="o">=</span> <span class="s2">&quot;battery_symbol_DebugStay.bmp&quot;</span>
+      SECTION <span class="nv">RAW</span> <span class="o">=</span> QcomPkg/Application/QcomChargerApp/battery_symbol_DebugStay.bmp
+  <span class="o">}</span>
+
+<span class="o">[</span>FV.IMAGEFV_COMPACT<span class="o">]</span>
+<span class="nv">BlockSize</span>          <span class="o">=</span> 0x200
+<span class="nv">NumBlocks</span>          <span class="o">=</span> 0x10
+<span class="nv">FvAlignment</span>        <span class="o">=</span> <span class="m">8</span>
+<span class="nv">ERASE_POLARITY</span>     <span class="o">=</span> <span class="m">1</span>
+<span class="nv">MEMORY_MAPPED</span>      <span class="o">=</span> TRUE
+<span class="nv">STICKY_WRITE</span>       <span class="o">=</span> TRUE
+<span class="nv">LOCK_CAP</span>           <span class="o">=</span> TRUE
+<span class="nv">LOCK_STATUS</span>        <span class="o">=</span> TRUE
+<span class="nv">WRITE_DISABLED_CAP</span> <span class="o">=</span> TRUE
+<span class="nv">WRITE_ENABLED_CAP</span>  <span class="o">=</span> TRUE
+<span class="nv">WRITE_STATUS</span>       <span class="o">=</span> TRUE
+<span class="nv">WRITE_LOCK_CAP</span>     <span class="o">=</span> TRUE
+<span class="nv">WRITE_LOCK_STATUS</span>  <span class="o">=</span> TRUE
+<span class="nv">READ_DISABLED_CAP</span>  <span class="o">=</span> TRUE
+<span class="nv">READ_ENABLED_CAP</span>   <span class="o">=</span> TRUE
+<span class="nv">READ_STATUS</span>        <span class="o">=</span> TRUE
+<span class="nv">READ_LOCK_CAP</span>      <span class="o">=</span> TRUE
+<span class="nv">READ_LOCK_STATUS</span>   <span class="o">=</span> TRUE
+
+
+  FILE <span class="nv">FV_IMAGE</span> <span class="o">=</span> 072BE68A-6EC0-B209-9B83-276F017EBEAA <span class="o">{</span>
+    SECTION GUIDED EE4E5898-3914-4259-9D6E-DC7BD79403CF <span class="nv">PROCESSING_REQUIRED</span> <span class="o">=</span> TRUE <span class="o">{</span>
+      SECTION <span class="nv">FV_IMAGE</span> <span class="o">=</span> IMAGEFV
+    <span class="o">}</span>
+  <span class="o">}</span>
+</pre></div>
+</div>
+<p>这些图片资源都保存在<code class="docutils literal notranslate"><span class="pre">imagefv.elf</span></code>镜像里面<code class="docutils literal notranslate"><span class="pre">rawprogram_unsparse0.xml</span></code>：</p>
+<div class="highlight-xml notranslate"><div class="highlight"><pre><span></span>  <span class="nt">&lt;program</span> <span class="na">SECTOR_SIZE_IN_BYTES=</span><span class="s">&quot;512&quot;</span> <span class="na">file_sector_offset=</span><span class="s">&quot;0&quot;</span> <span class="na">filename=</span><span class="s">&quot;imagefv.elf&quot;</span> <span class="na">label=</span><span class="s">&quot;imagefv_a&quot;</span> <span class="na">num_partition_sectors=</span><span class="s">&quot;4096&quot;</span> <span class="na">partofsingleimage=</span><span class="s">&quot;false&quot;</span> <span class="na">physical_partition_number=</span><span class="s">&quot;0&quot;</span> <span class="na">readbackverify=</span><span class="s">&quot;false&quot;</span> <span class="na">size_in_KB=</span><span class="s">&quot;2048.0&quot;</span> <span class="na">sparse=</span><span class="s">&quot;false&quot;</span> <span class="na">start_byte_hex=</span><span class="s">&quot;0x25f002000L&quot;</span> <span class="na">start_sector=</span><span class="s">&quot;19890192&quot;</span> <span class="nt">/&gt;</span>
+  <span class="nt">&lt;program</span> <span class="na">SECTOR_SIZE_IN_BYTES=</span><span class="s">&quot;512&quot;</span> <span class="na">file_sector_offset=</span><span class="s">&quot;0&quot;</span> <span class="na">filename=</span><span class="s">&quot;imagefv.elf&quot;</span> <span class="na">label=</span><span class="s">&quot;imagefv_b&quot;</span> <span class="na">num_partition_sectors=</span><span class="s">&quot;4096&quot;</span> <span class="na">partofsingleimage=</span><span class="s">&quot;false&quot;</span> <span class="na">physical_partition_number=</span><span class="s">&quot;0&quot;</span> <span class="na">readbackverify=</span><span class="s">&quot;false&quot;</span> <span class="na">size_in_KB=</span><span class="s">&quot;2048.0&quot;</span> <span class="na">sparse=</span><span class="s">&quot;false&quot;</span> <span class="na">start_byte_hex=</span><span class="s">&quot;0x25f202000L&quot;</span> <span class="na">start_sector=</span><span class="s">&quot;19894288&quot;</span> <span class="nt">/&gt;</span>
+</pre></div>
+</div>
+<p>ps:
+新增图片时，一定要全编并烧录<code class="docutils literal notranslate"><span class="pre">imagefv.elf</span></code>镜像。</p>
+<ul class="simple">
+<li><p>新增一张图片报错超出大小，如下：</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Generate</span> <span class="n">Region</span> <span class="n">at</span> <span class="n">Offset</span> <span class="mh">0x0</span>
+   <span class="n">Region</span> <span class="n">Size</span> <span class="o">=</span> <span class="mh">0x212400</span>
+   <span class="n">Region</span> <span class="n">Name</span> <span class="o">=</span> <span class="n">FV</span>
+
+<span class="n">Generating</span> <span class="n">FVMAIN_COMPACT</span> <span class="n">FV</span>
+<span class="c1">#####</span>
+<span class="n">Generating</span> <span class="n">FVMAIN</span> <span class="n">FV</span>
+<span class="c1">###################################</span>
+<span class="c1">########################################</span>
+<span class="c1">########################################</span>
+<span class="c1">########################################</span>
+<span class="c1">########################################</span>
+<span class="c1">########################################</span>
+<span class="c1">#######</span>
+<span class="n">Generating</span> <span class="n">IMAGEFV</span> <span class="n">FV</span>
+<span class="c1">#####################</span>
+<span class="n">Generating</span> <span class="n">IMAGEFV_COMPACT</span> <span class="n">FV</span>
+<span class="c1">######Return Value = 2</span>
+<span class="n">GenFv</span><span class="p">:</span> <span class="n">ERROR</span> <span class="mi">3000</span><span class="p">:</span> <span class="n">Invalid</span>
+  <span class="n">the</span> <span class="n">required</span> <span class="n">fv</span> <span class="n">image</span> <span class="n">size</span> <span class="mh">0x23c8</span> <span class="n">exceeds</span> <span class="n">the</span> <span class="nb">set</span> <span class="n">fv</span> <span class="n">image</span> <span class="n">size</span> <span class="mh">0x2000</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>尝试改大<code class="docutils literal notranslate"><span class="pre">BlockSize</span></code>:</p></li>
+</ul>
+</section>
+<section id="id7">
+<h2>图片资源配置<a class="headerlink" href="#id7" title="此标题的永久链接"></a></h2>
+<ul class="simple">
+<li><p>在源码中，充电图相关的图片位于：<code class="docutils literal notranslate"><span class="pre">boot_images\QcomPkg\Application\QcomChargerApp</span></code>:</p></li>
+</ul>
+<p><img alt="0011_0001.png" src="../../../_images/0011_0001.png" /></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">QcomPkg/Application/QcomChargerApp/QcomChargerAppDisplay.h</span></code>相关图片定义如下:</p></li>
+</ul>
+<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="cp">#define CHARGER_BATTERY_SYMBOL_NOBATTERY            &quot;battery_symbol_NoBattery.bmp&quot;</span>
+<span class="cp">#define CHARGER_BATTERY_SYMBOL_NOCHARGER            &quot;battery_symbol_Nocharger.bmp&quot;</span>
+<span class="cp">#define CHARGER_BATTERY_SYMBOL_ABOVE_THRESHOLD      &quot;battery_symbol_Soc10.bmp&quot;</span>
+<span class="cp">#define CHARGER_BATTERY_SYMBOL_LOWBATTERYCHARGING   &quot;battery_symbol_LowBatteryCharging.bmp&quot;</span>
+<span class="cp">#define CHARGER_BATTERY_SYMBOL_LOWBATTERY           &quot;battery_symbol_LowBattery.bmp&quot;</span>
+<span class="cp">#define CHARGER_TSENS_THERMAL_SYMBOL                &quot;tsens_thermal_symbol.bmp&quot;</span>
+<span class="cp">#define CHARGER_TSENS_CRITICAL_SYMBOL               &quot;tsens_thermal_err_symbol.bmp&quot;</span>
+<span class="cp">#define CHARGER_BATTERY_SYMBOL_DEBUG_BOARD_BOOT     &quot;battery_symbol_DebugBoot.bmp&quot;</span>
+<span class="cp">#define CHARGER_BATTERY_SYMBOL_DEBUG_BOARD_STAY     &quot;battery_symbol_DebugStay.bmp&quot;</span>
+</pre></div>
+</div>
+</section>
+<section id="id8">
+<h2>图片显示软件逻辑<a class="headerlink" href="#id8" title="此标题的永久链接"></a></h2>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">QcomPkg/Application/QcomChargerApp/QcomChargerAppEventHandler.c</span></code>:</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">*</span> <span class="n">QcomChargerAppEvent_HandleDispBattSymbol</span><span class="p">(</span><span class="n">EFI_QCOM_CHARGER_ACTION_TYPE</span> <span class="n">ChargingAction</span><span class="p">)</span>
+  <span class="o">*</span> <span class="n">Status</span> <span class="o">=</span> <span class="n">pQcomChargerProtocol</span><span class="o">-&gt;</span><span class="n">GetDisplayImageType</span><span class="p">(</span><span class="o">&amp;</span><span class="n">DispImageType</span><span class="p">);</span>
+    <span class="o">*</span> <span class="n">EFI_QcomChargerGetDisplayImageType</span> <span class="o">//</span><span class="n">Drivers</span><span class="o">/</span><span class="n">QcomChargerDxe</span><span class="o">/</span><span class="n">QcomCharger</span><span class="o">.</span><span class="n">c</span> <span class="n">调用驱动</span>
+      <span class="o">*</span> <span class="n">ChargerLib_GetDisplayImageType</span><span class="p">((</span><span class="n">CHARGERLIB_EVENT_DISP_IMAGE_TYPE</span> <span class="o">*</span><span class="p">)</span><span class="n">pDispImage</span><span class="p">)</span> <span class="o">//</span><span class="n">Library</span><span class="o">/</span><span class="n">ChargerLib</span><span class="o">/</span><span class="n">ChargerLibCommon</span><span class="o">.</span><span class="n">c</span>
+        <span class="o">*</span> <span class="n">ChargerLibTarget_GetDisplayImageType</span><span class="p">(</span><span class="n">pDispImage</span><span class="p">)</span> <span class="o">//</span><span class="n">Library</span><span class="o">/</span><span class="n">ChargerLib</span><span class="o">/</span><span class="n">target</span><span class="o">/</span><span class="n">Agatti</span><span class="o">/</span><span class="n">ChargerLibTarget</span><span class="o">.</span><span class="n">c</span>
+          <span class="o">*</span> <span class="o">*</span><span class="n">pDispImage</span> <span class="o">=</span> <span class="n">gDispImage</span><span class="p">;</span> <span class="o">//</span><span class="n">这里直接赋值了</span>
+  <span class="o">*</span> <span class="n">QcomChargerAppEvent_DispBattSymbol</span><span class="p">(</span><span class="n">DispImageType</span><span class="p">);</span>
+    <span class="o">*</span> <span class="n">QcomChargerAppDisplay_DispBattSymbol</span><span class="p">(</span><span class="n">DispImageType</span><span class="p">,</span> <span class="n">TRUE</span><span class="p">);</span> <span class="o">//</span><span class="n">图片显示函数</span>
+      <span class="o">*</span> <span class="n">comChargerAppDisplay_AsciiStrNDup</span><span class="p">(</span><span class="n">CHARGER_BATTERY_SYMBOL_ABOVE_THRESHOLD</span><span class="p">,</span> <span class="n">AsciiStrLen</span><span class="p">(</span><span class="n">CHARGER_BATTERY_SYMBOL_ABOVE_THRESHOLD</span><span class="p">));</span><span class="o">//</span><span class="n">图片显示函数</span>
+      <span class="o">*</span> <span class="n">Status</span> <span class="o">=</span> <span class="n">DrawBmpFile</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">NULL</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">gEfiImageFvNameGuid</span><span class="p">);</span> <span class="o">//</span><span class="n">绘制图片</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>接着继续看看图片显示逻辑如下，图片全局变量<code class="docutils literal notranslate"><span class="pre">gDispImage</span></code>是根据<code class="docutils literal notranslate"><span class="pre">ChargingErrorType</span></code>来的：</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="n">EFI_STATUS</span><span class="w"> </span><span class="nf">ChargerLibTarget_GetErrorAction</span><span class="p">(</span><span class="w"> </span><span class="n">CHARGERLIB_CHARGING_ERROR_TYPES</span><span class="w">  </span><span class="n">ChargingErrorType</span><span class="p">,</span><span class="w"> </span><span class="n">CHARGERLIB_ERROR_ACTION_TYPE</span><span class="w"> </span><span class="o">*</span><span class="n">pErrorAction</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="n">EFI_STATUS</span><span class="w">  </span><span class="n">Status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">EFI_SUCCESS</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="n">chargerlib_batt_status_info</span><span class="w"> </span><span class="n">BatteryStatus</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="mi">0</span><span class="p">};</span><span class="w"></span>
+
+<span class="w">  </span><span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="n">pErrorAction</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">EFI_INVALID_PARAMETER</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">  </span><span class="o">*</span><span class="n">pErrorAction</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">CHARGERLIB_ERROR_ACTION_NONE</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">  </span><span class="n">Status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ChargerLib_GetBatteryStatus</span><span class="p">(</span><span class="o">&amp;</span><span class="n">BatteryStatus</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="k">if</span><span class="p">(</span><span class="w"> </span><span class="n">EFI_SUCCESS</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">Status</span><span class="w"> </span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">CHARGER_DEBUG</span><span class="p">((</span><span class="n">EFI_D_WARN</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;ChargerLib:: %a Error getting battery status = %r </span><span class="se">\r\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">__FUNCTION__</span><span class="p">,</span><span class="w"> </span><span class="n">Status</span><span class="p">));</span><span class="w"></span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">Status</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">  </span><span class="k">switch</span><span class="w"> </span><span class="p">(</span><span class="n">ChargingErrorType</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="k">case</span><span class="w"> </span><span class="no">CHARGERLIB_CHARGING_ERROR_NONE</span><span class="p">:</span><span class="w"></span>
+<span class="w">    </span><span class="k">case</span><span class="w"> </span><span class="no">CHARGERLIB_CHARGING_ERROR_TSENSE_OK</span><span class="p">:</span><span class="w"></span>
+<span class="w">        </span><span class="cm">/* No Action just continue */</span><span class="w"></span>
+<span class="w">        </span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="k">case</span><span class="w"> </span><span class="no">CHARGERLIB_CHARGING_ERROR_TSENSE_CRITICAL</span><span class="p">:</span><span class="w"></span>
+<span class="w">                </span><span class="c1">// case ChargerLib_ChargingError_TsensCritical:</span>
+<span class="w">        </span><span class="n">gDispImage</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">CHARGERLIB_EVENT_DISP_IMAGE_TSENS_CRITICAL_SYMBOL</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="k">case</span><span class="w"> </span><span class="no">CHARGERLIB_CHARGING_ERROR_BATT_TEMP_OUTSIDE_OPERATIONAL_RANGE</span><span class="p">:</span><span class="w"></span>
+<span class="w">        </span><span class="o">*</span><span class="n">pErrorAction</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">CHARGERLIB_ERROR_ACTION_CRITICAL_SHUTDOWN</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="k">case</span><span class="w"> </span><span class="no">CHARGERLIB_CHARGING_ERROR_BATTERY_NOT_DETECTED</span><span class="p">:</span><span class="w"></span>
+<span class="w">                </span><span class="n">gDispImage</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">CHARGERLIB_EVENT_DISP_IMAGE_NOBATTERY</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="o">*</span><span class="n">pErrorAction</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">CHARGERLIB_ERROR_ACTION_SHUTDOWN</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="k">case</span><span class="w"> </span><span class="no">CHARGERLIB_CHARGING_ERROR_LOW_VBATT</span><span class="p">:</span><span class="w"></span>
+<span class="w">         </span><span class="cm">/* Emergency Low VBatt shutdown */</span><span class="w"></span>
+<span class="w">        </span><span class="n">gDispImage</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">CHARGERLIB_EVENT_DISP_IMAGE_LOWBATTERY</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="o">*</span><span class="n">pErrorAction</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">CHARGERLIB_ERROR_ACTION_SHUTDOWN_USB_DC_PON_DISABLED</span><span class="p">;</span><span class="w"></span>
+<span class="w">      </span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="k">case</span><span class="w"> </span><span class="no">CHARGERLIB_CHARGING_ERROR_TSENSE_TIMEOUT</span><span class="p">:</span><span class="w"></span>
+<span class="w">        </span><span class="n">gDispImage</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">CHARGERLIB_EVENT_DISP_IMAGE_TSENS_THERMAL_SYMBOL</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="k">case</span><span class="w"> </span><span class="no">CHARGERLIB_CHARGING_ERROR_ADC_ERROR</span><span class="p">:</span><span class="w"></span>
+<span class="w">    </span><span class="k">case</span><span class="w"> </span><span class="no">CHARGERLIB_CHARGING_ERROR_FG_ERROR</span><span class="p">:</span><span class="w"></span>
+<span class="w">    </span><span class="k">case</span><span class="w"> </span><span class="no">CHARGERLIB_CHARGING_ERROR_VBATT_OUTSIDE_RANGE</span><span class="p">:</span><span class="w"></span>
+<span class="w">    </span><span class="k">case</span><span class="w"> </span><span class="no">CHARGERLIB_CHARGING_ERROR_CHARGING_TIMEOUT</span><span class="p">:</span><span class="w"></span>
+<span class="w">    </span><span class="k">case</span><span class="w"> </span><span class="no">CHARGERLIB_DEVICE_ERROR</span><span class="p">:</span><span class="w"></span>
+<span class="w">        </span><span class="o">*</span><span class="n">pErrorAction</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">CHARGERLIB_ERROR_ACTION_SHUTDOWN</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="k">case</span><span class="w"> </span><span class="no">CHARGERLIB_CHARGING_ERROR_CHARGING_SOURCE_NOT_DETECTED</span><span class="p">:</span><span class="w"></span>
+<span class="w">        </span><span class="k">if</span><span class="p">(</span><span class="n">gChargerLibTargetCfgData</span><span class="p">.</span><span class="n">soc_based_boot</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">TRUE</span><span class="p">)</span><span class="w"></span>
+<span class="w">        </span><span class="p">{</span><span class="w"></span>
+<span class="w">          </span><span class="k">if</span><span class="p">(</span><span class="n">BatteryStatus</span><span class="p">.</span><span class="n">StateOfCharge</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">gChargerLibTargetCfgData</span><span class="p">.</span><span class="n">boot_to_hlos_threshold_in_soc</span><span class="p">)</span><span class="w"></span>
+<span class="w">          </span><span class="p">{</span><span class="w"></span>
+<span class="w">             </span><span class="n">gDispImage</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">CHARGERLIB_EVENT_DISP_IMAGE_NOCHARGER</span><span class="p">;</span><span class="w"> </span><span class="c1">//重要</span>
+<span class="w">            </span><span class="o">*</span><span class="n">pErrorAction</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">CHARGERLIB_ERROR_ACTION_SHUTDOWN</span><span class="p">;</span><span class="w"></span>
+<span class="w">          </span><span class="p">}</span><span class="w"></span>
+<span class="w">         </span><span class="k">else</span><span class="w"></span>
+<span class="w">          </span><span class="p">{</span><span class="c1">//if already reached threshold,it&#39;s not an error and goot to boot</span>
+<span class="w">            </span><span class="o">*</span><span class="n">pErrorAction</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">CHARGERLIB_ERROR_ACTION_GOOD_TO_BOOT</span><span class="p">;</span><span class="w"></span>
+<span class="w">          </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="k">else</span><span class="w"></span>
+<span class="w">        </span><span class="p">{</span><span class="w"></span>
+<span class="w">          </span><span class="k">if</span><span class="p">(</span><span class="n">BatteryStatus</span><span class="p">.</span><span class="n">BatteryVoltage</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">gChargerLibTargetCfgData</span><span class="p">.</span><span class="n">boot_to_hlos_threshold_in_mv</span><span class="p">)</span><span class="w"></span>
+<span class="w">          </span><span class="p">{</span><span class="w"></span>
+<span class="w">              </span><span class="n">gDispImage</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">CHARGERLIB_EVENT_DISP_IMAGE_NOCHARGER</span><span class="p">;</span><span class="w"></span>
+<span class="w">            </span><span class="o">*</span><span class="n">pErrorAction</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">CHARGERLIB_ERROR_ACTION_SHUTDOWN</span><span class="p">;</span><span class="w"></span>
+<span class="w">          </span><span class="p">}</span><span class="w"></span>
+<span class="w">          </span><span class="k">else</span><span class="w"></span>
+<span class="w">          </span><span class="p">{</span><span class="c1">//if already reached threshold,it&#39;s not an error and goot to boot</span>
+<span class="w">            </span><span class="o">*</span><span class="n">pErrorAction</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">CHARGERLIB_ERROR_ACTION_GOOD_TO_BOOT</span><span class="p">;</span><span class="w"></span>
+<span class="w">          </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">       </span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">    </span><span class="k">case</span><span class="w"> </span><span class="no">CHARGERLIB_CHARGING_ERROR_BATT_TEMP_OUTSIDE_CHARGING_RANGE</span><span class="p">:</span><span class="w"></span>
+<span class="w">        </span><span class="k">if</span><span class="p">(</span><span class="n">gChargerLibTargetCfgData</span><span class="p">.</span><span class="n">soc_based_boot</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">TRUE</span><span class="p">)</span><span class="w"></span>
+<span class="w">        </span><span class="p">{</span><span class="w"></span>
+<span class="w">          </span><span class="k">if</span><span class="p">(</span><span class="n">BatteryStatus</span><span class="p">.</span><span class="n">StateOfCharge</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">gChargerLibTargetCfgData</span><span class="p">.</span><span class="n">boot_to_hlos_threshold_in_soc</span><span class="p">)</span><span class="w"></span>
+<span class="w">          </span><span class="p">{</span><span class="w"></span>
+<span class="w">            </span><span class="o">*</span><span class="n">pErrorAction</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">CHARGERLIB_ERROR_ACTION_NO_CHARGE_WAIT</span><span class="p">;</span><span class="w"></span>
+<span class="w">          </span><span class="p">}</span><span class="w"></span>
+<span class="w">          </span><span class="k">else</span><span class="w"></span>
+<span class="w">          </span><span class="p">{</span><span class="c1">//if already reached threshold,it&#39;s not an error and goot to boot</span>
+<span class="w">            </span><span class="o">*</span><span class="n">pErrorAction</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">CHARGERLIB_ERROR_ACTION_GOOD_TO_BOOT</span><span class="p">;</span><span class="w"></span>
+<span class="w">            </span><span class="n">CHARGER_DEBUG</span><span class="p">((</span><span class="n">EFI_D_WARN</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;ChargerLib:: %a Temp outside charging range good soc boot to hlos </span><span class="se">\r\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">__FUNCTION__</span><span class="p">));</span><span class="w"></span>
+<span class="w">          </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="k">else</span><span class="w"></span>
+<span class="w">        </span><span class="p">{</span><span class="w"></span>
+<span class="w">          </span><span class="k">if</span><span class="p">(</span><span class="n">BatteryStatus</span><span class="p">.</span><span class="n">BatteryVoltage</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">gChargerLibTargetCfgData</span><span class="p">.</span><span class="n">boot_to_hlos_threshold_in_mv</span><span class="p">)</span><span class="w"></span>
+<span class="w">          </span><span class="p">{</span><span class="w"></span>
+<span class="w">            </span><span class="o">*</span><span class="n">pErrorAction</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">CHARGERLIB_ERROR_ACTION_NO_CHARGE_WAIT</span><span class="p">;</span><span class="w"></span>
+<span class="w">          </span><span class="p">}</span><span class="w"></span>
+<span class="w">          </span><span class="k">else</span><span class="w"></span>
+<span class="w">          </span><span class="p">{</span><span class="c1">//if already reached threshold,it&#39;s not an error and goot to boot</span>
+<span class="w">            </span><span class="n">CHARGER_DEBUG</span><span class="p">((</span><span class="n">EFI_D_WARN</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;ChargerLib:: %a Temp outside charging range good vbatt boot to hlos </span><span class="se">\r\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">__FUNCTION__</span><span class="p">));</span><span class="w"></span>
+<span class="w">            </span><span class="o">*</span><span class="n">pErrorAction</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">CHARGERLIB_ERROR_ACTION_GOOD_TO_BOOT</span><span class="p">;</span><span class="w"></span>
+<span class="w">          </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">       </span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="k">case</span><span class="w"> </span><span class="no">CHARGERLIB_CHARGING_ERROR_TSENSE_HIGH</span><span class="p">:</span><span class="w"></span>
+<span class="w">         </span><span class="o">*</span><span class="n">pErrorAction</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">CHARGERLIB_ERROR_ACTION_TSENSE_HIGH_WAIT</span><span class="p">;</span><span class="w"></span>
+<span class="w">         </span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="k">case</span><span class="w"> </span><span class="no">CHARGERLIB_CHARGING_ERROR_DEBUG_BOARD</span><span class="p">:</span><span class="w"></span>
+<span class="w">         </span><span class="n">Status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ChargerLibTarget_GetDebugBoardAction</span><span class="p">(</span><span class="n">pErrorAction</span><span class="p">);</span><span class="w"></span>
+<span class="w">         </span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="k">case</span><span class="w"> </span><span class="no">CHARGERLIB_CHARGING_ERROR_UNKNOWN_BATTERY</span><span class="p">:</span><span class="w"></span>
+<span class="w">         </span><span class="n">Status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ChargerLibTarget_GetUnknownBatteryAction</span><span class="p">(</span><span class="n">pErrorAction</span><span class="p">);</span><span class="w"></span>
+<span class="w">         </span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+<span class="w">     </span><span class="k">default</span><span class="o">:</span><span class="w"></span>
+<span class="w">       </span><span class="o">*</span><span class="n">pErrorAction</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">CHARGERLIB_ERROR_ACTION_STOP_CHARGING</span><span class="p">;</span><span class="w"></span>
+<span class="w">       </span><span class="n">CHARGER_DEBUG</span><span class="p">((</span><span class="n">EFI_D_WARN</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;ChargerLib:: %a default action stop charging %d </span><span class="se">\r\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">__FUNCTION__</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="n">pErrorAction</span><span class="p">));</span><span class="w"></span>
+<span class="w">      </span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">Status</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<p>那<code class="docutils literal notranslate"><span class="pre">ChargingErrorType</span></code>是根据什么来的？App中调用<code class="docutils literal notranslate"><span class="pre">GetChargingAction</span></code>时会同时调用<code class="docutils literal notranslate"><span class="pre">ChargerLib_GetErrors</span></code>和<code class="docutils literal notranslate"><span class="pre">ChargerLib_GetErrorAction</span></code>接口，也就是首先获取charger错误信息，然后根据错误信息获取下一步执行Action：</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">*</span> <span class="n">ChargerPlatform_GetChargingAction</span><span class="p">(</span><span class="n">EFI_QCOM_CHARGER_ACTION_TYPE</span> <span class="o">*</span><span class="n">pActionType</span><span class="p">,</span> <span class="n">QCOM_CHARGER_PLATFORM_ACTION_INFO</span> <span class="o">*</span><span class="n">pChargerActionInfo</span><span class="p">,</span> <span class="n">BOOLEAN</span> <span class="n">vbattChecking</span><span class="p">)</span>
+  <span class="o">*</span> <span class="n">Status</span> <span class="o">|=</span> <span class="n">ChargerLib_GetErrors</span><span class="p">(</span><span class="n">vbattChecking</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">ErrorType</span><span class="p">);</span>
+  <span class="o">*</span> <span class="n">Status</span> <span class="o">=</span> <span class="n">ChargerLib_GetErrorAction</span><span class="p">(</span><span class="n">ErrorType</span><span class="p">,</span> <span class="p">(((</span><span class="n">CHARGERLIB_ERROR_ACTION_TYPE</span><span class="o">*</span><span class="p">)</span><span class="n">pActionType</span><span class="p">)));</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">ChargerLib_GetErrors</span></code>如下，以下是部分代码：</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span>EFI_STATUS ChargerLib_GetErrors(BOOLEAN vbattChecking, CHARGERLIB_CHARGING_ERROR_TYPES  *pChargingError)
+{
+  EFI_STATUS                        Status            = EFI_SUCCESS;
+  ChargerLibThermalStatus           ThermalStatus     = CHARGERLIB_THERMAL_STATUS_MAX;
+  CHARGERLIB_BATT_TEMP_STATUS       BattTempStatus    = ChargerLib_Batt_Temp_Normal;
+  CHARGERLIB_VBATT_STATUS           BattVoltageStatus = ChargerLib_VBatt_Normal;
+  CHARGERLIB_ATTACHED_CHGR_TYPE     AttachedCharger   = CHARGERLIB_ATTACHED_CHGR__NONE;
+
+  BOOLEAN     BatteryPresent = FALSE;
+  ChgBattType BatteryType = CHG_BATT_TYPE_INVALID;
+
+  STATIC BOOLEAN FirstTimeUnkownBattDetected = FALSE;
+
+  if (!pChargingError)
+  {
+    return EFI_INVALID_PARAMETER;
+  }
+
+  *pChargingError = CHARGERLIB_CHARGING_ERROR_NONE;
+
+  /* Check Critical errors first */
+
+  /* Battery Presence Detection */
+  Status = ChargerLib_GetBatteryPresence(&amp;BatteryPresent);
+  if (!BatteryPresent)
+  {
+    *pChargingError = CHARGERLIB_CHARGING_ERROR_BATTERY_NOT_DETECTED;
+    CHARGER_DEBUG(( EFI_D_ERROR, &quot;ChargerLib:: %a ERROR Battery not detected \r\n&quot;, __FUNCTION__));
+    return Status;//Got Critical error, return
+  }
+
+  ChargerLib_GetBatteryType(&amp;BatteryType);
+  if(CHG_BATT_TYPE_DEBUG_BOARD == BatteryType)
+  {
+    *pChargingError = CHARGERLIB_CHARGING_ERROR_DEBUG_BOARD;
+    CHARGER_DEBUG(( EFI_D_ERROR, &quot;ChargerLib:: %a Debug board detected. \r\n&quot;, __FUNCTION__));
+    return Status; //Not real battery, no need to check other errors
+  }
+  else if(CHG_BATT_TYPE_UNKNOWN == BatteryType)
+  {
+    CHARGER_DEBUG((EFI_D_ERROR, &quot;ChargerLib:: %a  Unknown battery detected, unknown_battery_behavior: %d \r\n&quot;, __FUNCTION__, gChargerLibCfgData.unknown_battery_behavior));
+    if(FALSE == FirstTimeUnkownBattDetected)
+    { /*If this is the first time unknown battery is detected, return error type as
+        Unknown Battery so that required initial configurations can be done*/
+      *pChargingError = CHARGERLIB_CHARGING_ERROR_UNKNOWN_BATTERY;
+      FirstTimeUnkownBattDetected = TRUE;
+      return Status;
+···省略···
+    }
+  }
+}
+</pre></div>
+</div>
+</section>
+<section id="id9">
+<h2>图片显示函数<a class="headerlink" href="#id9" title="此标题的永久链接"></a></h2>
+<p>上面分析了图片显示逻辑是根据充电错误信息来的，下一步研究一下<code class="docutils literal notranslate"><span class="pre">comChargerAppDisplay_AsciiStrNDup</span></code>函数：</p>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="cm">/**</span>
+<span class="cm">  Duplicates ASCII string</span>
+
+<span class="cm">  @param  Source  Null Terminated string of characters</span>
+<span class="cm">  @param  Length  source String length</span>
+<span class="cm">  @return  Duplicated String  if successful otherwise return NULL</span>
+
+<span class="cm">  note: Caller responsibility to Free returned String</span>
+<span class="cm">**/</span><span class="w"></span>
+<span class="k">static</span><span class="w"> </span><span class="n">CHAR8</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="nf">QcomChargerAppDisplay_AsciiStrNDup</span><span class="p">(</span><span class="w"></span>
+<span class="w">  </span><span class="n">CONST</span><span class="w"> </span><span class="n">CHAR8</span><span class="w">               </span><span class="o">*</span><span class="n">Source</span><span class="p">,</span><span class="w"></span>
+<span class="w">  </span><span class="n">UINTN</span><span class="w">                     </span><span class="n">Length</span><span class="w"></span>
+<span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="n">CHAR8</span><span class="w"> </span><span class="o">*</span><span class="n">Dest</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">NULL</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="k">if</span><span class="p">(</span><span class="nb">NULL</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">Source</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">Length</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="nb">NULL</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">  </span><span class="n">Dest</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">AllocatePool</span><span class="w"> </span><span class="p">(</span><span class="n">Length</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">NULL</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">Dest</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="nb">NULL</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">  </span><span class="n">AsciiStrnCpy</span><span class="p">(</span><span class="n">Dest</span><span class="p">,</span><span class="w"> </span><span class="n">Source</span><span class="p">,</span><span class="w"> </span><span class="n">Length</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">Dest</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<p>该函数主要是申请与字符串对应的内存并返回内存地址保存在Destk中 ，接着拷贝图片路径到其中。</p>
+<ul class="simple">
+<li><p>绘制图片DrawBmpFile()主要功能如下：</p>
+<ul>
+<li><p>安装图片输出驱动</p></li>
+<li><p>根据传入的路径，从fv固件中加载对应的图片</p></li>
+<li><p>解析BMP图片，最终图片内容保存在 Blt地址指向的内存中（RGB格式），图片bmp头信息中的宽高保存在Height、Width中。</p></li>
+<li><p>显示图片</p></li>
+</ul>
+</li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="c1">//amss\BOOT.XF.1.4\boot_images\QcomPkg\Library\BMPLib\BMPLib.c</span>
+<span class="n">EFI_STATUS</span><span class="w"> </span><span class="n">EFIAPI</span><span class="w"> </span><span class="n">DrawBmpFile</span><span class="w"> </span><span class="p">(</span><span class="n">IN</span><span class="w"> </span><span class="n">CHAR8</span><span class="w"> </span><span class="o">*</span><span class="n">FileName</span><span class="p">,</span><span class="w"> </span><span class="n">IN</span><span class="w"> </span><span class="n">BMPLIB_OPTION</span><span class="w">  </span><span class="n">Opts</span><span class="p">[]</span><span class="w"> </span><span class="n">OPTIONAL</span><span class="p">,</span><span class="n">IN</span><span class="w"> </span><span class="n">UINTN</span><span class="w"> </span><span class="n">NumOpts</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="c1">// 1. 安装图片输出驱动</span>
+<span class="w">  </span><span class="cm">/* Ensure Graphics Output protocol is up */</span><span class="w"></span>
+<span class="w">  </span><span class="n">Status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">CheckGOPAvailable</span><span class="p">();</span><span class="w"></span>
+<span class="w">  </span><span class="o">===============&gt;</span><span class="w"></span>
+<span class="w">  	</span><span class="n">Status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">gBS</span><span class="o">-&gt;</span><span class="n">LocateProtocol</span><span class="w"> </span><span class="p">(</span><span class="o">&amp;</span><span class="n">gEfiGraphicsOutputProtocolGuid</span><span class="p">,</span><span class="nb">NULL</span><span class="p">,(</span><span class="n">VOID</span><span class="o">**</span><span class="p">)</span><span class="o">&amp;</span><span class="n">mGOP</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="o">&lt;===============</span><span class="w"></span>
+<span class="w">  </span><span class="c1">// 2. 根据传入的路径，从fv固件中加载对应的图片</span>
+<span class="w">  </span><span class="cm">/* Load file into buffer */</span><span class="w"></span>
+<span class="w">  </span><span class="n">Status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">LoadFromFV</span><span class="p">(</span><span class="n">FileName</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">FileBuffer</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">FileSize</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="c1">// 3． 解析BMP图片，最终图片内容保存在 Blt地址指向的内存中（RGB格式），图片bmp头信息中的宽高保存在Height、Width中。</span>
+<span class="w">  </span><span class="cm">/* Convert bitmap to GOP blit safe format */</span><span class="w"></span>
+<span class="w">  </span><span class="n">Status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ConvertBmpToGopBlt</span><span class="w"> </span><span class="p">(</span><span class="w"> </span><span class="n">FileBuffer</span><span class="p">,</span><span class="w"> </span><span class="n">FileSize</span><span class="p">,</span><span class="w"></span>
+<span class="w">              </span><span class="p">(</span><span class="n">VOID</span><span class="w"> </span><span class="o">**</span><span class="p">)</span><span class="w"> </span><span class="o">&amp;</span><span class="n">Blt</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">BltSize</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">Height</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">Width</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="c1">// 4. 显示图片</span>
+<span class="w">  </span><span class="n">Status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">DrawGopBltBuffer</span><span class="p">(</span><span class="w"> </span><span class="n">Blt</span><span class="p">,</span><span class="w"> </span><span class="n">BltSize</span><span class="p">,</span><span class="w"> </span><span class="n">Height</span><span class="p">,</span><span class="w"> </span><span class="n">Width</span><span class="p">,</span><span class="w"> </span><span class="n">Opts</span><span class="p">,</span><span class="w"> </span><span class="n">NumOpts</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">Status</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<p>从上可看出，显示图片的重头戏在于 DrawGopBltBuffer() 中，我们来分析下：</p>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="c1">// amss\BOOT.XF.1.4\boot_images\QcomPkg\Library\BMPLib\BMPLib.c</span>
+<span class="n">EFI_STATUS</span><span class="w"> </span><span class="n">EFIAPI</span><span class="w"> </span><span class="n">DrawGopBltBuffer</span><span class="p">(</span><span class="w"></span>
+<span class="w">  </span><span class="n">IN</span><span class="w"> </span><span class="n">VOID</span><span class="w"> </span><span class="o">*</span><span class="n">GopBlt</span><span class="p">,</span><span class="w"> </span><span class="n">IN</span><span class="w"> </span><span class="n">UINTN</span><span class="w">  </span><span class="n">BltSize</span><span class="p">,</span><span class="w"> </span><span class="n">IN</span><span class="w"> </span><span class="n">UINTN</span><span class="w"> </span><span class="n">Height</span><span class="p">,</span><span class="w"> </span><span class="n">IN</span><span class="w"> </span><span class="n">UINTN</span><span class="w"> </span><span class="n">Width</span><span class="p">,</span><span class="w"> </span>
+<span class="w">  </span><span class="n">IN</span><span class="w"> </span><span class="n">BMPLIB_OPTION</span><span class="w"> </span><span class="n">Opts</span><span class="p">[]</span><span class="w"> </span><span class="n">OPTIONAL</span><span class="p">,</span><span class="w"> </span><span class="n">IN</span><span class="w"> </span><span class="n">UINTN</span><span class="w"> </span><span class="n">NumOpts</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="c1">// 1. 安装图片输出驱动 /* Ensure Graphics Output protocol is up */</span>
+<span class="w">  </span><span class="n">Status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">CheckGOPAvailable</span><span class="p">();</span><span class="w"></span>
+<span class="w">  </span>
+<span class="w">  </span><span class="c1">// 2. 解析 opts，并清空屏幕</span>
+<span class="w">  </span><span class="cm">/* Validate and Get Option: ClearScreen */</span><span class="w"></span>
+<span class="w">  </span><span class="n">Status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">BmpLibGetOption</span><span class="p">(</span><span class="n">Opts</span><span class="p">,</span><span class="w"> </span><span class="n">NumOpts</span><span class="p">,</span><span class="w"> </span><span class="n">BmplibOptionTypeClearScreen</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">VOID</span><span class="o">**</span><span class="p">)</span><span class="o">&amp;</span><span class="n">OptClsParams</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="cm">/* Validate and Get Option: Location */</span><span class="w"></span>
+<span class="w">  </span><span class="n">Status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">BmpLibGetOption</span><span class="p">(</span><span class="n">Opts</span><span class="p">,</span><span class="w"> </span><span class="n">NumOpts</span><span class="p">,</span><span class="w"> </span><span class="n">BmplibOptionTypeLocation</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">VOID</span><span class="o">**</span><span class="p">)</span><span class="o">&amp;</span><span class="n">OptLocParams</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="cm">/* Clear screen unless overriden */</span><span class="w"></span>
+<span class="w">  </span><span class="n">Status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">BmpLibClearScreen</span><span class="p">(</span><span class="n">OptClsParams</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">  </span><span class="cm">/* Blit GOP buffer as specified */</span><span class="w"></span>
+<span class="w">  </span><span class="n">Status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">BmpLibBltGopBuffer</span><span class="p">(</span><span class="w"> </span><span class="n">GopBlt</span><span class="p">,</span><span class="n">BltSize</span><span class="p">,</span><span class="w"> </span><span class="n">Height</span><span class="p">,</span><span class="w"> </span><span class="n">Width</span><span class="p">,</span><span class="w"> </span><span class="n">OptLocParams</span><span class="w"> </span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">Status</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+</section>
 </section>
 
 
            </div>
-         <div class="articleComments">
-               <comments>
+             <div class="articleComments">
+                <comments>
   <script src="https://utteranc.es/client.js"
     repo="iswbm/magic-python"
     issue-term="pathname"
@@ -1241,7 +1698,7 @@
     async>
   </script>
 </comments>
-           </div>
+             </div>
           </div>
           <footer>
 

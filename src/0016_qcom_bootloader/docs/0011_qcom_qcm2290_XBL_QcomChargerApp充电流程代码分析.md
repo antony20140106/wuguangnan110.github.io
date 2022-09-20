@@ -8,7 +8,7 @@
 
 # 流程图
 
-![0011_0000.png](images/0011_0000.png)
+![0011_0002.png](images/0011_0002.png)
 
 * 摘要：
   * 1. 循环监控程序中获取电池电压电流温度，这里主要用来判断开机条件，硬件上一定要接正确。
@@ -1083,4 +1083,447 @@ EFI_STATUS ChargerPlatform_CheckIfOkToBoot
 
 * 从上面的章节我们知道以下几点：
   * 1. 获取充电状态是`GetChargingAction`接口。
-  * 2. 专门有刷新UI的定时器`AnimImgTimer`，500ms轮询一次，显示`LOW_BATT_CHARGING`和`LOW_BATTERY`充电两个状态的闪烁效果。
+  * 2. 如果是充电状态，专门有刷新UI的定时器`AnimImgTimer`，500ms轮询一次，显示`LOW_BATT_CHARGING`和`LOW_BATTERY`充电两个状态的闪烁效果。
+
+## 图片资源存储
+
+* 图片资源存储路径是`boot_images/QcomPkg/SocPkg/AgattiPkg/LAA/ImageFv.fdf.inc`:
+```shell
+[FV.ImageFv]
+BlockSize          = 0x40
+NumBlocks          = 0x0
+FvAlignment        = 8
+ERASE_POLARITY     = 1
+MEMORY_MAPPED      = TRUE
+STICKY_WRITE       = TRUE
+LOCK_CAP           = TRUE
+LOCK_STATUS        = TRUE
+WRITE_DISABLED_CAP = TRUE
+WRITE_ENABLED_CAP  = TRUE
+WRITE_STATUS       = TRUE
+WRITE_LOCK_CAP     = TRUE
+WRITE_LOCK_STATUS  = TRUE
+READ_DISABLED_CAP  = TRUE
+READ_ENABLED_CAP   = TRUE
+READ_STATUS        = TRUE
+READ_LOCK_CAP      = TRUE
+READ_LOCK_STATUS   = TRUE
+FvNameGuid         = a8169396-d0f7-49cb-890a-25e1a9767406
+
+  FILE FREEFORM = 3E5584ED-05D4-4267-9048-0D47F76F4248 {
+    SECTION UI = "battery_symbol_Soc10.bmp"
+    SECTION RAW = QcomPkg/Application/QcomChargerApp/battery_symbol_Soc10.bmp
+  }
+
+  FILE FREEFORM = 4753E815-DDD8-402d-BF69-9B8C4EB7573E {
+      SECTION UI = "battery_symbol_NoBattery.bmp"
+      SECTION RAW = QcomPkg/Application/QcomChargerApp/battery_symbol_NoBattery.bmp
+  }
+
+  FILE FREEFORM = 03DED53E-BECD-428f-9F79-5ABA64C58445 {
+      SECTION UI = "battery_symbol_Nocharger.bmp"
+      SECTION RAW = QcomPkg/Application/QcomChargerApp/battery_symbol_Nocharger.bmp
+  }
+
+  FILE FREEFORM = 8b86cd38-c772-4fcf-85aa-345b2b3c1ab4 {
+      SECTION UI = "battery_symbol_LowBatteryCharging.bmp"
+      SECTION RAW = QcomPkg/Application/QcomChargerApp/battery_symbol_LowBatteryCharging.bmp
+  }
+
+  FILE FREEFORM = 3FD97907-93F1-4349-AF3C-3B68B0A5E626 {
+      SECTION UI = "battery_symbol_LowBattery.bmp"
+      SECTION RAW = QcomPkg/Application/QcomChargerApp/battery_symbol_LowBattery.bmp
+  }
+
+  FILE FREEFORM = E2EA5A4F-98BD-4203-AB49-399505DDFB7D {
+      SECTION UI = "tsens_thermal_symbol.bmp"
+      SECTION RAW = QcomPkg/Application/QcomChargerApp/tsens_thermal_symbol.bmp
+  }
+
+  FILE FREEFORM = C72FB1A9-5527-4E13-BAC4-F671D0330145 {
+      SECTION UI = "tsens_thermal_err_symbol.bmp"
+      SECTION RAW = QcomPkg/Application/QcomChargerApp/tsens_thermal_err_symbol.bmp
+  }
+
+  FILE FREEFORM = B0F8D1BE-5353-4812-B1F6-07E7768204CC {
+      SECTION UI = "battery_symbol_DebugBoot.bmp"
+      SECTION RAW = QcomPkg/Application/QcomChargerApp/battery_symbol_DebugBoot.bmp
+  }
+
+  FILE FREEFORM = F9E8F683-E065-4E09-B4F9-0230D7CECD08 {
+      SECTION UI = "battery_symbol_DebugStay.bmp"
+      SECTION RAW = QcomPkg/Application/QcomChargerApp/battery_symbol_DebugStay.bmp
+  }
+
+[FV.IMAGEFV_COMPACT]
+BlockSize          = 0x200
+NumBlocks          = 0x10
+FvAlignment        = 8
+ERASE_POLARITY     = 1
+MEMORY_MAPPED      = TRUE
+STICKY_WRITE       = TRUE
+LOCK_CAP           = TRUE
+LOCK_STATUS        = TRUE
+WRITE_DISABLED_CAP = TRUE
+WRITE_ENABLED_CAP  = TRUE
+WRITE_STATUS       = TRUE
+WRITE_LOCK_CAP     = TRUE
+WRITE_LOCK_STATUS  = TRUE
+READ_DISABLED_CAP  = TRUE
+READ_ENABLED_CAP   = TRUE
+READ_STATUS        = TRUE
+READ_LOCK_CAP      = TRUE
+READ_LOCK_STATUS   = TRUE
+
+
+  FILE FV_IMAGE = 072BE68A-6EC0-B209-9B83-276F017EBEAA {
+    SECTION GUIDED EE4E5898-3914-4259-9D6E-DC7BD79403CF PROCESSING_REQUIRED = TRUE {
+      SECTION FV_IMAGE = IMAGEFV
+    }
+  }
+```
+
+这些图片资源都保存在`imagefv.elf`镜像里面`rawprogram_unsparse0.xml`：
+```xml
+  <program SECTOR_SIZE_IN_BYTES="512" file_sector_offset="0" filename="imagefv.elf" label="imagefv_a" num_partition_sectors="4096" partofsingleimage="false" physical_partition_number="0" readbackverify="false" size_in_KB="2048.0" sparse="false" start_byte_hex="0x25f002000L" start_sector="19890192" />
+  <program SECTOR_SIZE_IN_BYTES="512" file_sector_offset="0" filename="imagefv.elf" label="imagefv_b" num_partition_sectors="4096" partofsingleimage="false" physical_partition_number="0" readbackverify="false" size_in_KB="2048.0" sparse="false" start_byte_hex="0x25f202000L" start_sector="19894288" />
+```
+
+ps:
+新增图片时，一定要全编并烧录`imagefv.elf`镜像。
+
+* 新增一张图片报错超出大小，如下：
+```
+Generate Region at Offset 0x0
+   Region Size = 0x212400
+   Region Name = FV
+
+Generating FVMAIN_COMPACT FV
+#####
+Generating FVMAIN FV
+###################################
+########################################
+########################################
+########################################
+########################################
+########################################
+#######
+Generating IMAGEFV FV
+#####################
+Generating IMAGEFV_COMPACT FV
+######Return Value = 2
+GenFv: ERROR 3000: Invalid
+  the required fv image size 0x23c8 exceeds the set fv image size 0x2000
+```
+
+* 尝试改大`BlockSize`:
+
+## 图片资源配置
+
+* 在源码中，充电图相关的图片位于：`boot_images\QcomPkg\Application\QcomChargerApp`:
+
+![0011_0001.png](images/0011_0001.png)
+
+* `QcomPkg/Application/QcomChargerApp/QcomChargerAppDisplay.h`相关图片定义如下:
+```C
+#define CHARGER_BATTERY_SYMBOL_NOBATTERY            "battery_symbol_NoBattery.bmp"
+#define CHARGER_BATTERY_SYMBOL_NOCHARGER            "battery_symbol_Nocharger.bmp"
+#define CHARGER_BATTERY_SYMBOL_ABOVE_THRESHOLD      "battery_symbol_Soc10.bmp"
+#define CHARGER_BATTERY_SYMBOL_LOWBATTERYCHARGING   "battery_symbol_LowBatteryCharging.bmp"
+#define CHARGER_BATTERY_SYMBOL_LOWBATTERY           "battery_symbol_LowBattery.bmp"
+#define CHARGER_TSENS_THERMAL_SYMBOL                "tsens_thermal_symbol.bmp"
+#define CHARGER_TSENS_CRITICAL_SYMBOL               "tsens_thermal_err_symbol.bmp"
+#define CHARGER_BATTERY_SYMBOL_DEBUG_BOARD_BOOT     "battery_symbol_DebugBoot.bmp"
+#define CHARGER_BATTERY_SYMBOL_DEBUG_BOARD_STAY     "battery_symbol_DebugStay.bmp"
+```
+
+## 图片显示软件逻辑
+
+* `QcomPkg/Application/QcomChargerApp/QcomChargerAppEventHandler.c`:
+```
+* QcomChargerAppEvent_HandleDispBattSymbol(EFI_QCOM_CHARGER_ACTION_TYPE ChargingAction)
+  * Status = pQcomChargerProtocol->GetDisplayImageType(&DispImageType);
+    * EFI_QcomChargerGetDisplayImageType //Drivers/QcomChargerDxe/QcomCharger.c 调用驱动
+      * ChargerLib_GetDisplayImageType((CHARGERLIB_EVENT_DISP_IMAGE_TYPE *)pDispImage) //Library/ChargerLib/ChargerLibCommon.c
+        * ChargerLibTarget_GetDisplayImageType(pDispImage) //Library/ChargerLib/target/Agatti/ChargerLibTarget.c
+          * *pDispImage = gDispImage; //这里直接赋值了
+  * QcomChargerAppEvent_DispBattSymbol(DispImageType);
+    * QcomChargerAppDisplay_DispBattSymbol(DispImageType, TRUE); //图片显示函数
+      * comChargerAppDisplay_AsciiStrNDup(CHARGER_BATTERY_SYMBOL_ABOVE_THRESHOLD, AsciiStrLen(CHARGER_BATTERY_SYMBOL_ABOVE_THRESHOLD));//图片显示函数
+      * Status = DrawBmpFile(str, NULL, 0, &gEfiImageFvNameGuid); //绘制图片
+```
+
+* 接着继续看看图片显示逻辑如下，图片全局变量`gDispImage`是根据`ChargingErrorType`来的：
+```C++
+EFI_STATUS ChargerLibTarget_GetErrorAction( CHARGERLIB_CHARGING_ERROR_TYPES  ChargingErrorType, CHARGERLIB_ERROR_ACTION_TYPE *pErrorAction)
+{
+  EFI_STATUS  Status = EFI_SUCCESS;
+  chargerlib_batt_status_info BatteryStatus = {0};
+
+  if(!pErrorAction)
+  {
+    return EFI_INVALID_PARAMETER;
+  }
+
+  *pErrorAction = CHARGERLIB_ERROR_ACTION_NONE;
+
+  Status = ChargerLib_GetBatteryStatus(&BatteryStatus);
+  if( EFI_SUCCESS != Status )
+  {
+    CHARGER_DEBUG((EFI_D_WARN, "ChargerLib:: %a Error getting battery status = %r \r\n", __FUNCTION__, Status));
+    return Status;
+  }
+
+  switch (ChargingErrorType)
+  {
+    case CHARGERLIB_CHARGING_ERROR_NONE:
+    case CHARGERLIB_CHARGING_ERROR_TSENSE_OK:
+        /* No Action just continue */
+        break;
+    case CHARGERLIB_CHARGING_ERROR_TSENSE_CRITICAL:
+                // case ChargerLib_ChargingError_TsensCritical:
+        gDispImage = CHARGERLIB_EVENT_DISP_IMAGE_TSENS_CRITICAL_SYMBOL;
+    case CHARGERLIB_CHARGING_ERROR_BATT_TEMP_OUTSIDE_OPERATIONAL_RANGE:
+        *pErrorAction = CHARGERLIB_ERROR_ACTION_CRITICAL_SHUTDOWN;
+        break;
+    case CHARGERLIB_CHARGING_ERROR_BATTERY_NOT_DETECTED:
+                gDispImage = CHARGERLIB_EVENT_DISP_IMAGE_NOBATTERY;
+        *pErrorAction = CHARGERLIB_ERROR_ACTION_SHUTDOWN;
+        break;
+    case CHARGERLIB_CHARGING_ERROR_LOW_VBATT:
+         /* Emergency Low VBatt shutdown */
+        gDispImage = CHARGERLIB_EVENT_DISP_IMAGE_LOWBATTERY;
+        *pErrorAction = CHARGERLIB_ERROR_ACTION_SHUTDOWN_USB_DC_PON_DISABLED;
+      break;
+    case CHARGERLIB_CHARGING_ERROR_TSENSE_TIMEOUT:
+        gDispImage = CHARGERLIB_EVENT_DISP_IMAGE_TSENS_THERMAL_SYMBOL;
+    case CHARGERLIB_CHARGING_ERROR_ADC_ERROR:
+    case CHARGERLIB_CHARGING_ERROR_FG_ERROR:
+    case CHARGERLIB_CHARGING_ERROR_VBATT_OUTSIDE_RANGE:
+    case CHARGERLIB_CHARGING_ERROR_CHARGING_TIMEOUT:
+    case CHARGERLIB_DEVICE_ERROR:
+        *pErrorAction = CHARGERLIB_ERROR_ACTION_SHUTDOWN;
+        break;
+    case CHARGERLIB_CHARGING_ERROR_CHARGING_SOURCE_NOT_DETECTED:
+        if(gChargerLibTargetCfgData.soc_based_boot == TRUE)
+        {
+          if(BatteryStatus.StateOfCharge < gChargerLibTargetCfgData.boot_to_hlos_threshold_in_soc)
+          {
+             gDispImage = CHARGERLIB_EVENT_DISP_IMAGE_NOCHARGER; //重要
+            *pErrorAction = CHARGERLIB_ERROR_ACTION_SHUTDOWN;
+          }
+         else
+          {//if already reached threshold,it's not an error and goot to boot
+            *pErrorAction = CHARGERLIB_ERROR_ACTION_GOOD_TO_BOOT;
+          }
+        }
+        else
+        {
+          if(BatteryStatus.BatteryVoltage < gChargerLibTargetCfgData.boot_to_hlos_threshold_in_mv)
+          {
+              gDispImage = CHARGERLIB_EVENT_DISP_IMAGE_NOCHARGER;
+            *pErrorAction = CHARGERLIB_ERROR_ACTION_SHUTDOWN;
+          }
+          else
+          {//if already reached threshold,it's not an error and goot to boot
+            *pErrorAction = CHARGERLIB_ERROR_ACTION_GOOD_TO_BOOT;
+          }
+        }
+       break;
+
+    case CHARGERLIB_CHARGING_ERROR_BATT_TEMP_OUTSIDE_CHARGING_RANGE:
+        if(gChargerLibTargetCfgData.soc_based_boot == TRUE)
+        {
+          if(BatteryStatus.StateOfCharge < gChargerLibTargetCfgData.boot_to_hlos_threshold_in_soc)
+          {
+            *pErrorAction = CHARGERLIB_ERROR_ACTION_NO_CHARGE_WAIT;
+          }
+          else
+          {//if already reached threshold,it's not an error and goot to boot
+            *pErrorAction = CHARGERLIB_ERROR_ACTION_GOOD_TO_BOOT;
+            CHARGER_DEBUG((EFI_D_WARN, "ChargerLib:: %a Temp outside charging range good soc boot to hlos \r\n", __FUNCTION__));
+          }
+        }
+        else
+        {
+          if(BatteryStatus.BatteryVoltage < gChargerLibTargetCfgData.boot_to_hlos_threshold_in_mv)
+          {
+            *pErrorAction = CHARGERLIB_ERROR_ACTION_NO_CHARGE_WAIT;
+          }
+          else
+          {//if already reached threshold,it's not an error and goot to boot
+            CHARGER_DEBUG((EFI_D_WARN, "ChargerLib:: %a Temp outside charging range good vbatt boot to hlos \r\n", __FUNCTION__));
+            *pErrorAction = CHARGERLIB_ERROR_ACTION_GOOD_TO_BOOT;
+          }
+        }
+       break;
+    case CHARGERLIB_CHARGING_ERROR_TSENSE_HIGH:
+         *pErrorAction = CHARGERLIB_ERROR_ACTION_TSENSE_HIGH_WAIT;
+         break;
+    case CHARGERLIB_CHARGING_ERROR_DEBUG_BOARD:
+         Status = ChargerLibTarget_GetDebugBoardAction(pErrorAction);
+         break;
+    case CHARGERLIB_CHARGING_ERROR_UNKNOWN_BATTERY:
+         Status = ChargerLibTarget_GetUnknownBatteryAction(pErrorAction);
+         break;
+     default:
+       *pErrorAction = CHARGERLIB_ERROR_ACTION_STOP_CHARGING;
+       CHARGER_DEBUG((EFI_D_WARN, "ChargerLib:: %a default action stop charging %d \r\n", __FUNCTION__, *pErrorAction));
+      break;
+  }
+
+  return Status;
+}
+```
+
+那`ChargingErrorType`是根据什么来的？App中调用`GetChargingAction`时会同时调用`ChargerLib_GetErrors`和`ChargerLib_GetErrorAction`接口，也就是首先获取charger错误信息，然后根据错误信息获取下一步执行Action：
+```
+* ChargerPlatform_GetChargingAction(EFI_QCOM_CHARGER_ACTION_TYPE *pActionType, QCOM_CHARGER_PLATFORM_ACTION_INFO *pChargerActionInfo, BOOLEAN vbattChecking)
+  * Status |= ChargerLib_GetErrors(vbattChecking, &ErrorType);
+  * Status = ChargerLib_GetErrorAction(ErrorType, (((CHARGERLIB_ERROR_ACTION_TYPE*)pActionType)));
+```
+
+* `ChargerLib_GetErrors`如下，以下是部分代码：
+```C++
+EFI_STATUS ChargerLib_GetErrors(BOOLEAN vbattChecking, CHARGERLIB_CHARGING_ERROR_TYPES  *pChargingError)
+{
+  EFI_STATUS                        Status            = EFI_SUCCESS;
+  ChargerLibThermalStatus           ThermalStatus     = CHARGERLIB_THERMAL_STATUS_MAX;
+  CHARGERLIB_BATT_TEMP_STATUS       BattTempStatus    = ChargerLib_Batt_Temp_Normal;
+  CHARGERLIB_VBATT_STATUS           BattVoltageStatus = ChargerLib_VBatt_Normal;
+  CHARGERLIB_ATTACHED_CHGR_TYPE     AttachedCharger   = CHARGERLIB_ATTACHED_CHGR__NONE;
+
+  BOOLEAN     BatteryPresent = FALSE;
+  ChgBattType BatteryType = CHG_BATT_TYPE_INVALID;
+
+  STATIC BOOLEAN FirstTimeUnkownBattDetected = FALSE;
+
+  if (!pChargingError)
+  {
+    return EFI_INVALID_PARAMETER;
+  }
+
+  *pChargingError = CHARGERLIB_CHARGING_ERROR_NONE;
+
+  /* Check Critical errors first */
+
+  /* Battery Presence Detection */
+  Status = ChargerLib_GetBatteryPresence(&BatteryPresent);
+  if (!BatteryPresent)
+  {
+    *pChargingError = CHARGERLIB_CHARGING_ERROR_BATTERY_NOT_DETECTED;
+    CHARGER_DEBUG(( EFI_D_ERROR, "ChargerLib:: %a ERROR Battery not detected \r\n", __FUNCTION__));
+    return Status;//Got Critical error, return
+  }
+
+  ChargerLib_GetBatteryType(&BatteryType);
+  if(CHG_BATT_TYPE_DEBUG_BOARD == BatteryType)
+  {
+    *pChargingError = CHARGERLIB_CHARGING_ERROR_DEBUG_BOARD;
+    CHARGER_DEBUG(( EFI_D_ERROR, "ChargerLib:: %a Debug board detected. \r\n", __FUNCTION__));
+    return Status; //Not real battery, no need to check other errors
+  }
+  else if(CHG_BATT_TYPE_UNKNOWN == BatteryType)
+  {
+    CHARGER_DEBUG((EFI_D_ERROR, "ChargerLib:: %a  Unknown battery detected, unknown_battery_behavior: %d \r\n", __FUNCTION__, gChargerLibCfgData.unknown_battery_behavior));
+    if(FALSE == FirstTimeUnkownBattDetected)
+    { /*If this is the first time unknown battery is detected, return error type as
+        Unknown Battery so that required initial configurations can be done*/
+      *pChargingError = CHARGERLIB_CHARGING_ERROR_UNKNOWN_BATTERY;
+      FirstTimeUnkownBattDetected = TRUE;
+      return Status;
+···省略···
+    }
+  }
+}
+```
+
+## 图片显示函数
+
+上面分析了图片显示逻辑是根据充电错误信息来的，下一步研究一下`comChargerAppDisplay_AsciiStrNDup`函数：
+```C++
+/**
+  Duplicates ASCII string
+
+  @param  Source  Null Terminated string of characters
+  @param  Length  source String length
+  @return  Duplicated String  if successful otherwise return NULL
+
+  note: Caller responsibility to Free returned String
+**/
+static CHAR8 * QcomChargerAppDisplay_AsciiStrNDup(
+  CONST CHAR8               *Source,
+  UINTN                     Length
+)
+{
+  CHAR8 *Dest = NULL;
+  if(NULL == Source || 0 == Length)
+    return NULL;
+
+  Dest = AllocatePool (Length + 1);
+  if (NULL == Dest)
+  {
+    return NULL;
+  }
+
+  AsciiStrnCpy(Dest, Source, Length + 1);
+
+  return Dest;
+}
+```
+
+该函数主要是申请与字符串对应的内存并返回内存地址保存在Destk中 ，接着拷贝图片路径到其中。
+
+* 绘制图片DrawBmpFile()主要功能如下：
+  * 安装图片输出驱动
+  * 根据传入的路径，从fv固件中加载对应的图片
+  * 解析BMP图片，最终图片内容保存在 Blt地址指向的内存中（RGB格式），图片bmp头信息中的宽高保存在Height、Width中。
+  * 显示图片
+
+```C++
+//amss\BOOT.XF.1.4\boot_images\QcomPkg\Library\BMPLib\BMPLib.c
+EFI_STATUS EFIAPI DrawBmpFile (IN CHAR8 *FileName, IN BMPLIB_OPTION  Opts[] OPTIONAL,IN UINTN NumOpts)
+{
+  // 1. 安装图片输出驱动
+  /* Ensure Graphics Output protocol is up */
+  Status = CheckGOPAvailable();
+  ===============>
+  	Status = gBS->LocateProtocol (&gEfiGraphicsOutputProtocolGuid,NULL,(VOID**)&mGOP);
+  <===============
+  // 2. 根据传入的路径，从fv固件中加载对应的图片
+  /* Load file into buffer */
+  Status = LoadFromFV(FileName, &FileBuffer, &FileSize);
+  // 3． 解析BMP图片，最终图片内容保存在 Blt地址指向的内存中（RGB格式），图片bmp头信息中的宽高保存在Height、Width中。
+  /* Convert bitmap to GOP blit safe format */
+  Status = ConvertBmpToGopBlt ( FileBuffer, FileSize,
+              (VOID **) &Blt, &BltSize, &Height, &Width);
+  // 4. 显示图片
+  Status = DrawGopBltBuffer( Blt, BltSize, Height, Width, Opts, NumOpts);
+
+  return Status;
+}
+```
+
+从上可看出，显示图片的重头戏在于 DrawGopBltBuffer() 中，我们来分析下：
+```C++
+// amss\BOOT.XF.1.4\boot_images\QcomPkg\Library\BMPLib\BMPLib.c
+EFI_STATUS EFIAPI DrawGopBltBuffer(
+  IN VOID *GopBlt, IN UINTN  BltSize, IN UINTN Height, IN UINTN Width, 
+  IN BMPLIB_OPTION Opts[] OPTIONAL, IN UINTN NumOpts)
+{
+  // 1. 安装图片输出驱动 /* Ensure Graphics Output protocol is up */
+  Status = CheckGOPAvailable();
+  
+  // 2. 解析 opts，并清空屏幕
+  /* Validate and Get Option: ClearScreen */
+  Status = BmpLibGetOption(Opts, NumOpts, BmplibOptionTypeClearScreen, (VOID**)&OptClsParams);
+  /* Validate and Get Option: Location */
+  Status = BmpLibGetOption(Opts, NumOpts, BmplibOptionTypeLocation, (VOID**)&OptLocParams);
+  /* Clear screen unless overriden */
+  Status = BmpLibClearScreen(OptClsParams);
+
+  /* Blit GOP buffer as specified */
+  Status = BmpLibBltGopBuffer( GopBlt,BltSize, Height, Width, OptLocParams );
+  return Status;
+}
+```
