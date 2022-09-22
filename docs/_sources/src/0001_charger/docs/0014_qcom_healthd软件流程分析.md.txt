@@ -577,7 +577,7 @@ Health::Health(std::unique_ptr<healthd_config>&& config) : healthd_config_(std::
 
 # 上报流程
 
-跟踪得到上面的大概流程如下，最后的打印在BatteryMonitor.cpp里面的logValues。
+跟踪得到上面的大概流程如下，上报是通过调用回调`OnHealthInfoChanged`通知BatterySevices，最后的打印在BatteryMonitor.cpp里面的logValues。
 
 ```
 hardware\interfaces\health\2.1\default\service.cpp

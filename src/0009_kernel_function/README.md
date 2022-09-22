@@ -6,6 +6,7 @@
 
 NO.|文件名称|摘要
 :--:|:--|:--
+0025| [内核卡死实例分析](docs/0025_内核卡死实例分析.md) | 项目实际遇到的一些内核卡死问题分析汇总。
 0024| [mtk_qcom_添加cmdline实现方案](docs/0024_mtk_qcom_添加cmdline实现方案.md) | 我们经常要在开机阶段检测某些硬件信息传递给kernel，可以通过cmdline方式传递。
 0023| [class_create_device_create功能分析](docs/0023_class_create_device_create功能分析.md) | 本文介绍linux中class_create和device_create的相关使用方法。
 0022| [I2C驱动编程SMBUS介绍](docs/0022_I2C驱动编程SMBUS介绍.md) | SMBus（System Management Bus）是系统管理总线的简称，该总线由SBS-IF提出并维护（SBS-IF，Smart Battery System Implementers Forum，智能电池系统实现者论坛），该论坛发起者为Intel。SMBus总线主要应用于智能电池与MCU之间的通信，PC系统中与系统传感器之间的低速通信等。
@@ -30,4 +31,3 @@ NO.|文件名称|摘要
 0003| [qcom_mtk多机型DTB兼容方案](docs/0003_qcom_mtk多机型DTB兼容方案.md) | 很多 SoC 供应商和 ODM 都支持在一台设备上使用多个 DT，从而使一个映像能够为多个 SKU/配置提供支持。
 0002| [kernel如何上报事件给应用层](docs/0002_kernel如何上报事件给应用层.md) | 本文主要讲解kernel层如何上传事件给到用户空间的几种方法。
 0001| [notify实例](docs/0001_notify实例.md) | notify实例
-0001| [kernel_device_dirver](docs/0001_kernel_device_dirver/README.md) | 总结一下linux平台各种设备驱动。

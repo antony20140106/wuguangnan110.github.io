@@ -54,17 +54,22 @@
 <li><a class="reference internal" href="#id4">充电驱动各函数分析</a><ul>
 <li><a class="reference internal" href="#qcomchargerinitialize">入口函数 QcomChargerInitialize()</a></li>
 <li><a class="reference internal" href="#qcomchargerconfig-vbattth-cfg">配置文件 QcomChargerConfig_VbattTh.cfg</a></li>
-<li><a class="reference internal" href="#pqcomchargerprotocol-takeaction">设置充电状态 pQcomChargerProtocol-&gt;TakeAction()</a></li>
-<li><a class="reference internal" href="#pqcomchargerprotocol-getchargingaction">获取当前充电状态 pQcomChargerProtocol-&gt;GetChargingAction()</a></li>
+<li><a class="reference internal" href="#action-pqcomchargerprotocol-takeaction">设置Action状态 pQcomChargerProtocol-&gt;TakeAction()</a></li>
+<li><a class="reference internal" href="#action-pqcomchargerprotocol-getchargingaction">获取当前Action状态 pQcomChargerProtocol-&gt;GetChargingAction()</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#id5">充电图标显示流程</a><ul>
 <li><a class="reference internal" href="#id6">图片资源存储</a></li>
 <li><a class="reference internal" href="#id7">图片资源配置</a></li>
-<li><a class="reference internal" href="#id8">图片显示软件逻辑</a></li>
-<li><a class="reference internal" href="#id9">图片显示函数</a></li>
+<li><a class="reference internal" href="#err-action">图片显示及Err/Action获取软件逻辑</a></li>
+<li><a class="reference internal" href="#id8">图片显示函数</a></li>
 </ul>
 </li>
+<li><a class="reference internal" href="#id9">新增坏电池检测功能</a><ul>
+<li><a class="reference internal" href="#id10">新增图片无法显示</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#reboot">开机reboot无法启动(过压保护)</a></li>
 </ul>
 </div>
         </div>
@@ -106,7 +111,7 @@
 </section>
 <section id="id3">
 <h1>流程图<a class="headerlink" href="#id3" title="此标题的永久链接"></a></h1>
-<p><img alt="0011_0002.png" src="../../../_images/0011_00021.png" /></p>
+<p><img alt="0011_0004.png" src="../../../_images/0011_00041.png" /></p>
 <ul class="simple">
 <li><p>摘要：</p>
 <ul>
@@ -810,8 +815,8 @@
 </pre></div>
 </div>
 </section>
-<section id="pqcomchargerprotocol-takeaction">
-<h2>设置充电状态 pQcomChargerProtocol-&gt;TakeAction()<a class="headerlink" href="#pqcomchargerprotocol-takeaction" title="此标题的永久链接"></a></h2>
+<section id="action-pqcomchargerprotocol-takeaction">
+<h2>设置Action状态 pQcomChargerProtocol-&gt;TakeAction()<a class="headerlink" href="#action-pqcomchargerprotocol-takeaction" title="此标题的永久链接"></a></h2>
 <p>在函数EFI_QcomChargerTakeAction() 中调用的是ChargerPlatform_TakeAction() 函数，我们来分析下：
 电池状态的处理情况，分类如下几种：</p>
 <ol class="arabic simple">
@@ -993,8 +998,8 @@
 </pre></div>
 </div>
 </section>
-<section id="pqcomchargerprotocol-getchargingaction">
-<h2>获取当前充电状态 pQcomChargerProtocol-&gt;GetChargingAction()<a class="headerlink" href="#pqcomchargerprotocol-getchargingaction" title="此标题的永久链接"></a></h2>
+<section id="action-pqcomchargerprotocol-getchargingaction">
+<h2>获取当前Action状态 pQcomChargerProtocol-&gt;GetChargingAction()<a class="headerlink" href="#action-pqcomchargerprotocol-getchargingaction" title="此标题的永久链接"></a></h2>
 <ol class="arabic simple">
 <li><p>检测充电相关错误，如函数运行失败直接通关机。</p></li>
 <li><p>根据前面的错误进行不同的处理：电池不存在，调试主板，温度异常，电池电压异常，充电电源异常</p></li>
@@ -1337,36 +1342,6 @@
   <span class="nt">&lt;program</span> <span class="na">SECTOR_SIZE_IN_BYTES=</span><span class="s">&quot;512&quot;</span> <span class="na">file_sector_offset=</span><span class="s">&quot;0&quot;</span> <span class="na">filename=</span><span class="s">&quot;imagefv.elf&quot;</span> <span class="na">label=</span><span class="s">&quot;imagefv_b&quot;</span> <span class="na">num_partition_sectors=</span><span class="s">&quot;4096&quot;</span> <span class="na">partofsingleimage=</span><span class="s">&quot;false&quot;</span> <span class="na">physical_partition_number=</span><span class="s">&quot;0&quot;</span> <span class="na">readbackverify=</span><span class="s">&quot;false&quot;</span> <span class="na">size_in_KB=</span><span class="s">&quot;2048.0&quot;</span> <span class="na">sparse=</span><span class="s">&quot;false&quot;</span> <span class="na">start_byte_hex=</span><span class="s">&quot;0x25f202000L&quot;</span> <span class="na">start_sector=</span><span class="s">&quot;19894288&quot;</span> <span class="nt">/&gt;</span>
 </pre></div>
 </div>
-<p>ps:
-新增图片时，一定要全编并烧录<code class="docutils literal notranslate"><span class="pre">imagefv.elf</span></code>镜像。</p>
-<ul class="simple">
-<li><p>新增一张图片报错超出大小，如下：</p></li>
-</ul>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Generate</span> <span class="n">Region</span> <span class="n">at</span> <span class="n">Offset</span> <span class="mh">0x0</span>
-   <span class="n">Region</span> <span class="n">Size</span> <span class="o">=</span> <span class="mh">0x212400</span>
-   <span class="n">Region</span> <span class="n">Name</span> <span class="o">=</span> <span class="n">FV</span>
-
-<span class="n">Generating</span> <span class="n">FVMAIN_COMPACT</span> <span class="n">FV</span>
-<span class="c1">#####</span>
-<span class="n">Generating</span> <span class="n">FVMAIN</span> <span class="n">FV</span>
-<span class="c1">###################################</span>
-<span class="c1">########################################</span>
-<span class="c1">########################################</span>
-<span class="c1">########################################</span>
-<span class="c1">########################################</span>
-<span class="c1">########################################</span>
-<span class="c1">#######</span>
-<span class="n">Generating</span> <span class="n">IMAGEFV</span> <span class="n">FV</span>
-<span class="c1">#####################</span>
-<span class="n">Generating</span> <span class="n">IMAGEFV_COMPACT</span> <span class="n">FV</span>
-<span class="c1">######Return Value = 2</span>
-<span class="n">GenFv</span><span class="p">:</span> <span class="n">ERROR</span> <span class="mi">3000</span><span class="p">:</span> <span class="n">Invalid</span>
-  <span class="n">the</span> <span class="n">required</span> <span class="n">fv</span> <span class="n">image</span> <span class="n">size</span> <span class="mh">0x23c8</span> <span class="n">exceeds</span> <span class="n">the</span> <span class="nb">set</span> <span class="n">fv</span> <span class="n">image</span> <span class="n">size</span> <span class="mh">0x2000</span>
-</pre></div>
-</div>
-<ul class="simple">
-<li><p>尝试改大<code class="docutils literal notranslate"><span class="pre">BlockSize</span></code>:</p></li>
-</ul>
 </section>
 <section id="id7">
 <h2>图片资源配置<a class="headerlink" href="#id7" title="此标题的永久链接"></a></h2>
@@ -1389,8 +1364,8 @@
 </pre></div>
 </div>
 </section>
-<section id="id8">
-<h2>图片显示软件逻辑<a class="headerlink" href="#id8" title="此标题的永久链接"></a></h2>
+<section id="err-action">
+<h2>图片显示及Err/Action获取软件逻辑<a class="headerlink" href="#err-action" title="此标题的永久链接"></a></h2>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">QcomPkg/Application/QcomChargerApp/QcomChargerAppEventHandler.c</span></code>:</p></li>
 </ul>
@@ -1593,8 +1568,8 @@
 </pre></div>
 </div>
 </section>
-<section id="id9">
-<h2>图片显示函数<a class="headerlink" href="#id9" title="此标题的永久链接"></a></h2>
+<section id="id8">
+<h2>图片显示函数<a class="headerlink" href="#id8" title="此标题的永久链接"></a></h2>
 <p>上面分析了图片显示逻辑是根据充电错误信息来的，下一步研究一下<code class="docutils literal notranslate"><span class="pre">comChargerAppDisplay_AsciiStrNDup</span></code>函数：</p>
 <div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="cm">/**</span>
 <span class="cm">  Duplicates ASCII string</span>
@@ -1684,6 +1659,297 @@
 </pre></div>
 </div>
 </section>
+</section>
+<section id="id9">
+<h1>新增坏电池检测功能<a class="headerlink" href="#id9" title="此标题的永久链接"></a></h1>
+<ul class="simple">
+<li><p>坏电池检测原理：开机阶段电池电压小于2v，则显示换电池提醒图片，无论是否在充电都执行关机动作，与低压检测不同的就是，如果在充电则不会进行低压检测。修改代码如下：</p></li>
+</ul>
+<div class="highlight-diff notranslate"><div class="highlight"><pre><span></span><span class="gd">--- a/A6650_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/Library/ChargerLib/ChargerLibCommon.c</span><span class="w"></span>
+<span class="gi">+++ b/A6650_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/Library/ChargerLib/ChargerLibCommon.c</span><span class="w"></span>
+<span class="gu">@@ -1183,8 +1183,31 @@ EFI_STATUS ChargerLib_GetBatteryVoltageStatus(CHARGERLIB_VBATT_STATUS *pBatteryV</span><span class="w"></span>
+<span class="w"> </span>    }<span class="w"></span>
+<span class="w"> </span>  }<span class="w"></span>
+<span class="w"> </span>  /* Check for vbatt below emergency shutdown limit */<span class="w"></span>
+<span class="gd">-  else if ((UINT32)BatteryStatus.BatteryVoltage &lt; gChargerLibCfgData.emergency_shutdown_vbatt)</span><span class="w"></span>
+<span class="gi">+  else if ((UINT32)BatteryStatus.BatteryVoltage &gt; gChargerLibCfgData.emergency_shutdown_vbatt)</span><span class="w"></span>
+<span class="w"> </span>  {<span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+       //[NEW FEATURE]-BEGIN by wugangnan@paxsz.com 2022-09-22, add bad battery and voltage check function</span><span class="w"></span>
+<span class="gi">+       if (BatteryStatus.BatteryVoltage &gt; gChargerLibCfgData.batt_check_bad_threshold_in_mv)</span><span class="w"></span>
+<span class="gi">+       {</span><span class="w"></span>
+<span class="gi">+         for (EmergencyShutdownCounter = 0; EmergencyShutdownCounter &lt; MAX_EMERGENCY_SHUTDOWN_COUNT; EmergencyShutdownCounter++)</span><span class="w"></span>
+<span class="gi">+         {</span><span class="w"></span>
+<span class="gi">+           gBS-&gt;Stall(10000); //delay foy 100ms</span><span class="w"></span>
+<span class="gi">+           ChargerLib_GetBatteryStatus(&amp;BatteryStatus);</span><span class="w"></span>
+<span class="gi">+               CHARGER_FILE_UART_DEBUG(( EFI_D_ERROR, &quot;ChargerLib:: %a  Bad BatteryVoltage= %d\r\n&quot;,__FUNCTION__, BatteryStatus.BatteryVoltage));</span><span class="w"></span>
+<span class="gi">+           if (BatteryStatus.BatteryVoltage &lt; gChargerLibCfgData.batt_check_bad_threshold_in_mv) {</span><span class="w"></span>
+<span class="gi">+             break;</span><span class="w"></span>
+<span class="gi">+           }</span><span class="w"></span>
+<span class="gi">+         }</span><span class="w"></span>
+<span class="gi">+         if(EmergencyShutdownCounter &gt;= MAX_EMERGENCY_SHUTDOWN_COUNT)</span><span class="w"></span>
+<span class="gi">+      {</span><span class="w"></span>
+<span class="gi">+           *pBatteryVoltageStatus = ChargerLib_VBatt_BelowThresholdBad;</span><span class="w"></span>
+<span class="gi">+            CHARGER_FILE_UART_DEBUG(( EFI_D_ERROR, &quot;ChargerLib:: %a Found Bad BatteryVoltage! Bad BatteryVoltage= %d gThresholdBadBat = %d \r\n&quot;,</span><span class="w"></span>
+<span class="gi">+                   __FUNCTION__, BatteryStatus.BatteryVoltage, gChargerLibCfgData.batt_check_bad_threshold_in_mv));</span><span class="w"></span>
+<span class="gi">+                return Status;</span><span class="w"></span>
+<span class="gi">+         }</span><span class="w"></span>
+<span class="gi">+       }</span><span class="w"></span>
+<span class="gi">+       //[NEW FEATURE]-END by wugangnan@paxsz.com 2022-09-22, add bad battery and voltage check function</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="w"> </span>    if(BatteryStatus.ChargeCurrent &gt; 0) /* Battery is discharging */<span class="w"></span>
+<span class="w"> </span>    {<span class="w"></span>
+<span class="w"> </span>      CHARGER_DEBUG((EFI_D_WARN, &quot;ChargerLib:: %a Current BattVoltage = %d mV is below EmergencyShutdownVbatt = %d mV &quot;, __FUNCTION__,<span class="w"></span>
+<span class="gu">@@ -1193,6 +1216,7 @@ EFI_STATUS ChargerLib_GetBatteryVoltageStatus(CHARGERLIB_VBATT_STATUS *pBatteryV</span><span class="w"></span>
+<span class="w"> </span>      if(EmergencyShutdownCounter &gt;= MAX_EMERGENCY_SHUTDOWN_COUNT)<span class="w"></span>
+<span class="w"> </span>      {<span class="w"></span>
+<span class="w"> </span>        *pBatteryVoltageStatus = ChargerLib_VBatt_BelowThreshold;<span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="w"> </span>        CHARGER_DEBUG((EFI_D_WARN, &quot;ChargerLib:: %a EmergencyShutdownCounter Exceeded : \r\n&quot;, __FUNCTION__ ));<span class="w"></span>
+<span class="w"> </span>        CHARGER_DEBUG((EFI_D_WARN, &quot; Curr Battery voltage = %d mV is below threshold = %d mV \r\n&quot;,<span class="w"></span>
+<span class="w"> </span>          BatteryStatus.BatteryVoltage, gChargerLibCfgData.emergency_shutdown_vbatt ));<span class="w"></span>
+<span class="gu">@@ -1300,6 +1324,13 @@ EFI_STATUS ChargerLib_GetErrors(BOOLEAN vbattChecking, CHARGERLIB_CHARGING_ERROR</span><span class="w"></span>
+<span class="w"> </span>    /* Check Voltage errors*/<span class="w"></span>
+<span class="w"> </span>    if(EFI_SUCCESS == ChargerLib_GetBatteryVoltageStatus(&amp;BattVoltageStatus))<span class="w"></span>
+<span class="w"> </span>    {<span class="w"></span>
+<span class="gi">+      if(ChargerLib_VBatt_BelowThresholdBad == BattVoltageStatus)</span><span class="w"></span>
+<span class="gi">+      {</span><span class="w"></span>
+<span class="gi">+        *pChargingError = CHARGERLIB_CHARGING_ERROR_BAD_BATTERY;</span><span class="w"></span>
+<span class="gi">+        CHARGER_FILE_UART_DEBUG(( EFI_D_ERROR, &quot;ChargerLib:: %a ERROR Battery voltage below bad threshold \r\n&quot;, __FUNCTION__));</span><span class="w"></span>
+<span class="gi">+        return Status;</span><span class="w"></span>
+<span class="gi">+      }</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="w"> </span>      if(ChargerLib_VBatt_TooHigh == BattVoltageStatus)<span class="w"></span>
+<span class="w"> </span>      {<span class="w"></span>
+<span class="w"> </span>        *pChargingError = CHARGERLIB_CHARGING_ERROR_VBATT_OUTSIDE_RANGE;<span class="w"></span>
+<span class="gh">diff --git a/A6650_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/Library/ChargerLib/target/Agatti/ChargerLibTarget.c b/A6650_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/Library/ChargerLib/target/Agatti/ChargerLibTarget.c</span><span class="w"></span>
+<span class="gh">index 144ec3bdd60..b805f7e5136 100755</span><span class="w"></span>
+<span class="gd">--- a/A6650_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/Library/ChargerLib/target/Agatti/ChargerLibTarget.c</span><span class="w"></span>
+<span class="gi">+++ b/A6650_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/Library/ChargerLib/target/Agatti/ChargerLibTarget.c</span><span class="w"></span>
+<span class="gu">@@ -2392,6 +2392,12 @@ EFI_STATUS ChargerLibTarget_GetErrorAction( CHARGERLIB_CHARGING_ERROR_TYPES  Cha</span><span class="w"></span>
+<span class="w"> </span>    case CHARGERLIB_CHARGING_ERROR_UNKNOWN_BATTERY:<span class="w"></span>
+<span class="w"> </span>         Status = ChargerLibTarget_GetUnknownBatteryAction(pErrorAction);<span class="w"></span>
+<span class="w"> </span>         break;<span class="w"></span>
+<span class="gi">+       //[NEW FEATURE]-BEGIN by wugangnan@paxsz.com 2022-09-22, add bad battery and voltage check function</span><span class="w"></span>
+<span class="gi">+       case CHARGERLIB_CHARGING_ERROR_BAD_BATTERY:</span><span class="w"></span>
+<span class="gi">+         gDispImage = CHARGERLIB_EVENT_DISP_IMAGE_BADBATTERY;</span><span class="w"></span>
+<span class="gi">+         *pErrorAction = CHARGERLIB_ERROR_ACTION_SHUTDOWN;</span><span class="w"></span>
+<span class="gi">+         break;</span><span class="w"></span>
+<span class="gi">+       //[NEW FEATURE]-END by wugangnan@paxsz.com 2022-09-22, add bad battery and voltage check function</span><span class="w"></span>
+<span class="w"> </span>     default:<span class="w"></span>
+<span class="w"> </span>       *pErrorAction = CHARGERLIB_ERROR_ACTION_STOP_CHARGING;<span class="w"></span>
+<span class="w"> </span>       CHARGER_DEBUG((EFI_D_WARN, &quot;ChargerLib:: %a default action stop charging %d \r\n&quot;, __FUNCTION__, *pErrorAction));<span class="w"></span>
+
+<span class="gh">diff --git a/A6650_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/SocPkg/AgattiPkg/Settings/Charger/QcomChargerConfig_VbattTh.cfg b/A6650_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/SocPkg/AgattiPkg/Settings/Charger/QcomChargerConfig_VbattTh.cfg</span><span class="w"></span>
+<span class="gh">index 3b50b77ab76..e2397deb0c9 100755</span><span class="w"></span>
+<span class="gd">--- a/A6650_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/SocPkg/AgattiPkg/Settings/Charger/QcomChargerConfig_VbattTh.cfg</span><span class="w"></span>
+<span class="gi">+++ b/A6650_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/SocPkg/AgattiPkg/Settings/Charger/QcomChargerConfig_VbattTh.cfg</span><span class="w"></span>
+<span class="gu">@@ -121,6 +121,10 @@ DebugBoardBehavior = 2</span><span class="w"></span>
+<span class="w"> </span>#Boot device to HLOS in case of unsupported battery or battery emulator. In millivolt*/<span class="w"></span>
+<span class="w"> </span>BootToHLOSThresholdInMv = 3450<span class="w"></span>
+<span class="w"> </span>
+<span class="gi">+#//[NEW FEATURE]-BEGIN by wugangnan@paxsz.com 2022-09-17, add bad battery check function</span><span class="w"></span>
+<span class="gi">+BadBatteryThresholdInMv = 2000</span><span class="w"></span>
+<span class="gi">+#//[NEW FEATURE]-END by wugangnan@paxsz.com 2022-09-17, add bad battery check function</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="w"> </span>#Minimum SOC Threshold before allowing to boot to HLOS<span class="w"></span>
+<span class="w"> </span>#below param is considered only when SocBasedBoot = TRUE and LoadBatteryProfile = TRUE<span class="w"></span>
+<span class="w"> </span>OsStandardBootSocThreshold = 7<span class="w"></span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>新增我们charger ic驱动：</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">QcomPkg</span><span class="o">/</span><span class="n">Application</span><span class="o">/</span><span class="n">QcomChargerApp</span><span class="o">/</span><span class="n">battery_symbol_BadBattery</span><span class="o">.</span><span class="n">bmp</span>
+<span class="n">QcomPkg</span><span class="o">/</span><span class="n">Drivers</span><span class="o">/</span><span class="n">QcomChargerDxe</span><span class="o">/</span><span class="n">PaxCharger</span><span class="o">.</span><span class="n">c</span>
+<span class="n">QcomPkg</span><span class="o">/</span><span class="n">Drivers</span><span class="o">/</span><span class="n">QcomChargerDxe</span><span class="o">/</span><span class="n">PaxCharger</span><span class="o">.</span><span class="n">h</span>
+</pre></div>
+</div>
+<p>主要是<code class="docutils literal notranslate"><span class="pre">ChargerLib_GetErrors</span></code>获取充电错误信息和<code class="docutils literal notranslate"><span class="pre">ChargerLib_GetErrorAction</span></code>根据错误执行关机操作两个修改。</p>
+<section id="id10">
+<h2>新增图片无法显示<a class="headerlink" href="#id10" title="此标题的永久链接"></a></h2>
+<p>ps:
+新增图片时，一定要全编并烧录<code class="docutils literal notranslate"><span class="pre">imagefv.elf</span></code>镜像。</p>
+<ul class="simple">
+<li><p>新增一张图片报错超出大小，如下：</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Generate</span> <span class="n">Region</span> <span class="n">at</span> <span class="n">Offset</span> <span class="mh">0x0</span>
+   <span class="n">Region</span> <span class="n">Size</span> <span class="o">=</span> <span class="mh">0x212400</span>
+   <span class="n">Region</span> <span class="n">Name</span> <span class="o">=</span> <span class="n">FV</span>
+
+<span class="n">Generating</span> <span class="n">FVMAIN_COMPACT</span> <span class="n">FV</span>
+<span class="c1">#####</span>
+<span class="n">Generating</span> <span class="n">FVMAIN</span> <span class="n">FV</span>
+<span class="c1">###################################</span>
+<span class="c1">########################################</span>
+<span class="c1">########################################</span>
+<span class="c1">########################################</span>
+<span class="c1">########################################</span>
+<span class="c1">########################################</span>
+<span class="c1">#######</span>
+<span class="n">Generating</span> <span class="n">IMAGEFV</span> <span class="n">FV</span>
+<span class="c1">#####################</span>
+<span class="n">Generating</span> <span class="n">IMAGEFV_COMPACT</span> <span class="n">FV</span>
+<span class="c1">######Return Value = 2</span>
+<span class="n">GenFv</span><span class="p">:</span> <span class="n">ERROR</span> <span class="mi">3000</span><span class="p">:</span> <span class="n">Invalid</span>
+  <span class="n">the</span> <span class="n">required</span> <span class="n">fv</span> <span class="n">image</span> <span class="n">size</span> <span class="mh">0x23c8</span> <span class="n">exceeds</span> <span class="n">the</span> <span class="nb">set</span> <span class="n">fv</span> <span class="n">image</span> <span class="n">size</span> <span class="mh">0x2000</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>尝试改大<code class="docutils literal notranslate"><span class="pre">BlockSize</span></code>也无法显示，显示函数执行时会报错找不到地址。</p></li>
+<li><p>尝试删除两张不用的图片，如下：</p></li>
+</ul>
+<div class="highlight-diff notranslate"><div class="highlight"><pre><span></span><span class="gd">--- a/A6650_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/SocPkg/AgattiPkg/LAA/ImageFv.fdf.inc</span><span class="w"></span>
+<span class="gi">+++ b/A6650_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/SocPkg/AgattiPkg/LAA/ImageFv.fdf.inc</span><span class="w"></span>
+<span class="gu">@@ -69,17 +69,11 @@ FvNameGuid         = a8169396-d0f7-49cb-890a-25e1a9767406</span><span class="w"></span>
+<span class="w"> </span>      SECTION RAW = QcomPkg/Application/QcomChargerApp/tsens_thermal_err_symbol.bmp<span class="w"></span>
+<span class="w"> </span>  }<span class="w"></span>
+
+<span class="gd">-  FILE FREEFORM = B0F8D1BE-5353-4812-B1F6-07E7768204CC {</span><span class="w"></span>
+<span class="gd">-      SECTION UI = &quot;battery_symbol_DebugBoot.bmp&quot;</span><span class="w"></span>
+<span class="gd">-      SECTION RAW = QcomPkg/Application/QcomChargerApp/battery_symbol_DebugBoot.bmp</span><span class="w"></span>
+<span class="gi">+  FILE FREEFORM = A5322E73-C587-4668-AC99-BC24411CA1C5 {</span><span class="w"></span>
+<span class="gi">+      SECTION UI = &quot;battery_symbol_BadBattery.bmp&quot;</span><span class="w"></span>
+<span class="gi">+      SECTION RAW = QcomPkg/Application/QcomChargerApp/battery_symbol_BadBattery.bmp</span><span class="w"></span>
+<span class="w"> </span>  }<span class="w"></span>
+
+<span class="gd">-  FILE FREEFORM = F9E8F683-E065-4E09-B4F9-0230D7CECD08 {</span><span class="w"></span>
+<span class="gd">-      SECTION UI = &quot;battery_symbol_DebugStay.bmp&quot;</span><span class="w"></span>
+<span class="gd">-      SECTION RAW = QcomPkg/Application/QcomChargerApp/battery_symbol_DebugStay.bmp</span><span class="w"></span>
+<span class="gd">-  }</span><span class="w"></span>
+<span class="gd">-</span><span class="w"></span>
+
+<span class="gd">--- a/A6650_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/Application/QcomChargerApp/QcomChargerAppDisplay.c</span><span class="w"></span>
+<span class="gi">+++ b/A6650_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/Application/QcomChargerApp/QcomChargerAppDisplay.c</span><span class="w"></span>
+<span class="gu">@@ -151,12 +151,17 @@ EFI_STATUS QcomChargerAppDisplay_DispBattSymbol(EFI_QCOM_CHARGER_DISP_IMAGE_TYPE</span><span class="w"></span>
+<span class="w"> </span>  case EFI_QCOM_CHARGER_DISP_IMAGE_TSENS_CRITICAL_SYMBOL:<span class="w"></span>
+<span class="w"> </span>    str = QcomChargerAppDisplay_AsciiStrNDup(CHARGER_TSENS_CRITICAL_SYMBOL, AsciiStrLen(CHARGER_TSENS_CRITICAL_SYMBOL));<span class="w"></span>
+<span class="w"> </span>    break;<span class="w"></span>
+<span class="gd">-  case EFI_QCOM_CHARGER_DISP_IMAGE_DEBUG_BOOT_SYMBOL:</span><span class="w"></span>
+<span class="gd">-    str = QcomChargerAppDisplay_AsciiStrNDup(CHARGER_BATTERY_SYMBOL_DEBUG_BOARD_BOOT, AsciiStrLen(CHARGER_BATTERY_SYMBOL_DEBUG_BOARD_BOOT));</span><span class="w"></span>
+<span class="gd">-    break;</span><span class="w"></span>
+<span class="gd">-  case EFI_QCOM_CHARGER_DISP_IMAGE_DEBUG_LOW_SYMBOL:</span><span class="w"></span>
+<span class="gd">-    str = QcomChargerAppDisplay_AsciiStrNDup(CHARGER_BATTERY_SYMBOL_DEBUG_BOARD_STAY, AsciiStrLen(CHARGER_BATTERY_SYMBOL_DEBUG_BOARD_STAY));</span><span class="w"></span>
+<span class="gd">-    break;</span><span class="w"></span>
+<span class="gi">+//  case EFI_QCOM_CHARGER_DISP_IMAGE_DEBUG_BOOT_SYMBOL:</span><span class="w"></span>
+<span class="gi">+//    str = QcomChargerAppDisplay_AsciiStrNDup(CHARGER_BATTERY_SYMBOL_DEBUG_BOARD_BOOT, AsciiStrLen(CHARGER_BATTERY_SYMBOL_DEBUG_BOARD_BOOT));</span><span class="w"></span>
+<span class="gi">+//    break;</span><span class="w"></span>
+<span class="gi">+//  case EFI_QCOM_CHARGER_DISP_IMAGE_DEBUG_LOW_SYMBOL:</span><span class="w"></span>
+<span class="gi">+//    str = QcomChargerAppDisplay_AsciiStrNDup(CHARGER_BATTERY_SYMBOL_DEBUG_BOARD_STAY, AsciiStrLen(CHARGER_BATTERY_SYMBOL_DEBUG_BOARD_STAY));</span><span class="w"></span>
+<span class="gi">+//    break;</span><span class="w"></span>
+<span class="gi">+  //[NEW FEATURE]-BEGIN by wugangnan@paxsz.com 2022-09-19, add bad battery check function</span><span class="w"></span>
+<span class="gi">+  case EFI_QCOM_CHARGER_DISP_IMAGE_BADBATTERY:</span><span class="w"></span>
+<span class="gi">+       str = QcomChargerAppDisplay_AsciiStrNDup(CHARGER_BATTERY_SYMBOL_BADBATTERY, AsciiStrLen(CHARGER_BATTERY_SYMBOL_BADBATTERY));</span><span class="w"></span>
+<span class="gi">+       break;</span><span class="w"></span>
+<span class="gi">+  //[NEW FEATURE]-END by wugangnan@paxsz.com 2022-09-19, add bad battery check function</span><span class="w"></span>
+</pre></div>
+</div>
+<p>这样显示正常了。</p>
+</section>
+</section>
+<section id="reboot">
+<h1>开机reboot无法启动(过压保护)<a class="headerlink" href="#reboot" title="此标题的永久链接"></a></h1>
+<p>现象：执行reboot时偶发性重启，pmic对电池高低压检测，怀疑是检测电池高压了，增加打印如下：</p>
+<div class="highlight-diff notranslate"><div class="highlight"><pre><span></span><span class="gd">--- a/A6650_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/Drivers/QcomChargerDxe/QcomChargerPlatform.c</span><span class="w"></span>
+<span class="gi">+++ b/A6650_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/Drivers/QcomChargerDxe/QcomChargerPlatform.c</span><span class="w"></span>
+<span class="gu">@@ -305,6 +305,7 @@ EFI_STATUS ChargerPlatform_GetChargingAction(EFI_QCOM_CHARGER_ACTION_TYPE *pActi</span><span class="w"></span>
+<span class="w"> </span>    return Status;<span class="w"></span>
+<span class="w"> </span>  }<span class="w"></span>
+
+<span class="gi">+  CHARGER_FILE_UART_DEBUG(( EFI_D_ERROR, &quot;QcomChargerDxe:: %a ErrorType = %d.\r\n&quot;, __FUNCTION__, ErrorType));</span><span class="w"></span>
+<span class="w"> </span>  if((CHARGERLIB_CHARGING_ERROR_BATTERY_NOT_DETECTED == ErrorType ) || (CHARGERLIB_CHARGING_ERROR_DEBUG_BOARD == ErrorType ) ||<span class="w"></span>
+<span class="w"> </span>    (CHARGERLIB_DEVICE_ERROR == ErrorType ) || (CHARGERLIB_CHARGING_ERROR_UNKNOWN_BATTERY == ErrorType ) ||<span class="w"></span>
+<span class="w"> </span>    (CHARGERLIB_CHARGING_ERROR_TSENSE_CRITICAL == ErrorType) || (CHARGERLIB_CHARGING_ERROR_TSENSE_TIMEOUT == ErrorType) || (CHARGERLIB_CHARGING_ERROR_TSENSE_HIGH == ErrorType))<span class="w"></span>
+<span class="gu">@@ -341,6 +342,7 @@ EFI_STATUS ChargerPlatform_GetChargingAction(EFI_QCOM_CHARGER_ACTION_TYPE *pActi</span><span class="w"></span>
+<span class="w"> </span>    Status = ChargerLib_GetErrorAction(ErrorType, (((CHARGERLIB_ERROR_ACTION_TYPE*)pActionType)));<span class="w"></span>
+<span class="w"> </span>    PrevChargerAction = *pActionType;<span class="w"></span>
+
+<span class="gi">+       CHARGER_FILE_UART_DEBUG(( EFI_D_ERROR, &quot;QcomChargerDxe:: %a ErrorType = %d PrevChargerAction =%d\r\n&quot;, __FUNCTION__, ErrorType , PrevChargerAction));</span><span class="w"></span>
+<span class="w"> </span>    /*If there is a battery error, return */<span class="w"></span>
+<span class="w"> </span>    return Status;<span class="w"></span>
+<span class="w"> </span>  }<span class="w"></span>
+<span class="gh">diff --git a/A6650_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/Library/ChargerLib/ChargerLibCommon.c b/A6650_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/Library/ChargerLib/ChargerLibCommon.c</span><span class="w"></span>
+<span class="gh">index ed19100d16f..d469bbad592 100755</span><span class="w"></span>
+<span class="gd">--- a/A6650_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/Library/ChargerLib/ChargerLibCommon.c</span><span class="w"></span>
+<span class="gi">+++ b/A6650_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/Library/ChargerLib/ChargerLibCommon.c</span><span class="w"></span>
+<span class="gu">@@ -1158,7 +1158,7 @@ EFI_STATUS ChargerLib_GetBatteryVoltageStatus(CHARGERLIB_VBATT_STATUS *pBatteryV</span><span class="w"></span>
+<span class="w"> </span>    return Status;<span class="w"></span>
+<span class="w"> </span>  }<span class="w"></span>
+
+<span class="gd">-  CHARGER_DEBUG((EFI_D_WARN, &quot;ChargerLib:: %a Battery voltage = %d mV \r\n&quot;, __FUNCTION__, BatteryStatus.BatteryVoltage));</span><span class="w"></span>
+<span class="gi">+  CHARGER_FILE_UART_DEBUG((EFI_D_ERROR, &quot;ChargerLib:: %a Battery voltage = %d mV \r\n&quot;, __FUNCTION__, BatteryStatus.BatteryVoltage));</span><span class="w"></span>
+
+<span class="w"> </span>  /* Return status if vbatt is good */<span class="w"></span>
+<span class="w"> </span>  if ((UINT32)BatteryStatus.BatteryVoltage &gt; (gChargerLibCfgData.schg_cfg_data.ChgFvMax + gChargerLibCfgData.batt_volt_lim_high_delta))<span class="w"></span>
+<span class="gu">@@ -1172,12 +1172,12 @@ EFI_STATUS ChargerLib_GetBatteryVoltageStatus(CHARGERLIB_VBATT_STATUS *pBatteryV</span><span class="w"></span>
+<span class="w"> </span>      return Status;<span class="w"></span>
+<span class="w"> </span>    }<span class="w"></span>
+
+<span class="gd">-    CHARGER_DEBUG((EFI_D_WARN, &quot;ChargerLib:: %a Current Battery voltage =  %d mV \r\n&quot;, __FUNCTION__, BatteryStatus.BatteryVoltage));</span><span class="w"></span>
+<span class="gi">+    CHARGER_FILE_UART_DEBUG((EFI_D_ERROR, &quot;ChargerLib:: %a Current Battery voltage =  %d mV \r\n&quot;, __FUNCTION__, BatteryStatus.BatteryVoltage));</span><span class="w"></span>
+
+<span class="w"> </span>    /* Check for High Voltage Limit */<span class="w"></span>
+<span class="w"> </span>    if (((UINT32)(BatteryStatus.BatteryVoltage - VBATT_TOLERANCE)) &gt; (gChargerLibCfgData.schg_cfg_data.ChgFvMax + gChargerLibCfgData.batt_volt_lim_high_delta))<span class="w"></span>
+<span class="w"> </span>    {<span class="w"></span>
+<span class="gd">-      CHARGER_DEBUG((EFI_D_WARN, &quot;ChargerLib:: %a Current Battery voltage too high %d mV, Threshold = %d mV  \r\n&quot;, __FUNCTION__,</span><span class="w"></span>
+<span class="gi">+      CHARGER_FILE_UART_DEBUG((EFI_D_ERROR, &quot;ChargerLib:: %a Current Battery voltage too high %d mV, Threshold = %d mV  \r\n&quot;, __FUNCTION__,</span><span class="w"></span>
+<span class="w"> </span>                                BatteryStatus.BatteryVoltage, (gChargerLibCfgData.schg_cfg_data.ChgFvMax + gChargerLibCfgData.batt_volt_lim_high_delta)));<span class="w"></span>
+<span class="w"> </span>      *pBatteryVoltageStatus = ChargerLib_VBatt_TooHigh;<span class="w"></span>
+<span class="w"> </span>    }<span class="w"></span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>打以上得知当电压过高，印如下：</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">QcomChargerApp</span><span class="p">::</span> <span class="n">QcomChargerApp_Entry</span> <span class="n">QcomChargerApp_Entry</span> <span class="o">=</span> <span class="n">Success</span>
+<span class="n">ChargerLib</span><span class="p">::</span> <span class="n">ChargerLib_GetBatteryVoltageStatus</span> <span class="n">Battery</span> <span class="n">voltage</span> <span class="o">=</span> <span class="mi">4477</span> <span class="n">mV</span>
+<span class="n">ChargerLib</span><span class="p">::</span> <span class="n">ChargerLib_GetBatteryVoltageStatus</span> <span class="n">Current</span> <span class="n">Battery</span> <span class="n">voltage</span> <span class="o">=</span>  <span class="mi">4477</span> <span class="n">mV</span>
+<span class="n">ChargerLib</span><span class="p">::</span> <span class="n">ChargerLib_GetBatteryVoltageStatus</span> <span class="n">Current</span> <span class="n">Battery</span> <span class="n">voltage</span> <span class="n">too</span> <span class="n">high</span> <span class="mi">4477</span> <span class="n">mV</span><span class="p">,</span> <span class="n">Threshold</span> <span class="o">=</span> <span class="mi">4430</span> <span class="n">mV</span>
+<span class="n">QcomChargerDxe</span><span class="p">::</span> <span class="n">ChargerPlatform_GetChargingAction</span> <span class="n">ErrorType</span> <span class="o">=</span> <span class="mf">2.</span>
+<span class="n">QcomChargerDxe</span><span class="p">::</span> <span class="n">ChargerPlatform_GetChargingAction</span> <span class="n">Battery</span> <span class="n">Profile</span> <span class="n">Loading</span> <span class="n">Not</span> <span class="n">Required</span>
+<span class="n">QcomChargerDxe</span><span class="p">::</span> <span class="n">ChargerPlatform_GetChargingAction</span> <span class="n">ErrorType</span> <span class="o">=</span> <span class="mi">2</span> <span class="n">PrevChargerAction</span> <span class="o">=</span><span class="mi">5</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>高电压软件检测流程：</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>* ChargerLib_GetErrors(vbattChecking, &amp;ErrorType);
+  └── ChargerLib_GetBatteryVoltageStatus(&amp;BattVoltageStatus))
+      ├── if (((UINT32)(BatteryStatus.BatteryVoltage - VBATT_TOLERANCE)) &gt; (gChargerLibCfgData.schg_cfg_data.ChgFvMax + gChargerLibCfgData.batt_volt_lim_high_delta))
+      └── *pBatteryVoltageStatus = ChargerLib_VBatt_TooHigh; //2
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>执行关机动作流程：</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>* ChargerLib_GetErrorAction(ErrorType, (((CHARGERLIB_ERROR_ACTION_TYPE*)pActionType)));
+  └── ChargerLibTarget_GetErrorAction(ChargingErrorType, pErrorAction);
+      └── case CHARGERLIB_CHARGING_ERROR_VBATT_OUTSIDE_RANGE: //2
+          └── *pErrorAction = CHARGERLIB_ERROR_ACTION_SHUTDOWN;
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>代码中我们可以了解到过压门限值为<code class="docutils literal notranslate"><span class="pre">gChargerLibCfgData.schg_cfg_data.ChgFvMax</span> <span class="pre">+</span> <span class="pre">gChargerLibCfgData.batt_volt_lim_high_delta</span></code>，再加上容忍值<code class="docutils literal notranslate"><span class="pre">VBATT_TOLERANCE</span> <span class="pre">=</span> <span class="pre">5</span></code>，根据以下定义得知最后阈值是4.435v。</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">QcomPkg/SocPkg/AgattiPkg/Settings/Charger/QcomChargerConfig_VbattTh.cfg</span></code>:</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="n">BattVoltLimHighDelta</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">30</span><span class="w"></span>
+
+<span class="n">ChgFvMax</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="mi">4400</span><span class="w"></span>
+<span class="n">ChgFccMax</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">2000</span><span class="w"></span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>规格书过压阈值如下：</p></li>
+</ul>
+<p><img alt="0011_0003.png" src="../../../_images/0011_00031.png" /></p>
+<p>提高阈值到4.53v后正常启动打印，<code class="docutils literal notranslate"><span class="pre">ErrorType</span> <span class="pre">=</span> <span class="pre">11</span></code>表示<code class="docutils literal notranslate"><span class="pre">CHARGERLIB_CHARGING_ERROR_CHARGING_SOURCE_NOT_DETECTED</span></code>应该问题不大：</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">QcomChargerApp</span><span class="p">::</span> <span class="n">QcomChargerApp_Entry</span> <span class="n">QcomChargerApp_Entry</span> <span class="o">=</span> <span class="n">Success</span>
+<span class="n">ChargerLib</span><span class="p">::</span> <span class="n">ChargerLib_GetBatteryVoltageStatus</span> <span class="n">Battery</span> <span class="n">voltage</span> <span class="o">=</span> <span class="mi">4477</span> <span class="n">mV</span>
+<span class="n">QcomChargerDxe</span><span class="p">::</span> <span class="n">ChargerPlatform_GetChargingAction</span> <span class="n">ErrorType</span> <span class="o">=</span> <span class="mf">11.</span>
+<span class="n">QcomChargerDxe</span><span class="p">::</span> <span class="n">ChargerPlatform_GetChargingAction</span> <span class="n">Battery</span> <span class="n">Profile</span> <span class="n">Loading</span> <span class="n">Not</span> <span class="n">Required</span>
+<span class="n">QcomChargerDxe</span><span class="p">::</span> <span class="n">ChargerPlatform_GetChargingAction</span> <span class="n">ErrorType</span> <span class="o">=</span> <span class="mi">11</span> <span class="n">PrevChargerAction</span> <span class="o">=</span><span class="mi">3</span>
+</pre></div>
+</div>
 </section>
 
 
