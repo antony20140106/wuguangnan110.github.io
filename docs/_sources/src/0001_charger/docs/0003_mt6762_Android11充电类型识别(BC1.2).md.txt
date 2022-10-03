@@ -120,25 +120,29 @@ static int pd_tcp_notifier_call(struct notifier_block *nb,
 	};
 	return NOTIFY_OK;
 }
+```
 
 充电器类型检测：
-
+```C++
 * typec_attach_thread(void *data)
-  * mt6370_get_charger_type(chg_data, attach); 
-    * chg_psy = power_supply_get_by_name("mtk_charger_type"); //获取mtk_charger_type psy设备，这里关联mt6357_charger_type.c
-    * if (chg_data->typec_state == TYPEC_ATTACHED_NORP_SRC) 
-    * if (chg_data->r15_state == R15_STATUS_ONLINE)
-    * if (chg_data->pogo_dev_state == POGO_DEV_STATE_ONLINE)
-      * prop.intval = 0; //表示这三种情况跳过bc1.2检测，因为USB D+ D-都接到hub上面了，无法识别。
-    * if (chg_data->manual_usb_mode == USB_MODE_DEV) { prop.intval = attach;} //设备切为device时才进行bc1.2检测
-    * ret = power_supply_set_property(chg_psy,POWER_SUPPLY_PROP_ONLINE, &prop);
-      * psy_chr_type_set_property(struct power_supply *psy, //mt6357_charger_type.c
-        * case POWER_SUPPLY_PROP_ONLINE:
-          * info->type = get_charger_type(info, val->intval);
-    * ret = power_supply_set_property(chg_psy,POWER_SUPPLY_PROP_TYPE, &prop2);
-    * ret = power_supply_set_property(chg_psy,POWER_SUPPLY_PROP_USB_TYPE, &prop3);
-    * power_supply_changed(chg_data->psy); //发送uevent事件，上层读取sysfs节点
+  └── mt6370_get_charger_type(chg_data, attach); 
+      ├── chg_psy = power_supply_get_by_name("mtk_charger_type"); //获取mtk_charger_type psy设备，这里关联mt6357_charger_type.c
+      ├── if (chg_data->typec_state == TYPEC_ATTACHED_NORP_SRC) 
+      ├── if (chg_data->r15_state == R15_STATUS_ONLINE)
+      ├── if (chg_data->pogo_dev_state == POGO_DEV_STATE_ONLINE)
+      │   └── prop.intval = 0; //表示这三种情况跳过bc1.2检测，因为USB D+ D-都接到hub上面了，无法识别。
+      ├── if (chg_data->manual_usb_mode == USB_MODE_DEV) { prop.intval = attach;} //设备切为device时才进行bc1.2检测
+      ├── ret = power_supply_set_property(chg_psy,POWER_SUPPLY_PROP_ONLINE, &prop);
+      │   └── psy_chr_type_set_property(struct power_supply *psy, //mt6357_charger_type.c
+      │       └── case POWER_SUPPLY_PROP_ONLINE:
+      │           └── info->type = get_charger_type(info, val->intval);
+      ├── ret = power_supply_set_property(chg_psy,POWER_SUPPLY_PROP_TYPE, &prop2);
+      ├── ret = power_supply_set_property(chg_psy,POWER_SUPPLY_PROP_USB_TYPE, &prop3);
+      └── power_supply_changed(chg_data->psy); //发送uevent事件，上层读取sysfs节点
+```
 
+* `typec_attach_thread`具体内容如下：
+```C++
 static int typec_attach_thread(void *data)
 {
 	struct mt6370_pmu_charger_data *chg_data = data;
@@ -163,9 +167,10 @@ static int typec_attach_thread(void *data)
 	}
 	return ret;
 }
+```
 
-
-bc1.2检测：
+* bc1.2检测：
+```C++
 static int get_charger_type(struct mtk_charger_type *info, int en)
 {
 	enum power_supply_usb_type type = POWER_SUPPLY_USB_TYPE_UNKNOWN;

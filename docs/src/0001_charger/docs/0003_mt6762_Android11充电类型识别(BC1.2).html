@@ -195,90 +195,96 @@ static int pd_tcp_notifier_call(struct notifier_block *nb,
 	};
 	return NOTIFY_OK;
 }
+</pre></div>
+</div>
+<p>充电器类型检测：</p>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span>* typec_attach_thread(void *data)
+  └── mt6370_get_charger_type(chg_data, attach); 
+      ├── chg_psy = power_supply_get_by_name(&quot;mtk_charger_type&quot;); //获取mtk_charger_type psy设备，这里关联mt6357_charger_type.c
+      ├── if (chg_data-&gt;typec_state == TYPEC_ATTACHED_NORP_SRC) 
+      ├── if (chg_data-&gt;r15_state == R15_STATUS_ONLINE)
+      ├── if (chg_data-&gt;pogo_dev_state == POGO_DEV_STATE_ONLINE)
+      │   └── prop.intval = 0; //表示这三种情况跳过bc1.2检测，因为USB D+ D-都接到hub上面了，无法识别。
+      ├── if (chg_data-&gt;manual_usb_mode == USB_MODE_DEV) { prop.intval = attach;} //设备切为device时才进行bc1.2检测
+      ├── ret = power_supply_set_property(chg_psy,POWER_SUPPLY_PROP_ONLINE, &amp;prop);
+      │   └── psy_chr_type_set_property(struct power_supply *psy, //mt6357_charger_type.c
+      │       └── case POWER_SUPPLY_PROP_ONLINE:
+      │           └── info-&gt;type = get_charger_type(info, val-&gt;intval);
+      ├── ret = power_supply_set_property(chg_psy,POWER_SUPPLY_PROP_TYPE, &amp;prop2);
+      ├── ret = power_supply_set_property(chg_psy,POWER_SUPPLY_PROP_USB_TYPE, &amp;prop3);
+      └── power_supply_changed(chg_data-&gt;psy); //发送uevent事件，上层读取sysfs节点
+</pre></div>
+</div>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">typec_attach_thread</span></code>具体内容如下：</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">typec_attach_thread</span><span class="p">(</span><span class="kt">void</span><span class="w"> </span><span class="o">*</span><span class="n">data</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="k">struct</span><span class="w"> </span><span class="nc">mt6370_pmu_charger_data</span><span class="w"> </span><span class="o">*</span><span class="n">chg_data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">data</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="kt">int</span><span class="w"> </span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="kt">bool</span><span class="w"> </span><span class="n">attach</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="k">union</span><span class="w"> </span><span class="nc">power_supply_propval</span><span class="w"> </span><span class="n">val</span><span class="p">;</span><span class="w"></span>
 
-充电器类型检测：
+<span class="w">	</span><span class="n">pr_info</span><span class="p">(</span><span class="s">&quot;%s: ++</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">__func__</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="k">while</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">kthread_should_stop</span><span class="p">())</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="n">wait_for_completion</span><span class="p">(</span><span class="o">&amp;</span><span class="n">chg_data</span><span class="o">-&gt;</span><span class="n">chrdet_start</span><span class="p">);</span><span class="w"> </span><span class="c1">//等待CC检测完成</span>
+<span class="w">		</span><span class="n">mutex_lock</span><span class="p">(</span><span class="o">&amp;</span><span class="n">chg_data</span><span class="o">-&gt;</span><span class="n">attach_lock</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="n">attach</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">chg_data</span><span class="o">-&gt;</span><span class="n">attach</span><span class="p">;</span><span class="w"></span>
+<span class="w">		</span><span class="n">mutex_unlock</span><span class="p">(</span><span class="o">&amp;</span><span class="n">chg_data</span><span class="o">-&gt;</span><span class="n">attach_lock</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="n">val</span><span class="p">.</span><span class="n">intval</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">attach</span><span class="p">;</span><span class="w"></span>
+<span class="w">		</span><span class="n">pr_notice</span><span class="p">(</span><span class="s">&quot;%s bc12_sel:%d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">__func__</span><span class="p">,</span><span class="w"></span>
+<span class="w">				</span><span class="n">chg_data</span><span class="o">-&gt;</span><span class="n">chg_desc</span><span class="o">-&gt;</span><span class="n">bc12_sel</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">chg_data</span><span class="o">-&gt;</span><span class="n">chg_desc</span><span class="o">-&gt;</span><span class="n">bc12_sel</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"></span>
+<span class="w">			</span><span class="n">power_supply_set_property</span><span class="p">(</span><span class="n">chg_data</span><span class="o">-&gt;</span><span class="n">chg_psy</span><span class="p">,</span><span class="w"></span>
+<span class="w">						</span><span class="n">POWER_SUPPLY_PROP_ONLINE</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">val</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="k">else</span><span class="w"></span>
+<span class="w">			</span><span class="n">mt6370_get_charger_type</span><span class="p">(</span><span class="n">chg_data</span><span class="p">,</span><span class="w"> </span><span class="n">attach</span><span class="p">);</span><span class="w"> </span><span class="c1">//重点</span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+<span class="w">	</span><span class="k">return</span><span class="w"> </span><span class="n">ret</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>bc1.2检测：</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">get_charger_type</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">mtk_charger_type</span><span class="w"> </span><span class="o">*</span><span class="n">info</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">en</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="k">enum</span><span class="w"> </span><span class="nc">power_supply_usb_type</span><span class="w"> </span><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">POWER_SUPPLY_USB_TYPE_UNKNOWN</span><span class="p">;</span><span class="w"></span>
 
-* typec_attach_thread(void *data)
-  * mt6370_get_charger_type(chg_data, attach); 
-    * chg_psy = power_supply_get_by_name(&quot;mtk_charger_type&quot;); //获取mtk_charger_type psy设备，这里关联mt6357_charger_type.c
-    * if (chg_data-&gt;typec_state == TYPEC_ATTACHED_NORP_SRC) 
-    * if (chg_data-&gt;r15_state == R15_STATUS_ONLINE)
-    * if (chg_data-&gt;pogo_dev_state == POGO_DEV_STATE_ONLINE)
-      * prop.intval = 0; //表示这三种情况跳过bc1.2检测，因为USB D+ D-都接到hub上面了，无法识别。
-    * if (chg_data-&gt;manual_usb_mode == USB_MODE_DEV) { prop.intval = attach;} //设备切为device时才进行bc1.2检测
-    * ret = power_supply_set_property(chg_psy,POWER_SUPPLY_PROP_ONLINE, &amp;prop);
-      * psy_chr_type_set_property(struct power_supply *psy, //mt6357_charger_type.c
-        * case POWER_SUPPLY_PROP_ONLINE:
-          * info-&gt;type = get_charger_type(info, val-&gt;intval);
-    * ret = power_supply_set_property(chg_psy,POWER_SUPPLY_PROP_TYPE, &amp;prop2);
-    * ret = power_supply_set_property(chg_psy,POWER_SUPPLY_PROP_USB_TYPE, &amp;prop3);
-    * power_supply_changed(chg_data-&gt;psy); //发送uevent事件，上层读取sysfs节点
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">en</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="o">!</span><span class="n">boot_mode_is_normal</span><span class="p">(</span><span class="n">info</span><span class="p">))</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="c1">//这里!boot_mode_is_normal表示meta模式下做bc1.2，由于工厂夹具没有CC线，typec识别成TYPEC_ATTACHED_NORP_SRC，由于底座充电需求(疑问中有解释)，会跳过bc1.2，</span>
+<span class="w">		</span><span class="n">hw_bc11_init</span><span class="p">(</span><span class="n">info</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">hw_bc11_DCD</span><span class="p">(</span><span class="n">info</span><span class="p">))</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">			</span><span class="n">info</span><span class="o">-&gt;</span><span class="n">psy_desc</span><span class="p">.</span><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">POWER_SUPPLY_TYPE_USB</span><span class="p">;</span><span class="w"></span>
+<span class="w">			</span><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">POWER_SUPPLY_USB_TYPE_DCP</span><span class="p">;</span><span class="w"></span>
+<span class="w">		</span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">			</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">hw_bc11_stepA2</span><span class="p">(</span><span class="n">info</span><span class="p">))</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">				</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">hw_bc11_stepB2</span><span class="p">(</span><span class="n">info</span><span class="p">))</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">					</span><span class="n">info</span><span class="o">-&gt;</span><span class="n">psy_desc</span><span class="p">.</span><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">POWER_SUPPLY_TYPE_USB_DCP</span><span class="p">;</span><span class="w"></span>
+<span class="w">					</span><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">POWER_SUPPLY_USB_TYPE_DCP</span><span class="p">;</span><span class="w"></span>
+<span class="w">				</span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">					</span><span class="n">info</span><span class="o">-&gt;</span><span class="n">psy_desc</span><span class="p">.</span><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">POWER_SUPPLY_TYPE_USB_CDP</span><span class="p">;</span><span class="w"></span>
+<span class="w">					</span><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">POWER_SUPPLY_USB_TYPE_CDP</span><span class="p">;</span><span class="w"></span>
+<span class="w">				</span><span class="p">}</span><span class="w"></span>
+<span class="w">			</span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">				</span><span class="n">info</span><span class="o">-&gt;</span><span class="n">psy_desc</span><span class="p">.</span><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">POWER_SUPPLY_TYPE_USB</span><span class="p">;</span><span class="w"></span>
+<span class="w">				</span><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">POWER_SUPPLY_USB_TYPE_SDP</span><span class="p">;</span><span class="w"></span>
+<span class="w">			</span><span class="p">}</span><span class="w"></span>
+<span class="w">		</span><span class="p">}</span><span class="w"></span>
 
-static int typec_attach_thread(void *data)
-{
-	struct mt6370_pmu_charger_data *chg_data = data;
-	int ret = 0;
-	bool attach;
-	union power_supply_propval val;
+<span class="w">		</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">type</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">POWER_SUPPLY_USB_TYPE_DCP</span><span class="p">)</span><span class="w"></span>
+<span class="w">			</span><span class="n">hw_bc11_done</span><span class="p">(</span><span class="n">info</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="k">else</span><span class="w"></span>
+<span class="w">			</span><span class="n">pr_info</span><span class="p">(</span><span class="s">&quot;charger type: skip bc11 release for BC12 DCP SPEC</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+<span class="w">	</span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="c1">//TYPEC_ATTACHED_NORP_SRC R15_STATUS_ONLINE POGO_DEV_STATE_ONLINE 这三种情况，跳过bc1.2，直接赋值DCP类型。</span>
+<span class="w">		</span><span class="n">info</span><span class="o">-&gt;</span><span class="n">psy_desc</span><span class="p">.</span><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">POWER_SUPPLY_TYPE_USB</span><span class="p">;</span><span class="w"></span>
+<span class="w">		</span><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">POWER_SUPPLY_USB_TYPE_DCP</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
 
-	pr_info(&quot;%s: ++\n&quot;, __func__);
-	while (!kthread_should_stop()) {
-		wait_for_completion(&amp;chg_data-&gt;chrdet_start); //等待CC检测完成
-		mutex_lock(&amp;chg_data-&gt;attach_lock);
-		attach = chg_data-&gt;attach;
-		mutex_unlock(&amp;chg_data-&gt;attach_lock);
-		val.intval = attach;
-		pr_notice(&quot;%s bc12_sel:%d\n&quot;, __func__,
-				chg_data-&gt;chg_desc-&gt;bc12_sel);
-		if (chg_data-&gt;chg_desc-&gt;bc12_sel == 0)
-			power_supply_set_property(chg_data-&gt;chg_psy,
-						POWER_SUPPLY_PROP_ONLINE, &amp;val);
-		else
-			mt6370_get_charger_type(chg_data, attach); //重点
-	}
-	return ret;
-}
+<span class="w">	</span><span class="n">dump_charger_name</span><span class="p">(</span><span class="n">info</span><span class="o">-&gt;</span><span class="n">psy_desc</span><span class="p">.</span><span class="n">type</span><span class="p">);</span><span class="w"></span>
 
-
-bc1.2检测：
-static int get_charger_type(struct mtk_charger_type *info, int en)
-{
-	enum power_supply_usb_type type = POWER_SUPPLY_USB_TYPE_UNKNOWN;
-
-	if (en || !boot_mode_is_normal(info)) { //这里!boot_mode_is_normal表示meta模式下做bc1.2，由于工厂夹具没有CC线，typec识别成TYPEC_ATTACHED_NORP_SRC，由于底座充电需求(疑问中有解释)，会跳过bc1.2，
-		hw_bc11_init(info);
-		if (hw_bc11_DCD(info)) {
-			info-&gt;psy_desc.type = POWER_SUPPLY_TYPE_USB;
-			type = POWER_SUPPLY_USB_TYPE_DCP;
-		} else {
-			if (hw_bc11_stepA2(info)) {
-				if (hw_bc11_stepB2(info)) {
-					info-&gt;psy_desc.type = POWER_SUPPLY_TYPE_USB_DCP;
-					type = POWER_SUPPLY_USB_TYPE_DCP;
-				} else {
-					info-&gt;psy_desc.type = POWER_SUPPLY_TYPE_USB_CDP;
-					type = POWER_SUPPLY_USB_TYPE_CDP;
-				}
-			} else {
-				info-&gt;psy_desc.type = POWER_SUPPLY_TYPE_USB;
-				type = POWER_SUPPLY_USB_TYPE_SDP;
-			}
-		}
-
-		if (type != POWER_SUPPLY_USB_TYPE_DCP)
-			hw_bc11_done(info);
-		else
-			pr_info(&quot;charger type: skip bc11 release for BC12 DCP SPEC\n&quot;);
-	}
-	else { //TYPEC_ATTACHED_NORP_SRC R15_STATUS_ONLINE POGO_DEV_STATE_ONLINE 这三种情况，跳过bc1.2，直接赋值DCP类型。
-		info-&gt;psy_desc.type = POWER_SUPPLY_TYPE_USB;
-		type = POWER_SUPPLY_USB_TYPE_DCP;
-	}
-
-	dump_charger_name(info-&gt;psy_desc.type);
-
-	return type;
-}
+<span class="w">	</span><span class="k">return</span><span class="w"> </span><span class="n">type</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
 </pre></div>
 </div>
 <p>疑问：</p>

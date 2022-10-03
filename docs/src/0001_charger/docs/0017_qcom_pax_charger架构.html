@@ -46,10 +46,12 @@
 <li><a class="reference internal" href="#id2">参考</a></li>
 <li><a class="reference internal" href="#id3">架构图</a></li>
 <li><a class="reference internal" href="#charger-class">charger_class架构介绍</a></li>
-<li><a class="reference internal" href="#id4">底座充电功能开发</a></li>
-<li><a class="reference internal" href="#id5">问题点</a><ul>
+<li><a class="reference internal" href="#id4">充电状态上报逻辑</a></li>
+<li><a class="reference internal" href="#id5">底座充电功能开发</a></li>
+<li><a class="reference internal" href="#id6">问题点</a><ul>
 <li><a class="reference internal" href="#bc1-2">bc1.2轮询方案</a></li>
 <li><a class="reference internal" href="#charger-routine-threadmsleep">charger_routine_thread不能加msleep</a></li>
+<li><a class="reference internal" href="#id7">原子通知链不允许嵌套</a></li>
 </ul>
 </li>
 </ul>
@@ -313,15 +315,93 @@ static int mp2721_charger_probe(struct i2c_client *client,
 </div>
 </section>
 <section id="id4">
-<h1>底座充电功能开发<a class="headerlink" href="#id4" title="此标题的永久链接"></a></h1>
+<h1>充电状态上报逻辑<a class="headerlink" href="#id4" title="此标题的永久链接"></a></h1>
+<ul class="simple">
+<li><p>目前MTK平台充电状态上报分为以下几种：</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">FULL</span></code>事件在<code class="docutils literal notranslate"><span class="pre">do_algorithm</span></code>中轮询，并通过<code class="docutils literal notranslate"><span class="pre">charger_dev_do_event</span></code>通知charger ic调用<code class="docutils literal notranslate"><span class="pre">power_supply_changed</span></code>上报状态。</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">EVENT_DISCHARGE</span></code>和<code class="docutils literal notranslate"><span class="pre">EVENT_RECHARGE</span></code>事件在调用<code class="docutils literal notranslate"><span class="pre">enable_charging</span></code>时发送给charger ic。</p></li>
+</ul>
+</li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">enable_charging</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">mtk_charger</span><span class="w"> </span><span class="o">*</span><span class="n">info</span><span class="p">,</span><span class="w"></span>
+<span class="w">						</span><span class="kt">bool</span><span class="w"> </span><span class="n">en</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="k">struct</span><span class="w"> </span><span class="nc">chg_alg_device</span><span class="w"> </span><span class="o">*</span><span class="n">alg</span><span class="p">;</span><span class="w"></span>
+
+
+<span class="w">	</span><span class="n">chr_err</span><span class="p">(</span><span class="s">&quot;%s %d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">__func__</span><span class="p">,</span><span class="w"> </span><span class="n">en</span><span class="p">);</span><span class="w"></span>
+
+<span class="cp">#ifdef CONFIG_PAX_BMS</span>
+<span class="w">	</span><span class="n">en</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">en</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">info</span><span class="o">-&gt;</span><span class="n">bms_charge_enable</span><span class="p">;</span><span class="w"></span>
+<span class="cp">#endif</span>
+
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">en</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="nb">false</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">MAX_ALG_NO</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">			</span><span class="n">alg</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">info</span><span class="o">-&gt;</span><span class="n">alg</span><span class="p">[</span><span class="n">i</span><span class="p">];</span><span class="w"></span>
+<span class="w">			</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">alg</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="nb">NULL</span><span class="p">)</span><span class="w"></span>
+<span class="w">				</span><span class="k">continue</span><span class="p">;</span><span class="w"></span>
+<span class="w">			</span><span class="n">chg_alg_stop_algo</span><span class="p">(</span><span class="n">alg</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="p">}</span><span class="w"></span>
+<span class="w">		</span><span class="n">charger_dev_enable</span><span class="p">(</span><span class="n">info</span><span class="o">-&gt;</span><span class="n">chg1_dev</span><span class="p">,</span><span class="w"> </span><span class="nb">false</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="n">charger_dev_do_event</span><span class="p">(</span><span class="n">info</span><span class="o">-&gt;</span><span class="n">chg1_dev</span><span class="p">,</span><span class="w"> </span><span class="n">EVENT_DISCHARGE</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="n">charger_dev_enable</span><span class="p">(</span><span class="n">info</span><span class="o">-&gt;</span><span class="n">chg1_dev</span><span class="p">,</span><span class="w"> </span><span class="nb">true</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="n">charger_dev_do_event</span><span class="p">(</span><span class="n">info</span><span class="o">-&gt;</span><span class="n">chg1_dev</span><span class="p">,</span><span class="w"> </span><span class="n">EVENT_RECHARGE</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+
+<span class="w">	</span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">do_algorithm</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">mtk_charger</span><span class="w"> </span><span class="o">*</span><span class="n">info</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">((</span><span class="n">info</span><span class="o">-&gt;</span><span class="n">is_chg_done</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">chg_done</span><span class="p">)</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="p">((</span><span class="n">last_soc</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">soc</span><span class="p">)</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="p">(</span><span class="n">soc</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="mi">100</span><span class="p">)))</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">chg_done</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">			</span><span class="n">charger_dev_do_event</span><span class="p">(</span><span class="n">info</span><span class="o">-&gt;</span><span class="n">chg1_dev</span><span class="p">,</span><span class="w"> </span><span class="n">EVENT_FULL</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span><span class="w"></span>
+<span class="w">			</span><span class="n">chr_err</span><span class="p">(</span><span class="s">&quot;%s battery full</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">__func__</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">			</span><span class="n">charger_dev_do_event</span><span class="p">(</span><span class="n">info</span><span class="o">-&gt;</span><span class="n">chg1_dev</span><span class="p">,</span><span class="w"> </span><span class="n">EVENT_RECHARGE</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span><span class="w"></span>
+<span class="w">			</span><span class="n">chr_err</span><span class="p">(</span><span class="s">&quot;%s battery recharge</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">__func__</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="p">}</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>pax_charger采用直接轮询charger ic状态的方式，更加方便，而且现在把psy设备注册放到pax_charger端，如果状态有变化直接调用<code class="docutils literal notranslate"><span class="pre">power_supply_changed</span></code>上报状态，无需再转手。</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="k">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">pax_charger_check_status</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">pax_charger</span><span class="w"> </span><span class="o">*</span><span class="n">info</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="k">static</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="n">chg_status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">chg_status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pax_charger_dev_get_charging_status</span><span class="p">(</span><span class="n">info</span><span class="o">-&gt;</span><span class="n">chg1_dev</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">chg_status</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">info</span><span class="o">-&gt;</span><span class="n">chg_state</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">g_info</span><span class="o">-&gt;</span><span class="n">psy1</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">			</span><span class="n">chr_err</span><span class="p">(</span><span class="s">&quot;charger status changed: chg_status = %d old_chg_status = %d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">chg_status</span><span class="p">,</span><span class="w"> </span><span class="n">info</span><span class="o">-&gt;</span><span class="n">chg_state</span><span class="p">);</span><span class="w"></span>
+<span class="w">			</span><span class="n">power_supply_changed</span><span class="p">(</span><span class="n">g_info</span><span class="o">-&gt;</span><span class="n">psy1</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="p">}</span><span class="w"></span>
+<span class="w">		</span><span class="n">info</span><span class="o">-&gt;</span><span class="n">chg_state</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">chg_status</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">charger_routine_thread</span><span class="p">(</span><span class="kt">void</span><span class="w"> </span><span class="o">*</span><span class="n">arg</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="n">pax_charger_check_status</span><span class="p">(</span><span class="n">info</span><span class="p">);</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+</section>
+<section id="id5">
+<h1>底座充电功能开发<a class="headerlink" href="#id5" title="此标题的永久链接"></a></h1>
 <ul class="simple">
 <li><p>硬件信息：</p></li>
 </ul>
 <p><img alt="0017_0004.png" src="../../../_images/0017_0004.png" />
 <img alt="0017_0005.png" src="../../../_images/0017_0005.png" /></p>
 </section>
-<section id="id5">
-<h1>问题点<a class="headerlink" href="#id5" title="此标题的永久链接"></a></h1>
+<section id="id6">
+<h1>问题点<a class="headerlink" href="#id6" title="此标题的永久链接"></a></h1>
 <section id="bc1-2">
 <h2>bc1.2轮询方案<a class="headerlink" href="#bc1-2" title="此标题的永久链接"></a></h2>
 <p>我们目前需要等待usb先做完bc1.2，才开始执行充电，目前采用timer轮询的方案，如下：</p>
@@ -572,6 +652,9 @@ typec发送通知：
 </ul>
 <p>首先，执行了sleep，就可能切换到其它进程，此时，并没有调用spin_unlock释放锁。当另外的进程(线程)再次调用同一驱动时，需要获取相同的spin lock，由于之前并没有释放锁，于是就出现死锁了。</p>
 <p>鉴于此，只能放弃msleep的做法，而使用循环达到延时的目标。</p>
+</section>
+<section id="id7">
+<h2>原子通知链不允许嵌套<a class="headerlink" href="#id7" title="此标题的永久链接"></a></h2>
 </section>
 </section>
 

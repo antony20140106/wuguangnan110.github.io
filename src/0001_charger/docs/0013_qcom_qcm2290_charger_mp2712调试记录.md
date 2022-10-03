@@ -1310,7 +1310,7 @@ static int mp2721_set_aicr(struct charger_device *chg_dev, int curr)
 ```
 
 查看寄存器表：
-```log
+```shell
 开机打印：
 [    3.337015] PAX_CHG_MP2721: mp2721_parse_dt() iin_limit:2000mA
 
@@ -1690,6 +1690,10 @@ Reg[0x16] = 0x00
 
 * 2.vbus太小，压降太大，如何解决？是因为电池线的阻值太大？拉低了电压？
 解决方案：charger端到电池连接线要尽量短，将电池连接线搞短点，充电效率提升，量取vbus立马变成4.9v了。
+
+寄存器乱的原因是硬件问题，目前发现charger/gauge这些i2c和camera串联在一起，读写受到严重干扰，需要分离：
+
+![0013_0046.png](images/0013_0046.png)
 
 ### 0826 fae现场调试
 

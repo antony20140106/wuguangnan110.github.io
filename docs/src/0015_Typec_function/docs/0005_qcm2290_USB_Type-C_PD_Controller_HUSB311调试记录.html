@@ -65,6 +65,7 @@
 <li><a class="reference internal" href="#ext-discharge">8.EXT-Discharge 重启</a></li>
 <li><a class="reference internal" href="#usb">9.插usb启动死机重启</a></li>
 <li><a class="reference internal" href="#otg">10.接OTG线死机</a></li>
+<li><a class="reference internal" href="#try-srcpd">11. 无电池Try.SRC插入PD充电器启动死机重启</a></li>
 </ul>
 </li>
 </ul>
@@ -2238,6 +2239,357 @@ void handle_typec_attach_dettach(bool en)
 </ol>
 </li>
 </ul>
+</section>
+<section id="try-srcpd">
+<h2>11. 无电池Try.SRC插入PD充电器启动死机重启<a class="headerlink" href="#try-srcpd" title="此标题的永久链接"></a></h2>
+<p>目前已知typec驱动开机时会通过<code class="docutils literal notranslate"><span class="pre">typec_init</span></code>初始化默认状态，当无电池插入PD充电器启动时，系统出现重启现象，打印如下：</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>[    7.818358] __tcpc_class_complete_work = type_c_port0
+[    7.824277] i2c_geni 4a80000.i2c: i2c error :-107
+[    7.834284] ///PD dbg info 41d
+[    7.837424] &lt;    7.834&gt;TCPC-TYPEC:typec_init: TrySRC
+[    7.845761] tcpc_device_irq_enable : tcpc irq enable OK!
+[    7.848587] husb311_set_low_power_mode - write HUSB311_REG_BMC_CTRL=0x7
+[    7.851411] ALSA device list:
+[    7.857897] pd_tcp_notifier_call event = ATTACHWAIT_SNK
+[    7.860698]   No soundcards found.
+[    7.864084] ///PD dbg info 250d
+[    7.872515] &lt;    7.842&gt;TCPC-TYPEC:PowerOffCharge
+[    7.872515] &lt;    7.842&gt;TCPC-TYPEC:** Unattached.SNK
+[    7.872515] &lt;    7.846&gt;TCPC-TCPC:Alert:0x0001, Mask:0x21067f
+[    7.872515] &lt;
+[    7.872517]    7.846&gt;TCPC-TCPC:tcpci_alert_cc_changed ++
+[    7.872517] &lt;    7.847&gt;TCPC-TYPEC:[CC_Alert] 7/0
+[    7.872517] &lt;    7.857&gt;TCPC-TYPEC:** AttachWait.SNK
+[    7.906564] Freeing unused kernel memory: 4992K
+[    7.911221] Run /init as init process
+[    7.931264] init: init first stage started!
+[    7.935634] init: Unable to open /lib/modules, skipping module loading.
+[    7.943004] init: [libfs_mgr]dt_fstab: Skip disabled entry for partition vendor
+[    7.950382] init: [libfs_mgr]ReadFstabFromDt(): failed to read fstab from dt
+[    7.957696] init: [libfs_mgr]dt_fstab: Skip disabled entry for partition vendor
+[    7.966653] init: Using Android DT directory /proc/device-tree/firmware/android/
+[    7.978024] ///PD dbg info 71d
+[    7.981135] &lt;    7.977&gt;TCPC-TYPEC:[CC_Change] 7/0
+[    7.981135] &lt;    7.977&gt;TCPC-TYPEC:** Try.SRC
+
+Format: Log Type - Time(microsec) - Message - Optional Info
+Log Type: B - Since Boot(Power On Reset),  D - Delta,  S - Statistic
+S - QC_IMAGE_VERSION_STRING=BOOT.XF.4.1-00343-KAMORTALAZ-1
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>尝试将默认配置成SNK或者DRP则不会重启，SNK打印如下，attach成功了：</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>[    7.851634] ///PD dbg info 41d
+[    7.854723] &lt;    7.851&gt;TCPC-TYPEC:typec_init: TrySNK
+[    7.855163] tcpc_device_irq_enable : tcpc irq enable OK!
+[    7.858004] husb311_set_low_power_mode - write HUSB311_REG_BMC_CTRL=0x7
+[    7.858179] pd_tcp_notifier_call event = ATTACHWAIT_SNK
+[    7.877238] ALSA device list:
+[    7.880073] ///PD dbg info 250d
+[    7.880229]   No soundcards found.
+[    7.883354] &lt;    7.852&gt;TCPC-TYPEC:PowerOffCharge
+[    7.883354] &lt;    7.852&gt;TCPC-TYPEC:** Unattached.SNK
+[    7.883354] &lt;    7.856&gt;TCPC-TCPC:Alert:0x0001, Mask:0x21067f
+[    7.883354] &lt;
+[    7.883356]    7.856&gt;TCPC-TCPC:tcpci_alert_cc_changed ++
+[    7.883356] &lt;    7.856&gt;TCPC-TYPEC:[CC_Alert] 0/7
+[    7.883356] &lt;    7.858&gt;TCPC-TYPEC:** AttachWait.SNK
+[    7.921210] Freeing unused kernel memory: 4992K
+[    7.925844] Run /init as init process
+[    7.945406] init: init first stage started!
+[    7.949781] init: Unable to open /lib/modules, skipping module loading.
+[    7.957220] init: [libfs_mgr]dt_fstab: Skip disabled entry for partition vendor
+[    7.964587] init: [libfs_mgr]ReadFstabFromDt(): failed to read fstab from dt
+[    7.971900] init: [libfs_mgr]dt_fstab: Skip disabled entry for partition vendor
+[    7.978287] ///PD dbg info 76d
+[    7.979103] pd_tcp_notifier_call event = SINK_VBUS
+[    7.979113] charger soc:charger: pd_tcp_notifier_call sink vbus 5000mV 3000mA type(0x01)
+[    7.979116] pd_tcp_notifier_call - sink vbus
+[    7.979131] PAX_CHG: psy_charger_set_property: prop:8 5000000
+[    7.979139] PAX_CHG: _wake_up_charger:
+[    7.979163] pd_tcp_notifier_call event = TYPEC_STATE
+[    7.979167] tcpc_notifier_call, old_state = UNATTACHED, new_state = ATTACHED_SNK
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>DRP如下：</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>[    7.855901] ///PD dbg info 38d
+[    7.858980] &lt;    7.855&gt;TCPC-TYPEC:typec_init: DRP
+[    7.859425] tcpc_device_irq_enable : tcpc irq enable OK!
+[    7.869489] ALSA device list:
+[    7.872510]   No soundcards found.
+[    7.878095] husb311_set_low_power_mode - write HUSB311_REG_BMC_CTRL=0x7
+[    7.878975] Freeing unused kernel memory: 4992K
+[    7.884070] ///PD dbg info 210d
+[    7.884074] &lt;    7.856&gt;TCPC-TYPEC:PowerOffCharge
+[    7.884074] &lt;    7.856&gt;TCPC-TYPEC:** Unattached.SNK
+[    7.884074] &lt;    7.876&gt;TCPC-TCPC:Alert:0x0001, Mask:0x21067f
+[    7.884074] &lt;
+[    7.884076]    7.876&gt;TCPC-TCPC:tcpci_alert_cc_changed ++
+[    7.884076] &lt;    7.876&gt;TCPC-TYPEC:[CC_Alert] 0/7
+[    7.892502] pd_tcp_notifier_call event = ATTACHWAIT_SNK
+[    7.909325] ///PD dbg info 40d
+[    7.909383] Run /init as init process
+[    7.931293] &lt;    7.892&gt;TCPC-TYPEC:** AttachWait.SNK
+[    7.936497] init: init first stage started!
+[    7.940876] init: Unable to open /lib/modules, skipping module loading.
+[    7.948371] init: [libfs_mgr]dt_fstab: Skip disabled entry for partition vendor
+[    7.955741] init: [libfs_mgr]ReadFstabFromDt(): failed to read fstab from dt
+[    7.963041] init: [libfs_mgr]dt_fstab: Skip disabled entry for partition vendor
+[    7.971679] init: Using Android DT directory /proc/device-tree/firmware/android/
+[    8.012590] ///PD dbg info 76d
+[    8.013567] pd_tcp_notifier_call event = SINK_VBUS
+[    8.015677] &lt;    8.012&gt;TCPC-TYPEC:[CC_Change] 0/7
+[    8.015677] &lt;    8.012&gt;TCPC-TYPEC:** Attached.SNK
+[    8.020568] charger soc:charger: pd_tcp_notifier_call sink vbus 5000mV 3000mA type(0x01)
+[    8.038350] pd_tcp_notifier_call - sink vbus
+[    8.042743] PAX_CHG: psy_charger_set_property: prop:8 5000000
+[    8.048611] PAX_CHG: _wake_up_charger:
+[    8.052446] pd_tcp_notifier_call event = TYPEC_STATE
+[    8.052469] PAX_CHG: Found primary charger
+[    8.057449] tcpc_notifier_call, old_state = UNATTACHED, new_state = ATTACHED_SNK
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>尝试在获取默认状态dts部分做无电池启动判断，无电池时默认role配置为sink。</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">husb311_tcpcdev_init</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">husb311_chip</span><span class="w"> </span><span class="o">*</span><span class="n">chip</span><span class="p">,</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w"> </span><span class="o">*</span><span class="n">dev</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">of_property_read_u32</span><span class="p">(</span><span class="n">np</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;tcpc,role_def&quot;</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">val</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">val</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="n">TYPEC_ROLE_NR</span><span class="p">)</span><span class="w"></span>
+<span class="w">			</span><span class="n">desc</span><span class="o">-&gt;</span><span class="n">role_def</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">TYPEC_ROLE_DRP</span><span class="p">;</span><span class="w"></span>
+<span class="w">		</span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">			</span><span class="n">desc</span><span class="o">-&gt;</span><span class="n">role_def</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">val</span><span class="p">;</span><span class="w"></span>
+<span class="w">			</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">pax_bat_exist_from_cmdline</span><span class="p">())</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">				</span><span class="n">dev_info</span><span class="p">(</span><span class="n">dev</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;%s no bettery startup, role_def is sink!</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">__func__</span><span class="p">);</span><span class="w"></span>
+<span class="w">				</span><span class="n">desc</span><span class="o">-&gt;</span><span class="n">role_def</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">TYPEC_ROLE_SNK</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span><span class="w"></span>
+<span class="w">			</span><span class="p">}</span><span class="w"></span>
+<span class="w">		</span><span class="p">}</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="n">dev_info</span><span class="p">(</span><span class="n">dev</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;use default Role DRP</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="n">desc</span><span class="o">-&gt;</span><span class="n">role_def</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">TYPEC_ROLE_DRP</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>初始化过了，无电池时默认TrySNK是能起来的：</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>[    7.863012] ///PD dbg info 154d
+[    7.866183] &lt;    7.862&gt;TCPC-TYPEC:typec_init: TrySNK
+[    7.866183] &lt;    7.862&gt;TCPC-TYPEC:typec_init: 111
+[    7.866183] &lt;    7.862&gt;TCPC-TYPEC:typec_init: 22
+[    7.866183] &lt;    7.862&gt;T
+[    7.866185] CPC-TYPEC:typec_init: 222
+[    7.866539] tcpc_device_irq_enable : tcpc irq enable OK!
+[    7.892455] ALSA device list:
+[    7.895454]   No soundcards found.
+[    7.900919] husb311_set_low_power_mode - write HUSB311_REG_BMC_CTRL=0x7
+[    7.901929] Freeing unused kernel memory: 4992K
+[    7.904073] ///PD dbg info 210d
+[    7.904076] &lt;    7.863&gt;TCPC-TYPEC:PowerOffCharge
+[    7.904076] &lt;    7.863&gt;TCPC-TYPEC:** Unattached.SNK
+[    7.904076] &lt;    7.898&gt;TCPC-TCPC:Alert:0x0001, Mask:0x21067f
+[    7.904076] &lt;
+[    7.904078]    7.899&gt;TCPC-TCPC:tcpci_alert_cc_changed ++
+[    7.904078] &lt;    7.899&gt;TCPC-TYPEC:[CC_Alert] 7/0
+[    7.915327] pd_tcp_notifier_call event = ATTACHWAIT_SNK
+[    7.932126] ///PD dbg info 40d
+[    7.932129] &lt;    7.915&gt;TCPC-TYPEC:** AttachWait.SNK
+[    7.932224] Run /init as init process
+[    7.974815] init: init first stage started!
+[    7.979193] init: Unable to open /lib/modules, skipping module loading.
+[    7.986596] init: [libfs_mgr]dt_fstab: Skip disabled entry for partition vendor
+[    7.993983] init: [libfs_mgr]ReadFstabFromDt(): failed to read fstab from dt
+[    8.001376] init: [libfs_mgr]dt_fstab: Skip disabled entry for partition vendor
+[    8.010145] init: Using Android DT directory /proc/device-tree/firmware/android/
+[    8.035439] ///PD dbg info 76d
+[    8.038572] &lt;    8.035&gt;TCPC-TYPEC:[CC_Change] 7/0
+[    8.038572] &lt;    8.035&gt;TCPC-TYPEC:** Attached.SNK
+[    8.048300] pd_tcp_notifier_call event = SINK_VBUS
+[    8.053148] charger soc:charger: pd_tcp_notifier_call sink vbus 5000mV 3000mA type(0x01)
+[    8.061304] pd_tcp_notifier_call - sink vbus
+[    8.065635] PAX_CHG: psy_charger_set_property: prop:8 5000000
+[    8.071435] PAX_CHG: _wake_up_charger:
+[    8.075260] pd_tcp_notifier_call event = TYPEC_STATE
+[    8.075283] PAX_CHG: Found primary charger
+[    8.080294] tcpc_notifier_call, old_state = UNATTACHED, new_state = ATTACHED_SNK
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>但是启动到18s时出现重启：</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span>   <span class="mf">17.937582</span><span class="p">]</span> <span class="o">///</span><span class="n">PD</span> <span class="n">dbg</span> <span class="n">info</span> <span class="mi">73</span><span class="n">d</span>
+<span class="p">[</span>   <span class="mf">17.940861</span><span class="p">]</span> <span class="o">&lt;</span>   <span class="mf">17.937</span><span class="o">&gt;</span><span class="n">TCPC</span><span class="o">-</span><span class="n">DC</span><span class="o">&gt;</span> <span class="n">dc_dfp_none</span>
+<span class="p">[</span>   <span class="mf">17.940861</span><span class="p">]</span> <span class="o">&lt;</span>   <span class="mf">17.937</span><span class="o">&gt;</span><span class="n">TCPC</span><span class="o">-</span><span class="n">PE</span><span class="p">:</span><span class="n">PD</span> <span class="o">-&gt;</span> <span class="n">SNK_START</span> <span class="p">(</span><span class="n">CUN</span><span class="p">)</span>
+<span class="p">[</span>   <span class="mf">17.972153</span><span class="p">]</span> <span class="o">///</span><span class="n">PD</span> <span class="n">dbg</span> <span class="n">info</span> <span class="mi">185</span><span class="n">d</span>
+<span class="p">[</span>   <span class="mf">17.975323</span><span class="p">]</span> <span class="o">&lt;</span>   <span class="mf">17.950</span><span class="o">&gt;</span><span class="n">TCPC</span><span class="o">-</span><span class="n">PE</span><span class="o">-</span><span class="n">EVT</span><span class="p">:</span><span class="n">reset_prl_done</span>
+<span class="p">[</span>   <span class="mf">17.975323</span><span class="p">]</span> <span class="o">&lt;</span>   <span class="mf">17.950</span><span class="o">&gt;</span><span class="n">TCPC</span><span class="o">-</span><span class="n">PE</span><span class="p">:</span><span class="n">PD</span> <span class="o">-&gt;</span> <span class="n">SNK_DISC</span> <span class="p">(</span><span class="n">CUN</span><span class="p">)</span>
+<span class="p">[</span>   <span class="mf">17.975323</span><span class="p">]</span> <span class="o">&lt;</span>   <span class="mf">17.950</span><span class="o">&gt;</span><span class="n">TCPC</span><span class="o">-</span><span class="n">PE</span><span class="p">:</span><span class="n">WaitVBUS</span><span class="o">=</span><span class="mi">1</span>
+<span class="p">[</span>   <span class="mf">17.975323</span><span class="p">]</span> <span class="o">&lt;</span>   <span class="mf">17.950</span><span class="o">&gt;</span><span class="n">TCPC</span><span class="o">-</span><span class="n">PE</span><span class="o">-</span><span class="n">E</span>
+<span class="p">[</span>   <span class="mf">17.975325</span><span class="p">]</span> <span class="n">VT</span><span class="p">:</span><span class="n">vbus_high</span>
+<span class="p">[</span>   <span class="mf">17.975325</span><span class="p">]</span> <span class="o">&lt;</span>   <span class="mf">17.950</span><span class="o">&gt;</span><span class="n">TCPC</span><span class="o">-</span><span class="n">PE</span><span class="p">:</span><span class="n">PD</span> <span class="o">-&gt;</span> <span class="n">SNK_WAIT_CAP</span> <span class="p">(</span><span class="n">CUN</span><span class="p">)</span>
+<span class="p">[</span>   <span class="mf">18.022396</span><span class="p">]</span> <span class="n">create</span> <span class="o">/</span><span class="n">data</span><span class="o">/</span><span class="n">lwm2m</span>
+<span class="p">[</span>   <span class="mf">18.022597</span><span class="p">]</span> <span class="n">init</span><span class="p">:</span> <span class="n">Top</span><span class="o">-</span><span class="n">level</span> <span class="n">directory</span> <span class="n">needs</span> <span class="n">encryption</span> <span class="n">action</span><span class="p">,</span> <span class="n">eg</span> <span class="n">mkdir</span> <span class="o">/</span><span class="n">data</span><span class="o">/</span><span class="n">lwm2m</span> <span class="o">&lt;</span><span class="n">mode</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">uid</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">gid</span><span class="o">&gt;</span> <span class="n">encryption</span><span class="o">=</span><span class="n">Require</span>
+<span class="p">[</span>   <span class="mf">18.037890</span><span class="p">]</span> <span class="n">init</span><span class="p">:</span> <span class="n">Verified</span> <span class="n">that</span> <span class="o">/</span><span class="n">data</span><span class="o">/</span><span class="n">lwm2m</span> <span class="n">has</span> <span class="n">the</span> <span class="n">encryption</span> <span class="n">policy</span> <span class="mi">62</span><span class="n">d12442c19e29a762ee910fe31519b3</span> <span class="n">v2</span> <span class="n">modes</span> <span class="mi">1</span><span class="o">/</span><span class="mi">4</span> <span class="n">flags</span> <span class="mh">0x12</span>
+<span class="p">[</span>   <span class="mf">18.218179</span><span class="p">]</span> <span class="n">ipa</span> <span class="n">ipa3_ioctl</span><span class="p">:</span><span class="mi">1724</span> <span class="n">IPA</span> <span class="ow">not</span> <span class="n">ready</span><span class="p">,</span> <span class="n">waiting</span> <span class="k">for</span> <span class="n">init</span> <span class="n">completion</span>
+<span class="p">[</span>   <span class="mf">18.322718</span><span class="p">]</span> <span class="o">///</span><span class="n">PD</span> <span class="n">dbg</span> <span class="n">info</span> <span class="mi">106</span><span class="n">d</span>
+<span class="p">[</span>   <span class="mf">18.322865</span><span class="p">]</span> <span class="n">pd_tcp_notifier_call</span> <span class="n">event</span> <span class="o">=</span> <span class="n">HARD_RESET_STATE</span>
+<span class="p">[</span>   <span class="mf">18.325911</span><span class="p">]</span> <span class="o">&lt;</span>   <span class="mf">18.322</span><span class="o">&gt;</span><span class="n">TCPC</span><span class="o">-</span><span class="n">PE</span><span class="o">-</span><span class="n">EVT</span><span class="p">:</span><span class="n">timer</span>
+<span class="p">[</span>   <span class="mf">18.325911</span><span class="p">]</span> <span class="o">&lt;</span>   <span class="mf">18.322</span><span class="o">&gt;</span><span class="n">TCPC</span><span class="o">-</span><span class="n">PE</span><span class="p">:</span><span class="n">PD</span> <span class="o">-&gt;</span> <span class="n">SNK_HRESET</span> <span class="p">(</span><span class="n">CUN</span><span class="p">)</span>
+<span class="p">[</span>   <span class="mf">18.325911</span><span class="p">]</span> <span class="o">&lt;</span>   <span class="mf">18.322</span><span class="o">&gt;</span><span class="n">TCPC</span><span class="o">-</span><span class="n">PE</span><span class="p">:</span><span class="n">Send</span> <span class="n">HARD</span> <span class="n">Reset</span>
+<span class="p">[</span>   <span class="mf">18.331407</span><span class="p">]</span> <span class="n">i2c_geni</span> <span class="mi">4</span><span class="n">a80000</span><span class="o">.</span><span class="n">i2c</span><span class="p">:</span> <span class="n">i2c</span> <span class="n">error</span> <span class="p">:</span><span class="o">-</span><span class="mi">107</span>
+<span class="p">[</span>   <span class="mf">18.348816</span><span class="p">]</span> <span class="n">PAX_CHG</span><span class="p">:</span> <span class="n">psy_charger_set_property</span><span class="p">:</span> <span class="n">prop</span><span class="p">:</span><span class="mi">123</span> <span class="mi">1</span>
+<span class="p">[</span>   <span class="mf">18.356562</span><span class="p">]</span> <span class="o">///</span><span class="n">PD</span> <span class="n">dbg</span> <span class="n">info</span> <span class="mi">47</span><span class="n">d</span>
+<span class="p">[</span>   <span class="mf">18.356840</span><span class="p">]</span> <span class="n">pd_tcp_notifier_call</span> <span class="n">event</span> <span class="o">=</span> <span class="n">PD_STATE</span>
+<span class="p">[</span>   <span class="mf">18.359649</span><span class="p">]</span> <span class="o">&lt;</span>   <span class="mf">18.356</span><span class="o">&gt;</span><span class="n">TCPC</span><span class="o">-</span><span class="n">TCPC</span><span class="p">:</span><span class="n">Alert</span><span class="p">:</span><span class="mh">0x0050</span><span class="p">,</span> <span class="n">Mask</span><span class="p">:</span><span class="mh">0x0fff</span>
+<span class="p">[</span>   <span class="mf">18.370300</span><span class="p">]</span> <span class="n">charger</span> <span class="n">soc</span><span class="p">:</span><span class="n">charger</span><span class="p">:</span> <span class="n">pd_tcp_notifier_call</span> <span class="n">pd</span> <span class="n">state</span> <span class="o">=</span> <span class="mi">9</span>
+<span class="p">[</span>   <span class="mf">18.377648</span><span class="p">]</span> <span class="n">pd_tcp_notifier_call</span> <span class="n">event</span> <span class="o">=</span> <span class="n">SINK_VBUS</span>
+<span class="p">[</span>   <span class="mf">18.380235</span><span class="p">]</span> <span class="o">///</span><span class="n">PD</span> <span class="n">dbg</span>
+<span class="n">Format</span><span class="p">:</span> <span class="n">Log</span> <span class="n">Type</span> <span class="o">-</span> <span class="n">Time</span><span class="p">(</span><span class="n">microsec</span><span class="p">)</span> <span class="o">-</span> <span class="n">Message</span> <span class="o">-</span> <span class="n">Optional</span> <span class="n">Info</span>
+<span class="n">Log</span> <span class="n">Type</span><span class="p">:</span> <span class="n">B</span> <span class="o">-</span> <span class="n">Since</span> <span class="n">Boot</span><span class="p">(</span><span class="n">Power</span> <span class="n">On</span> <span class="n">Reset</span><span class="p">),</span>  <span class="n">D</span> <span class="o">-</span> <span class="n">Delta</span><span class="p">,</span>  <span class="n">S</span> <span class="o">-</span> <span class="n">Statistic</span>
+</pre></div>
+</div>
+<p>问了A800工程师，说是无电池时不能进行硬复位操作<code class="docutils literal notranslate"><span class="pre">HARD</span> <span class="pre">Reset</span></code>，需要改成软复位，硬复位会让typec断一下电，那肯定不行，修改如下：</p>
+<div class="highlight-diff notranslate"><div class="highlight"><pre><span></span><span class="gd">--- a/UM.9.15/kernel/msm-4.19/drivers/misc/pax/tcpc/pd_process_evt_snk.c</span><span class="w"></span>
+<span class="gi">+++ b/UM.9.15/kernel/msm-4.19/drivers/misc/pax/tcpc/pd_process_evt_snk.c</span><span class="w"></span>
+<span class="gu">@@ -18,6 +18,7 @@</span><span class="w"></span>
+<span class="w"> </span>#include &quot;inc/tcpci_event.h&quot;<span class="w"></span>
+<span class="w"> </span>#include &quot;inc/pd_process_evt.h&quot;<span class="w"></span>
+<span class="w"> </span>#include &quot;inc/tcpci_typec.h&quot;<span class="w"></span>
+<span class="gi">+#include &quot;paxpd-charger-manager.h&quot;</span><span class="w"></span>
+
+<span class="w"> </span>/* PD Control MSG reactions */<span class="w"></span>
+
+<span class="gu">@@ -413,7 +414,14 @@ static inline bool pd_process_timer_msg(</span><span class="w"></span>
+<span class="w"> </span>       case PD_TIMER_PS_TRANSITION:<span class="w"></span>
+<span class="w"> </span>               if ((pd_port-&gt;pe_state_curr != PE_SNK_DISCOVERY) &amp;&amp;<span class="w"></span>
+<span class="w"> </span>                       (pe_data-&gt;hard_reset_counter &lt;= PD_HARD_RESET_COUNT)) {<span class="w"></span>
+<span class="gd">-                       PE_TRANSIT_STATE(pd_port, PE_SNK_HARD_RESET);</span><span class="w"></span>
+<span class="gi">+                       //[FEATURE]-Add-BEGIN by (wugangnan@paxsz.com), defaults to soft reset when no-battery-startup 2022/09/26</span><span class="w"></span>
+<span class="gi">+                       if (!pax_bat_exist_from_cmdline()) {</span><span class="w"></span>
+<span class="gi">+                               PE_TRANSIT_STATE(pd_port, PE_SNK_SEND_SOFT_RESET);</span><span class="w"></span>
+<span class="gi">+                       }</span><span class="w"></span>
+<span class="gi">+                       else {</span><span class="w"></span>
+<span class="gi">+                               PE_TRANSIT_STATE(pd_port, PE_SNK_HARD_RESET);</span><span class="w"></span>
+<span class="gi">+                       }</span><span class="w"></span>
+<span class="gi">+                       //[FEATURE]-Add-END by (wugangnan@paxsz.com), defaults to soft reset when no-battery-startup 2022/09/26</span><span class="w"></span>
+<span class="w"> </span>                       return true;<span class="w"></span>
+<span class="w"> </span>               }<span class="w"></span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>修改后，整机正常启动，适配器成功拉到9v：</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>[   17.927961] ///PD dbg info 73d
+[   17.927967] &lt;   17.927&gt;TCPC-DC&gt; dc_dfp_none
+[   17.927967] &lt;   17.927&gt;TCPC-PE:PD -&gt; SNK_START (CUN)
+[   17.933329] F2FS-fs (dm-8): recover_data: ino = 1314 (i_size: recover) recovered = 2, err = 0
+[   17.952076] ///PD dbg info 185d
+[   17.955429] F2FS-fs (dm-8): recover_inode: ino = 1314, name = &lt;encrypted&gt;, inline = 1
+[   17.958474] &lt;   17.928&gt;TCPC-PE-EVT:reset_prl_done
+[   17.958474] &lt;   17.928&gt;TCPC-PE:PD -&gt; SNK_DISC (CUN)
+[   17.958474] &lt;   17.928&gt;TCPC-PE:WaitVBUS=1
+[   17.958474] &lt;   17.928&gt;TCPC-PE-E
+[   17.958477] VT:vbus_high
+[   17.958477] &lt;   17.928&gt;TCPC-PE:PD -&gt; SNK_WAIT_CAP (CUN)
+[   18.300805] pax_bat_exist_from_cmdline = 0
+[   18.300812] ///PD dbg info 29d
+[   18.305213] i2c_geni 4a80000.i2c: i2c error :-107
+[   18.308119] &lt;   18.300&gt;TCPC-PE-EVT:timer
+[   18.344128] ///PD dbg info 294d
+[   18.353135] pd_tcp_notifier_call event = SINK_VBUS
+[   18.353377] &lt;   18.304&gt;TCPC-PE:PD -&gt; SNK_SEND_SRESET (CUN) //软复位
+[   18.353377] &lt;   18.315&gt;TCPC-TCPC:Alert:0x0040, Mask:0x0fff
+[   18.353377] &lt;   18.316&gt;TCPC-PE-EVT:good_crc
+[   18.353377] &lt;
+[   18.353379]   18.319&gt;TCPC-TCPC:Alert:0x0004, Mask:0x0fff
+[   18.353379] &lt;   18.320&gt;TCPC-PE-EVT:accept
+[   18.353379] &lt;   18.320&gt;TCPC-PE:PD -&gt; SNK_WAIT_CAP (CUN)
+[   18.353379] &lt;   18.34
+[   18.358028] charger soc:charger: pd_tcp_notifier_call sink vbus 9000mV 277mA type(0x86)
+[   18.374812] 3&gt;TCPC-TCPC:Alert:0x0004, Mask:0x0fff
+[   18.400139] ///PD dbg info 891d
+[   18.404511] pd_tcp_notifier_call - sink vbus
+[   18.404528] PAX_CHG: psy_charger_set_property: prop:8 9000000
+[   18.404536] PAX_CHG: _wake_up_charger:
+[   18.404578] PAX_CHG: psy_charger_get_property psp:122
+[   18.404587] PAX_CHG: psy_charger_set_property: prop:122 1
+[   18.404594] PAX_CHG: pd_status:1
+[   18.404601] PAX_CHG: _wake_up_charger:
+[   18.404611] PAX_CHG: psy_charger_set_property: prop:143 9000000
+[   18.404619] PAX_CHG: set pd_charging_voltage_max:9000 mv
+[   18.404621] PAX_CHG: pax_is_charger_on chr_type = [DCP] last_chr_type = [DCP]
+[   18.404626] PAX_CHG: _wake_up_charger:
+[   18.404635] PAX_CHG: psy_charger_set_property: prop:124 277000
+[   18.404637] PAX_CHG: [SW_JEITA] Battery Normal Temperature between 10 and 45 !!
+[   18.404643] PAX_CHG: set pd_charging_current_max:277 ma
+[   18.404646] PAX_CHG: [SW_JEITA]preState:3 newState:3 tmp:25 cv:0
+[   18.404650] PAX_CHG: _wake_up_charger:
+[   18.404656] PAX_CHG: tmp:25 (jeita:1 sm:3 cv:0 en:1) (sm:1) en:1 c:0 s:0 ov:0 1 1
+[   18.412582] PAX_CHG: support_fast_charging = 1
+[   18.412595] PAX_CHG: chg:-1,-1,2000,3000 type:5:0 usb_unlimited:0 usbif:0 usbsm:0 aicl:-1 atm:0 bm:0 b:0
+[   18.412603] PAX_CHG: support pd charger do_algorithm input_current_limit:2000 charging_current_limit:4080
+[   18.422905] PAX_CHG_MP2721: reg :1  read data:0x13
+[   18.428458] PAX_CHG_MP2721: reg :1  write data:0x13
+[   18.428469] PAX_CHG_MP2721: ==mp2721_set_ichg, chg_chr=4080 mA
+[   18.434877] PAX_CHG_MP2721: reg :2  read data:0xf3
+[   18.438325] &lt;   18.344&gt;TCPC-PE-EVT:src_cap
+[   18.438325] &lt;   18.344&gt;TCPC-PE:PD -&gt; SNK_EVA_CAP (CUN)
+[   18.438325] &lt;   18.344&gt;TCPC-PE:pd_rev=2
+[   18.438325] &lt;   18.344&gt;TCPC-DPM:Policy
+[   18.438328] =0x31
+[   18.438328] &lt;   18.344&gt;TCPC-DPM:SrcCap1: 0x0901912c
+[   18.438328] &lt;   18.344&gt;TCPC-DPM:SrcCap2: 0x0002d0c8
+[   18.438328] &lt;   18.344&gt;TCPC-DPM:SrcCap3: 0x0003c096
+[   18.438328] &lt;
+[   18.442080] PAX_CHG_MP2721: reg :2  write data:0xf3
+[   18.447899]   18.344&gt;TCPC-DPM:EvaSinkCap1
+[   18.447899] &lt;   18.344&gt;TCPC-DPM:Find SrcCap1(Match):10000 mw
+[   18.447899] &lt;   18.344&gt;TCPC-DPM:EvaSinkCap2
+[   18.447899] &lt;   18.344&gt;TCPC-D
+[   18.447902] PM:Find SrcCap2(Match):18000 mw
+[   18.447902] &lt;   18.344&gt;TCPC-DPM:Select SrcCap2
+[   18.447902] &lt;   18.344&gt;TCPC-PE-EVT:dpm_ack
+[   18.447902] &lt;   18.344&gt;TCPC-PE:PD -&gt; SNK_S
+[   18.447906] EL_CAP (CUN)
+[   18.447906] &lt;   18.344&gt;TCPC-PE:SelectCap2, rdo:0x230320c8
+[   18.447906] &lt;   18.347&gt;TCPC-TCPC:Alert:0x0040, Mask:0x0fff
+[   18.447906] &lt;   18.348&gt;TCPC-PE-EVT
+[   18.447910] :good_crc
+[   18.447910] &lt;   18.352&gt;TCPC-TCPC:Alert:0x0004, Mask:0x0fff
+[   18.447910] &lt;   18.353&gt;TCPC-PE-EVT:accept
+[   18.447910] &lt;   18.353&gt;TCPC-PE:PD -&gt; SNK_TRANS_SINK (
+[   18.447913] CUN)
+[   18.447913] &lt;   18.353&gt;TCPC-PE:VC_HIGHV_PROT: 1
+[   18.447913] &lt;   18.353&gt;TCPC-PE:pd_set_vconn:0
+[   18.447913] &lt;   18.353&gt;TCPC-TCPC:sink_vbus: 9000 mV, 277 mA
+[   18.511345] ///PD dbg info 47d
+[   18.514392] PAX_CHG_MP2721: reg :5  write data:0x1f
+[   18.523965] &lt;   18.511&gt;TCPC-TCPC:Alert:0x0004, Mask:0x0fff
+[   18.524034] pd_tcp_notifier_call event = SINK_VBUS
+[   18.524073] charger soc:charger: pd_tcp_notifier_call sink vbus 9000mV 2000mA type(0x84)
+[   18.524076] pd_tcp_notifier_call - sink vbus
+[   18.524200] PAX_CHG: psy_charger_set_property: prop:8 9000000
+[   18.524209] PAX_CHG: _wake_up_charger:
+[   18.524220] PAX_CHG: psy_charger_get_property psp:122
+[   18.524228] PAX_CHG: psy_charger_set_property: prop:144 9000000
+[   18.524237] PAX_CHG: psy_charger_set_property: prop:143 9000000
+[   18.524245] PAX_CHG: set pd_charging_voltage_max:9000 mv
+[   18.524252] PAX_CHG: _wake_up_charger:
+[   18.524261] PAX_CHG: psy_charger_set_property: prop:124 2000000
+[   18.524268] PAX_CHG: set pd_charging_current_max:2000 ma
+[   18.524276] PAX_CHG: _wake_up_charger:
+[   18.531799] chg_dump: CHG [online: 1, type: DCP, status: Charging, fault: 0x20, ICHG = 4080mA, AICR = 2000mA, MIVR = 4360mV, IEOC = 240mA, CV = 4375mV]
+[   18.564114] ///PD dbg info 120d
+[   18.579627] PAX_CHG: charger_routine_thread end , 1
+[   18.584521] &lt;   18.523&gt;TCPC-PE-EVT:ps_rdy
+[   18.584521] &lt;   18.523&gt;TCPC-TCPC:sink_vbus: 9000 mV, 2000 mA
+[   18.584521] &lt;   18.523&gt;TCPC-PE:PD -&gt; SNK_READY (CUN)
+</pre></div>
+</div>
 </section>
 </section>
 

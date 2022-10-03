@@ -163,20 +163,20 @@
 <h2>type-c TCP_NOTIFY_TYPEC_STATE事件处理<a class="headerlink" href="#type-c-tcp-notify-typec-state" title="此标题的永久链接"></a></h2>
 <p>typec state所有事件如下：</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">enum</span> <span class="n">typec_attach_type</span> <span class="p">{</span>
-	<span class="n">TYPEC_UNATTACHED</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>   <span class="n">没接</span>
-	<span class="n">TYPEC_ATTACHED_SNK</span><span class="p">,</span>      <span class="n">手机作为sink端</span>
-	<span class="n">TYPEC_ATTACHED_SRC</span><span class="p">,</span>      <span class="n">手机作为source端</span>
-	<span class="n">TYPEC_ATTACHED_AUDIO</span><span class="p">,</span>    <span class="n">手机作为audio输出</span>
-	<span class="n">TYPEC_ATTACHED_DEBUG</span><span class="p">,</span>			<span class="o">/*</span> <span class="n">Rd</span><span class="p">,</span> <span class="n">Rd</span> <span class="o">*/</span>
+    <span class="n">TYPEC_UNATTACHED</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>   <span class="n">没接</span>
+    <span class="n">TYPEC_ATTACHED_SNK</span><span class="p">,</span>      <span class="n">手机作为sink端</span>
+    <span class="n">TYPEC_ATTACHED_SRC</span><span class="p">,</span>      <span class="n">手机作为source端</span>
+    <span class="n">TYPEC_ATTACHED_AUDIO</span><span class="p">,</span>    <span class="n">手机作为audio输出</span>
+    <span class="n">TYPEC_ATTACHED_DEBUG</span><span class="p">,</span>			<span class="o">/*</span> <span class="n">Rd</span><span class="p">,</span> <span class="n">Rd</span> <span class="o">*/</span>
 
 <span class="o">/*</span> <span class="n">CONFIG_TYPEC_CAP_DBGACC_SNK</span> <span class="o">*/</span>
-	<span class="n">TYPEC_ATTACHED_DBGACC_SNK</span><span class="p">,</span>		<span class="o">/*</span> <span class="n">Rp</span><span class="p">,</span> <span class="n">Rp</span> <span class="o">*/</span>
+    <span class="n">TYPEC_ATTACHED_DBGACC_SNK</span><span class="p">,</span>		<span class="o">/*</span> <span class="n">Rp</span><span class="p">,</span> <span class="n">Rp</span> <span class="o">*/</span>
 
 <span class="o">/*</span> <span class="n">CONFIG_TYPEC_CAP_CUSTOM_SRC</span> <span class="o">*/</span>
-	<span class="n">TYPEC_ATTACHED_CUSTOM_SRC</span><span class="p">,</span>		<span class="o">/*</span> <span class="n">Same</span> <span class="n">Rp</span> <span class="o">*/</span>
+    <span class="n">TYPEC_ATTACHED_CUSTOM_SRC</span><span class="p">,</span>		<span class="o">/*</span> <span class="n">Same</span> <span class="n">Rp</span> <span class="o">*/</span>
 
 <span class="o">/*</span> <span class="n">CONFIG_TYPEC_CAP_NORP_SRC</span> <span class="o">*/</span>
-	<span class="n">TYPEC_ATTACHED_NORP_SRC</span><span class="p">,</span>		<span class="o">/*</span> <span class="n">No</span> <span class="n">Rp</span> <span class="o">*/</span>
+    <span class="n">TYPEC_ATTACHED_NORP_SRC</span><span class="p">,</span>		<span class="o">/*</span> <span class="n">No</span> <span class="n">Rp</span> <span class="o">*/</span>
 <span class="p">};</span>
 </pre></div>
 </div>
@@ -184,231 +184,232 @@
 <li><p>CC处理线程逻辑：</p></li>
 </ul>
 <div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span>* `kernel-4.19\drivers\misc\mediatek\typec\tcpc\tcpc_mt6370.c`:
-  * mt6370_i2c_probe
-    * mt6370_tcpcdev_init(chip, &amp;client-&gt;dev);
-      * chip-&gt;tcpc = tcpc_device_register(dev,desc, &amp;mt6370_tcpc_ops, chip);
-        * tcpci_timer_init(tcpc); //创建中断timer
-		  * hrtimer_init(&amp;tcpc_dev-&gt;tcpc_timer[i],CLOCK_MONOTONIC, HRTIMER_MODE_REL); //初始化定时器
-		  * tcpc_dev-&gt;tcpc_timer[i].function = tcpc_timer_call[i]; //注册各种timer，具体下面说明
-          * kthread_create(tcpc_timer_thread, tcpc_dev, //创建线程
-		    * wait_event_interruptible(tcpc_dev-&gt;timer_wait_que, //将本进程置为可中断的挂起状态
-            * tcpc_handle_timer_triggered(tcpc_dev); //主要处理函数
-              * tcpc_typec_handle_timeout(tcpc_dev, i);
-                * typec_handle_debounce_timeout(tcpc_dev);
-				  * typec_handle_cc_changed_entry(tcpc_dev); //处理CC事件 tcpci_typec.c
-				  * TYPEC_INFO(&quot;[CC_Change] %d/%d\r\n&quot;, typec_get_cc1(), typec_get_cc2()); //打印CC 如TCPC-TYPEC:[CC_Change] 5/0
-				    * if (typec_is_act_as_sink_role(tcpc_dev))
-					  * typec_cc_change_sink_entry(tcpc_dev); //处理sink入口
-					    * typec_cc_snk_detect_entry(tcpc_dev);
-						  * if (tcpci_check_vbus_valid(tcpc_dev)) /* If Port Partner act as Source without VBUS, wait vSafe5V */
-						  * typec_cc_snk_detect_vsafe5v_entry(tcpc_dev);
-						    * typec_sink_attached_entry(tcpc_dev);
-							  * typec_custom_src_attached_entry(tcpc_dev);
-							    * tcpc_dev-&gt;typec_attach_new = TYPEC_ATTACHED_SNK; //赋值新状态
-					  * else typec_cc_change_source_entry(tcpc_dev); //处理source入口
-				    * typec_alert_attach_state_change(tcpc_dev); //tcpci_alert.c
-					* TYPEC_INFO(&quot;Attached-&gt; %s\r\n&quot;,typec_attach_name[tcpc_dev-&gt;typec_attach_new]);  //重要打印attach 信息，如TCPC-TYPEC:Attached-&gt; SINK
-                      * tcpci_report_usb_port_changed(tcpc_dev); //tcpci_alert.c 主要是notify通知
-                        * tcpci_notify_typec_state(tcpc); //tcpci.c
-						  * tcp_noti.typec_state.polarity = tcpc-&gt;typec_polarity;  //各种状态赋值
-						  * tcp_noti.typec_state.old_state = tcpc-&gt;typec_attach_old;
-						  * tcp_noti.typec_state.new_state = tcpc-&gt;typec_attach_new;
-						  * tcp_noti.typec_state.rp_level = tcpc-&gt;typec_remote_rp_level;
-						  * tcpc_check_notify_time(tcpc, &amp;tcp_noti,TCP_NOTIFY_IDX_USB, TCP_NOTIFY_TYPEC_STATE); //状态notify通知
-						    * INIT_WORK(&amp;tn_work-&gt;work, tcp_notify_func); //创建通知工作队列
-							* queue_work(tcpc-&gt;evt_wq, &amp;tn_work-&gt;work) ? 0 : -EAGAIN;  //开始工作队列
-							  * srcu_notifier_call_chain(&amp;tcpc-&gt;evt_nh[type], state, tcp_noti); //重要通知到其他驱动typec状态
-						* if (tcpc-&gt;typec_attach_old == TYPEC_UNATTACHED) //从TYPEC_UNATTACHED到attach
-						* tcpci_report_usb_port_attached(tcpc); //重要，主要是真正设置usb 状态，具体在下面解释
-						  * TCPC_INFO(&quot;usb_port_attached\r\n&quot;); //打印usb_port_attached
-						  * typec_set_data_role(tcpc-&gt;typec_port, TYPEC_DEVICE);//设置数据方向
-						  * typec_set_pwr_role(tcpc-&gt;typec_port, TYPEC_SINK); //设置电源方向为sink
-						  * typec_set_vconn_role(tcpc-&gt;typec_port, TYPEC_SINK);  //设置VCONN方向为sink
-						  * if (tcpc-&gt;pd_inited_flag)  //查看代码flag是1
-						    * pd_put_cc_attached_event(tcpc, tcpc-&gt;typec_attach_new);
-							  * if (type == TYPEC_ATTACHED_SNK &amp;&amp;(rv || prop.intval == POWER_SUPPLY_USB_TYPE_UNKNOWN)) //如果usb类型还未识别，将等待bc1.2识别
-							  * tcpc_enable_timer(tcpc_dev, TYPEC_RT_TIMER_SINK_WAIT_BC12); //开启定时器，这里会调用定时器回调函数tcpc_timer_rt_sink_wait_bc12
-							    * TCPC_TIMER_TRIGGER() //唤醒处理线程
-								  * wake_up_interruptible(&amp;tcpc_dev-&gt;timer_wait_que);	\
-								    * tcpc_timer_thread(void *param) //线程
-									  * tcpc_handle_timer_triggered(tcpc_dev);
-								        * tcpc_typec_handle_timeout(tcpc_dev, i); //和上面一样，不做分析了
-							    * __pd_put_cc_attached_event(tcpc_dev, type);
-								  * __pd_put_event(tcpc_dev, &amp;evt, false);  // typec event事件上报
-								    * wake_up_interruptible(&amp;tcpc_dev-&gt;event_loop_wait_que); //唤醒事件处理线程
-									  * tcpc_event_thread(void *param)
-									    * while (pd_policy_engine_run(tcpc_dev));
-										  * pd_pe_state_change(pd_port, pd_event); //这里不做深入分析了，应该是pd协议方面的事件处理
-					  
-
-
-创建的timer如下，各种状态改变的：
-static tcpc_hrtimer_call tcpc_timer_call[PD_TIMER_NR] = {
+  └── mt6370_i2c_probe
+      └── mt6370_tcpcdev_init(chip, &amp;client-&gt;dev);
+          └── chip-&gt;tcpc = tcpc_device_register(dev,desc, &amp;mt6370_tcpc_ops, chip);
+              └── tcpci_timer_init(tcpc); //创建中断timer
+                  ├── hrtimer_init(&amp;tcpc_dev-&gt;tcpc_timer[i],CLOCK_MONOTONIC, HRTIMER_MODE_REL); //初始化定时器
+                  ├── tcpc_dev-&gt;tcpc_timer[i].function = tcpc_timer_call[i]; //注册各种timer，具体下面说明
+                  └── kthread_create(tcpc_timer_thread, tcpc_dev, //创建线程
+                      ├── wait_event_interruptible(tcpc_dev-&gt;timer_wait_que, //将本进程置为可中断的挂起状态
+                      └── tcpc_handle_timer_triggered(tcpc_dev); //主要处理函数
+                          └── tcpc_typec_handle_timeout(tcpc_dev, i);
+                              └── typec_handle_debounce_timeout(tcpc_dev);
+                                  ├── typec_handle_cc_changed_entry(tcpc_dev); //处理CC事件 tcpci_typec.c
+                                  └── TYPEC_INFO(&quot;[CC_Change] %d/%d\r\n&quot;, typec_get_cc1(), typec_get_cc2()); //打印CC 如TCPC-TYPEC:[CC_Change] 5/0
+                                      ├── if (typec_is_act_as_sink_role(tcpc_dev))
+                                      │   ├── typec_cc_change_sink_entry(tcpc_dev); //处理sink入口
+                                      │   │   └── typec_cc_snk_detect_entry(tcpc_dev);
+                                      │   │       ├── if (tcpci_check_vbus_valid(tcpc_dev)) /* If Port Partner act as Source without VBUS, wait vSafe5V */
+                                      │   │       └── typec_cc_snk_detect_vsafe5v_entry(tcpc_dev);
+                                      │   │           └── typec_sink_attached_entry(tcpc_dev);
+                                      │   │               └── typec_custom_src_attached_entry(tcpc_dev);
+                                      │   │                   └── tcpc_dev-&gt;typec_attach_new = TYPEC_ATTACHED_SNK; //赋值新状态
+                                      │   └── else typec_cc_change_source_entry(tcpc_dev); //处理source入口
+                                      ├── typec_alert_attach_state_change(tcpc_dev); //tcpci_alert.c
+                                      └── TYPEC_INFO(&quot;Attached-&gt; %s\r\n&quot;,typec_attach_name[tcpc_dev-&gt;typec_attach_new]);  //重要打印attach 信息，如TCPC-TYPEC:Attached-&gt; SINK
+                                          └── tcpci_report_usb_port_changed(tcpc_dev); //tcpci_alert.c 主要是notify通知
+                                              ├── tcpci_notify_typec_state(tcpc); //tcpci.c
+                                              │   ├── tcp_noti.typec_state.polarity = tcpc-&gt;typec_polarity;  //各种状态赋值
+                                              │   ├── tcp_noti.typec_state.old_state = tcpc-&gt;typec_attach_old;
+                                              │   ├── tcp_noti.typec_state.new_state = tcpc-&gt;typec_attach_new;
+                                              │   ├── tcp_noti.typec_state.rp_level = tcpc-&gt;typec_remote_rp_level;
+                                              │   └── tcpc_check_notify_time(tcpc, &amp;tcp_noti,TCP_NOTIFY_IDX_USB, TCP_NOTIFY_TYPEC_STATE); //状态notify通知
+                                              │       ├── INIT_WORK(&amp;tn_work-&gt;work, tcp_notify_func); //创建通知工作队列
+                                              │       └── queue_work(tcpc-&gt;evt_wq, &amp;tn_work-&gt;work) ? 0 : -EAGAIN;  //开始工作队列
+                                              │           └── srcu_notifier_call_chain(&amp;tcpc-&gt;evt_nh[type], state, tcp_noti); //重要通知到其他驱动typec状态
+                                              ├── if (tcpc-&gt;typec_attach_old == TYPEC_UNATTACHED) //从TYPEC_UNATTACHED到attach
+                                              └── tcpci_report_usb_port_attached(tcpc); //重要，主要是真正设置usb 状态，具体在下面解释
+                                                  ├── TCPC_INFO(&quot;usb_port_attached\r\n&quot;); //打印usb_port_attached
+                                                  ├── typec_set_data_role(tcpc-&gt;typec_port, TYPEC_DEVICE);//设置数据方向
+                                                  ├── typec_set_pwr_role(tcpc-&gt;typec_port, TYPEC_SINK); //设置电源方向为sink
+                                                  ├── typec_set_vconn_role(tcpc-&gt;typec_port, TYPEC_SINK);  //设置VCONN方向为sink
+                                                  └── if (tcpc-&gt;pd_inited_flag)  //查看代码flag是1
+                                                      └── pd_put_cc_attached_event(tcpc, tcpc-&gt;typec_attach_new);
+                                                          ├── if (type == TYPEC_ATTACHED_SNK &amp;&amp;(rv || prop.intval == POWER_SUPPLY_USB_TYPE_UNKNOWN)) //如果usb类型还未识别，将等待bc1.2识别
+                                                          └── tcpc_enable_timer(tcpc_dev, TYPEC_RT_TIMER_SINK_WAIT_BC12); //开启定时器，这里会调用定时器回调函数tcpc_timer_rt_sink_wait_bc12
+                                                              ├── TCPC_TIMER_TRIGGER() //唤醒处理线程
+                                                              │   └── wake_up_interruptible(&amp;tcpc_dev-&gt;timer_wait_que);	\
+                                                              │       └── tcpc_timer_thread(void *param) //线程
+                                                              │           └── tcpc_handle_timer_triggered(tcpc_dev);
+                                                              │               └── tcpc_typec_handle_timeout(tcpc_dev, i); //和上面一样，不做分析了
+                                                              └── __pd_put_cc_attached_event(tcpc_dev, type);
+                                                                  └── __pd_put_event(tcpc_dev, &amp;evt, false);  // typec event事件上报
+                                                                      └── wake_up_interruptible(&amp;tcpc_dev-&gt;event_loop_wait_que); //唤醒事件处理线程
+                                                                          └── tcpc_event_thread(void *param)
+                                                                              └── while (pd_policy_engine_run(tcpc_dev));
+                                                                                  └── pd_pe_state_change(pd_port, pd_event); //这里不做深入分析了，应该是pd协议方面的事件处理
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>创建的timer如下，各种状态改变的：</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span>static tcpc_hrtimer_call tcpc_timer_call[PD_TIMER_NR] = {
 #ifdef CONFIG_USB_POWER_DELIVERY
-	tcpc_timer_discover_id,
-	tcpc_timer_bist_cont_mode,
-	tcpc_timer_hard_reset_complete,
-	tcpc_timer_no_response,
-	tcpc_timer_ps_hard_reset,
-	tcpc_timer_ps_source_off,
-	tcpc_timer_ps_source_on,
-	tcpc_timer_ps_transition,
-	tcpc_timer_sender_response,
-	tcpc_timer_sink_activity,
-	tcpc_timer_sink_request,
-	tcpc_timer_sink_wait_cap,
-	tcpc_timer_source_activity,
-	tcpc_timer_source_capability,
-	tcpc_timer_source_start,
-	tcpc_timer_vconn_on,
+    tcpc_timer_discover_id,
+    tcpc_timer_bist_cont_mode,
+    tcpc_timer_hard_reset_complete,
+    tcpc_timer_no_response,
+    tcpc_timer_ps_hard_reset,
+    tcpc_timer_ps_source_off,
+    tcpc_timer_ps_source_on,
+    tcpc_timer_ps_transition,
+    tcpc_timer_sender_response,
+    tcpc_timer_sink_activity,
+    tcpc_timer_sink_request,
+    tcpc_timer_sink_wait_cap,
+    tcpc_timer_source_activity,
+    tcpc_timer_source_capability,
+    tcpc_timer_source_start,
+    tcpc_timer_vconn_on,
 #ifdef CONFIG_USB_PD_VCONN_STABLE_DELAY
-	tcpc_timer_vconn_stable,
+    tcpc_timer_vconn_stable,
 #endif	/* CONFIG_USB_PD_VCONN_STABLE_DELAY */
-	tcpc_timer_vdm_mode_entry,
-	tcpc_timer_vdm_mode_exit,
-	tcpc_timer_vdm_response,
-	tcpc_timer_source_transition,
-	tcpc_timer_src_recover,
+    tcpc_timer_vdm_mode_entry,
+    tcpc_timer_vdm_mode_exit,
+    tcpc_timer_vdm_response,
+    tcpc_timer_source_transition,
+    tcpc_timer_src_recover,
 #ifdef CONFIG_USB_PD_REV30
-	tcpc_timer_ck_no_support,
+    tcpc_timer_ck_no_support,
 #ifdef CONFIG_USB_PD_REV30_COLLISION_AVOID
-	tcpc_timer_sink_tx,
+    tcpc_timer_sink_tx,
 #endif	/* CONFIG_USB_PD_REV30_COLLISION_AVOID */
 #ifdef CONFIG_USB_PD_REV30_PPS_SOURCE
-	tcpc_timer_source_pps,
+    tcpc_timer_source_pps,
 #endif	/* CONFIG_USB_PD_REV30_PPS_SOURCE */
 #endif	/* CONFIG_USB_PD_REV30 */
 
 /* PD_TIMER (out of spec )*/
-	tcpc_timer_vsafe0v_delay,
-	tcpc_timer_vsafe0v_tout,
-	tcpc_timer_pd_discard,
-	tcpc_timer_vbus_stable,
-	tcpc_timer_vbus_present,
-	tcpc_timer_uvdm_response,
-	tcpc_timer_dfp_flow_delay,
-	tcpc_timer_ufp_flow_delay,
-	tcpc_timer_vconn_ready,
-	tcpc_timer_vdm_postpone,
+    tcpc_timer_vsafe0v_delay,
+    tcpc_timer_vsafe0v_tout,
+    tcpc_timer_pd_discard,
+    tcpc_timer_vbus_stable,
+    tcpc_timer_vbus_present,
+    tcpc_timer_uvdm_response,
+    tcpc_timer_dfp_flow_delay,
+    tcpc_timer_ufp_flow_delay,
+    tcpc_timer_vconn_ready,
+    tcpc_timer_vdm_postpone,
 
 #ifdef CONFIG_USB_PD_REV30
 #ifdef CONFIG_USB_PD_REV30_COLLISION_AVOID
-	tcpc_timer_deferred_evt,
+    tcpc_timer_deferred_evt,
 #endif	/* CONFIG_USB_PD_REV30_COLLISION_AVOID */
 #ifdef CONFIG_USB_PD_REV30_SNK_FLOW_DELAY_STARTUP
-	tcpc_timer_snk_flow_delay,
+    tcpc_timer_snk_flow_delay,
 #endif	/* CONFIG_USB_PD_REV30_SNK_FLOW_DELAY_STARTUP */
 #endif	/* CONFIG_USB_PD_REV30 */
 
-	tcpc_timer_pe_idle_tout,
+    tcpc_timer_pe_idle_tout,
 #endif /* CONFIG_USB_POWER_DELIVERY */
 
 /* TYPEC_RT_TIMER (out of spec )*/
-	tcpc_timer_rt_vsafe0v_delay,
-	tcpc_timer_rt_vsafe0v_tout,
-	tcpc_timer_rt_role_swap_start,
-	tcpc_timer_rt_role_swap_stop,
-	tcpc_timer_rt_legacy,
-	tcpc_timer_rt_not_legacy,
-	tcpc_timer_rt_legacy_stable,
-	tcpc_timer_rt_legacy_recycle,
-	tcpc_timer_rt_auto_discharge,
-	tcpc_timer_rt_low_power_mode,
+    tcpc_timer_rt_vsafe0v_delay,
+    tcpc_timer_rt_vsafe0v_tout,
+    tcpc_timer_rt_role_swap_start,
+    tcpc_timer_rt_role_swap_stop,
+    tcpc_timer_rt_legacy,
+    tcpc_timer_rt_not_legacy,
+    tcpc_timer_rt_legacy_stable,
+    tcpc_timer_rt_legacy_recycle,
+    tcpc_timer_rt_auto_discharge,
+    tcpc_timer_rt_low_power_mode,
 #ifdef CONFIG_USB_POWER_DELIVERY
-	tcpc_timer_rt_pe_idle,
+    tcpc_timer_rt_pe_idle,
 #ifdef CONFIG_TYPEC_WAIT_BC12
-	tcpc_timer_rt_sink_wait_bc12,
+    tcpc_timer_rt_sink_wait_bc12,
 #endif /* CONFIG_TYPEC_WAIT_BC12 */
 #endif	/* CONFIG_USB_POWER_DELIVERY */
-	tcpc_timer_error_recovery,
+    tcpc_timer_error_recovery,
 /* TYPEC-TRY-TIMER */
-	tcpc_timer_try_drp_try,
-	tcpc_timer_try_drp_trywait,
+    tcpc_timer_try_drp_try,
+    tcpc_timer_try_drp_trywait,
 /* TYPEC-DEBOUNCE-TIMER */
-	tcpc_timer_ccdebounce,
-	tcpc_timer_pddebounce,
+    tcpc_timer_ccdebounce,
+    tcpc_timer_pddebounce,
 #ifdef CONFIG_COMPATIBLE_APPLE_TA
-	tcpc_timer_apple_cc_open,
+    tcpc_timer_apple_cc_open,
 #endif /* CONFIG_COMPATIBLE_APPLE_TA */
-	tcpc_timer_tryccdebounce,
-	tcpc_timer_srcdisconnect,
-	tcpc_timer_drp_src_toggle,
+    tcpc_timer_tryccdebounce,
+    tcpc_timer_srcdisconnect,
+    tcpc_timer_drp_src_toggle,
 #ifdef CONFIG_TYPEC_CAP_NORP_SRC
-	tcpc_timer_norp_src,
+    tcpc_timer_norp_src,
 #endif
 };
 
-正式设置usb sink source状态：
+* 正式设置usb sink source状态：
 static inline int tcpci_report_usb_port_attached(struct tcpc_device *tcpc)
 {
-	TCPC_INFO(&quot;usb_port_attached\r\n&quot;);
+    TCPC_INFO(&quot;usb_port_attached\r\n&quot;);
 
-	switch (tcpc-&gt;typec_attach_new) {
-	case TYPEC_ATTACHED_SNK:
-	case TYPEC_ATTACHED_CUSTOM_SRC:
-	case TYPEC_ATTACHED_NORP_SRC:
-		tcpc-&gt;dual_role_pr = DUAL_ROLE_PROP_PR_SNK;
-		tcpc-&gt;dual_role_dr = DUAL_ROLE_PROP_DR_DEVICE;
-		tcpc-&gt;dual_role_mode = DUAL_ROLE_PROP_MODE_UFP;
-		tcpc-&gt;dual_role_vconn = DUAL_ROLE_PROP_VCONN_SUPPLY_NO;
-		tcpc-&gt;typec_caps.type = TYPEC_PORT_SNK;
-		tcpc-&gt;typec_caps.data = TYPEC_PORT_UFP;
-		typec_set_data_role(tcpc-&gt;typec_port, TYPEC_DEVICE);
-		typec_set_pwr_role(tcpc-&gt;typec_port, TYPEC_SINK);
-		typec_set_vconn_role(tcpc-&gt;typec_port, TYPEC_SINK);
-		break;
-	case TYPEC_ATTACHED_SRC:
-		tcpc-&gt;dual_role_pr = DUAL_ROLE_PROP_PR_SRC;
-		tcpc-&gt;dual_role_dr = DUAL_ROLE_PROP_DR_HOST;
-		tcpc-&gt;dual_role_mode = DUAL_ROLE_PROP_MODE_DFP;
-		tcpc-&gt;dual_role_vconn = DUAL_ROLE_PROP_VCONN_SUPPLY_YES;
-		tcpc-&gt;typec_caps.type = TYPEC_PORT_SRC;
-		tcpc-&gt;typec_caps.data = TYPEC_PORT_DFP;
-		typec_set_data_role(tcpc-&gt;typec_port, TYPEC_HOST);
-		typec_set_pwr_role(tcpc-&gt;typec_port, TYPEC_SOURCE);
-		typec_set_vconn_role(tcpc-&gt;typec_port, TYPEC_SOURCE);
-		break;
-	default:
-		break;
-	}
-	/* set typec switch orientation */
-	typec_set_orientation(tcpc-&gt;typec_port, tcpc-&gt;typec_polarity ?
-			TYPEC_ORIENTATION_NORMAL : TYPEC_ORIENTATION_REVERSE);
+    switch (tcpc-&gt;typec_attach_new) {
+    case TYPEC_ATTACHED_SNK:
+    case TYPEC_ATTACHED_CUSTOM_SRC:
+    case TYPEC_ATTACHED_NORP_SRC:
+        tcpc-&gt;dual_role_pr = DUAL_ROLE_PROP_PR_SNK;
+        tcpc-&gt;dual_role_dr = DUAL_ROLE_PROP_DR_DEVICE;
+        tcpc-&gt;dual_role_mode = DUAL_ROLE_PROP_MODE_UFP;
+        tcpc-&gt;dual_role_vconn = DUAL_ROLE_PROP_VCONN_SUPPLY_NO;
+        tcpc-&gt;typec_caps.type = TYPEC_PORT_SNK;
+        tcpc-&gt;typec_caps.data = TYPEC_PORT_UFP;
+        typec_set_data_role(tcpc-&gt;typec_port, TYPEC_DEVICE);
+        typec_set_pwr_role(tcpc-&gt;typec_port, TYPEC_SINK);
+        typec_set_vconn_role(tcpc-&gt;typec_port, TYPEC_SINK);
+        break;
+    case TYPEC_ATTACHED_SRC:
+        tcpc-&gt;dual_role_pr = DUAL_ROLE_PROP_PR_SRC;
+        tcpc-&gt;dual_role_dr = DUAL_ROLE_PROP_DR_HOST;
+        tcpc-&gt;dual_role_mode = DUAL_ROLE_PROP_MODE_DFP;
+        tcpc-&gt;dual_role_vconn = DUAL_ROLE_PROP_VCONN_SUPPLY_YES;
+        tcpc-&gt;typec_caps.type = TYPEC_PORT_SRC;
+        tcpc-&gt;typec_caps.data = TYPEC_PORT_DFP;
+        typec_set_data_role(tcpc-&gt;typec_port, TYPEC_HOST);
+        typec_set_pwr_role(tcpc-&gt;typec_port, TYPEC_SOURCE);
+        typec_set_vconn_role(tcpc-&gt;typec_port, TYPEC_SOURCE);
+        break;
+    default:
+        break;
+    }
+    /* set typec switch orientation */
+    typec_set_orientation(tcpc-&gt;typec_port, tcpc-&gt;typec_polarity ?
+            TYPEC_ORIENTATION_NORMAL : TYPEC_ORIENTATION_REVERSE);
 
-	tcpci_set_wake_lock_pd(tcpc, true);
+    tcpci_set_wake_lock_pd(tcpc, true);
 
 #ifdef CONFIG_USB_POWER_DELIVERY
 
 #ifdef CONFIG_USB_PD_DISABLE_PE
-	if (tcpc-&gt;disable_pe)
-		return 0;
+    if (tcpc-&gt;disable_pe)
+        return 0;
 #endif	/* CONFIG_USB_PD_DISABLE_PE */
 
-	/* MTK Only */
-	if (tcpc-&gt;pd_inited_flag)
-		pd_put_cc_attached_event(tcpc, tcpc-&gt;typec_attach_new);
+    /* MTK Only */
+    if (tcpc-&gt;pd_inited_flag)
+        pd_put_cc_attached_event(tcpc, tcpc-&gt;typec_attach_new);
 #endif /* CONFIG_USB_POWER_DLEIVERY */
 
-	return 0;
+    return 0;
 }
 
 </pre></div>
 </div>
 <div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="kt">int</span><span class="w"> </span><span class="nf">tcpci_notify_typec_state</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">tcpc_device</span><span class="w"> </span><span class="o">*</span><span class="n">tcpc</span><span class="p">)</span><span class="w"></span>
 <span class="p">{</span><span class="w"></span>
-<span class="w">	</span><span class="k">struct</span><span class="w"> </span><span class="nc">tcp_notify</span><span class="w"> </span><span class="n">tcp_noti</span><span class="p">;</span><span class="w"></span>
-<span class="w">	</span><span class="kt">int</span><span class="w"> </span><span class="n">ret</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="k">struct</span><span class="w"> </span><span class="nc">tcp_notify</span><span class="w"> </span><span class="n">tcp_noti</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">ret</span><span class="p">;</span><span class="w"></span>
 
 <span class="w">    </span><span class="c1">//以下是状态赋值</span>
-<span class="w">	</span><span class="n">tcp_noti</span><span class="p">.</span><span class="n">typec_state</span><span class="p">.</span><span class="n">polarity</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tcpc</span><span class="o">-&gt;</span><span class="n">typec_polarity</span><span class="p">;</span><span class="w"></span>
-<span class="w">	</span><span class="n">tcp_noti</span><span class="p">.</span><span class="n">typec_state</span><span class="p">.</span><span class="n">old_state</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tcpc</span><span class="o">-&gt;</span><span class="n">typec_attach_old</span><span class="p">;</span><span class="w"></span>
-<span class="w">	</span><span class="n">tcp_noti</span><span class="p">.</span><span class="n">typec_state</span><span class="p">.</span><span class="n">new_state</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tcpc</span><span class="o">-&gt;</span><span class="n">typec_attach_new</span><span class="p">;</span><span class="w"></span>
-<span class="w">	</span><span class="n">tcp_noti</span><span class="p">.</span><span class="n">typec_state</span><span class="p">.</span><span class="n">rp_level</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tcpc</span><span class="o">-&gt;</span><span class="n">typec_remote_rp_level</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="n">tcp_noti</span><span class="p">.</span><span class="n">typec_state</span><span class="p">.</span><span class="n">polarity</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tcpc</span><span class="o">-&gt;</span><span class="n">typec_polarity</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="n">tcp_noti</span><span class="p">.</span><span class="n">typec_state</span><span class="p">.</span><span class="n">old_state</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tcpc</span><span class="o">-&gt;</span><span class="n">typec_attach_old</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="n">tcp_noti</span><span class="p">.</span><span class="n">typec_state</span><span class="p">.</span><span class="n">new_state</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tcpc</span><span class="o">-&gt;</span><span class="n">typec_attach_new</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="n">tcp_noti</span><span class="p">.</span><span class="n">typec_state</span><span class="p">.</span><span class="n">rp_level</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tcpc</span><span class="o">-&gt;</span><span class="n">typec_remote_rp_level</span><span class="p">;</span><span class="w"></span>
 
 <span class="w">    </span><span class="c1">//状态上报</span>
-<span class="w">	</span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tcpc_check_notify_time</span><span class="p">(</span><span class="n">tcpc</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">tcp_noti</span><span class="p">,</span><span class="w"></span>
-<span class="w">		</span><span class="n">TCP_NOTIFY_IDX_USB</span><span class="p">,</span><span class="w"> </span><span class="n">TCP_NOTIFY_TYPEC_STATE</span><span class="p">);</span><span class="w"></span>
-<span class="w">	</span><span class="k">return</span><span class="w"> </span><span class="n">ret</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tcpc_check_notify_time</span><span class="p">(</span><span class="n">tcpc</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">tcp_noti</span><span class="p">,</span><span class="w"></span>
+<span class="w">        </span><span class="n">TCP_NOTIFY_IDX_USB</span><span class="p">,</span><span class="w"> </span><span class="n">TCP_NOTIFY_TYPEC_STATE</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">ret</span><span class="p">;</span><span class="w"></span>
 <span class="p">}</span><span class="w"></span>
 </pre></div>
 </div>
@@ -423,26 +424,26 @@ static inline int tcpci_report_usb_port_attached(struct tcpc_device *tcpc)
 </ul>
 <div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="k">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">tcp_notify_func</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">work_struct</span><span class="w"> </span><span class="o">*</span><span class="n">work</span><span class="p">)</span><span class="w"></span>
 <span class="p">{</span><span class="w"></span>
-<span class="w">	</span><span class="k">struct</span><span class="w"> </span><span class="nc">tcp_notify_work</span><span class="w"> </span><span class="o">*</span><span class="n">tn_work</span><span class="w"> </span><span class="o">=</span><span class="w"></span>
-<span class="w">		</span><span class="n">container_of</span><span class="p">(</span><span class="n">work</span><span class="p">,</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">tcp_notify_work</span><span class="p">,</span><span class="w"> </span><span class="n">work</span><span class="p">);</span><span class="w"></span>
-<span class="w">	</span><span class="k">struct</span><span class="w"> </span><span class="nc">tcpc_device</span><span class="w"> </span><span class="o">*</span><span class="n">tcpc</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tn_work</span><span class="o">-&gt;</span><span class="n">tcpc</span><span class="p">;</span><span class="w"></span>
-<span class="w">	</span><span class="k">struct</span><span class="w"> </span><span class="nc">tcp_notify</span><span class="w"> </span><span class="o">*</span><span class="n">tcp_noti</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">&amp;</span><span class="n">tn_work</span><span class="o">-&gt;</span><span class="n">tcp_noti</span><span class="p">;</span><span class="w"></span>
-<span class="w">	</span><span class="kt">uint8_t</span><span class="w"> </span><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tn_work</span><span class="o">-&gt;</span><span class="n">type</span><span class="p">;</span><span class="w"></span>
-<span class="w">	</span><span class="kt">uint8_t</span><span class="w"> </span><span class="n">state</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tn_work</span><span class="o">-&gt;</span><span class="n">state</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="k">struct</span><span class="w"> </span><span class="nc">tcp_notify_work</span><span class="w"> </span><span class="o">*</span><span class="n">tn_work</span><span class="w"> </span><span class="o">=</span><span class="w"></span>
+<span class="w">        </span><span class="n">container_of</span><span class="p">(</span><span class="n">work</span><span class="p">,</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">tcp_notify_work</span><span class="p">,</span><span class="w"> </span><span class="n">work</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="k">struct</span><span class="w"> </span><span class="nc">tcpc_device</span><span class="w"> </span><span class="o">*</span><span class="n">tcpc</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tn_work</span><span class="o">-&gt;</span><span class="n">tcpc</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="k">struct</span><span class="w"> </span><span class="nc">tcp_notify</span><span class="w"> </span><span class="o">*</span><span class="n">tcp_noti</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">&amp;</span><span class="n">tn_work</span><span class="o">-&gt;</span><span class="n">tcp_noti</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="kt">uint8_t</span><span class="w"> </span><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tn_work</span><span class="o">-&gt;</span><span class="n">type</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="kt">uint8_t</span><span class="w"> </span><span class="n">state</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tn_work</span><span class="o">-&gt;</span><span class="n">state</span><span class="p">;</span><span class="w"></span>
 <span class="cp">#ifdef CONFIG_PD_BEGUG_ON</span>
-<span class="w">	</span><span class="k">struct</span><span class="w"> </span><span class="nc">timeval</span><span class="w"> </span><span class="n">begin</span><span class="p">,</span><span class="w"> </span><span class="n">end</span><span class="p">;</span><span class="w"></span>
-<span class="w">	</span><span class="kt">int</span><span class="w"> </span><span class="n">timeval</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="k">struct</span><span class="w"> </span><span class="nc">timeval</span><span class="w"> </span><span class="n">begin</span><span class="p">,</span><span class="w"> </span><span class="n">end</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">timeval</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
 
-<span class="w">	</span><span class="n">do_gettimeofday</span><span class="p">(</span><span class="o">&amp;</span><span class="n">begin</span><span class="p">);</span><span class="w"></span>
-<span class="w">	</span><span class="n">srcu_notifier_call_chain</span><span class="p">(</span><span class="o">&amp;</span><span class="n">tcpc</span><span class="o">-&gt;</span><span class="n">evt_nh</span><span class="p">[</span><span class="n">type</span><span class="p">],</span><span class="w"> </span><span class="n">state</span><span class="p">,</span><span class="w"> </span><span class="n">tcp_noti</span><span class="p">);</span><span class="w"> </span><span class="c1">//SRCU 通知链,可阻塞</span>
-<span class="w">	</span><span class="n">do_gettimeofday</span><span class="p">(</span><span class="o">&amp;</span><span class="n">end</span><span class="p">);</span><span class="w"></span>
-<span class="w">	</span><span class="n">timeval</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">timeval_to_ns</span><span class="p">(</span><span class="n">end</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">timeval_to_ns</span><span class="p">(</span><span class="n">begin</span><span class="p">))</span><span class="o">/</span><span class="mi">1000</span><span class="o">/</span><span class="mi">1000</span><span class="p">;</span><span class="w"></span>
-<span class="w">	</span><span class="n">PD_BUG_ON</span><span class="p">(</span><span class="n">timeval</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">TCPC_NOTIFY_OVERTIME</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="n">do_gettimeofday</span><span class="p">(</span><span class="o">&amp;</span><span class="n">begin</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="n">srcu_notifier_call_chain</span><span class="p">(</span><span class="o">&amp;</span><span class="n">tcpc</span><span class="o">-&gt;</span><span class="n">evt_nh</span><span class="p">[</span><span class="n">type</span><span class="p">],</span><span class="w"> </span><span class="n">state</span><span class="p">,</span><span class="w"> </span><span class="n">tcp_noti</span><span class="p">);</span><span class="w"> </span><span class="c1">//SRCU 通知链,可阻塞</span>
+<span class="w">    </span><span class="n">do_gettimeofday</span><span class="p">(</span><span class="o">&amp;</span><span class="n">end</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="n">timeval</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">timeval_to_ns</span><span class="p">(</span><span class="n">end</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">timeval_to_ns</span><span class="p">(</span><span class="n">begin</span><span class="p">))</span><span class="o">/</span><span class="mi">1000</span><span class="o">/</span><span class="mi">1000</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="n">PD_BUG_ON</span><span class="p">(</span><span class="n">timeval</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">TCPC_NOTIFY_OVERTIME</span><span class="p">);</span><span class="w"></span>
 <span class="cp">#else</span>
-<span class="w">	</span><span class="n">srcu_notifier_call_chain</span><span class="p">(</span><span class="o">&amp;</span><span class="n">tcpc</span><span class="o">-&gt;</span><span class="n">evt_nh</span><span class="p">[</span><span class="n">type</span><span class="p">],</span><span class="w"> </span><span class="n">state</span><span class="p">,</span><span class="w"> </span><span class="n">tcp_noti</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="n">srcu_notifier_call_chain</span><span class="p">(</span><span class="o">&amp;</span><span class="n">tcpc</span><span class="o">-&gt;</span><span class="n">evt_nh</span><span class="p">[</span><span class="n">type</span><span class="p">],</span><span class="w"> </span><span class="n">state</span><span class="p">,</span><span class="w"> </span><span class="n">tcp_noti</span><span class="p">);</span><span class="w"></span>
 <span class="cp">#endif</span>
 
-<span class="w">	</span><span class="n">kfree</span><span class="p">(</span><span class="n">tn_work</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="n">kfree</span><span class="p">(</span><span class="n">tn_work</span><span class="p">);</span><span class="w"></span>
 <span class="p">}</span><span class="w"></span>
 </pre></div>
 </div>
@@ -460,30 +461,30 @@ static inline int tcpci_report_usb_port_attached(struct tcpc_device *tcpc)
 
 <span class="kt">void</span><span class="w"> </span><span class="nf">mt_usb_otg_init</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">musb</span><span class="w"> </span><span class="o">*</span><span class="n">musb</span><span class="p">)</span><span class="w"></span>
 <span class="p">{</span><span class="w"></span>
-<span class="w">	</span><span class="cm">/* test */</span><span class="w"></span>
-<span class="w">	</span><span class="n">INIT_DELAYED_WORK</span><span class="p">(</span><span class="o">&amp;</span><span class="n">host_plug_test_work</span><span class="p">,</span><span class="w"> </span><span class="n">do_host_plug_test_work</span><span class="p">);</span><span class="w"></span>
-<span class="w">	</span><span class="n">ktime_start</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ktime_get</span><span class="p">();</span><span class="w"></span>
+<span class="w">    </span><span class="cm">/* test */</span><span class="w"></span>
+<span class="w">    </span><span class="n">INIT_DELAYED_WORK</span><span class="p">(</span><span class="o">&amp;</span><span class="n">host_plug_test_work</span><span class="p">,</span><span class="w"> </span><span class="n">do_host_plug_test_work</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="n">ktime_start</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ktime_get</span><span class="p">();</span><span class="w"></span>
 
-<span class="w">	</span><span class="cm">/* CONNECTION MANAGEMENT*/</span><span class="w"></span>
+<span class="w">    </span><span class="cm">/* CONNECTION MANAGEMENT*/</span><span class="w"></span>
 <span class="cp">#ifdef CONFIG_MTK_USB_TYPEC</span>
-<span class="w">	</span><span class="n">DBG</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;host controlled by TYPEC</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span><span class="w"></span>
-<span class="w">	</span><span class="n">typec_control</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="n">DBG</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;host controlled by TYPEC</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="n">typec_control</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span><span class="w"></span>
 <span class="cp">#ifdef CONFIG_TCPC_CLASS </span><span class="c1">//跑这里</span>
-<span class="w">	</span><span class="n">INIT_DELAYED_WORK</span><span class="p">(</span><span class="o">&amp;</span><span class="n">register_otg_work</span><span class="p">,</span><span class="w"> </span><span class="n">do_register_otg_work</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="n">INIT_DELAYED_WORK</span><span class="p">(</span><span class="o">&amp;</span><span class="n">register_otg_work</span><span class="p">,</span><span class="w"> </span><span class="n">do_register_otg_work</span><span class="p">);</span><span class="w"></span>
 <span class="cm">/* Add-BEGIN by (shanliangliang@paxsz.com), 2021/08/27 fix notifier reigister too late */</span><span class="w"></span>
 <span class="cp">#if 0</span><span class="c"></span>
-<span class="c">	queue_delayed_work(mtk_musb-&gt;st_wq, &amp;register_otg_work, 0);</span>
+<span class="c">    queue_delayed_work(mtk_musb-&gt;st_wq, &amp;register_otg_work, 0);</span>
 <span class="cp">#else</span>
-<span class="w">	</span><span class="n">schedule_delayed_work</span><span class="p">(</span><span class="o">&amp;</span><span class="n">register_otg_work</span><span class="p">,</span><span class="w"></span>
-<span class="w">			</span><span class="n">msecs_to_jiffies</span><span class="p">(</span><span class="n">REGISTER_OTG_WORK_DELAY</span><span class="p">));</span><span class="w"></span>
+<span class="w">    </span><span class="n">schedule_delayed_work</span><span class="p">(</span><span class="o">&amp;</span><span class="n">register_otg_work</span><span class="p">,</span><span class="w"></span>
+<span class="w">            </span><span class="n">msecs_to_jiffies</span><span class="p">(</span><span class="n">REGISTER_OTG_WORK_DELAY</span><span class="p">));</span><span class="w"></span>
 <span class="cp">#endif</span>
 <span class="cm">/* Add-END by (shanliangliang@paxsz.com), 2021/08/27 fix notifier reigister too late */</span><span class="w"></span>
-<span class="w">	</span><span class="n">vbus_control</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="n">vbus_control</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
 <span class="cp">#endif</span>
 <span class="cp">#else  </span><span class="c1">//第二种iddig方式</span>
-<span class="w">	</span><span class="n">DBG</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;host controlled by IDDIG</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span><span class="w"></span>
-<span class="w">	</span><span class="n">iddig_int_init</span><span class="p">();</span><span class="w"></span>
-<span class="w">	</span><span class="n">vbus_control</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="n">DBG</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;host controlled by IDDIG</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="n">iddig_int_init</span><span class="p">();</span><span class="w"></span>
+<span class="w">    </span><span class="n">vbus_control</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span><span class="w"></span>
 <span class="cp">#endif</span>
 </pre></div>
 </div>
@@ -494,114 +495,114 @@ static inline int tcpci_report_usb_port_attached(struct tcpc_device *tcpc)
 <section id="usb">
 <h3>剖析usb插入拔出事件操作<a class="headerlink" href="#usb" title="此标题的永久链接"></a></h3>
 <div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span>static int otg_tcp_notifier_call(struct notifier_block *nb,
-		unsigned long event, void *data)
+        unsigned long event, void *data)
 {
-	struct tcp_notify *noti = data;
+    struct tcp_notify *noti = data;
 
-	switch (event) {
-	case TCP_NOTIFY_SOURCE_VBUS:
-		DBG(0, &quot;source vbus = %dmv\n&quot;, noti-&gt;vbus_state.mv);
-		if (noti-&gt;vbus_state.mv)
-			mt_usb_vbus_on(0);
-		else
-			mt_usb_vbus_off(0);
-		break;
-	case TCP_NOTIFY_TYPEC_STATE:
-		DBG(0, &quot;TCP_NOTIFY_TYPEC_STATE, old_state=%d, new_state=%d\n&quot;,
-				noti-&gt;typec_state.old_state,
-				noti-&gt;typec_state.new_state);
+    switch (event) {
+    case TCP_NOTIFY_SOURCE_VBUS:
+        DBG(0, &quot;source vbus = %dmv\n&quot;, noti-&gt;vbus_state.mv);
+        if (noti-&gt;vbus_state.mv)
+            mt_usb_vbus_on(0);
+        else
+            mt_usb_vbus_off(0);
+        break;
+    case TCP_NOTIFY_TYPEC_STATE:
+        DBG(0, &quot;TCP_NOTIFY_TYPEC_STATE, old_state=%d, new_state=%d\n&quot;,
+                noti-&gt;typec_state.old_state,
+                noti-&gt;typec_state.new_state);
 
-		/* Add-BEGIN by (shanliangliang@paxsz.com), 2021/08/15 add for M8 usb otg */
-		mtk_musb-&gt;typec_state = noti-&gt;typec_state.new_state;
-		/* Add-END by (shanliangliang@paxsz.com), 2021/08/15 add for M8 usb otg */
+        /* Add-BEGIN by (shanliangliang@paxsz.com), 2021/08/15 add for M8 usb otg */
+        mtk_musb-&gt;typec_state = noti-&gt;typec_state.new_state;
+        /* Add-END by (shanliangliang@paxsz.com), 2021/08/15 add for M8 usb otg */
 
-		if (noti-&gt;typec_state.old_state == TYPEC_UNATTACHED &amp;&amp;
-			noti-&gt;typec_state.new_state == TYPEC_ATTACHED_SRC) {
-			DBG(0, &quot;OTG Plug in\n&quot;);
-			mt_usb_host_connect(0);
-		/* Add-BEGIN by (shanliangliang@paxsz.com), 2021/09/23 add for M8 usb otg */
-		} else if (noti-&gt;typec_state.old_state == TYPEC_UNATTACHED &amp;&amp;
-			noti-&gt;typec_state.new_state == TYPEC_ATTACHED_SNK) {
-			mt_usb_host_disconnect(0);
-			mt_usb_connect();
-		/* Add-END by (shanliangliang@paxsz.com), 2021/09/23 add for M8 usb otg */
-		} else if ((noti-&gt;typec_state.old_state == TYPEC_ATTACHED_SRC ||
-			noti-&gt;typec_state.old_state == TYPEC_ATTACHED_SNK ||
-			noti-&gt;typec_state.old_state ==
-					TYPEC_ATTACHED_NORP_SRC) &amp;&amp;
-			noti-&gt;typec_state.new_state == TYPEC_UNATTACHED) {
-			/* Add-BEGIN by (shanliangliang@paxsz.com), 2021/08/15 add for M8 usb otg */
-				if (mtk_musb-&gt;default_mode != MUSB_HOST) {
-					if (is_host_active(mtk_musb)) {
-						DBG(0, &quot;OTG Plug out\n&quot;);
-						mt_usb_host_disconnect(0);
-					} else {
-						DBG(0, &quot;USB Plug out\n&quot;);
-						mt_usb_dev_disconnect();
-					}
-				}
-				else {
-					if ((noti-&gt;typec_state.old_state != TYPEC_ATTACHED_SRC) &amp;&amp; 
-							(noti-&gt;typec_state.new_state == TYPEC_UNATTACHED)) {
-						if (is_host_active(mtk_musb)) {
-							DBG(0, &quot;OTG Plug out\n&quot;);
-							mt_usb_host_disconnect(0);
-						} else {
-							DBG(0, &quot;USB Plug out\n&quot;);
-							mt_usb_dev_disconnect();
-						}
-						
-						if (mtk_musb-&gt;lcd_state != FB_BLANK_POWERDOWN) {
-							msleep(50);
-							mt_usb_host_connect(100);
-						}
-					}
-					else if ((noti-&gt;typec_state.old_state == TYPEC_ATTACHED_SRC) &amp;&amp; 
-							(noti-&gt;typec_state.new_state == TYPEC_UNATTACHED)) {
-						if (mtk_musb-&gt;lcd_state == FB_BLANK_POWERDOWN) {
-							if (is_host_active(mtk_musb)) {
-								DBG(0, &quot;OTG Plug out\n&quot;);
-								mt_usb_host_disconnect(0);
-							} else {
-								DBG(0, &quot;USB Plug out\n&quot;);
-								mt_usb_dev_disconnect();
-							}
-						}
-					}
-				}
+        if (noti-&gt;typec_state.old_state == TYPEC_UNATTACHED &amp;&amp;
+            noti-&gt;typec_state.new_state == TYPEC_ATTACHED_SRC) {
+            DBG(0, &quot;OTG Plug in\n&quot;);
+            mt_usb_host_connect(0);
+        /* Add-BEGIN by (shanliangliang@paxsz.com), 2021/09/23 add for M8 usb otg */
+        } else if (noti-&gt;typec_state.old_state == TYPEC_UNATTACHED &amp;&amp;
+            noti-&gt;typec_state.new_state == TYPEC_ATTACHED_SNK) {
+            mt_usb_host_disconnect(0);
+            mt_usb_connect();
+        /* Add-END by (shanliangliang@paxsz.com), 2021/09/23 add for M8 usb otg */
+        } else if ((noti-&gt;typec_state.old_state == TYPEC_ATTACHED_SRC ||
+            noti-&gt;typec_state.old_state == TYPEC_ATTACHED_SNK ||
+            noti-&gt;typec_state.old_state ==
+                    TYPEC_ATTACHED_NORP_SRC) &amp;&amp;
+            noti-&gt;typec_state.new_state == TYPEC_UNATTACHED) {
+            /* Add-BEGIN by (shanliangliang@paxsz.com), 2021/08/15 add for M8 usb otg */
+                if (mtk_musb-&gt;default_mode != MUSB_HOST) {
+                    if (is_host_active(mtk_musb)) {
+                        DBG(0, &quot;OTG Plug out\n&quot;);
+                        mt_usb_host_disconnect(0);
+                    } else {
+                        DBG(0, &quot;USB Plug out\n&quot;);
+                        mt_usb_dev_disconnect();
+                    }
+                }
+                else {
+                    if ((noti-&gt;typec_state.old_state != TYPEC_ATTACHED_SRC) &amp;&amp; 
+                            (noti-&gt;typec_state.new_state == TYPEC_UNATTACHED)) {
+                        if (is_host_active(mtk_musb)) {
+                            DBG(0, &quot;OTG Plug out\n&quot;);
+                            mt_usb_host_disconnect(0);
+                        } else {
+                            DBG(0, &quot;USB Plug out\n&quot;);
+                            mt_usb_dev_disconnect();
+                        }
+                        
+                        if (mtk_musb-&gt;lcd_state != FB_BLANK_POWERDOWN) {
+                            msleep(50);
+                            mt_usb_host_connect(100);
+                        }
+                    }
+                    else if ((noti-&gt;typec_state.old_state == TYPEC_ATTACHED_SRC) &amp;&amp; 
+                            (noti-&gt;typec_state.new_state == TYPEC_UNATTACHED)) {
+                        if (mtk_musb-&gt;lcd_state == FB_BLANK_POWERDOWN) {
+                            if (is_host_active(mtk_musb)) {
+                                DBG(0, &quot;OTG Plug out\n&quot;);
+                                mt_usb_host_disconnect(0);
+                            } else {
+                                DBG(0, &quot;USB Plug out\n&quot;);
+                                mt_usb_dev_disconnect();
+                            }
+                        }
+                    }
+                }
 
-		/* Add-END by (shanliangliang@paxsz.com), 2021/08/15 add for M8 usb otg */
+        /* Add-END by (shanliangliang@paxsz.com), 2021/08/15 add for M8 usb otg */
 #ifdef CONFIG_MTK_UART_USB_SWITCH
-		} else if ((noti-&gt;typec_state.new_state ==
-					TYPEC_ATTACHED_SNK ||
-				noti-&gt;typec_state.new_state ==
-					TYPEC_ATTACHED_CUSTOM_SRC ||
-				noti-&gt;typec_state.new_state ==
-					TYPEC_ATTACHED_NORP_SRC) &amp;&amp;
-				in_uart_mode) {
-			pr_info(&quot;%s USB cable plugged-in in UART mode.
-					Switch to USB mode.\n&quot;, __func__);
-			usb_phy_switch_to_usb();
+        } else if ((noti-&gt;typec_state.new_state ==
+                    TYPEC_ATTACHED_SNK ||
+                noti-&gt;typec_state.new_state ==
+                    TYPEC_ATTACHED_CUSTOM_SRC ||
+                noti-&gt;typec_state.new_state ==
+                    TYPEC_ATTACHED_NORP_SRC) &amp;&amp;
+                in_uart_mode) {
+            pr_info(&quot;%s USB cable plugged-in in UART mode.
+                    Switch to USB mode.\n&quot;, __func__);
+            usb_phy_switch_to_usb();
 #endif
-		}
-		break;
-	case TCP_NOTIFY_DR_SWAP:
-		DBG(0, &quot;TCP_NOTIFY_DR_SWAP, new role=%d\n&quot;,
-				noti-&gt;swap_state.new_role);
-		if (is_host_active(mtk_musb) &amp;&amp;
-			noti-&gt;swap_state.new_role == PD_ROLE_UFP) {
-			DBG(0, &quot;switch role to device\n&quot;);
-			mt_usb_host_disconnect(0);
-			mt_usb_connect();
-		} else if (is_peripheral_active(mtk_musb) &amp;&amp;
-			noti-&gt;swap_state.new_role == PD_ROLE_DFP) {
-			DBG(0, &quot;switch role to host\n&quot;);
-			mt_usb_dev_disconnect();
-			mt_usb_host_connect(0);
-		}
-		break;
-	}
-	return NOTIFY_OK;
+        }
+        break;
+    case TCP_NOTIFY_DR_SWAP:
+        DBG(0, &quot;TCP_NOTIFY_DR_SWAP, new role=%d\n&quot;,
+                noti-&gt;swap_state.new_role);
+        if (is_host_active(mtk_musb) &amp;&amp;
+            noti-&gt;swap_state.new_role == PD_ROLE_UFP) {
+            DBG(0, &quot;switch role to device\n&quot;);
+            mt_usb_host_disconnect(0);
+            mt_usb_connect();
+        } else if (is_peripheral_active(mtk_musb) &amp;&amp;
+            noti-&gt;swap_state.new_role == PD_ROLE_DFP) {
+            DBG(0, &quot;switch role to host\n&quot;);
+            mt_usb_dev_disconnect();
+            mt_usb_host_connect(0);
+        }
+        break;
+    }
+    return NOTIFY_OK;
 }
 </pre></div>
 </div>

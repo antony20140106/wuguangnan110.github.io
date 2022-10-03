@@ -6,6 +6,7 @@ Android平台charger、BMS相关知识及调试整理。
 
 NO.|文件名称|摘要
 :--:|:--|:--
+0027| [jeita功能学习](docs/0027_jeita功能学习.md) | JEITA（Japan Electronics and Information Technology Industries Association），日本电子信息技术产业协会，为了提高锂离子电池充电的安全性，JEITA和日本电池协会于2007年4月20日发布了新的安全指南。指导方针着重强调了在某些低温和高温范围内避免高充电电流和高充电电压的重要性。时至今日，锂电池充电领域大多遵循了JEITA标准，JEITA成为了充电规范的一个代名词。
 0026| [Android充电相关代码简单总结](docs/0026_Android充电相关代码简单总结.md) | charger/gauge相关，从上层到底层软件简单做个总结。
 0025| [qcom_qcm2290_qpnp_power_on驱动分析](docs/0025_qcom_qcm2290_qpnp_power_on驱动分析.md) | 高通qcm2290平台，目前有专门的开关机原因检测驱动，分析一下。
 0024| [qcom_qcm2290_无电池启动功能开发](docs/0024_qcom_qcm2290_无电池启动功能开发.md) | 高通qcm2290平台，目前要求无电池启动功能，开发一下。

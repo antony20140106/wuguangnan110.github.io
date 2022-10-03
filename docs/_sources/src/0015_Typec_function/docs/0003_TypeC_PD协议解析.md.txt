@@ -6,8 +6,7 @@ MTK TypeC PD协议解析。
 
 * [Linux内核实现透视---kthread_work](http://www.manongjc.com/detail/22-aiyvyekfjbujmin.html)
 * [细谈Type-C、PD原理（下）](https://zhuanlan.zhihu.com/p/148526944)
-* [USB Power Delivery 20220428](refers/USB Power Delivery 20220428)
-* [D2T2-1 - USB Power Delivery.pdf](refers/D2T2-1 - USB Power Delivery.pdf)
+* [Typec协议之PD通信消息详解](https://blog.csdn.net/qq_41799143/article/details/99715262)
 
 PD及各厂商快充协议区分 - 扫盲链接:
 
@@ -16,6 +15,7 @@ PD及各厂商快充协议区分 - 扫盲链接:
 * [一文看懂存在于手机端的那些快充协议](https://www.chongdiantou.com/archives/60814.html)
 * [手机快充协议科普 | 细数那些让人抓狂的手机快充协议](https://zhuanlan.zhihu.com/p/353361232)
 * [一篇文章带你了解常见快充协议](https://zhuanlan.zhihu.com/p/196757396)
+
 
 ## PD相关介绍
 

@@ -224,6 +224,79 @@ int pax_charger_dev_get_charger_type(struct charger_device *charger_dev)
 EXPORT_SYMBOL(pax_charger_dev_get_charger_type);
 ```
 
+# 充电状态上报逻辑
+
+* 目前MTK平台充电状态上报分为以下几种：
+  * `FULL`事件在`do_algorithm`中轮询，并通过`charger_dev_do_event`通知charger ic调用`power_supply_changed`上报状态。
+  * `EVENT_DISCHARGE`和`EVENT_RECHARGE`事件在调用`enable_charging`时发送给charger ic。
+```C++
+static int enable_charging(struct mtk_charger *info,
+						bool en)
+{
+	int i;
+	struct chg_alg_device *alg;
+
+
+	chr_err("%s %d\n", __func__, en);
+
+#ifdef CONFIG_PAX_BMS
+	en = en && info->bms_charge_enable;
+#endif
+
+	if (en == false) {
+		for (i = 0; i < MAX_ALG_NO; i++) {
+			alg = info->alg[i];
+			if (alg == NULL)
+				continue;
+			chg_alg_stop_algo(alg);
+		}
+		charger_dev_enable(info->chg1_dev, false);
+		charger_dev_do_event(info->chg1_dev, EVENT_DISCHARGE, 0);
+	} else {
+		charger_dev_enable(info->chg1_dev, true);
+		charger_dev_do_event(info->chg1_dev, EVENT_RECHARGE, 0);
+	}
+
+	return 0;
+}
+
+static int do_algorithm(struct mtk_charger *info)
+{
+	if ((info->is_chg_done != chg_done) || ((last_soc != soc) && (soc >= 100))) {
+		if (chg_done) {
+			charger_dev_do_event(info->chg1_dev, EVENT_FULL, 0);
+			chr_err("%s battery full\n", __func__);
+		} else {
+			charger_dev_do_event(info->chg1_dev, EVENT_RECHARGE, 0);
+			chr_err("%s battery recharge\n", __func__);
+		}
+	}
+}
+```
+
+* pax_charger采用直接轮询charger ic状态的方式，更加方便，而且现在把psy设备注册放到pax_charger端，如果状态有变化直接调用`power_supply_changed`上报状态，无需再转手。
+```C++
+static void pax_charger_check_status(struct pax_charger *info)
+{
+	static char chg_status = 0;
+
+	chg_status = pax_charger_dev_get_charging_status(info->chg1_dev);
+	if (chg_status != info->chg_state) {
+		if (g_info->psy1) {
+			chr_err("charger status changed: chg_status = %d old_chg_status = %d\n", chg_status, info->chg_state);
+			power_supply_changed(g_info->psy1);
+		}
+		info->chg_state = chg_status;
+	}
+}
+
+static int charger_routine_thread(void *arg)
+{
+	pax_charger_check_status(info);
+}
+```
+
+
 # 底座充电功能开发
 
 * 硬件信息：
@@ -486,3 +559,5 @@ void handle_typec_attach_dettach(bool en)
 首先，执行了sleep，就可能切换到其它进程，此时，并没有调用spin_unlock释放锁。当另外的进程(线程)再次调用同一驱动时，需要获取相同的spin lock，由于之前并没有释放锁，于是就出现死锁了。
 
 鉴于此，只能放弃msleep的做法，而使用循环达到延时的目标。
+
+## 原子通知链不允许嵌套

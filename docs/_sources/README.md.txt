@@ -1,6 +1,6 @@
 # README
 
-成功固然值得庆祝，而更值得铭记的是过程，本网站主要为本人学习文档记录，整理归档知识体系。
+本网站主要为本人学习文档记录，整理归档知识体系。
 
 * [个人早期博客园(CSDN)文档](http://blog.csdn.net/u011784994)
 * [个人GitHub账号：wuguangnan110](https://github.com/wuguangnan110)
