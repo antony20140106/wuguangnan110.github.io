@@ -61,6 +61,7 @@
 <li><a class="reference internal" href="#qfile">自定义QFile烧录镜像</a></li>
 <li><a class="reference internal" href="#id5">各种命令</a></li>
 <li><a class="reference internal" href="#id6">回读分区</a></li>
+<li><a class="reference internal" href="#add2line">add2line使用方法</a></li>
 </ul>
 </div>
         </div>
@@ -496,6 +497,77 @@ setprop sys.usb.config diag,serial_cdev,rmnet,adb</p>
 <li><p>选择要回读的分区：</p></li>
 </ol>
 <p><img alt="0001_0004.png" src="../../../_images/0001_00046.png" /></p>
+</section>
+<section id="add2line">
+<h1>add2line使用方法<a class="headerlink" href="#add2line" title="此标题的永久链接"></a></h1>
+<p>如下kernel panic：</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>[    8.684774] PAX_CHG: BMS charge start: 8
+[    8.688755] PAX_CHG: BMS bms_dump: CHG [online: 0, type: 4, vol: 500000, cur: 2000000, time: 0], BAT [present: 1, status: 1, vol: 3803000, cur: 0, resistance: 0, temp: 320, soc: 33], OTHER [skin_temp: 0, chg_vote: 0x0, notify_code: 0x0],
+[    8.695737] SELinux:  policy capability network_peer_controls=1
+[    8.710235] bms_notify_call_chain
+[    8.715938] SELinux:  policy capability open_perms=1
+[    8.719249] Unable to handle kernel read from unreadable memory at virtual address 0000000000000000
+[    8.724233] SELinux:  policy capability extended_socket_class=1
+[    8.724237] SELinux:  policy capability always_check_network=0
+[    8.733329] Mem abort info:
+[    8.733333]   ESR = 0x86000005
+[    8.739282] SELinux:  policy capability cgroup_seclabel=0
+[    8.739285] SELinux:  policy capability nnp_nosuid_transition=1
+[    8.745142]   Exception class = IABT (current EL), IL = 32 bits
+[    8.768376]   SET = 0, FnV = 0
+[    8.771448]   EA = 0, S1PTW = 0
+[    8.774619] user pgtable: 4k pages, 39-bit VAs, pgdp = ffffffe95b7a8000
+[    8.781286] [0000000000000000] pgd=0000000000000000, pud=0000000000000000
+[    8.788119] Internal error: Oops: 86000005 [#1] PREEMPT SMP
+[    8.793713] Modules linked in:
+[    8.796787] Process kworker/1:0 (pid: 22, stack limit = 0xffffff8008208000)
+[    8.803772] CPU: 1 PID: 22 Comm: kworker/1:0 Tainted: G        W         4.19.157 #57
+[    8.811621] Hardware name: Qualcomm Technologies, Inc. Scuba IOT IDP (DT)
+[    8.818435] Workqueue: events power_supply_changed_work
+[    8.823684] pstate: 80400005 (Nzcv daif +PAN -UAO)
+[    8.828495] pc :           (null)
+[    8.831827] lr : blocking_notifier_call_chain+0x50/0x98
+[    8.837072] sp : ffffff800820bc30
+[    8.840397] x29: ffffff800820bc30 x28: ffffffe97f69d330
+[    8.845729] x27: ffffff9a80b5c018 x26: 000000007f6a1a05
+[    8.851060] x25: 0000000000000000 x24: 00000000ffffffff
+[    8.856390] x23: ffffffe95c3053d8 x22: ffffff9a80fc11d8
+[    8.861721] x21: 0000000040046201 x20: ffffff800820bca4
+[    8.867053] x19: ffffff9a80fc3468 x18: 0000000000000028
+[    8.872384] x17: ffffff9a811d7000 x16: 000000000000003a
+[    8.877714] x15: ffffff9a7ffeda68 x14: 0000000000003335
+[    8.883045] x13: 0000000000000035 x12: 0000000000000000
+[    8.888376] x11: 15e9204037011100 x10: 15e9204037011100
+[    8.893707] x9 : 0000000000000000 x8 : 0000000000000000
+[    8.899038] x7 : 635f796669746f6e x6 : ffffff9a811d9611
+[    8.904369] x5 : 0000000000000000 x4 : 0000000000000004
+[    8.909700] x3 : ffffff800820b928 x2 : ffffff800820bca4
+[    8.915031] x1 : 0000000040046201 x0 : ffffffe95dc9f3d8
+[    8.920363] Call trace:
+[    8.922831]            (null)
+[    8.925820]  bms_notify_call_chain+0x3c/0x48
+[    8.930112]  pax_bms_external_power_changed+0x10c/0x138
+[    8.935351]  __power_supply_changed_work+0xbc/0xd8
+[    8.940163]  class_for_each_device+0x80/0xf8
+[    8.944455]  power_supply_changed_work+0x68/0xf0
+[    8.949088]  process_one_work+0x278/0x458
+[    8.953116]  worker_thread+0x26c/0x4c0
+[    8.956887]  kthread+0x13c/0x150
+[    8.960131]  ret_from_fork+0x10/0x1c
+[    8.963729] Code: bad PC value
+[    8.966801] ---[ end trace d0d3606b0e7fa7bf ]---
+[    8.971585] kworker/1:0 (22) used greatest stack depth: 12096 bytes left
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>使用如下命令解析sp指针位置：
+<code class="docutils literal notranslate"><span class="pre">./prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9/bin/aarch64-linux-android-addr2line</span> <span class="pre">-f</span> <span class="pre">-e</span> <span class="pre">out/target/product/bengal/obj/KERNEL_OBJ/vmlinux</span> <span class="pre">ffffff80082d3c30</span></code></p></li>
+<li><p>打印：</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">mandatory_lock</span>
+<span class="o">/</span><span class="n">home</span><span class="o">/</span><span class="n">wugn</span><span class="o">/</span><span class="n">A6650</span><span class="o">-</span><span class="n">project</span><span class="o">/</span><span class="n">UM</span><span class="mf">.9.15</span><span class="o">/</span><span class="n">kernel</span><span class="o">/</span><span class="n">msm</span><span class="o">-</span><span class="mf">4.19</span><span class="o">/</span><span class="n">include</span><span class="o">/</span><span class="n">linux</span><span class="o">/</span><span class="n">fs</span><span class="o">.</span><span class="n">h</span><span class="p">:</span><span class="mi">2388</span>
+</pre></div>
+</div>
 </section>
 
 

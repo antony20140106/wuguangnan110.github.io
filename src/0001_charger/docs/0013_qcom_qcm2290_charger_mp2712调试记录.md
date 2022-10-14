@@ -1963,3 +1963,24 @@ index 692edd65080..24cebade8a7 100755
 完美解决，修改完成后开机过程只出现了一次中断打印：
 
 ![0013_0044.png](images/0013_0044.png)
+
+## 15.系统无法休眠
+
+* 报错如下：
+```shell
+09-30 03:48:17.826   483   492 E android.system.suspend@1.0-service: Error opening kernel wakelock stats for: wakeup41: Permission denied
+09-30 03:48:17.819   483   483 W Binder:483_2: type=1400 audit(0.0:52): avc: denied { read } for name="wakeup41" dev="sysfs" ino=44877 scontext=u:r:system_suspend:s0 tcontext=u:object_r:vendor_sysfs_battery_supply:s0 tclass=dir permissive=0
+09-30 03:48:17.823   483   483 W Binder:483_2: type=1400 audit(0.0:53): avc: denied { read } for name="wakeup31" dev="sysfs" ino=44139 scontext=u:r:system_suspend:s0 tcontext=u:object_r:vendor_sysfs_usb_supply:s0 tclass=dir permissive=0
+09-30 03:48:17.827   483   492 E android.system.suspend@1.0-service: Error opening kernel wakelock stats for: wakeup31: Permission denied
+09-30 03:48:33.539   483   483 W Binder:483_2: type=1400 audit(0.0:54): avc: denied { read } for name="wakeup41" dev="sysfs" ino=44877 scontext=u:r:system_suspend:s0 tcontext=u:object_r:vendor_sysfs_battery_supply:s0 tclass=dir permissive=0
+09-30 03:48:33.542   483   492 E android.system.suspend@1.0-service: Error opening kernel wakelock stats for: wakeup41: Permission denied
+09-30 03:48:33.544   483   492 E android.system.suspend@1.0-service: Error opening kernel wakelock stats for: wakeup31: Permission denied
+```
+
+* 增加权限如下：
+```
+allow system_suspend vendor_sysfs_usb_supply:dir { read open };
+allow system_suspend vendor_sysfs_battery_supply:dir { read open };
+allow system_suspend vendor_sysfs_battery_supply:file { read open getattr };
+allow system_suspend vendor_sysfs_usb_supply:file { read open getattr };
+```

@@ -240,6 +240,11 @@ wake_up(&simple_queue);                                                    // �
 wake_up_interruptible(&simple_queue);                                       // 唤醒可以中断的等待任务
 ```
 
+`wait_event_timeout(wq, condition, timeout)`表示的有以下两个意思：
+* （1）当condition为真的时候，会返回。
+* （2）当timeout到达时也会返回，不管此时condition为真为假都会返回。
+此时接着执行wait_event_timeout之后的代码，只要退出wait_event_timeout，进程就被置为TASK_RUNNING（因为源码中，在退出函数时，会调用到__set_current_state(TASK_RUNNING);）
+
 ## 实例
 
 以字符设备为例，在没有数据的时候，在read函数中实现读堵塞，当向内核写入数据时，则唤醒堵塞在该等待队列的所有认为:

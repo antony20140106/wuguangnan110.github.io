@@ -6,6 +6,7 @@
 
 NO.|文件名称|摘要
 :--:|:--|:--
+0007| [豆荚TEE兼容方案实现](docs/0007_豆荚TEE兼容方案实现.md) | 由于M50/M8项目需要更换TEE，从瓶钵换成豆荚，需要重新做兼容。
 0006| [google_keybox_M8写入实验](docs/0006_google_keybox_M8写入实验.md) | 由于M50项目的key用完了，只能用M8的key。
 0005| [google_keybox分解实验](docs/0005_google_keybox分解实验.md) | 感觉上google attestation key跟瓶钵没有关系，尝试自己实验。
 0004| [MTK_googlekey写入步骤](docs/0004_MTK_googlekey写入步骤.md) | 梳理一下mtk平台google key写入需要哪些东西及方法，重在梳理Keybox申请及使用流程。

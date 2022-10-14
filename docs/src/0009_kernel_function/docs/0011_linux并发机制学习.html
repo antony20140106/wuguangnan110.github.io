@@ -330,6 +330,12 @@ wake_up(&amp;simple_queue);                                                    /
 wake_up_interruptible(&amp;simple_queue);                                       // 唤醒可以中断的等待任务
 </pre></div>
 </div>
+<p><code class="docutils literal notranslate"><span class="pre">wait_event_timeout(wq,</span> <span class="pre">condition,</span> <span class="pre">timeout)</span></code>表示的有以下两个意思：</p>
+<ul class="simple">
+<li><p>（1）当condition为真的时候，会返回。</p></li>
+<li><p>（2）当timeout到达时也会返回，不管此时condition为真为假都会返回。
+此时接着执行wait_event_timeout之后的代码，只要退出wait_event_timeout，进程就被置为TASK_RUNNING（因为源码中，在退出函数时，会调用到__set_current_state(TASK_RUNNING);）</p></li>
+</ul>
 <section id="id4">
 <h2>实例<a class="headerlink" href="#id4" title="此标题的永久链接"></a></h2>
 <p>以字符设备为例，在没有数据的时候，在read函数中实现读堵塞，当向内核写入数据时，则唤醒堵塞在该等待队列的所有认为:

@@ -344,6 +344,7 @@ index d4bae84dee9..434e2b197c2 100644
 8.	充电IC通讯异常：当联系60次出现IC通讯异常，则上报异常信息，并停止充电，一旦出现该异常，后续不允许充电，重启才能恢复充电
 9.	电量计IC通讯异常：处理机制同充电IC通讯异常
 10. thermal温度监控并设置电流限制。
+11. 注意电池电压必须是开路电压，不然负载大容易导致误关机。
 
 ## 2.BMS轮询上报
 
@@ -917,6 +918,42 @@ bool sendBroadcastMessage(String8 action, int value)
 }
 ```
 
+### Android 12无法发送广播
+
+驱动层发送uevent事件没问题，使用binder调用函数`broadcastIntent`报错如下：
+```
+130|A6650:/ # logcat -s batterywarning
+--------- beginning of main
+09-30 03:47:31.892  3117  3117 D batterywarning: Inside file_index value : 0
+09-30 03:47:31.892  3117  3117 D batterywarning: start activity by send intent to BatteryWarningReceiver to remove notification, type = 0
+09-30 03:47:31.892  3117  3117 D batterywarning: sendBroadcastMessage(): Action: pax.intent.action.BATTERY_NORMAL, Value: 0
+09-30 03:47:31.911  3117  3117 E batterywarning: sendBroadcastMessage(pax.intent.action.BATTERY_NORMAL) caught exception -129
+09-30 03:47:48.083  3117  3117 D batterywarning: Inside file_index value : 0
+09-30 03:47:48.084  3117  3117 D batterywarning: start activity by send intent to BatteryWarningReceiver, type = 262144
+09-30 03:47:48.084  3117  3117 D batterywarning: sendBroadcastMessage(): Action: pax.intent.action.BATTERY_ABNORMAL, Value: 262144
+09-30 03:47:48.089  3117  3117 E batterywarning: sendBroadcastMessage(pax.intent.action.BATTERY_ABNORMAL) caught exception -129
+```
+
+* `frameworks/base/core/java/android/app/IActivityManager.aidl`函数参数没变一样：
+```
+//Android 12:
+int broadcastIntent(in IApplicationThread caller, in Intent intent,
+        in String resolvedType, in IIntentReceiver resultTo, int resultCode,
+        in String resultData, in Bundle map, in String[] requiredPermissions,
+        int appOp, in Bundle options, boolean serialized, boolean sticky, int userId);
+
+//Android 11:
+int broadcastIntent(in IApplicationThread caller, in Intent intent,
+        in String resolvedType, in IIntentReceiver resultTo, int resultCode,
+        in String resultData, in Bundle map, in String[] requiredPermissions,
+        int appOp, in Bundle options, boolean serialized, boolean sticky, int userId);
+```
+
+发现Android12对应是不是第13个函数，而是第14个：
+* `out/soong/.intermediates/frameworks/base/framework-minus-apex/android_common/javac/shard34/classes/android/d/app/IActivityManager$Stub.class`:
+
+![0009_0015.png](images/0009_0015.png)
+
 # 四、底层BMS功能接口提供
 
 为了减少bms与charge、guage及平台的耦合性，BMS不和Charge、Guage直接交互，在他们中间增加了BMS Notify，BMS driver调用power_supply_get_property和power_supply_reg_notifier方法通过PSY core来获取Charger和Guage相关信息，同时可通过BMS Notify调bms_notify_call_chain向Charge发送相关指令. 
@@ -1398,4 +1435,231 @@ int main() {
 ```
 PAYTABLETM8:/ # ps -A | grep bms
 system          479      1 10776264  5036 binder_ioctl_write_read 0 S android.hardware.pax_bms@1.0-service
+```
+
+# A6650项目BMS测试结果
+
+* 根据notify APP中得知：
+* `BatteryWarningReceiver.java`当收到`pax.intent.action.BATTERY_ABNORMAL`广播时，只处理广播type值为`PAX_BAT_NC_UV`低压事件，处理方式是关机。也就是其他异常没处理，但是都上报上来了:
+```java
+public class BatteryWarningReceiver extends BroadcastReceiver {
+     // private static final String ACTION_IPO_BOOT = "android.intent.action.ACTION_BOOT_IPO";
+    private static final String ACTION_BATTERY_WARNING = "pax.intent.action.BATTERY_ABNORMAL";
+    private static final String ACTION_BATTERY_NORMAL = "pax.intent.action.BATTERY_NORMAL";
+    private static final String TAG = "BatteryWarningReceiver";
+
+    @Override
+    public void onReceive(Context context, Intent intent) {
+        mContext = context;
+        String action = intent.getAction();
+        Log.d(TAG, "action = " + action);
+        if (Intent.ACTION_BOOT_COMPLETED.equals(action)) {
+            Log.d(TAG, action + " clear battery_warning_settings shared preference");
+            SharedPreferences.Editor editor = getSharedPreferences().edit();
+            editor.clear();
+            editor.apply();
+        } else if (ACTION_BATTERY_WARNING.equals(action)) {
+            Log.d(TAG, action + " start activity according to shared preference");
+            int type = intent.getIntExtra("type", -1);
+            Log.d(TAG, "type = " + type);
+            type = (int) (Math.log(type) / Math.log(2));
+            Log.d(TAG, "type = " + type);
+            if(type == BatteryWarningToShutdown.PAX_BAT_NC_UV){
+                ShowBatteryWaringToShutdownDialog(type);
+            }
+        }
+
+    private void ShowBatteryWaringToShutdownDialog(int type){ //跳转到BatteryWarningToShutdown
+        Intent shutDownIntent = new Intent();
+        shutDownIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK
+                | Intent.FLAG_ACTIVITY_CLEAR_TOP
+                | Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS);
+        shutDownIntent.setClass(mContext, BatteryWarningToShutdown.class);
+        shutDownIntent.putExtra(BatteryWarningToShutdown.KEY_TYPE, type);
+        mContext.startActivity(shutDownIntent);
+    }
+};
+```
+
+* 低压处理一共分为以下几步：
+  * 1. 启动定时器。1秒一次，定时器给handler发送倒计时消息，当mShutDownTime减成0则关机，目前是10s后关机。
+  * 2. 接收BATTERY_CHANGED广播，如果插入了usb则不关机，销毁mTimer。
+* 低温主要是提示低温弹框，打开YES点击事件监听，用户点击yes则关机，目前暂时没做低温处理。
+* `BatteryWarningToShutdown.java`:
+```java
+public class BatteryWarningToShutdown extends Activity {
+    private static final String TAG = "BatteryWarningToShutdown";
+    protected static final String KEY_TYPE = "type";
+    private static final Uri WARNING_SOUND_URI = Uri.parse("file:///system/media/audio/ui/VideoRecord.ogg");
+
+    protected static final int PAX_BAT_NC_UV = 18;  //under voltage,power off
+    protected static final int PAX_BAT_LOW_TEMP = 30;  //under voltage,power off
+
+    private Ringtone mRingtone;
+    private TextView mTitleView;
+    private TextView mContent;
+    private Button mYesButton;
+    private int mShutDownTime = -1;
+    private int mType = -1;
+
+    private Handler mHandler  = new Handler(){
+        public void handleMessage(Message msg) {
+            super.handleMessage(msg);
+            if(msg.what == 1){
+                mShutDownTime--;
+                if(mShutDownTime == 0){
+                    mContent.setText(getString(R.string.pax_shutdown_now_text));
+                    mTimer.cancel();
+                    stopRingtone();
+                    try{
+                        Log.d(TAG, "pax under voltage will shutdown");
+                        IPowerManager pm = IPowerManager.Stub.asInterface(
+                            ServiceManager.getService(Context.POWER_SERVICE));
+                        pm.shutdown(false, "under voltage", false);
+                    }catch(RemoteException e){
+                        Log.d(TAG, "pax battery under voltage shutdown fail.");
+                        e.printStackTrace();
+                    }
+                } else {
+                    mContent.setText(getString(R.string.pax_shutdown_time_text, mShutDownTime));
+                }
+            }
+        }
+    };
+
+    private Timer mTimer = new Timer(true);
+
+    private TimerTask mTask = new TimerTask() {//
+        public void run() {
+            Message msg = new Message();
+            msg.what = 1;
+            mHandler.sendMessage(msg);
+        }
+    };
+
+    private final BroadcastReceiver mReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            String action = intent.getAction();
+            if (Intent.ACTION_BATTERY_CHANGED.equals(action)) {
+                boolean plugged = (0 != intent.getIntExtra(BatteryManager.EXTRA_PLUGGED, 0));
+                if (plugged) {
+                    Log.d(TAG, "receive ACTION_BATTERY_CHANGED broadcast plugged:" + plugged + ", finish");
+                    mTimer.cancel(); //如果插入了usb则不关机，销毁mTimer
+                    stopRingtone();
+                    finish();
+                }
+            }
+        }
+    };
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        Intent intent = getIntent();
+        mType = intent.getIntExtra(KEY_TYPE, -1);
+        Log.d(TAG, "onCreate, mType is " + mType);
+
+        requestWindowFeature(Window.FEATURE_NO_TITLE);
+        setContentView(R.layout.pax_battery_notify_warning);
+
+        mTitleView = (TextView) findViewById(R.id.title);
+        mContent = (TextView) findViewById(R.id.content);
+        mYesButton = (Button) findViewById(R.id.yes);
+        if(mType == PAX_BAT_NC_UV){
+            showVoltageUnderWarningDialog();
+        } if(mType == PAX_BAT_LOW_TEMP){
+            showTempLowWarningDialog();
+        } else {
+            finish();
+        }
+    }
+
+    private void showVoltageUnderWarningDialog() {
+        mShutDownTime = 10;
+        mTitleView.setText(R.string.pax_battery_voltage_under);
+        mContent.setText(getString(R.string.pax_shutdown_time_text, mShutDownTime));
+
+        mYesButton.setText(getString(android.R.string.yes));
+        mYesButton.setOnClickListener(mYesListener);
+
+        registerReceiver(mReceiver, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));//接收BATTERY_CHANGED广播，如果插入了usb则不关机，销毁mTimer
+        playAlertSound(WARNING_SOUND_URI);
+        mTimer.schedule(mTask, 0, 1*1000); //启动定时器。1秒一次，定时器给handler发送倒计时消息，当mShutDownTime减成0则关机
+    }
+
+    private void showTempLowWarningDialog() {//提示低温弹框，打开YES点击事件监听
+        mShutDownTime = 10;
+        mTitleView.setText(R.string.pax_battery_low_temp_title);
+        mContent.setText(getString(R.string.pax_low_temp_shutdown_time_text, mShutDownTime));
+
+        mYesButton.setText(getString(android.R.string.yes));
+        mYesButton.setOnClickListener(mYesListener);
+
+        playAlertSound(WARNING_SOUND_URI);
+        mTimer.schedule(mTask, 0, 1*1000);
+    }
+
+    private OnClickListener mYesListener = new OnClickListener() {//关机弹框YES点击事件
+        public void onClick(View v) {
+            mTimer.cancel();
+            stopRingtone();
+            try{
+                Log.d(TAG, "pax under voltage will shutdown");
+                IPowerManager pm = IPowerManager.Stub.asInterface(
+                    ServiceManager.getService(Context.POWER_SERVICE));
+                pm.shutdown(false, "under voltage", false);
+            }catch(RemoteException e){
+                Log.d(TAG, "pax battery under voltage shutdown fail.");
+                e.printStackTrace();
+            }
+        }
+    };
+}
+```
+
+## 1.NC_CHG_OV测试
+
+* 首先通过指令`i2cset -f -y 0 0x3f 0x06 0x00 b`将OVP电压设置为6v，记录时间如下：
+```
+[  188.713780] pd_tcp_notifier_call Charger plug in, polarity = 1
+i2cset -f -y 0 0x3f 0x06 0x00 b
+```
+
+* `logcat -s BatteryWarningReceiver`:
+```
+[  276.000160] PAX_CHG: BMS bms_dump: 
+09-30 15:51:11.948  3753  3753 D BatteryWarningReceiver: action = pax.intent.action.BATTERY_ABNORMAL
+09-30 15:51:11.948  3753  3753 D BatteryWarningReceiver: type = 1
+09-30 15:51:11.949  3753  3753 D BatteryW[  276.127060] PAX_CHG: BatteryWarningReceiver: type = 0
+```
+
+* 以上一共花了88秒，感觉时间有点长！
+
+## 2.NC_BAT_UT低温NC_BAT_UV低压测试
+
+直接通过命令传参，向`BatteryWarningToShutdown`这个activity传参`PAX_BAT_LOW_TEMP 30`和`PAX_BAT_NC_UV 18`：
+```
+adb shell am start -n com.pax.batterywarning/.BatteryWarningToShutdown --ei type 18 //低压
+adb shell am start -n com.pax.batterywarning/.BatteryWarningToShutdown --ei type 30 //低温
+```
+
+* 低温结果：
+
+![0009_0016.png](images/0009_0016.png)
+
+* 低压结果：
+
+![0009_0017.png](images/0009_0017.png)
+
+## 3.NC_CHG_TMO超时测试
+
+通过命令`echo 10 > /sys/devices/platform/soc/soc:pax_bms/pax/bms/max_chg_time`设置一个10秒的充电超时时间，打印如下：
+```
+[  866.816670] PAX_CHG: BMS time: 15, max_chg_time: 10, out of range.
+[  866.823019] bms_notify_call_chain
+[  866.826570] PAX_CHG: bms_notify_event evt = SET_CHG_EN en:0
+[  866.833324] PAX_CHG: enable_charging en: 0 last_en: 1
+[  866.838535] pax_charger_update
+[  866.850534] PAX_CHG: BMS bms_dump: CHG [online: 0, type: 0, vol: 5000000, cur: 16800000, time: 15], BAT [present: 1, status: 1, vol: 3950000, cur: 449000, resistance: 0, temp: 300, soc: 61], OTHER [skin_temp: 0, chg_vote: 0x2000, notify_code: 0x2400],
 ```

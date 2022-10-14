@@ -1,0 +1,152 @@
+# 豆荚TEE兼容方案实现
+
+由于M50/M8项目需要更换TEE，从瓶钵换成豆荚，需要重新做兼容。
+
+# 方案一：瓶钵读取属性旧方式
+
+* 修改如下：
+```diff
+--- a/bionic/libc/system_properties/system_properties.cpp
++++ b/bionic/libc/system_properties/system_properties.cpp
+@@ -223,6 +223,10 @@ int SystemProperties::Get(const char* name, char* value) {
+   if (pi != nullptr) {
+     int ret = Read(pi, nullptr, value);
+      if (ret > 0) {
++                        async_safe_format_log(ANDROID_LOG_ERROR, "libc",
++                                       "print the The property name length for \"%s\" "
++                                       " to read this property. (the value  \"%s\")  current name %s uid=%d",
++                                       name, value,getprogname(),getuid());
+         if(strcmp(value,"M8") == 0 && strcmp(name,"ro.boot.terminal_name") != 0 && getuid() == 1000 && strcmp(getprogname(),"teed") == 0){
+             char m8[] = {"M50"};
+             memset(value,0,ret);
+@@ -233,6 +237,16 @@ int SystemProperties::Get(const char* name, char* value) {
+                             name, value,getprogname(),getuid());
+             return strlen(m8);
+         }
++               else if (strcmp(name,"ro.product.device") == 0 && getuid() == 1000 && strcmp(getprogname(),"teei_daemon") == 0) {
++            char m8[] = {"PAYTABLETM8"};
++            memset(value,0,ret);
++            strcpy(value,m8);
++            async_safe_format_log(ANDROID_LOG_ERROR, "libc",
++                            "print the The property name length for \"%s\" "
++                            " to read this property. (the value  \"%s\")  current name %s uid=%d",
++                            name, value,getprogname(),getuid());
++            return strlen(m8);
++               }
+         return ret;
+     }
+     return ret;
+```
+
+* 开机打印发现`uid=1000`依旧是1000，而且服务进程名称为`teei_daemon`：
+```
+2022-10-09 14:56:05.150 10306-10306/? E/libc: print the The property name length for "ro.product.device"  to read this property. (the value  "PAYPHONEM50")  current name teei_daemon uid=1000
+```
+
+* 按照如上修改后M50成功骗过tee进入，打印如下：
+```
+<6>[    5.205476] .(4)[345:init]BOOTPROF:      5205.461165:INIT:Mount_END --late
+<6>[    5.206471] .(3)[430:teei_daemon]BOOTPROF:      5206.461627:TEEI BOOT Decrypt Unlocked
+<6>[    5.206487] .(3)[430:teei_daemon]BOOTPROF:      5206.484934:TEEI BOOT Service2 Inited
+<6>[    5.206956] .(3)[430:teei_daemon]BOOTPROF:      5206.950550:TEEI BOOT Load TEES Completed
+<6>[    5.206968] .(3)[430:teei_daemon]BOOTPROF:      5206.966242:TEEI BOOT All Completed
+<6>[    5.206975] .(3)[430:teei_daemon]BOOTPROF:      5206.973242:TEEI_BOOT_OK
+<6>[    5.206982] .(3)[430:teei_daemon]BOOTPROF:      5206.979780:TEEI start to load driver TAs
+<6>[    5.207427] -(0)[249:teei_log_thread][TZ_LOG] uTSecMan| lookup ta: '020b0000000000000000000000000000' (40)
+<6>[    5.207436] -(0)[249:teei_log_thread][TZ_LOG] uTSecMan| enable model control
+<6>[    5.208030] -(0)[249:teei_log_thread][TZ_LOG] uTSecMan| platform:mt6762
+<6>[    5.208539] -(0)[249:teei_log_thread][TZ_LOG] uTSecMan| model:PAYTABLETM8
+<6>[    5.219310] -(7)[249:teei_log_thread][TZ_LOG] uTSecMan| config protocol is 1
+<6>[    5.219331] -(7)[249:teei_log_thread][TZ_LOG] uTSecMan| config version is 1
+<6>[    5.219339] -(7)[249:teei_log_thread][TZ_LOG] uTSecMan| config brand is PAX
+<6>[    5.219347] -(7)[249:teei_log_thread][TZ_LOG] uTSecMan| config model number is 2
+<6>[    5.219356] -(7)[249:teei_log_thread][TZ_LOG] uTSecMan| verify device model success, index:1
+<6>[    5.219365] -(7)[249:teei_log_thread][TZ_LOG] uTSecMan| verify config file model info success
+<6>[    5.223262] -(7)[249:teei_log_thread][TZ_LOG] uTSecMan| [sec_manager_handle.cc:431/package_query_ta]<err>TA is not installed 
+<6>[    5.223280] -(7)[249:teei_log_thread][TZ_LOG] uTSecMan| 
+```
+
+# 指纹适配
+
+指纹由于更换了TEE环境，相应的TA和库及驱动也需要重新更新。
+
+1. TA存放位置发生改变，豆荚的放到`vendor/thh/ta`，而瓶钵的是`vendor/app/t6/`：
+```diff
+--- a/paxdroid/hardware/libhardware/modules/fingerprint/betterlife_tee/Android.mk
++++ b/paxdroid/hardware/libhardware/modules/fingerprint/betterlife_tee/Android.mk
+@@ -143,14 +143,27 @@ include $(BUILD_PREBUILT)
+ ifeq ($(strip $(BTL_FINGERPRINT_TEE)),trustkernel)
+     include $(CLEAR_VARS)
+     LOCAL_MODULE_TAGS := optional
+-    LOCAL_MODULE := f74c8d0d-4284-4acf-d0c425260610b3bd
++    LOCAL_MODULE := f74c8d0d42844acfd0c425260610b3bd
+     LOCAL_CHECK_ELF_FILES := false
+     #LOCAL_MODULE_OWER := pax
+-    LOCAL_SRC_FILES := ta/f74c8d0d-4284-4acf-d0c425260610b3bd.ta
++    LOCAL_SRC_FILES := ta/f74c8d0d42844acfd0c425260610b3bd.ta
+     LOCAL_MODULE_CLASS := ETC
+     LOCAL_MODULE_PATH := $(TARGET_OUT_VENDOR)/app/t6
+     LOCAL_MODULE_SUFFIX := .ta
+     include $(BUILD_PREBUILT)
+ endif
+
++ifeq ($(strip $(BTL_FINGERPRINT_TEE)),beanpod)
++    include $(CLEAR_VARS)
++    LOCAL_MODULE_TAGS := optional
++    LOCAL_MODULE := f74c8d0d42844acfd0c425260610b3bd
++    LOCAL_CHECK_ELF_FILES := false
++    #LOCAL_MODULE_OWER := pax
++    LOCAL_SRC_FILES := ta/f74c8d0d42844acfd0c425260610b3bd.ta
++    LOCAL_MODULE_CLASS := ETC
++    LOCAL_MODULE_PATH := $(TARGET_OUT_VENDOR)/thh/ta
++    LOCAL_MODULE_SUFFIX := .ta
++    include $(BUILD_PREBUILT)
++endif
+```
+
+二供指纹改动如下：
+```diff
+--- a/paxdroid/hardware/libhardware/modules/fingerprint/chipsailing/tee/csfinger_product_64bit.mk
++++ b/paxdroid/hardware/libhardware/modules/fingerprint/chipsailing/tee/csfinger_product_64bit.mk
+@@ -3,7 +3,7 @@ CS_LOCAL_SO_PATH := paxdroid/hardware/libhardware/modules/fingerprint/chipsailin
+ CONFIG_LOCAL_PATH := paxdroid/hardware/libhardware/modules/fingerprint/chipsailing/tee
+
+ FINGERPRINT_HARDWARE_MODULE_ID := chipsailing.fingerprint
+-TEE_PLATFORM := TRUSTKERNEL
++TEE_PLATFORM := ISEE
+ CS_IC_SENSOR := 3711
+
+ PRODUCT_COPY_FILES += frameworks/native/data/etc/android.hardware.fingerprint.xml:vendor/etc/permissions/android.hardware.fingerprint.xml
+@@ -29,7 +29,7 @@ PRODUCT_COPY_FILES += $(CS_LOCAL_PATH)/cf-keys.kl:system/usr/keylayout/cf-keys.k
+
+ ifeq ($(TEE_PLATFORM),ISEE)
+ PRODUCT_COPY_FILES += $(CS_LOCAL_SO_PATH)/ISEE/libfp_hal.so:vendor/lib64/libfp_hal.so
+-PRODUCT_COPY_FILES += $(CS_LOCAL_SO_PATH)/ISEE/7778c03fc30c4dd0a319ea29643d4d4b.ta:vendor/thh/7778c03fc30c4dd0a319ea29643d4d4b.ta
++PRODUCT_COPY_FILES += $(CS_LOCAL_SO_PATH)/ISEE/7778c03fc30c4dd0a319ea29643d4d4b.ta:vendor/thh/ta/7778c03fc30c4dd0a319ea29643d4d4b.ta
+ endif
+```
+
+2. 开机设置菜单未发现指纹，发现selinux报错如下：
+```
+10-13 13:15:33.968  6966  6966 I btlfpserver: type=1400 audit(0.0:111): avc: denied { read write } for name="teei_fp" dev="tmpfs" ino=14479 scontext=u:r:btlfpserver:s0 tcontext=u:object_r:teei_fp_device:s0 tclass=chr_file permissive=1
+10-13 13:15:40.188  6966  6966 I btlfpserver: type=1400 audit(0.0:116): avc: denied { ioctl } for path="/dev/teei_fp" dev="tmpfs" ino=14479 ioctlcmd=0x5402 scontext=u:r:btlfpserver:s0 tcontext=u:object_r:teei_fp_device:s0 tclass=chr_file permissive=1
+```
+
+尝试关闭selinux，重启btlfpserver服务后设置菜单出现指纹：
+```
+PAYTABLETM8_EEA:/ # setenforce 0
+PAYTABLETM8_EEA:/ # ps -A| grep btlfpserver
+system          849      1 10778816  3812 hrtimer_nanosleep   0 S btlfpserver
+PAYTABLETM8_EEA:/ # kill 849
+```
+
+尝试增加selinux权限：
+```diff
+--- a/paxdroid/device/sepolicy/vendor/fingerpint/betterlife/hal_btlfpserver.te
++++ b/paxdroid/device/sepolicy/vendor/fingerpint/betterlife/hal_btlfpserver.te
+@@ -30,6 +30,7 @@ hal_client_domain(btlfpserver, hal_allocator)
+
+ # Purpose : Allow to use kernel driver
+ allow btlfpserver blestech_fp_device:chr_file { read write open ioctl };
++allow btlfpserver teei_fp_device:chr_file { read write open ioctl };
+```
