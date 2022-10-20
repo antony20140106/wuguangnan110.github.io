@@ -48,6 +48,7 @@
 <li><a class="reference internal" href="#qssi">没有QSSI</a></li>
 <li><a class="reference internal" href="#qssisystem-img">有QSSI编译system.img</a></li>
 <li><a class="reference internal" href="#id2">为什么要用QSSI</a></li>
+<li><a class="reference internal" href="#systemvendor">编译system还是vendor应用</a></li>
 </ul>
 </div>
         </div>
@@ -133,6 +134,88 @@ make &lt;non-system images&gt;
 <section id="id2">
 <h1>为什么要用QSSI<a class="headerlink" href="#id2" title="此标题的永久链接"></a></h1>
 <p>解决Android碎片化问题，把system.img和vendor.img进一步拆分</p>
+</section>
+<section id="systemvendor">
+<h1>编译system还是vendor应用<a class="headerlink" href="#systemvendor" title="此标题的永久链接"></a></h1>
+<p>比如我们想将应用放到文件系统vendor/bin目录下，这个必须是<code class="docutils literal notranslate"><span class="pre">lunch</span> <span class="pre">target</span></code>目录，目前qcm2290是UM9.15目录，操作如下：</p>
+<ul class="simple">
+<li><ol class="arabic simple">
+<li><p>在target目录下加入包名：</p></li>
+</ol>
+</li>
+</ul>
+<div class="highlight-diff notranslate"><div class="highlight"><pre><span></span><span class="gd">--- a/UM.9.15/device/qcom/bengal/bengal.mk</span><span class="w"></span>
+<span class="gi">+++ b/UM.9.15/device/qcom/bengal/bengal.mk</span><span class="w"></span>
+<span class="gu">@@ -261,6 +261,7 @@ PRODUCT_PACKAGES += android.hardware.lights-service.qti</span><span class="w"></span>
+<span class="w"> </span>PRODUCT_PACKAGES += libqlmodem<span class="w"></span>
+<span class="w"> </span>PRODUCT_PACKAGES += android.hardware.quectelat@1.0-service<span class="w"></span>
+
+<span class="gi">+PRODUCT_PACKAGES += tptool</span><span class="w"></span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><ol class="arabic simple" start="2">
+<li><p>将应用放到<code class="docutils literal notranslate"><span class="pre">vendor/pax/tptool</span></code>目录，Android.bp内容必须加<code class="docutils literal notranslate"><span class="pre">vendor:</span> <span class="pre">true</span></code>或者Android.mk中增加<code class="docutils literal notranslate"><span class="pre">LOCAL_PROPRIETARY_MODULE</span> <span class="pre">:=</span> <span class="pre">true</span></code>：</p></li>
+</ol>
+</li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Android</span><span class="o">.</span><span class="n">bp</span>  <span class="n">tptool</span><span class="o">.</span><span class="n">cpp</span>
+
+<span class="n">Android</span><span class="o">.</span><span class="n">bp内容</span><span class="p">:</span>
+<span class="n">cc_binary</span> <span class="p">{</span>
+    <span class="n">name</span><span class="p">:</span> <span class="s2">&quot;tptool&quot;</span><span class="p">,</span>
+    <span class="n">vendor</span><span class="p">:</span> <span class="n">true</span><span class="p">,</span>
+
+<span class="n">Android</span><span class="o">.</span><span class="n">mk</span><span class="p">:</span>
+<span class="n">LOCAL_PROPRIETARY_MODULE</span> <span class="o">:=</span> <span class="n">true</span>
+</pre></div>
+</div>
+<p>system应用如下：</p>
+<div class="highlight-diff notranslate"><div class="highlight"><pre><span></span><span class="gd">--- a/QSSI.12/device/qcom/qssi/qssi.mk</span><span class="w"></span>
+<span class="gi">+++ b/QSSI.12/device/qcom/qssi/qssi.mk</span><span class="w"></span>
+<span class="gu">@@ -299,6 +299,11 @@ ifeq (true,$(call math_gt_or_eq,$(SHIPPING_API_LEVEL),29))</span><span class="w"></span>
+<span class="w"> </span>  PRODUCT_ENFORCE_ARTIFACT_PATH_REQUIREMENTS := true<span class="w"></span>
+<span class="w"> </span>endif<span class="w"></span>
+
+<span class="gi">+#[NEW FEATURE]-BEGIN by wugangnan@paxsz.com 2022-10-10 for BMS notify function</span><span class="w"></span>
+<span class="gi">+PRODUCT_PACKAGES += \</span><span class="w"></span>
+<span class="gi">+    batterywarning</span><span class="w"></span>
+<span class="gi">+#[NEW FEATURE]-END by wugangnan@paxsz.com 2022-10-10 for BMS notify function</span><span class="w"></span>
+
+<span class="gd">--- /dev/null</span><span class="w"></span>
+<span class="gi">+++ b/QSSI.12/frameworks/opt/batterywarning/Android.bp</span><span class="w"></span>
+<span class="gu">@@ -0,0 +1,29 @@</span><span class="w"></span>
+<span class="gi">+cc_binary {</span><span class="w"></span>
+<span class="gi">+    name: &quot;batterywarning&quot;,</span><span class="w"></span>
+<span class="gi">+    vendor: false,</span><span class="w"></span>
+<span class="gi">+       init_rc: [&quot;batterywarning.rc&quot;],</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+    cflags: [</span><span class="w"></span>
+<span class="gi">+        &quot;-Wno-unused-parameter&quot;,</span><span class="w"></span>
+<span class="gi">+        &quot;-Wno-unused-variable&quot;,</span><span class="w"></span>
+<span class="gi">+    ],</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+    srcs: [</span><span class="w"></span>
+<span class="gi">+        &quot;batterywarning.cpp&quot;,</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+    ],</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+    shared_libs: [</span><span class="w"></span>
+<span class="gi">+        &quot;libc&quot;,</span><span class="w"></span>
+<span class="gi">+        &quot;libcutils&quot;,</span><span class="w"></span>
+<span class="gi">+        &quot;libutils&quot;,</span><span class="w"></span>
+<span class="gi">+        &quot;libbinder&quot;,</span><span class="w"></span>
+<span class="gi">+        &quot;liblog&quot;,</span><span class="w"></span>
+<span class="gi">+    ],</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+    local_include_dirs: [</span><span class="w"></span>
+<span class="gi">+        &quot;.&quot;</span><span class="w"></span>
+<span class="gi">+    ],</span><span class="w"></span>
+<span class="gi">+}</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+</pre></div>
+</div>
 </section>
 
 

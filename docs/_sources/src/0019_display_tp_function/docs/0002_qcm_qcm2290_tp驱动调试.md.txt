@@ -101,33 +101,33 @@ Makefile | 选择要编译的通讯介面及平台 (仅支援 built-in，如要�
 * `drivers\input\touchscreen\ILITEK_V3\ilitek_v3_qcom.c`:
 ```C++
 * module_init(ilitek_plat_dev_init);
-  * ili_dev_init(&hwif)
-  * .of_match_table = of_match_ptr(tp_match_table),{.compatible = DTS_OF_NAME}, #define DTS_OF_NAME "tchip,ilitek" //platform device和driver匹配
-    * ilitek_plat_probe(void) 
-      * #if REGULATOR_POWER ilitek_plat_regulator_power_init(); //使能regulator
-        * ilits->vdd = regulator_get(ilits->dev, vdd_name);//const char *vdd_name = "vdd";
-        * regulator_set_voltage(ilits->vdd, VDD_VOLTAGE, VDD_VOLTAGE)
-        * regulator_get(ilits->dev, vcc_name);//const char *vcc_name = "vcc";
-        * regulator_set_voltage(ilits->vcc, VCC_VOLTAGE, VCC_VOLTAGE)
-      * #ifdef __DRM_PANEL_H__ ili_v3_drm_check_dt(ilits->dev->of_node);
-        * of_count_phandle_with_args(np, "panel", NULL); //在dts中找panel，这里定义
-        * panel = of_drm_find_panel(node);
-        * active_panel = panel; //全局变量，供notify使用
-      * ilitek_plat_gpio_register()
-        * ilits->tp_int = of_get_named_gpio_flags(dev_node, DTS_INT_GPIO, 0, &flag);//#define DTS_INT_GPIO	"touch,irq-gpio"
-        * ilits->tp_rst = of_get_named_gpio_flags(dev_node, DTS_RESET_GPIO, 0, &flag);//#define DTS_RESET_GPIO	"touch,reset-gpio"
-      * ili_irq_register(ilits->irq_tirgger_type); //注册中断
-        * devm_request_threaded_irq(ilits->dev, ilits->irq_num, ilitek_plat_isr_top_half,ilitek_plat_isr_bottom_half,type | IRQF_ONESHOT, "ilitek", NULL); //申请中断，
-      * ili_tddi_init() // ?
-      * #if SPRD_SYSFS_SUSPEND_RESUME ili_sysfs_add_device(ilits->dev); //增加sys调试节点，休眠唤醒通过写节点方式
-      * #else ilitek_plat_sleep_init();
-        * #ifdef __DRM_PANEL_H__ ilits->notifier_fb.notifier_call = drm_notifier_callback; //亮灭屏监听panel
-          * case DRM_PANEL_BLANK_UNBLANK:
-            * ili_sleep_handler(TP_RESUME) //亮屏
-          * case DRM_PANEL_BLANK_POWERDOWN:
-            * ili_sleep_handler(TP_DEEP_SLEEP) //灭屏
-        * drm_panel_notifier_register(active_panel, &ilits->notifier_fb) //注册notify
-      * #if CHARGER_NOTIFIER_CALLBACK ilitek_plat_charger_init();// ?
+  ├── ili_dev_init(&hwif)
+  └── .of_match_table = of_match_ptr(tp_match_table),{.compatible = DTS_OF_NAME}, #define DTS_OF_NAME "tchip,ilitek" //platform device和driver匹配
+      └── ilitek_plat_probe(void) 
+          ├── #if REGULATOR_POWER ilitek_plat_regulator_power_init(); //使能regulator
+          │   ├── ilits->vdd = regulator_get(ilits->dev, vdd_name);//const char *vdd_name = "vdd";
+          │   ├── regulator_set_voltage(ilits->vdd, VDD_VOLTAGE, VDD_VOLTAGE)
+          │   ├── regulator_get(ilits->dev, vcc_name);//const char *vcc_name = "vcc";
+          │   └── regulator_set_voltage(ilits->vcc, VCC_VOLTAGE, VCC_VOLTAGE)
+          ├── #ifdef __DRM_PANEL_H__ ili_v3_drm_check_dt(ilits->dev->of_node);
+          │   ├── of_count_phandle_with_args(np, "panel", NULL); //在dts中找panel，这里定义
+          │   ├── panel = of_drm_find_panel(node);
+          │   └── active_panel = panel; //全局变量，供notify使用
+          ├── ilitek_plat_gpio_register()
+          │   ├── ilits->tp_int = of_get_named_gpio_flags(dev_node, DTS_INT_GPIO, 0, &flag);//#define DTS_INT_GPIO	"touch,irq-gpio"
+          │   └── ilits->tp_rst = of_get_named_gpio_flags(dev_node, DTS_RESET_GPIO, 0, &flag);//#define DTS_RESET_GPIO	"touch,reset-gpio"
+          ├── ili_irq_register(ilits->irq_tirgger_type); //注册中断
+          │   └── devm_request_threaded_irq(ilits->dev, ilits->irq_num, ilitek_plat_isr_top_half,ilitek_plat_isr_bottom_half,type | IRQF_ONESHOT, "ilitek", NULL); //申请中断，
+          ├── ili_tddi_init() // ?
+          ├── #if SPRD_SYSFS_SUSPEND_RESUME ili_sysfs_add_device(ilits->dev); //增加sys调试节点，休眠唤醒通过写节点方式
+          ├── #else ilitek_plat_sleep_init();
+          │   ├── #ifdef __DRM_PANEL_H__ ilits->notifier_fb.notifier_call = drm_notifier_callback; //亮灭屏监听panel
+          │   │   ├── case DRM_PANEL_BLANK_UNBLANK:
+          │   │   │   └── ili_sleep_handler(TP_RESUME) //亮屏
+          │   │   └── case DRM_PANEL_BLANK_POWERDOWN:
+          │   │       └── ili_sleep_handler(TP_DEEP_SLEEP) //灭屏
+          │   └── drm_panel_notifier_register(active_panel, &ilits->notifier_fb) //注册notify
+          └── #if CHARGER_NOTIFIER_CALLBACK ilitek_plat_charger_init();// ?
 ```
 
 看看中断上下段内容：

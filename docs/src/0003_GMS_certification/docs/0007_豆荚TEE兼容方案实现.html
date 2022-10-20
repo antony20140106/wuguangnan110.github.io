@@ -43,8 +43,13 @@
               <!-- Local TOC -->
               <div class="local-toc"><ul>
 <li><a class="reference internal" href="#">豆荚TEE兼容方案实现</a></li>
-<li><a class="reference internal" href="#id1">方案一：瓶钵读取属性旧方式</a></li>
-<li><a class="reference internal" href="#id2">指纹适配</a></li>
+<li><a class="reference internal" href="#id1">参考</a></li>
+<li><a class="reference internal" href="#id2">方案一：瓶钵读取属性旧方式</a></li>
+<li><a class="reference internal" href="#id3">指纹适配</a></li>
+<li><a class="reference internal" href="#id4">根据硬件启动不同TEE方案</a></li>
+<li><a class="reference internal" href="#kernel">kernel阶段兼容</a></li>
+<li><a class="reference internal" href="#tee-img">tee.img生成兼容</a></li>
+<li><a class="reference internal" href="#pllk">pl阶段传参lk流程</a></li>
 </ul>
 </div>
         </div>
@@ -79,7 +84,13 @@
 <p>由于M50/M8项目需要更换TEE，从瓶钵换成豆荚，需要重新做兼容。</p>
 </section>
 <section id="id1">
-<h1>方案一：瓶钵读取属性旧方式<a class="headerlink" href="#id1" title="此标题的永久链接"></a></h1>
+<h1>参考<a class="headerlink" href="#id1" title="此标题的永久链接"></a></h1>
+<ul class="simple">
+<li><p><a class="reference external" href="https://www.jianshu.com/p/74a26ede5d1d?u_atoken=66a51267-285d-4567-aafe-d6d50738f585&amp;u_asession=01f_sxVixP7Vy0Jrzdzb2dAKAXWsbgK4Lio9vOpRlZGo2yLXa_J9zNufE9HVDP2c4VX0KNBwm7Lovlpxjd_P_q4JsKWYrT3W_NKPr8w6oU7K8Ns3QXhI7dv48uDqh6tscGp0TkEaMSMNP4umocQhrjq2BkFo3NEHBv0PZUm6pbxQU&amp;u_asig=05J29Yav8usuQyWHInRl-Ad-PI68YevoqVxG8Gsuu7qA6JF6zf9CBeoFrCshGsajK2Z3UW7m6GmsSmZQTgaHpvMMoX1EJ_9B6XMFEwJ5tAEn8k7OGYu5QsOGXsIHC5LMq8kRH1sD4Gn1B-q1ZGYpDUwHT6-ibI6mzpVPVCVS1j9GP9JS7q8ZD7Xtz2Ly-b0kmuyAKRFSVJkkdwVUnyHAIJzXKB41hxxphEWr3t12svy7v-ZxzmlGsA1bKYzw3seMh-G3pf5vm7LeeSuJ_913VgsO3h9VXwMyh6PgyDIVSG1W8frrwHwetKpxMGwfYjeCGf0lxEO2egZLn_KjcvC2APzImtRq45EGDpyiOknHXmFzAdnFJRYAdzAZXbpwUdMC3MmWspDxyAEEo4kbsryBKb9Q&amp;u_aref=S4YI8eA5zTurlBbbCqy3Y1rwnYQ%3D">《手机安全与可信应用开发指南：TrustZone和OP-TEE技术详解》读书笔记</a></p></li>
+</ul>
+</section>
+<section id="id2">
+<h1>方案一：瓶钵读取属性旧方式<a class="headerlink" href="#id2" title="此标题的永久链接"></a></h1>
 <ul class="simple">
 <li><p>修改如下：</p></li>
 </ul>
@@ -146,8 +157,8 @@
 </pre></div>
 </div>
 </section>
-<section id="id2">
-<h1>指纹适配<a class="headerlink" href="#id2" title="此标题的永久链接"></a></h1>
+<section id="id3">
+<h1>指纹适配<a class="headerlink" href="#id3" title="此标题的永久链接"></a></h1>
 <p>指纹由于更换了TEE环境，相应的TA和库及驱动也需要重新更新。</p>
 <ol class="arabic simple">
 <li><p>TA存放位置发生改变，豆荚的放到<code class="docutils literal notranslate"><span class="pre">vendor/thh/ta</span></code>，而瓶钵的是<code class="docutils literal notranslate"><span class="pre">vendor/app/t6/</span></code>：</p></li>
@@ -227,6 +238,253 @@
 <span class="w"> </span># Purpose : Allow to use kernel driver<span class="w"></span>
 <span class="w"> </span>allow btlfpserver blestech_fp_device:chr_file { read write open ioctl };<span class="w"></span>
 <span class="gi">+allow btlfpserver teei_fp_device:chr_file { read write open ioctl };</span><span class="w"></span>
+</pre></div>
+</div>
+<p>还有报错：</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">btlfpserver</span><span class="p">:</span> <span class="nb">type</span><span class="o">=</span><span class="mi">1400</span> <span class="n">audit</span><span class="p">(</span><span class="mf">0.0</span><span class="p">:</span><span class="mi">52</span><span class="p">):</span> <span class="n">avc</span><span class="p">:</span> <span class="n">denied</span> <span class="p">{</span> <span class="n">read</span> <span class="n">write</span> <span class="p">}</span> <span class="k">for</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;isee_tee0&quot;</span> <span class="n">dev</span><span class="o">=</span><span class="s2">&quot;tmpfs&quot;</span> <span class="n">ino</span><span class="o">=</span><span class="mi">16472</span> <span class="n">scontext</span><span class="o">=</span><span class="n">u</span><span class="p">:</span><span class="n">r</span><span class="p">:</span><span class="n">btlfpserver</span><span class="p">:</span><span class="n">s0</span> <span class="n">tcontext</span><span class="o">=</span><span class="n">u</span><span class="p">:</span><span class="n">object_r</span><span class="p">:</span><span class="n">teei_client_device</span><span class="p">:</span><span class="n">s0</span> <span class="n">tclass</span><span class="o">=</span><span class="n">chr_file</span> <span class="n">permissive</span><span class="o">=</span><span class="mi">0</span>
+</pre></div>
+</div>
+<p>继续增加：</p>
+<div class="highlight-diff notranslate"><div class="highlight"><pre><span></span><span class="gd">--- a/paxdroid/device/sepolicy/vendor/fingerpint/betterlife/hal_btlfpserver.te</span><span class="w"></span>
+<span class="gi">+++ b/paxdroid/device/sepolicy/vendor/fingerpint/betterlife/hal_btlfpserver.te</span><span class="w"></span>
+<span class="gu">@@ -30,6 +30,8 @@ hal_client_domain(btlfpserver, hal_allocator)</span><span class="w"></span>
+
+<span class="w"> </span># Purpose : Allow to use kernel driver<span class="w"></span>
+<span class="w"> </span>allow btlfpserver blestech_fp_device:chr_file { read write open ioctl };<span class="w"></span>
+<span class="gi">+allow btlfpserver teei_fp_device:chr_file { read write open ioctl };</span><span class="w"></span>
+<span class="gi">+allow btlfpserver teei_client_device:chr_file { read write open ioctl };</span><span class="w"></span>
+</pre></div>
+</div>
+</section>
+<section id="id4">
+<h1>根据硬件启动不同TEE方案<a class="headerlink" href="#id4" title="此标题的永久链接"></a></h1>
+<p>由于需要适配老机器(瓶钵TEE)，需要根据硬件启动不同TEE OS，方案如下：</p>
+<ul class="simple">
+<li><ol class="arabic simple">
+<li><p>后续升级OTA/Uniphiz包不包含tee.img镜像，因为tee os编译在里面。</p></li>
+</ol>
+</li>
+<li><ol class="arabic simple" start="2">
+<li><p>pl阶段根据boardid加载不同的TEE OS。</p></li>
+</ol>
+</li>
+<li><ol class="arabic simple" start="3">
+<li><p>kernel阶段两个都打开。</p></li>
+</ol>
+</li>
+</ul>
+</section>
+<section id="kernel">
+<h1>kernel阶段兼容<a class="headerlink" href="#kernel" title="此标题的永久链接"></a></h1>
+<p>GP定义的客户端接口包括9个函数和1个宏：</p>
+<p><img alt="0007_0000.png" src="../../../_images/0007_00002.png" /></p>
+<p>如果同时打开瓶钵和豆荚的TEE会出现如下重定义报错：</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ld</span><span class="o">.</span><span class="n">lld</span><span class="p">:</span> <span class="n">error</span><span class="p">:</span> <span class="n">duplicate</span> <span class="n">symbol</span><span class="p">:</span> <span class="n">TEEC_ReleaseSharedMemory</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">defined</span> <span class="n">at</span> <span class="n">tee_client_api</span><span class="o">.</span><span class="n">c</span><span class="p">:</span><span class="mi">53</span> <span class="p">(</span><span class="o">/</span><span class="n">ssd</span><span class="o">/</span><span class="n">libing</span><span class="o">/</span><span class="n">M8</span><span class="o">-</span><span class="n">tee</span><span class="o">/</span><span class="n">kernel</span><span class="o">-</span><span class="mf">4.19</span><span class="o">/</span><span class="n">drivers</span><span class="o">/</span><span class="n">tee</span><span class="o">/</span><span class="n">teei</span><span class="o">/</span><span class="mi">300</span><span class="o">/</span><span class="n">tee</span><span class="o">/</span><span class="n">tee_client_api</span><span class="o">.</span><span class="n">c</span><span class="p">:</span><span class="mi">53</span><span class="p">)</span>
+<span class="o">&gt;&gt;&gt;</span>            <span class="n">drivers</span><span class="o">/</span><span class="n">tee</span><span class="o">/</span><span class="n">teei</span><span class="o">/</span><span class="mi">300</span><span class="o">/</span><span class="n">tee</span><span class="o">/</span><span class="n">tee_client_api</span><span class="o">.</span><span class="n">o</span><span class="p">:(</span><span class="n">TEEC_ReleaseSharedMemory</span><span class="p">)</span> <span class="ow">in</span> <span class="n">archive</span> <span class="n">built</span><span class="o">-</span><span class="ow">in</span><span class="o">.</span><span class="n">a</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">defined</span> <span class="n">at</span> <span class="n">tee_kernel_api</span><span class="o">.</span><span class="n">c</span>
+<span class="o">&gt;&gt;&gt;</span>            <span class="n">drivers</span><span class="o">/</span><span class="n">tee</span><span class="o">/</span><span class="n">tkcore</span><span class="o">/</span><span class="n">core</span><span class="o">/</span><span class="n">tee_kernel_api</span><span class="o">.</span><span class="n">o</span><span class="p">:(</span><span class="o">.</span><span class="n">text</span><span class="o">+</span><span class="mh">0x574</span><span class="p">)</span> <span class="ow">in</span> <span class="n">archive</span> <span class="n">built</span><span class="o">-</span><span class="ow">in</span><span class="o">.</span><span class="n">a</span>
+</pre></div>
+</div>
+<p>那么我们将瓶钵驱动中的9和函数名称修改一下<code class="docutils literal notranslate"><span class="pre">drivers/tee/tkcore</span></code>：</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span> 2018  sed -i &quot;s/TEEC_InitializeContext/TK_TEEC_InitializeContext/g&quot;  `grep TEEC_InitializeContext -rl . `
+ 2020  sed -i &quot;s/TEEC_FinalizeContext/TK_TEEC_FinalizeContext/g&quot;  `grepTEEC_FinalizeContext -rl . `
+ 2021  sed -i &quot;s/TEEC_FinalizeContext/TK_TEEC_FinalizeContext/g&quot;  `grep TEEC_FinalizeContext -rl . `
+ 2023  sed -i &quot;s/TEEC_OpenSession/TK_TEEC_OpenSession/g&quot;  `grep TEEC_OpenSession -rl . `
+ 2027  sed -i &quot;s/TEEC_CloseSession/TK_TEEC_CloseSession/g&quot;  `grep TEEC_CloseSession -rl . `
+ 2028  sed -i &quot;s/TEEC_InvokeCommand/TK_TEEC_InvokeCommand/g&quot;  `grep TEEC_InvokeCommand -rl . `
+ 2029  sed -i &quot;s/TEEC_RegisterSharedMemory/TK_TEEC_RegisterSharedMemory/g&quot;  `grep TEEC_RegisterSharedMemory -rl . `
+ 2030  sed -i &quot;s/TEEC_AllocateSharedMemory/TK_TEEC_AllocateSharedMemory/g&quot;  `grep TEEC_AllocateSharedMemory -rl . `
+ 2031  sed -i &quot;s/TEEC_ReleaseSharedMemory/TK_TEEC_ReleaseSharedMemory/g&quot;  `grep TEEC_ReleaseSharedMemory -rl . `
+</pre></div>
+</div>
+<p>经验证，修改后瓶钵指纹依然能够正常读取chip id，正常使用。</p>
+</section>
+<section id="tee-img">
+<h1>tee.img生成兼容<a class="headerlink" href="#tee-img" title="此标题的永久链接"></a></h1>
+<p>首先看看tee.img是如何生成的，</p>
+</section>
+<section id="pllk">
+<h1>pl阶段传参lk流程<a class="headerlink" href="#pllk" title="此标题的永久链接"></a></h1>
+<ul class="simple">
+<li><p>根据pl阶段打印如下：</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="n">PLFM</span><span class="p">]</span> <span class="n">boot</span> <span class="n">to</span> <span class="n">LK</span> <span class="n">by</span> <span class="n">ATAG</span> <span class="n">reason</span><span class="o">=</span><span class="mi">4</span> <span class="n">addr</span><span class="o">=</span><span class="mf">47E6</span><span class="n">DA80</span>
+<span class="n">RAM_CONSOLE</span> <span class="n">wdt_status</span> <span class="mh">0x2</span><span class="p">,</span> <span class="n">fiq_step</span> <span class="mh">0x0</span><span class="p">,</span> <span class="n">exp_type</span> <span class="mh">0x0</span>
+<span class="n">RAM_CONSOLE</span> <span class="n">offset</span><span class="p">:</span><span class="mh">0xAC0</span>
+<span class="n">RAM_CONSOLE</span> <span class="n">sram_plat_dbg_info_addr</span><span class="p">:</span><span class="mh">0x10E400</span><span class="p">,</span> <span class="n">sram_plat_dbg_info_size</span><span class="p">:</span><span class="mh">0x200</span><span class="p">,</span> <span class="n">sram_log_store_addr</span><span class="p">:</span><span class="mh">0x10E700</span><span class="p">,</span> <span class="n">sram_log_store_size</span><span class="p">:</span><span class="mh">0x100</span>
+<span class="n">RAM_CONSOLE</span> <span class="n">mrdump_addr</span><span class="p">:</span><span class="mh">0x10E800</span><span class="p">,</span> <span class="n">mrdump_size</span><span class="p">:</span><span class="mh">0x1400</span><span class="p">,</span> <span class="n">dram_addr</span><span class="p">:</span><span class="mh">0x47C80000</span><span class="p">,</span> <span class="n">dram_size</span><span class="p">:</span><span class="mh">0x10000</span>
+<span class="n">RAM_CONSOLE</span> <span class="n">pstore_addr</span><span class="p">:</span><span class="mh">0x47C90000</span><span class="p">,</span> <span class="n">pstore_size</span><span class="p">:</span><span class="mh">0xE0000</span><span class="p">,</span> <span class="n">pstore_console_size</span><span class="p">:</span><span class="mh">0x40000</span><span class="p">,</span> <span class="n">pstore_pmsg_size</span><span class="p">:</span><span class="mh">0x10000</span>
+<span class="n">RAM_CONSOLE</span> <span class="n">mrdump_mini_header_addr</span><span class="p">:</span><span class="mh">0x47D70000</span><span class="p">,</span> <span class="n">mrdump_mini_header_size</span><span class="p">:</span><span class="mh">0x10000</span><span class="p">,</span> <span class="n">magic1</span><span class="p">:</span><span class="mh">0x61646472</span><span class="p">,</span> <span class="n">magic2</span><span class="p">:</span><span class="mh">0x73697A65</span>
+<span class="n">BOOT_REASON</span><span class="p">:</span> <span class="mi">4</span>
+<span class="mi">11</span> <span class="n">pax_new_board</span><span class="p">:</span> <span class="mi">1</span>
+<span class="n">BOOT_MODE</span><span class="p">:</span> <span class="mi">0</span>
+<span class="n">MEM_SIZE</span><span class="p">:</span> <span class="mh">0x2B08</span>
+<span class="n">MEM_SIZE</span><span class="p">:</span> <span class="mh">0x2B1A</span>
+<span class="n">BOOT_TIME</span><span class="p">:</span> <span class="mi">1443</span>
+
+<span class="p">[</span><span class="n">BLDR</span><span class="p">]</span> <span class="n">jump</span> <span class="n">to</span> <span class="mh">0x48000000</span>
+<span class="p">[</span><span class="n">BLDR</span><span class="p">]</span> <span class="o">&lt;</span><span class="mh">0x48000000</span><span class="o">&gt;=</span><span class="mh">0xEA000007</span>
+<span class="p">[</span><span class="n">BLDR</span><span class="p">]</span> <span class="o">&lt;</span><span class="mh">0x48000004</span><span class="o">&gt;=</span><span class="mh">0xEA0077DD</span>
+<span class="p">[</span><span class="n">TZ_SEC_CFG</span><span class="p">]</span> <span class="p">[</span><span class="n">B</span><span class="p">]</span><span class="n">SRAMROM</span> <span class="n">SEC_ADDR</span><span class="p">:</span><span class="mh">0x0</span><span class="p">,</span> <span class="n">SEC_ADDR1</span><span class="p">:</span><span class="mh">0x0</span><span class="p">,</span> <span class="n">SEC_ADDR2</span><span class="p">:</span><span class="mh">0x0</span>
+<span class="p">[</span><span class="n">TZ_SEC_CFG</span><span class="p">]</span> <span class="p">[</span><span class="n">B</span><span class="p">]</span><span class="n">SRAMROM</span> <span class="n">SEC_CTRL</span><span class="p">:</span><span class="mh">0x80000000</span><span class="p">,</span> <span class="n">SEC_CTRL2</span><span class="p">:</span><span class="mh">0x0</span><span class="p">,</span> <span class="n">SEC_CTRL5</span><span class="p">:</span><span class="mh">0x0</span><span class="p">,</span> <span class="n">SEC_CTRL6</span><span class="p">:</span><span class="mh">0x0</span>
+<span class="p">[</span><span class="n">TZ_SEC_CFG</span><span class="p">]</span> <span class="p">[</span><span class="n">A</span><span class="p">]</span><span class="n">SRAMROM</span> <span class="n">SEC_ADDR</span><span class="p">:</span><span class="mh">0x9000DC00</span><span class="p">,</span> <span class="n">SEC_ADDR1</span><span class="p">:</span><span class="mh">0xDC00</span><span class="p">,</span> <span class="n">SEC_ADDR2</span><span class="p">:</span><span class="mh">0xDC00</span>
+<span class="p">[</span><span class="n">TZ_SEC_CFG</span><span class="p">]</span> <span class="p">[</span><span class="n">A</span><span class="p">]</span><span class="n">SRAMROM</span> <span class="n">SEC_CTRL</span><span class="p">:</span><span class="mh">0x80000B69</span><span class="p">,</span> <span class="n">SEC_CTRL2</span><span class="p">:</span><span class="mh">0x0</span><span class="p">,</span> <span class="n">SEC_CTRL5</span><span class="p">:</span><span class="mh">0x1680000</span><span class="p">,</span> <span class="n">SEC_CTRL6</span><span class="p">:</span><span class="mh">0x0</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">platform/mt6765/src/core/main.c</span></code>这里主要是配置跳转ATF的地址(0x48000000)，和要传递的跳转参数，跳转参数是<code class="docutils literal notranslate"><span class="pre">g_dram_buf-&gt;boottag</span></code>:</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="n">u32</span><span class="w"> </span><span class="o">*</span><span class="n">arg</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+
+<span class="cp">#if !(CFG_BYPASS_LOAD_IMG_FORCE_ATF) </span>
+<span class="w">    </span><span class="cm">/* Do not load ATF, lk, load by JTAG */</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="mi">0</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">bldr_load_images</span><span class="p">(</span><span class="o">&amp;</span><span class="n">jump_addr</span><span class="p">))</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="n">pal_log_err</span><span class="p">(</span><span class="s">&quot;%s Second Bootloader Load Failed</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">MOD</span><span class="p">);</span><span class="w"></span>
+<span class="cp">#if !CFG_BYPASS_EMI</span>
+<span class="w">        </span><span class="k">goto</span><span class="w"> </span><span class="n">error</span><span class="p">;</span><span class="w"></span>
+<span class="cp">#endif</span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="cp">#else</span>
+<span class="c1">//CFG_UBOOT_MEMADDR  platform/mt6765/default.mak</span>
+<span class="c1">//              CFG_UBOOT_MEMADDR       :=0x48000000</span>
+
+<span class="w">    </span><span class="n">jump_addr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">CFG_UBOOT_MEMADDR</span><span class="p">;</span><span class="w"></span>
+<span class="cp">#endif</span>
+<span class="w">    </span><span class="n">BOOTING_TIME_PROFILING_LOG</span><span class="p">(</span><span class="s">&quot;load images&quot;</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">    </span><span class="n">bldr_post_process</span><span class="p">();</span><span class="w"></span>
+
+<span class="cp">#if CFG_ATF_SUPPORT</span>
+<span class="w">    </span><span class="n">trustzone_post_init</span><span class="p">();</span><span class="w"></span>
+<span class="w">    </span><span class="n">BOOTING_TIME_PROFILING_LOG</span><span class="p">(</span><span class="s">&quot;trustzone post init&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="cp">#endif</span>
+
+<span class="cp">#if CFG_BOOT_ARGUMENT_BY_ATAG </span><span class="c1">//这里为1</span>
+<span class="w">    </span><span class="n">jump_arg</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">u32</span><span class="p">)</span><span class="o">&amp;</span><span class="p">(</span><span class="n">g_dram_buf</span><span class="o">-&gt;</span><span class="n">boottag</span><span class="p">);</span><span class="w"></span>
+<span class="cp">#else</span>
+<span class="w">    </span><span class="n">jump_arg</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">u32</span><span class="p">)</span><span class="o">&amp;</span><span class="n">bootarg</span><span class="p">;</span><span class="w"></span>
+<span class="cp">#endif</span>
+
+
+<span class="w">    </span><span class="cm">/* 64S3,32S1,32S1 (MTK_ATF_BOOT_OPTION = 0)</span>
+<span class="cm">         * re-loader jump to LK directly and then LK jump to kernel directly */</span><span class="w"></span>
+<span class="cp">#if CFG_ATF_SUPPORT</span>
+<span class="w">    </span><span class="n">pal_log_info</span><span class="p">(</span><span class="s">&quot;%s Others, jump to ATF</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">MOD</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="n">bldr_jump64</span><span class="p">(</span><span class="n">jump_addr</span><span class="p">,</span><span class="w"> </span><span class="n">jump_arg</span><span class="p">,</span><span class="w"> </span><span class="k">sizeof</span><span class="p">(</span><span class="n">boot_arg_t</span><span class="p">));</span><span class="w"></span>
+<span class="cp">#else</span>
+<span class="w">    </span><span class="n">bldr_jump</span><span class="p">(</span><span class="n">jump_addr</span><span class="p">,</span><span class="w"> </span><span class="n">jump_arg</span><span class="p">,</span><span class="w"> </span><span class="k">sizeof</span><span class="p">(</span><span class="n">boot_arg_t</span><span class="p">));</span><span class="w"></span>
+<span class="cp">#endif</span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">platform/mt6765/src/core/inc/dram_buffer.h</span></code>先看一下数据结构体：</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="k">typedef</span><span class="w"> </span><span class="k">struct</span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">mtk_bl_param_t</span><span class="w"> </span><span class="n">bl31_info</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="cm">/*bmt.c*/</span><span class="w"></span>
+<span class="w">    </span><span class="n">u8</span><span class="w"> </span><span class="n">bmt_buf</span><span class="p">[</span><span class="n">BMT_BUFFER_SIZE</span><span class="p">];</span><span class="w"></span>
+<span class="w">    </span><span class="n">u8</span><span class="w"> </span><span class="n">bmt_dat_buf</span><span class="p">[</span><span class="n">BMT_DAT_BUFFER_SIZE</span><span class="p">];</span><span class="w"></span>
+<span class="w">    </span><span class="cm">/*nand.c*/</span><span class="w"></span>
+<span class="w">    </span><span class="n">u8</span><span class="w"> </span><span class="n">nand_nfi_buf</span><span class="p">[</span><span class="n">NAND_NFI_BUFFER_SIZE</span><span class="p">];</span><span class="w"></span>
+
+<span class="w">    </span><span class="cm">/*download.c*/</span><span class="w"></span>
+<span class="w">    </span><span class="n">part_hdr_t</span><span class="w"> </span><span class="n">part_hdr_buf</span><span class="p">[</span><span class="n">PART_HDR_BUF_SIZE</span><span class="p">];</span><span class="w"></span>
+<span class="w">    </span><span class="cm">/*efi.c*/</span><span class="w"></span>
+<span class="w">    </span><span class="n">u32</span><span class="w"> </span><span class="n">crc32_table</span><span class="p">[</span><span class="mi">256</span><span class="p">];</span><span class="w"></span>
+<span class="w">    </span><span class="n">u8</span><span class="w"> </span><span class="n">gpt_header_buf</span><span class="p">[</span><span class="mi">4096</span><span class="p">];</span><span class="w"></span>
+<span class="w">    </span><span class="n">u8</span><span class="w"> </span><span class="n">gpt_entries_buf</span><span class="p">[</span><span class="n">GPT_BUFFER_SIZE</span><span class="p">];</span><span class="w"></span>
+<span class="w">    </span><span class="cm">/*mmc_common_inter.c*/</span><span class="w"></span>
+<span class="w">    </span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="n">storage_buffer</span><span class="p">[</span><span class="n">STORAGE_BUFFER_SIZE</span><span class="p">];</span><span class="w"></span>
+<span class="w">    </span><span class="cm">/*partition.c*/</span><span class="w"></span>
+<span class="w">    </span><span class="n">u8</span><span class="w"> </span><span class="n">img_hdr_buf</span><span class="p">[</span><span class="n">IMG_HDR_BUF_SIZE</span><span class="p">];</span><span class="w"></span>
+<span class="w">    </span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">part_num</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="n">part_hdr_t</span><span class="w">   </span><span class="n">part_info</span><span class="p">[</span><span class="n">PART_MAX_NUM</span><span class="p">];</span><span class="w"></span>
+<span class="w">    </span><span class="n">part_t</span><span class="w">  </span><span class="n">partition_info</span><span class="p">[</span><span class="mi">128</span><span class="p">];</span><span class="w"></span>
+
+<span class="cp">#if ((CFG_BOOT_DEV == BOOTDEV_SDMMC) || (CFG_BOOT_DEV == BOOTDEV_UFS))</span>
+<span class="w">    </span><span class="k">struct</span><span class="w"> </span><span class="nc">part_meta_info</span><span class="w"> </span><span class="n">meta_info</span><span class="p">[</span><span class="mi">128</span><span class="p">];</span><span class="w"></span>
+<span class="cp">#endif</span>
+<span class="w">    </span><span class="cm">/*platform.c*/</span><span class="w"></span>
+<span class="w">    </span><span class="n">boot_arg_t</span><span class="w"> </span><span class="n">bootarg</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="cm">/*print.c*/</span><span class="w"></span>
+<span class="w">    </span><span class="n">u8</span><span class="w"> </span><span class="n">log_dram_buf</span><span class="p">[</span><span class="n">LOG_BUFFER_MAX_SIZE</span><span class="p">];</span><span class="w"></span>
+<span class="w">    </span><span class="cm">/*sec.c*/</span><span class="w"></span>
+<span class="w">    </span><span class="n">u8</span><span class="w">  </span><span class="n">sec_secro_buf</span><span class="p">[</span><span class="n">SEC_SECRO_BUFFER_LENGTH</span><span class="p">];</span><span class="w"></span>
+<span class="w">    </span><span class="n">u8</span><span class="w">  </span><span class="n">sec_lib_heap_buf</span><span class="p">[</span><span class="n">SEC_LIB_HEAP_LENGTH</span><span class="p">];</span><span class="w"></span>
+<span class="w">    </span><span class="n">u8</span><span class="w">  </span><span class="n">sec_working_buf</span><span class="p">[</span><span class="n">SEC_WORKING_BUFFER_LENGTH</span><span class="p">];</span><span class="w"></span>
+<span class="w">    </span><span class="n">u8</span><span class="w">  </span><span class="n">sec_img_buf</span><span class="p">[</span><span class="n">SEC_IMG_BUFFER_LENGTH</span><span class="p">];</span><span class="w"></span>
+<span class="w">    </span><span class="cm">/*msdc.c*/</span><span class="w"></span>
+<span class="w">    </span><span class="n">gpd_t</span><span class="w"> </span><span class="n">msdc_gpd_pool</span><span class="p">[</span><span class="n">MSDC_MAX_NUM</span><span class="p">][</span><span class="n">MAX_GPD_POOL_SZ</span><span class="p">]</span><span class="w"> </span><span class="n">__attribute__</span><span class="w"> </span><span class="p">((</span><span class="n">aligned</span><span class="p">(</span><span class="mi">64</span><span class="p">)));</span><span class="w"></span>
+<span class="w">    </span><span class="n">bd_t</span><span class="w">  </span><span class="n">msdc_bd_pool</span><span class="p">[</span><span class="n">MSDC_MAX_NUM</span><span class="p">][</span><span class="n">MAX_BD_POOL_SZ</span><span class="p">]</span><span class="w"> </span><span class="n">__attribute__</span><span class="w"> </span><span class="p">((</span><span class="n">aligned</span><span class="p">(</span><span class="mi">64</span><span class="p">)));</span><span class="w"></span>
+<span class="cp">#if CFG_PRELOADER_AS_DA</span>
+<span class="w">    </span><span class="n">u8</span><span class="w"> </span><span class="n">tee1_buf</span><span class="p">[</span><span class="mh">0x40000</span><span class="p">];</span><span class="w"></span>
+<span class="cp">#endif</span>
+<span class="cp">#if CFG_FAST_META_SUPPORT</span>
+<span class="w">    </span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="n">proinfo</span><span class="p">[</span><span class="mi">1024</span><span class="p">];</span><span class="w"></span>
+<span class="cp">#endif</span>
+<span class="w">    </span><span class="n">boot_tag</span><span class="w"> </span><span class="o">*</span><span class="n">boottag</span><span class="p">;</span><span class="w"> </span><span class="cm">/*boot args pass to LK by ATAG*/</span><span class="w"></span>
+<span class="p">}</span><span class="w"> </span><span class="n">dram_buf_t</span><span class="p">;</span><span class="w"></span>
+
+<span class="k">extern</span><span class="w"> </span><span class="n">dram_buf_t</span><span class="w"> </span><span class="o">*</span><span class="n">g_dram_buf</span><span class="p">;</span><span class="w"></span>
+
+<span class="c1">//platform/mt6765/src/drivers/inc/platform.h </span>
+<span class="c1">//结构体如下：</span>
+<span class="k">typedef</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="k">struct</span><span class="w"> </span><span class="nc">boot_tag_header</span><span class="w"> </span><span class="n">hdr</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="k">union</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="k">struct</span><span class="w"> </span><span class="nc">boot_tag_boot_reason</span><span class="w"> </span><span class="n">boot_reason</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="k">struct</span><span class="w"> </span><span class="nc">boot_tag_boot_mode</span><span class="w"> </span><span class="n">boot_mode</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="k">struct</span><span class="w"> </span><span class="nc">boot_tag_meta_com</span><span class="w"> </span><span class="n">meta_com</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="k">struct</span><span class="w"> </span><span class="nc">boot_tag_log_com</span><span class="w"> </span><span class="n">log_com</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="k">struct</span><span class="w"> </span><span class="nc">boot_tag_mem</span><span class="w"> </span><span class="n">mem</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="k">struct</span><span class="w"> </span><span class="nc">boot_tag_md_info</span><span class="w"> </span><span class="n">md_info</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="k">struct</span><span class="w"> </span><span class="nc">boot_tag_boot_time</span><span class="w"> </span><span class="n">boot_time</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="k">struct</span><span class="w"> </span><span class="nc">boot_tag_da_info</span><span class="w"> </span><span class="n">da_info</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="k">struct</span><span class="w"> </span><span class="nc">boot_tag_sec_info</span><span class="w"> </span><span class="n">sec_info</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="k">struct</span><span class="w"> </span><span class="nc">boot_tag_part_num</span><span class="w"> </span><span class="n">part_num</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="k">struct</span><span class="w"> </span><span class="nc">boot_tag_part_info</span><span class="w"> </span><span class="n">part_info</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="k">struct</span><span class="w"> </span><span class="nc">boot_tag_eflag</span><span class="w"> </span><span class="n">eflag</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="k">struct</span><span class="w"> </span><span class="nc">boot_tag_ddr_reserve</span><span class="w"> </span><span class="n">ddr_reserve</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="k">struct</span><span class="w"> </span><span class="nc">boot_tag_dram_buf</span><span class="w"> </span><span class="n">dram_buf</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="k">struct</span><span class="w"> </span><span class="nc">boot_tag_emi_info</span><span class="w"> </span><span class="n">emi_info</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="k">struct</span><span class="w"> </span><span class="nc">boot_tag_sram_info</span><span class="w"> </span><span class="n">sram_info</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="k">struct</span><span class="w"> </span><span class="nc">boot_tag_plat_dbg_info</span><span class="w"> </span><span class="n">plat_dbg_info</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="k">struct</span><span class="w"> </span><span class="nc">boot_tag_ptp</span><span class="w"> </span><span class="n">ptp_volt</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="k">struct</span><span class="w"> </span><span class="nc">boot_tag_chr_info</span><span class="w"> </span><span class="n">chr_info</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="k">struct</span><span class="w"> </span><span class="nc">boot_tag_bat_info</span><span class="w"> </span><span class="n">bat_info</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="k">struct</span><span class="w"> </span><span class="nc">boot_tag_imgver_info</span><span class="w"> </span><span class="n">imgver_info</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="k">struct</span><span class="w"> </span><span class="nc">boot_tag_max_cpus</span><span class="w"> </span><span class="n">max_cpus</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="k">struct</span><span class="w"> </span><span class="nc">boot_tag_is_abnormal_boot</span><span class="w"> </span><span class="n">is_abnormal_boot</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="k">struct</span><span class="w"> </span><span class="nc">boot_tag_soc_id</span><span class="w"> </span><span class="n">socid</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="k">struct</span><span class="w"> </span><span class="nc">boot_tag_ram_console_info</span><span class="w"> </span><span class="n">ram_console_info</span><span class="p">;</span><span class="w"></span>
+<span class="cp">#if CFG_GZ_SUPPORT</span>
+<span class="w">        </span><span class="k">struct</span><span class="w"> </span><span class="nc">boot_tag_gz_info</span><span class="w"> </span><span class="n">gz_info</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="k">struct</span><span class="w"> </span><span class="nc">boot_tag_gz_param</span><span class="w"> </span><span class="n">gz_param</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="k">struct</span><span class="w"> </span><span class="nc">boot_tag_gz_platform</span><span class="w"> </span><span class="n">gz_plat</span><span class="p">;</span><span class="w"></span>
+<span class="cp">#endif</span>
+<span class="cp">#if CFG_GZ_PWRAP_ENABLE</span>
+<span class="w">        </span><span class="k">struct</span><span class="w"> </span><span class="nc">boot_tag_gz_pwrap</span><span class="w"> </span><span class="n">gz_pwrap</span><span class="p">;</span><span class="w"></span>
+<span class="cp">#endif</span>
+<span class="cp">#if defined(CFG_RKP_SUPPORT) &amp;&amp; CFG_RKP_SUPPORT</span>
+<span class="w">        </span><span class="k">struct</span><span class="w"> </span><span class="nc">boot_tag_rkp_param</span><span class="w"> </span><span class="n">rkp_param</span><span class="p">;</span><span class="w"></span>
+<span class="cp">#endif</span>
+<span class="w">    </span><span class="p">}</span><span class="w"> </span><span class="n">u</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="n">boot_tag</span><span class="p">;</span><span class="w"></span>
+</pre></div>
+</div>
+<p>可以看到存在<code class="docutils literal notranslate"><span class="pre">boot_tag</span></code>结构体，看注释这个就是要传递的参数，那<code class="docutils literal notranslate"><span class="pre">g_dram_buf-&gt;boottag</span></code>这个参数是怎么来的？看一下<code class="docutils literal notranslate"><span class="pre">bldr_post_process</span></code>函数的<code class="docutils literal notranslate"><span class="pre">platform_post_init</span></code>流程：</p>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="k">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">bldr_post_process</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">platform_post_init</span><span class="p">();</span><span class="w"></span>
+
+<span class="cp">#if CFG_GZ_SUPPORT</span>
+<span class="w">    </span><span class="n">gz_post_init</span><span class="p">();</span><span class="w"></span>
+<span class="w">    </span><span class="n">BOOTING_TIME_PROFILING_LOG</span><span class="p">(</span><span class="s">&quot;gz_post_init&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="cp">#endif</span>
+<span class="p">}</span><span class="w"></span>
 </pre></div>
 </div>
 </section>

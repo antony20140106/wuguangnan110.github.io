@@ -235,7 +235,7 @@ The boost output current loop limits the output current at the value set by OLIM
 关闭OTG:
 i2cset -f -y 0 0x3f 0x09 0x53 b
 打开OTG:
-i2cset -f -y 0 0x3f 0x09 0x57 b
+i2cset -f -y 0 0x3f 0x08 0x1f b
 
 [Sun Apr 24 17:40:24 2022] CPC-TCPC:sink_vbus: 12000 mV, 208 mA
 [Sun Apr 24 17:40:25 2022] ///PD dbg info 49d
@@ -1983,4 +1983,70 @@ allow system_suspend vendor_sysfs_usb_supply:dir { read open };
 allow system_suspend vendor_sysfs_battery_supply:dir { read open };
 allow system_suspend vendor_sysfs_battery_supply:file { read open getattr };
 allow system_suspend vendor_sysfs_usb_supply:file { read open getattr };
+```
+
+## 16.充电过程偶发性online状态变为0
+
+healthd会周期性的读取charger的online状态，目前使用0x12寄存器的`VIN_READY`和`VIN_GOOD`作为online状态上报，正常充电过程偶发性online状态变为0，打印如下：
+```
+[ 9587.718781] PAX_CHG: reg :19  read data:0x4
+[ 9587.725189] PAX_CHG: reg :18  read data:0x1
+[ 9587.729473] PAX_CHG: CHG [online: 1, type: DCP, status: Charging, fault: 0x0, ICHG = 4160mA, AICR = 2000mA, MIVR = 4360mV, IEOC = 240mA, CV = 4350mV]
+[ 9592.297240] PAX_CHG: reg :17  read data:0x0
+[ 9592.558891] PAX_CHG: reg :1  read data:0xa7
+[ 9592.570196] PAX_CHG: reg :18  read data:0x0
+[ 9592.574668] PAX_BMS:bms_info_update clear NC_DISABLE_CHG_BY_USER flag
+[ 9592.587299] PAX_CHG: Battery: [ status:Charging, health:Good, present:1, tech:Li-ion, capcity:100,cap_rm:4992 mah, vol:4331 mv, temp:32, curr:393 ma, ui_soc:100 ]
+[ 9592.590094] PAX_BMS: CHG [online: 0, type: 5, vol: 5000000, cur: 16800000, time: 8643], BAT [present: 1, status: 1, vol: 4331000, cur: 393000, resistance: 0, temp: 320, soc: 99], OTHER [skin_temp: 0, chg_vote: 0x0, notify_code: 0x0],
+[ 9592.606761] PAX_CHG: reg :18  read data:0x1
+[ 9592.627644] PAX_CHG: reg :1  read data:0x13
+[ 9592.633466] PAX_CHG: reg :18  read data:0x1
+[ 9592.638089] PAX_CHG: reg :1  read data:0x13
+[ 9592.644875] PAX_CHG: _wake_up_charger:
+[ 9592.648768] PAX_CHG: pax_is_charger_on chr_type = [DCP] last_chr_type = [DCP]
+[ 9592.665917] PAX_CHG: [SW_JEITA] Battery Normal Temperature between 15 and 45 !!
+[ 9592.673742] PAX_CHG: [SW_JEITA]preState:3 newState:3 tmp:32 cv:0
+[ 9592.679949] PAX_CHG: tmp:32 (jeita:1 sm:3 cv:0 en:1) thm_sm:1 en:1 can_en:1
+[ 9592.687856] PAX_CHG: reg :19  read data:0x4
+[ 9592.692156] PAX_CHG: chg:-1,-1,2000,4160 type:5:6 aicl:-1 bootmode:0 pd:1
+[ 9592.698993] PAX_CHG: pax_charger_update, delay<30>
+[ 9592.703822] PAX_CHG: do_algorithm input_current_limit:2000 charging_current_limit:4160
+[ 9592.716386] PAX_CHG: reg :2  read data:0x34
+[ 9592.721370] PAX_CHG: reg :1  read data:0x13
+[ 9592.726244] PAX_CHG: reg :3  read data:0x7
+[ 9592.731999] PAX_CHG: reg :4  read data:0x6
+[ 9592.737734] PAX_CHG: reg :18  read data:0x1
+[ 9592.742911] PAX_CHG: reg :19  read data:0x4
+[ 9592.747859] PAX_CHG: reg :5  read data:0x1e
+[ 9592.753548] PAX_CHG: reg :19  read data:0x4
+[ 9592.759285] PAX_CHG: reg :18  read data:0x1
+[ 9592.770881] PAX_CHG: reg :18  read data:0x0
+[ 9592.775213] PAX_CHG: CHG [online: 0, type: DCP, status: Charging, fault: 0x0, ICHG = 4160mA, AICR = 2000mA, MIVR = 4360mV, IEOC = 240mA, CV = 4350mV]
+[ 9592.776812] PAX_CHG: reg :18  read data:0x0
+[ 9592.798955] PAX_CHG: reg :18  read data:0x0
+[ 9592.904710] PAX_CHG: Battery: [ status:Charging, health:Good, present:1, tech:Li-ion, capcity:100,cap_rm:4992 mah, vol:4331 mv, temp:32, curr:393 ma, ui_soc:100 ]
+[ 9592.919331] PAX_CHG: pax_battery_external_power_changed event, online:1, status:1, cur_chr_type:5
+[ 9592.928369] PAX_BMS:bms_wakeup
+[ 9592.936667] PAX_CHG: reg :19  read data:0x4
+[ 9592.941354] PAX_CHG: reg :18  read data:0x1
+[ 9592.945737] PAX_BMS:pax_bms_external_power_changed online = 1
+[ 9592.945996] PAX_CHG: reg :1  read data:0x13
+[ 9592.970563] PAX_CHG: reg :18  read data:0x1
+[ 9592.977977] PAX_CHG: reg :18  read data:0x0
+[ 9592.978803] PAX_BMS: CHG [online: 1, type: 5, vol: 5000000, cur: 2000000, time: 8643], BAT [present: 1, status: 1, vol: 4331000, cur: 393000, resistance: 0, temp: 320, soc: 100], OTHER [skin_temp: 0, chg_vote: 0x0, notify_code: 0x0],
+[ 9593.003589] PAX_CHG: reg :18  read data:0x1
+[ 9593.008738] PAX_CHG: reg :18  read data:0x1
+[ 9593.013878] PAX_CHG: reg :18  read data:0x1
+[ 9593.019134] PAX_CHG: reg :1  read data:0x13
+[ 9593.052298] PAX_CHG: reg :19  read data:0x4
+[ 9593.057877] PAX_CHG: reg :1  read data:0x13
+[ 9593.064422] PAX_CHG: reg :1  read data:0x13
+[ 9593.073285] PAX_CHG: reg :18  read data:0x1
+[ 9593.084352] PAX_CHG: reg :1  read data:0x13
+[ 9593.092224] PAX_CHG: reg :18  read data:0x1
+[ 9593.098341] PAX_CHG: reg :1  read data:0x13
+[ 9593.359185] ext_spk_switch_put: set Ext_Spk_Switch val 1
+[ 9593.381195] msm_pcm_chmap_ctl_put: substream ref_count:0 invalid
+[ 9593.417533] send_afe_cal_type: No cal sent for cal_index 0, port_id = 0xb030! ret -22
+USB
 ```

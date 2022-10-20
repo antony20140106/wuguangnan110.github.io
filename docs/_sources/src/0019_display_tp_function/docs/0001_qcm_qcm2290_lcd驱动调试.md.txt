@@ -759,28 +759,39 @@ QcomPkg/Drivers/DisplayDxe/DisplayDxe.inf：
 以下是MDP初始化屏的流程：
 
 ```C++
-* MDPInit(MDP_InitParamsType *pMDPInitParams, uint32 uFlags) //QcomPkg/Library/MDPLib/MDPLib.c
-  └── MDPPlatformConfigure(MDP_DISPLAY_PRIMARY, MDPPLATFORM_CONFIG_GETPLATFORMINFO, &sPlatformParams) //QcomPkg/SocPkg/DivarPkg/Library/MDPPlatformLib/MDPPlatformLib.c
-      └── case MDPPLATFORM_CONFIG_GETPANELCONFIG: //上面函数第二个参数
-          └── case MDP_DISPLAY_PRIMARY: //上面函数第一个参数
-              ├── *pPanelList = &uefiPanelList[0]; //这里写死只有一个屏，uefiPanelList里面就是指定屏的参数，包括id
-              ├── if (MDP_STATUS_OK == DynamicDSIPanelDetection(&sPlatformPanel, &uPanelID, pPanelList, uPanelCnt) //根据pPanelList匹配屏的panel
-              │   └── if (MDP_STATUS_OK == DSIDriver_MinimalInit()) //DSI驱动minimal初始化
-              │       ├── if (MDP_STATUS_OK != DSIDriver_ConfigClockLane(uClkConfig))
-              │       ├── if (MDP_STATUS_OK != DSIDriver_RemapLane(pPanelList[uPanelIndex].uLaneRemapOrder))
-              │       ├── MDP_OSAL_MEMZERO(panelID, PLATFORM_PANEL_ID_MAX_COMMANDS); //清空panelID数组
-              │       └── for(iCommandIndex = 0; iCommandIndex<PLATFORM_PANEL_ID_MAX_COMMANDS; iCommandIndex++) //PLATFORM_PANEL_ID_MAX_COMMANDS = 3，也就是连续读三次，读到了即返回。
-              │           ├── DSIDriver_Read(pPanelList[uPanelIndex].uCmdType,pPanelList[uPanelIndex].panelIdCommands[iCommandIndex].address,  //这里是uefiPanelList中读取display id的，貌似暂时没用
-              │           ├── if (0 == CompareMem(readback, pPanelList[uPanelIndex].panelIdCommands[iCommandIndex].expectedReadback, readSize)) //比较读取到的id和uefiPanelList中expect值是否一致
-              │           │   ├── panelID[iCommandIndex] = readback[0];// store the first byte of readback as panel ID
-              │           │   └── bMatch = TRUE; // mark one panel ID matched
-              │           └── pPlatformPanel->eSelectedPanel  = pPanelList[uPanelIndex].eSelectedPanel; //保存选取的panel
-              ├── if (MDP_STATUS_OK != FindPanelIndex(&sPlatformPanel))//需要重做映射 eSelectedPanle 到 uSelectedPanleIndex 以防检测到较新的 eSelectedPanel
-              └── if(MDP_STATUS_OK != GetPanelXmlConfig(&sPlatformPanel)) //获取xml文件
-                  ├── pPlatformParams->sPlatformPanel.pPanelXMLConfig = (int8 *)dummy_xmldata; //如果获取不到赋值一个dummy空的panel
-                  ├── else MDP_OSAL_MEMCPY(&pPlatformParams->sPlatformPanel, &sPlatformPanel, sizeof(MDPPlatformPanelInfo));//否则正常走这里，拷贝xml数据
-                  └── Display_Utils_LoadFile(sMDPPlatformPanelFunction[pPlatformPanel->uSelectedPanelIndex].pPanelXml,
-                      └── ReadFromFV(LogoFile, (void **)Buffer, &BufferSizeN); //从logo文件中读取？ 
+* DisplayDxeInitialize //入口函数
+  ├── MDPInit(MDP_InitParamsType *pMDPInitParams, uint32 uFlags) //Drivers/DisplayDxe/DisplayDxe.c
+  │   └── MDPPlatformConfigure(MDP_DISPLAY_PRIMARY, MDPPLATFORM_CONFIG_GETPLATFORMINFO, &sPlatformParams) //QcomPkg/SocPkg/DivarPkg/Library/MDPPlatformLib/MDPPlatformLib.c
+  │       └── case MDPPLATFORM_CONFIG_GETPANELCONFIG: //上面函数第二个参数
+  │           └── case MDP_DISPLAY_PRIMARY: //上面函数第一个参数
+  │               ├── *pPanelList = &uefiPanelList[0]; //这里写死只有一个屏，uefiPanelList里面就是指定屏的参数，包括id
+  │               ├── if (MDP_STATUS_OK == DynamicDSIPanelDetection(&sPlatformPanel, &uPanelID, pPanelList, uPanelCnt) //根据pPanelList匹配屏的panel
+  │               │   └── if (MDP_STATUS_OK == DSIDriver_MinimalInit()) //DSI驱动minimal初始化
+  │               │       ├── if (MDP_STATUS_OK != DSIDriver_ConfigClockLane(uClkConfig))
+  │               │       ├── if (MDP_STATUS_OK != DSIDriver_RemapLane(pPanelList[uPanelIndex].uLaneRemapOrder))
+  │               │       ├── MDP_OSAL_MEMZERO(panelID, PLATFORM_PANEL_ID_MAX_COMMANDS); //清空panelID数组
+  │               │       └── for(iCommandIndex = 0; iCommandIndex<PLATFORM_PANEL_ID_MAX_COMMANDS; iCommandIndex++) //PLATFORM_PANEL_ID_MAX_COMMANDS = 3，也就是连续读三次，读到了即返回。
+  │               │           ├── DSIDriver_Read(pPanelList[uPanelIndex].uCmdType,pPanelList[uPanelIndex].panelIdCommands[iCommandIndex].address,  //这里是uefiPanelList中读取display id的，貌似暂时没用
+  │               │           ├── if (0 == CompareMem(readback, pPanelList[uPanelIndex].panelIdCommands[iCommandIndex].expectedReadback, readSize)) //比较读取到的id和uefiPanelList中expect值是否一致
+  │               │           │   ├── panelID[iCommandIndex] = readback[0];// store the first byte of readback as panel ID
+  │               │           │   └── bMatch = TRUE; // mark one panel ID matched
+  │               │           └── pPlatformPanel->eSelectedPanel  = pPanelList[uPanelIndex].eSelectedPanel; //保存选取的panel
+  │               ├── if (MDP_STATUS_OK != FindPanelIndex(&sPlatformPanel))//需要重做映射 eSelectedPanle 到 uSelectedPanleIndex 以防检测到较新的 eSelectedPanel
+  │               └── if(MDP_STATUS_OK != GetPanelXmlConfig(&sPlatformPanel)) //获取xml文件
+  │                   ├── pPlatformParams->sPlatformPanel.pPanelXMLConfig = (int8 *)dummy_xmldata; //如果获取不到赋值一个dummy空的panel
+  │                   ├── else MDP_OSAL_MEMCPY(&pPlatformParams->sPlatformPanel, &sPlatformPanel, sizeof(MDPPlatformPanelInfo));//否则正常走这里，拷贝xml数据
+  │                   └── Display_Utils_LoadFile(sMDPPlatformPanelFunction[pPlatformPanel->uSelectedPanelIndex].pPanelXml,
+  │                       └── ReadFromFV(LogoFile, (void **)Buffer, &BufferSizeN); //从logo文件中读取？ 
+  └── MDPDetect(MDP_DISPLAY_PRIMARY, &sDetectParams, 0x0) //Default reporting of primary display
+      ├── case MDP_DISPLAY_PRIMARY:
+      │   └── MDPDetectPanel(eDisplayId, pDisplayInfo) //Panel detection code, via XML, I2C or EDID
+      │       └── pDisplayInfo->bDetected  = TRUE; //暂时不做分析
+      └── Display_Utils_SetPanelConfiguration(eSelectedPanel); //Update ABL with selected panel info 
+          └── panelConfigOutput(pDisplayParams->sPrimary.psDTInfo, 1, pDisplayParams->sPrimary.eTopologyCfg, pDisplayParams->sPrimary.eTimingCfg, &pStr);
+              └── if (primary)
+                  ├── #define DISPLAY_CMDLINE_DSI_PRIMARY           " msm_drm.dsi_display0="   // Panel config prefix
+                  ├── LocalAsciiStrnCat(*ppStr, PANEL_CONFIG_STR_LEN_MAX, DISPLAY_CMDLINE_DSI_PRIMARY); // 设置display cmdline 重要
+                  └── (*ppStr) += AsciiStrLen(DISPLAY_CMDLINE_DSI_PRIMARY);
 ```
 
 

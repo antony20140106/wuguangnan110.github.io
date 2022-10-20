@@ -1,0 +1,160 @@
+# qcom_qcm2290_32go版本编译
+
+高通平台Android 12 Go版本编译问题记录。
+
+# dts编译报错
+
+报错如下：
+```
+Copying files to prebuilt
+vmlinux /ssd/xiaort/A6650/UM.9.15/kernel/ship_prebuilt/primary_kernel
+vmlinux copied to /ssd/xiaort/A6650/UM.9.15/kernel/ship_prebuilt/primary_kernel
+System.map /ssd/xiaort/A6650/UM.9.15/kernel/ship_prebuilt/primary_kernel
+System.map copied to /ssd/xiaort/A6650/UM.9.15/kernel/ship_prebuilt/primary_kernel
+=============
+Copying kernel image to prebuilt
+=============
+Copying target dtb/dtbo files to prebuilt
+cp: bad '/ssd/xiaort/A6650/UM.9.15/out/target/product/bengal_32go/obj/kernel/msm-4.19/arch/arm/boot/dts/vendor/qcom/*.dtb': No such file or directory
+ninja: build stopped: subcommand failed.
+```
+
+* 有以下几点发现：
+  * `/ssd/xiaort/A6650/UM.9.15/out/target/product/bengal_32go/obj/kernel/msm-4.19/arch/arm/boot/dts/vendor/qcom/`目录下没有任何dtb编译文件生成。
+  * `kernel/msm-4.19/arch/arm/boot/dts/vendor/qcom/`目录下也没有dts文件，只有一个Makefile。
+  * 64位非go版本的dts在`kernel/msm-4.19/arch/arm64/boot/dts/vendor/qcom/`目录下。
+  * 64位非go版本的dts实际上是`vendor/qcom/proprietary/devicetree-4.19`目录下拷贝过来的。
+
+那我们现在看看64位非go版本的dts是如何进行拷贝的，首先看了编译流程log如下：
+```
+./build_32go.sh --all
+including vendor/qcom/opensource/core-utils/vendorsetup.sh
+including vendor/qcom/proprietary/common/vendorsetup.sh
+including vendor/qcom/proprietary/prebuilt_HY11/vendorsetup.sh
+```
+
+当编译执行`build/envsetup.sh`时，会寻找目录下所有的`vendorsetup.sh`并执行。
+```shell
+# Execute the contents of any vendorsetup.sh files we can find.
+# Unless we find an allowed-vendorsetup_sh-files file, in which case we'll only
+# load those.
+#
+# This allows loading only approved vendorsetup.sh files
+function source_vendorsetup() {
+    unset VENDOR_PYTHONPATH
+    allowed=
+    for f in $(find -L device vendor product -maxdepth 4 -name 'allowed-vendorsetup_sh-files' 2>/dev/null | sort); do
+        if [ -n "$allowed" ]; then
+            echo "More than one 'allowed_vendorsetup_sh-files' file found, not including any vendorsetup.sh files:"
+            echo "  $allowed"
+            echo "  $f"
+            return
+        fi
+        allowed="$f"
+    done
+
+    allowed_files=
+    [ -n "$allowed" ] && allowed_files=$(cat "$allowed")
+    for dir in device vendor product; do
+        for f in $(test -d $dir && \
+            find -L $dir -maxdepth 4 -name 'vendorsetup.sh' 2>/dev/null | sort); do
+
+            if [[ -z "$allowed" || "$allowed_files" =~ $f ]]; then
+                echo "including $f"; . "$f"
+            else
+                echo "ignoring $f, not in $allowed"
+            fi
+        done
+    done
+}
+
+validate_current_shell
+source_vendorsetup
+addcompletions
+```
+
+* `vendor/qcom/proprietary/prebuilt_HY11/vendorsetup.sh`看看脚本具体干了什么：
+```shell
+links_dir="$(dirname $(readlink -e "${BASH_SOURCE[0]}"))"
+links_path="$(dirname $(readlink -e "${BASH_SOURCE[0]}"))/links"
+sys_links_path="$(dirname $(readlink -e "${BASH_SOURCE[0]}"))/system_links"
+ven_links_path="$(dirname $(readlink -e "${BASH_SOURCE[0]}"))/vendor_links"
+kernel_links_path="$(dirname $(readlink -e "${BASH_SOURCE[0]}"))/kernel_links"
+display_links_path="$(dirname $(readlink -e "${BASH_SOURCE[0]}"))/display_links"
+camera_links_path="$(dirname $(readlink -e "${BASH_SOURCE[0]}"))/camera_links"
+video_links_path="$(dirname $(readlink -e "${BASH_SOURCE[0]}"))/video_links"
+sensor_links_path="$(dirname $(readlink -e "${BASH_SOURCE[0]}"))/sensor_links"
+cv_links_path="$(dirname $(readlink -e "${BASH_SOURCE[0]}"))/cv_links"
+audio_links_path="$(dirname $(readlink -e "${BASH_SOURCE[0]}"))/audio_links"
+failed_links=""
+count=0
+if [[ -f "$links_path" || -f "$sys_links_path" || -f "$ven_links_path" || -f "$kernel_links_path" || -f "$display_links_path" || -f "$camera_links_path" || -f "$video_links_path" || -f "$sensor_links_path" || -f "$cv_links_path" || -f "$audio_links_path" ]];then
+  total_links=$(cat $links_dir/*links| wc -l)
+  for i in $(cat $links_dir/*links);do
+    src=$(echo $i | awk -F:: '{print $1}')
+    dest=$(echo $i | awk -F:: '{print $2}')
+    if [ -e "$dest" ];then
+      source=$(readlink  -f $dest)
+      abs_src=$(readlink  -f $src)
+      if [ $source == $abs_src ];then
+          continue
+      else
+          rm -rf $dest
+      fi
+    fi
+    if [[ -e $src && ! -e $dest ]];then
+      mkdir -p $(dirname $dest)
+      ln -srf $src $dest
+      count=$(($count + 1))
+    else
+      failed_links="$failed_links $i"
+    fi
+  done
+  if [ ! -z "$failed_links" ];then
+    echo "*****Could not create symlink*******"
+    echo $failed_links | sed 's/[[:space:]]/\n/g'
+    echo "****************END******************"
+  fi
+  echo "Created $count symlinks out of $total_links mapped links.."
+fi
+
+# Remove dangling symlinks
+if [ ! -d ./vendor/qcom/defs ]; then
+    return
+fi
+symlinks=$(find ./vendor/qcom/defs -type l)
+for symlink in $symlinks;do
+dest_link=$(readlink -f $symlink)
+if [[ ! ( -f $dest_link || -d $dest_link ) ]];then
+echo "Removing dangling symlink $symlink"
+rm -rf  $symlink
+fi
+done
+```
+
+这里重点关注`vendor_links`文件，这个是具体的软链接配置文件，在路径`UM.9.15/vendor/qcom/proprietary/prebuilt_HY11/vendor_links`下，看看都进行了哪些软链接，前面的是src，`::`后面的是dest，脚本使用命令`ln -srf $src $dest`进行软链接：
+```
+hardware/qcom/gps/gps_vendor_product.mk::vendor/qcom/defs/product-defs/vendor/gps-product-hal.mk
+hardware/qcom/gps/gps_vendor_board.mk::vendor/qcom/defs/board-defs/vendor/gps-board.mk
+vendor/qcom/opensource/location/gps_vendor_product.mk::vendor/qcom/defs/product-defs/vendor/gps-product-opensource.mk
+vendor/codeaurora/packages/apps/SnapdragonCamera/app_snapcam_system_product.mk::vendor/qcom/defs/product-defs/system/app_snapcam_product.mk
+vendor/qcom/proprietary/android-perf/configs/perf-product-vendor.mk::vendor/qcom/defs/product-defs/vendor/perf-product-vendor.mk
+vendor/qcom/proprietary/devicetree-4.19/../devicetree-4.19::kernel/msm-4.19/arch/arm64/boot/dts/vendor
+vendor/qcom/proprietary/dspservices_ship/contexthub_system_product.mk::vendor/qcom/defs/product-defs/system/contexthub_system_product.mk
+vendor/qcom/proprietary/dspservices_ship/dspservices_vendor_product.mk::vendor/qcom/defs/product-defs/vendor/dspservices_vendor_product.mk
+vendor/qcom/proprietary/dspservices_ship/chre_system_product.mk::vendor/qcom/defs/product-defs/vendor/chre_system_product.mk
+```
+
+发现32位kernel下面并没有将dts软链接过去，手动加一下编译通过：
+```diff
+--- a/UM.9.15/vendor/qcom/proprietary/prebuilt_HY11/vendor_links
++++ b/UM.9.15/vendor/qcom/proprietary/prebuilt_HY11/vendor_links
+@@ -60,6 +60,7 @@ vendor/qcom/opensource/location/gps_vendor_product.mk::vendor/qcom/defs/product-
+ vendor/codeaurora/packages/apps/SnapdragonCamera/app_snapcam_system_product.mk::vendor/qcom/defs/product-defs/system/app_snapcam_product.mk
+ vendor/qcom/proprietary/android-perf/configs/perf-product-vendor.mk::vendor/qcom/defs/product-defs/vendor/perf-product-vendor.mk
+ vendor/qcom/proprietary/devicetree-4.19/../devicetree-4.19::kernel/msm-4.19/arch/arm64/boot/dts/vendor
++vendor/qcom/proprietary/devicetree-4.19/../devicetree-4.19::kernel/msm-4.19/arch/arm/boot/dts/vendor
+ vendor/qcom/proprietary/dspservices_ship/contexthub_system_product.mk::vendor/qcom/defs/product-defs/system/contexthub_system_product.mk
+ vendor/qcom/proprietary/dspservices_ship/dspservices_vendor_product.mk::vendor/qcom/defs/product-defs/vendor/dspservices_vendor_product.mk
+ vendor/qcom/proprietary/dspservices_ship/chre_system_product.mk::vendor/qcom/defs/product-defs/vendor/chre_system_product.mk
+```
