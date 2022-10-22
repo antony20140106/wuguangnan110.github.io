@@ -44,12 +44,24 @@
               <div class="local-toc"><ul>
 <li><a class="reference internal" href="#">豆荚TEE兼容方案实现</a></li>
 <li><a class="reference internal" href="#id1">参考</a></li>
-<li><a class="reference internal" href="#id2">方案一：瓶钵读取属性旧方式</a></li>
-<li><a class="reference internal" href="#id3">指纹适配</a></li>
-<li><a class="reference internal" href="#id4">根据硬件启动不同TEE方案</a></li>
-<li><a class="reference internal" href="#kernel">kernel阶段兼容</a></li>
-<li><a class="reference internal" href="#tee-img">tee.img生成兼容</a></li>
+<li><a class="reference internal" href="#teedevice">欺骗tee服务读取设备device属性</a></li>
+<li><a class="reference internal" href="#id2">指纹适配</a></li>
+<li><a class="reference internal" href="#id3">新老机器启动不同TEE方案</a><ul>
+<li><a class="reference internal" href="#kernel-tee-api">kernel TEE API兼容</a></li>
 <li><a class="reference internal" href="#pllk">pl阶段传参lk流程</a></li>
+<li><a class="reference internal" href="#id4">豆荚及瓶钵TEE配置都打开配置</a><ul>
+<li><a class="reference internal" href="#id5">TEE服务编译</a></li>
+<li><a class="reference internal" href="#tee-imgos">tee.img去掉瓶钵OS</a></li>
+<li><a class="reference internal" href="#pl">pl阶段去掉瓶钵配置</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id6">问题点</a><ul>
+<li><a class="reference internal" href="#google-key">google key写号失败</a></li>
+<li><a class="reference internal" href="#pin">不能设置pin码的问题</a></li>
+</ul>
+</li>
 </ul>
 </div>
         </div>
@@ -89,8 +101,8 @@
 <li><p><a class="reference external" href="https://www.jianshu.com/p/74a26ede5d1d?u_atoken=66a51267-285d-4567-aafe-d6d50738f585&amp;u_asession=01f_sxVixP7Vy0Jrzdzb2dAKAXWsbgK4Lio9vOpRlZGo2yLXa_J9zNufE9HVDP2c4VX0KNBwm7Lovlpxjd_P_q4JsKWYrT3W_NKPr8w6oU7K8Ns3QXhI7dv48uDqh6tscGp0TkEaMSMNP4umocQhrjq2BkFo3NEHBv0PZUm6pbxQU&amp;u_asig=05J29Yav8usuQyWHInRl-Ad-PI68YevoqVxG8Gsuu7qA6JF6zf9CBeoFrCshGsajK2Z3UW7m6GmsSmZQTgaHpvMMoX1EJ_9B6XMFEwJ5tAEn8k7OGYu5QsOGXsIHC5LMq8kRH1sD4Gn1B-q1ZGYpDUwHT6-ibI6mzpVPVCVS1j9GP9JS7q8ZD7Xtz2Ly-b0kmuyAKRFSVJkkdwVUnyHAIJzXKB41hxxphEWr3t12svy7v-ZxzmlGsA1bKYzw3seMh-G3pf5vm7LeeSuJ_913VgsO3h9VXwMyh6PgyDIVSG1W8frrwHwetKpxMGwfYjeCGf0lxEO2egZLn_KjcvC2APzImtRq45EGDpyiOknHXmFzAdnFJRYAdzAZXbpwUdMC3MmWspDxyAEEo4kbsryBKb9Q&amp;u_aref=S4YI8eA5zTurlBbbCqy3Y1rwnYQ%3D">《手机安全与可信应用开发指南：TrustZone和OP-TEE技术详解》读书笔记</a></p></li>
 </ul>
 </section>
-<section id="id2">
-<h1>方案一：瓶钵读取属性旧方式<a class="headerlink" href="#id2" title="此标题的永久链接"></a></h1>
+<section id="teedevice">
+<h1>欺骗tee服务读取设备device属性<a class="headerlink" href="#teedevice" title="此标题的永久链接"></a></h1>
 <ul class="simple">
 <li><p>修改如下：</p></li>
 </ul>
@@ -157,8 +169,8 @@
 </pre></div>
 </div>
 </section>
-<section id="id3">
-<h1>指纹适配<a class="headerlink" href="#id3" title="此标题的永久链接"></a></h1>
+<section id="id2">
+<h1>指纹适配<a class="headerlink" href="#id2" title="此标题的永久链接"></a></h1>
 <p>指纹由于更换了TEE环境，相应的TA和库及驱动也需要重新更新。</p>
 <ol class="arabic simple">
 <li><p>TA存放位置发生改变，豆荚的放到<code class="docutils literal notranslate"><span class="pre">vendor/thh/ta</span></code>，而瓶钵的是<code class="docutils literal notranslate"><span class="pre">vendor/app/t6/</span></code>：</p></li>
@@ -256,26 +268,25 @@
 </pre></div>
 </div>
 </section>
-<section id="id4">
-<h1>根据硬件启动不同TEE方案<a class="headerlink" href="#id4" title="此标题的永久链接"></a></h1>
+<section id="id3">
+<h1>新老机器启动不同TEE方案<a class="headerlink" href="#id3" title="此标题的永久链接"></a></h1>
 <p>由于需要适配老机器(瓶钵TEE)，需要根据硬件启动不同TEE OS，方案如下：</p>
 <ul class="simple">
 <li><ol class="arabic simple">
-<li><p>后续升级OTA/Uniphiz包不包含tee.img镜像，因为tee os编译在里面。</p></li>
+<li><p>后续升级OTA/Uniphiz包不包含tee.img和preloader镜像，因为tee os编译在里面。</p></li>
 </ol>
 </li>
 <li><ol class="arabic simple" start="2">
-<li><p>pl阶段根据boardid加载不同的TEE OS。</p></li>
+<li><p>pl阶段根据烧录的不同preloader加载不同的TEE OS，这里主要是利用preloader向lk传参并设置属性。</p></li>
 </ol>
 </li>
 <li><ol class="arabic simple" start="3">
-<li><p>kernel阶段两个都打开。</p></li>
+<li><p>kernel阶段两个TEE API兼容。</p></li>
 </ol>
 </li>
 </ul>
-</section>
-<section id="kernel">
-<h1>kernel阶段兼容<a class="headerlink" href="#kernel" title="此标题的永久链接"></a></h1>
+<section id="kernel-tee-api">
+<h2>kernel TEE API兼容<a class="headerlink" href="#kernel-tee-api" title="此标题的永久链接"></a></h2>
 <p>GP定义的客户端接口包括9个函数和1个宏：</p>
 <p><img alt="0007_0000.png" src="../../../_images/0007_00002.png" /></p>
 <p>如果同时打开瓶钵和豆荚的TEE会出现如下重定义报错：</p>
@@ -286,27 +297,60 @@
 <span class="o">&gt;&gt;&gt;</span>            <span class="n">drivers</span><span class="o">/</span><span class="n">tee</span><span class="o">/</span><span class="n">tkcore</span><span class="o">/</span><span class="n">core</span><span class="o">/</span><span class="n">tee_kernel_api</span><span class="o">.</span><span class="n">o</span><span class="p">:(</span><span class="o">.</span><span class="n">text</span><span class="o">+</span><span class="mh">0x574</span><span class="p">)</span> <span class="ow">in</span> <span class="n">archive</span> <span class="n">built</span><span class="o">-</span><span class="ow">in</span><span class="o">.</span><span class="n">a</span>
 </pre></div>
 </div>
-<p>那么我们将瓶钵驱动中的9和函数名称修改一下<code class="docutils literal notranslate"><span class="pre">drivers/tee/tkcore</span></code>：</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span> 2018  sed -i &quot;s/TEEC_InitializeContext/TK_TEEC_InitializeContext/g&quot;  `grep TEEC_InitializeContext -rl . `
- 2020  sed -i &quot;s/TEEC_FinalizeContext/TK_TEEC_FinalizeContext/g&quot;  `grepTEEC_FinalizeContext -rl . `
- 2021  sed -i &quot;s/TEEC_FinalizeContext/TK_TEEC_FinalizeContext/g&quot;  `grep TEEC_FinalizeContext -rl . `
- 2023  sed -i &quot;s/TEEC_OpenSession/TK_TEEC_OpenSession/g&quot;  `grep TEEC_OpenSession -rl . `
- 2027  sed -i &quot;s/TEEC_CloseSession/TK_TEEC_CloseSession/g&quot;  `grep TEEC_CloseSession -rl . `
- 2028  sed -i &quot;s/TEEC_InvokeCommand/TK_TEEC_InvokeCommand/g&quot;  `grep TEEC_InvokeCommand -rl . `
- 2029  sed -i &quot;s/TEEC_RegisterSharedMemory/TK_TEEC_RegisterSharedMemory/g&quot;  `grep TEEC_RegisterSharedMemory -rl . `
- 2030  sed -i &quot;s/TEEC_AllocateSharedMemory/TK_TEEC_AllocateSharedMemory/g&quot;  `grep TEEC_AllocateSharedMemory -rl . `
- 2031  sed -i &quot;s/TEEC_ReleaseSharedMemory/TK_TEEC_ReleaseSharedMemory/g&quot;  `grep TEEC_ReleaseSharedMemory -rl . `
+<p>瓶钵TEE提供给Linux端驱动使用的接口源代码的实现存放在<code class="docutils literal notranslate"><span class="pre">drivers/tee/tkcore/core/tee_kernel_api.c</span></code>文件中。
+豆荚TEE提供给Linux端驱动使用的接口源代码的实现存放在<code class="docutils literal notranslate"><span class="pre">drivers/tee/teei/300/tee/tee_client_api.c</span></code>文件中。
+基本上驱动调用该接口的仅有指纹驱动，下面是指纹读取chip_id流程：</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">drivers/input/fingerprint/betterlife_fp/bf_fp_spi.c</span></code>:</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>* bf_read_chipid
+  └── bf_spi_read_reg (0x12);
+      └── spi_send_cmd(g_bf_dev, data_tx, data_rx, 2);
+          └── tee_spi_transfer(&amp;spi_conf_tk, sizeof(spi_conf_tk), tx, rx, spilen);
+              ├── TK_TEEC_InitializeContext(NULL, &amp;context); //drivers/tee/tkcore/core/peridev.c
+              ├── TK_TEEC_OpenSession(&amp;context, &amp;session, &amp;SENSOR_DETECTOR_TA_UUID,  // 根据TA UUID打开TA应用
+              ├── TK_TEEC_InvokeCommand(&amp;session, CMD_READ_CHIPID, &amp;op, &amp;returnOrigin); //重要  发送CMD_READ_CHIPID指令给TA端获取chip id
+              ├── TK_TEEC_CloseSession(&amp;session);
+              └── TK_TEEC_FinalizeContext(&amp;context);
+</pre></div>
+</div>
+<p>想要指纹在豆荚的TEE中使用也需要使用到瓶钵封装的spi接口，因为豆荚没有专门封装spi接口：</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">drivers/input/fingerprint/betterlife_fp/Makefile</span></code>:</p></li>
+</ul>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>ifeq <span class="o">(</span><span class="k">$(</span>strip <span class="k">$(</span>TEE_PLATFORM<span class="k">))</span>, TEE_BEANPOD<span class="o">)</span>
+ccflags-y +<span class="o">=</span> -I<span class="k">$(</span>srctree<span class="k">)</span>/drivers/tee/tkcore/include/linux
+<span class="k">$(</span>info <span class="s2">&quot;**************** beanpod tee ****************&quot;</span><span class="k">)</span>
+ccflags-y +<span class="o">=</span> -DTEE_BEANPOD
+ccflags-y +<span class="o">=</span> -DCONFIG_MTK_CLK
+endif
+</pre></div>
+</div>
+<p>另外libteec库提供给上层用户使用的API一共有10个，都按照GP标准进行定义，使用这10个API能够满足用户在Linux用户空间的需求，在系统中这部分会被编译成libteec库，保存在REE侧的文件系统中以备上层使用。
+具体api接口路径在<code class="docutils literal notranslate"><span class="pre">microtrust/source/common/300/optee_client/public/tee_client_api.h</span></code>和<code class="docutils literal notranslate"><span class="pre">trustkernel/source/services/teeclient/include/tee_client_api.h</span></code>。</p>
+<p>具体请参考：</p>
+<ul class="simple">
+<li><p><a class="reference external" href="https://www.jianshu.com/p/74a26ede5d1d?u_atoken=66a51267-285d-4567-aafe-d6d50738f585&amp;u_asession=01f_sxVixP7Vy0Jrzdzb2dAKAXWsbgK4Lio9vOpRlZGo2yLXa_J9zNufE9HVDP2c4VX0KNBwm7Lovlpxjd_P_q4JsKWYrT3W_NKPr8w6oU7K8Ns3QXhI7dv48uDqh6tscGp0TkEaMSMNP4umocQhrjq2BkFo3NEHBv0PZUm6pbxQU&amp;u_asig=05J29Yav8usuQyWHInRl-Ad-PI68YevoqVxG8Gsuu7qA6JF6zf9CBeoFrCshGsajK2Z3UW7m6GmsSmZQTgaHpvMMoX1EJ_9B6XMFEwJ5tAEn8k7OGYu5QsOGXsIHC5LMq8kRH1sD4Gn1B-q1ZGYpDUwHT6-ibI6mzpVPVCVS1j9GP9JS7q8ZD7Xtz2Ly-b0kmuyAKRFSVJkkdwVUnyHAIJzXKB41hxxphEWr3t12svy7v-ZxzmlGsA1bKYzw3seMh-G3pf5vm7LeeSuJ_913VgsO3h9VXwMyh6PgyDIVSG1W8frrwHwetKpxMGwfYjeCGf0lxEO2egZLn_KjcvC2APzImtRq45EGDpyiOknHXmFzAdnFJRYAdzAZXbpwUdMC3MmWspDxyAEEo4kbsryBKb9Q&amp;u_aref=S4YI8eA5zTurlBbbCqy3Y1rwnYQ%3D">《手机安全与可信应用开发指南：TrustZone和OP-TEE技术详解》读书笔记</a></p></li>
+</ul>
+<p>那么我们将瓶钵驱动中的10个函数名称修改一下<code class="docutils literal notranslate"><span class="pre">drivers/tee/tkcore</span></code>：</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>sed -i &quot;s/TEEC_InitializeContext/TK_TEEC_InitializeContext/g&quot;  `grep TEEC_InitializeContext -rl . `
+sed -i &quot;s/TEEC_FinalizeContext/TK_TEEC_FinalizeContext/g&quot;  `grepTEEC_FinalizeContext -rl . `
+sed -i &quot;s/TEEC_FinalizeContext/TK_TEEC_FinalizeContext/g&quot;  `grep TEEC_FinalizeContext -rl . `
+sed -i &quot;s/TEEC_OpenSession/TK_TEEC_OpenSession/g&quot;  `grep TEEC_OpenSession -rl . `
+sed -i &quot;s/TEEC_CloseSession/TK_TEEC_CloseSession/g&quot;  `grep TEEC_CloseSession -rl . `
+sed -i &quot;s/TEEC_InvokeCommand/TK_TEEC_InvokeCommand/g&quot;  `grep TEEC_InvokeCommand -rl . `
+sed -i &quot;s/TEEC_RegisterSharedMemory/TK_TEEC_RegisterSharedMemory/g&quot;  `grep TEEC_RegisterSharedMemory -rl . `
+sed -i &quot;s/TEEC_AllocateSharedMemory/TK_TEEC_AllocateSharedMemory/g&quot;  `grep TEEC_AllocateSharedMemory -rl . `
+sed -i &quot;s/TEEC_ReleaseSharedMemory/TK_TEEC_ReleaseSharedMemory/g&quot;  `grep TEEC_ReleaseSharedMemory -rl . `
 </pre></div>
 </div>
 <p>经验证，修改后瓶钵指纹依然能够正常读取chip id，正常使用。</p>
 </section>
-<section id="tee-img">
-<h1>tee.img生成兼容<a class="headerlink" href="#tee-img" title="此标题的永久链接"></a></h1>
-<p>首先看看tee.img是如何生成的，</p>
-</section>
 <section id="pllk">
-<h1>pl阶段传参lk流程<a class="headerlink" href="#pllk" title="此标题的永久链接"></a></h1>
+<h2>pl阶段传参lk流程<a class="headerlink" href="#pllk" title="此标题的永久链接"></a></h2>
 <ul class="simple">
+<li><p>参考：</p></li>
+<li><p><a class="reference external" href="https://bbs.16rd.com/thread-19436-1-1.html">如何添加从preloader向lk的传递参数, 并在lk中解析使用</a></p></li>
 <li><p>根据pl阶段打印如下：</p></li>
 </ul>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="n">PLFM</span><span class="p">]</span> <span class="n">boot</span> <span class="n">to</span> <span class="n">LK</span> <span class="n">by</span> <span class="n">ATAG</span> <span class="n">reason</span><span class="o">=</span><span class="mi">4</span> <span class="n">addr</span><span class="o">=</span><span class="mf">47E6</span><span class="n">DA80</span>
@@ -487,6 +531,348 @@
 <span class="p">}</span><span class="w"></span>
 </pre></div>
 </div>
+<p>流程如下：</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>* platform_post_init
+  └── platform_set_boot_args();
+      └── #if CFG_BOOT_ARGUMENT_BY_ATAG //这里定义了
+          └── platform_set_boot_args_by_atag((unsigned int *)&amp;(g_dram_buf-&gt;boottag)); // set jump addr
+</pre></div>
+</div>
+<p>简单看一下里面内容，主要是按照结构体顺序填充变量：</p>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="cp">#if CFG_BOOT_ARGUMENT_BY_ATAG</span>
+<span class="kt">void</span><span class="w"> </span><span class="nf">platform_set_boot_args_by_atag</span><span class="p">(</span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="o">*</span><span class="n">ptr</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">j</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="n">boot_tag</span><span class="w"> </span><span class="o">*</span><span class="n">tags</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">    </span><span class="n">tags</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">boot_tag</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="n">ptr</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="n">tags</span><span class="o">-&gt;</span><span class="n">hdr</span><span class="p">.</span><span class="n">size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">boot_tag_size</span><span class="p">(</span><span class="n">boot_tag_boot_reason</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="n">tags</span><span class="o">-&gt;</span><span class="n">hdr</span><span class="p">.</span><span class="n">tag</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">BOOT_TAG_BOOT_REASON</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="n">tags</span><span class="o">-&gt;</span><span class="n">u</span><span class="p">.</span><span class="n">boot_reason</span><span class="p">.</span><span class="n">boot_reason</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">g_boot_reason</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="n">ptr</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="n">tags</span><span class="o">-&gt;</span><span class="n">hdr</span><span class="p">.</span><span class="n">size</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">  </span><span class="n">tags</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">boot_tag</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="n">ptr</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="n">tags</span><span class="o">-&gt;</span><span class="n">hdr</span><span class="p">.</span><span class="n">size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">boot_tag_size</span><span class="p">(</span><span class="n">boot_tag_boot_mode</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="n">tags</span><span class="o">-&gt;</span><span class="n">hdr</span><span class="p">.</span><span class="n">tag</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">BOOT_TAG_BOOT_MODE</span><span class="p">;</span><span class="w"></span>
+<span class="cp">#if CFG_FAST_META_SUPPORT</span>
+<span class="w">    </span><span class="k">if</span><span class="p">(</span><span class="n">g_is_fast_meta</span><span class="p">)</span><span class="w"></span>
+<span class="w">        </span><span class="n">tags</span><span class="o">-&gt;</span><span class="n">u</span><span class="p">.</span><span class="n">boot_mode</span><span class="p">.</span><span class="n">boot_mode</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">META_BOOT</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="k">else</span><span class="w"></span>
+<span class="w"> </span><span class="cp">#endif</span>
+<span class="w">        </span><span class="n">tags</span><span class="o">-&gt;</span><span class="n">u</span><span class="p">.</span><span class="n">boot_mode</span><span class="p">.</span><span class="n">boot_mode</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">g_boot_mode</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="n">ptr</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="n">tags</span><span class="o">-&gt;</span><span class="n">hdr</span><span class="p">.</span><span class="n">size</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">    </span><span class="n">tags</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">boot_tag</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="n">ptr</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="n">tags</span><span class="o">-&gt;</span><span class="n">hdr</span><span class="p">.</span><span class="n">size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">boot_tag_size</span><span class="p">(</span><span class="n">boot_tag_meta_com</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="n">tags</span><span class="o">-&gt;</span><span class="n">hdr</span><span class="p">.</span><span class="n">tag</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">BOOT_TAG_META_COM</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="n">tags</span><span class="o">-&gt;</span><span class="n">u</span><span class="p">.</span><span class="n">meta_com</span><span class="p">.</span><span class="n">meta_com_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">g_meta_com_id</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<p>但是发现一个bug，就是pl和lk两个结构共同体对不上，从箭头处就开始不对应了，难怪加到最后面发现lk中死活读不到数据。</p>
+<p><img alt="0007_0001.png" src="../../../_images/0007_00011.png" /></p>
+<p>将两边结构体同步整理了一下，发现起不来，看串口ATF就死机了，提示没有<code class="docutils literal notranslate"><span class="pre">is_abnormal_boot</span></code>这个TAG：</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>[TZ_SEC_CFG] [A]SRAMROM SEC_CTRL:0xB69, SEC_CTRL2:0x0, SEC_CTRL5:0x1680000, SEC_CTRL6:0x0
+[ATF](0)[1.691436]INFO:    BOOT_REASON: 4
+[ATF](0)[1.692623]INFO:    RAM_CONSOLE_INFO: addr:0x10dc00, size:0x800, type:0x1, offset:0xac0
+[ATF](0)[1.693650]INFO:    RAM_CONSOLE_INFO: add▒:0x0, siz▒:0x0, type:0x0, offset:0▒0
+[ATF](0)[1.694583]INFO:    Preloader is without is_abnormal_boot tag, try to keep data i▒ crash buffer
+[ATF](0)[1.695705]INFO:    CPUxGPT reg(0)
+[ATF](0)[1.696165]INFO:    [sys▒imer] CNTCR_REG(0x505)
+[ATF](0)[1.696771]INFO:    Secondary boo▒loader is AArch32
+[ATF](0)[1.697416]INFO:    GZ PARAMS = 0x11002000, 0x0, 0x0
+[ATF](0)[1.698074]INFO:    bl31_plat_arch_setup()
+···省略···
+[ATF](0)[1.739142]INFO:    abnormal_boot: 0xffffffff, cflag: 0xdead1abf
+[ATF](0)[1.739911]INFO:    atf RA▒ dump
+[ATF](0)[1.740377]INFO:    ATF l▒g service is registered (0xbfe00000, aee:0xbfe3c000)
+[ATF](0)[1.741294]NOTICE:  BL31_BASE=0x47d80800, BL31▒TZRAM_SIZE=0x31800
+[ATF](0)[1.742091]NOTICE:  TZRAM2_BASE=0x47d▒2000, TZRAM2_SIZE=0x1d000
+[ATF](0)[1.742867]NOTICE:  BL31: v1.4(debug):Uniphiz_11.0.0_Birch_V15.3.01_20220611_Release-143-g60a30ee1f2d-dirty
+</pre></div>
+</div>
+<p>正常启动如下：</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>[ATF](0)[1.747990]INFO:    BOOT_REASON: 6
+?ATF](0)[1.749171]INFO:    IS_ABNORMAL_BOOT: 0
+[ATF](0)[1.749681]INFO:    RAM_CONSOLE_INFO: addr:0x10dc00, size:0x800, type:0x1, offset:0xac0
+[ATF](0)[1.750714]INFO:    CPUxGPT reg(0)
+[ATF](0)[1.751174]INFO:    [systimer] CNTCR_REG(0x505)
+[ATF](0)[1.751780]INFO:    Secondary bootloader is AArch32
+[ATF](0)[1.752424]INFO:    GZ PARAMS = 0x11002000, 0x0, 0x0
+[ATF](0)[1.753081]INFO:    bl31_plat_arch_setup()
+···省略···
+[ATF](0)[1.796678]INFO:    abnormal_boot: 0x0, cflag: 0x41544241
+</pre></div>
+</div>
+<p>最后发现结构体中soc_id没用，那我们用这个来做，修改如下：</p>
+<div class="highlight-diff notranslate"><div class="highlight"><pre><span></span><span class="gd">--- a/vendor/mediatek/proprietary/bootable/bootloader/lk/app/mt_boot/mt_boot.c</span><span class="w"></span>
+<span class="gi">+++ b/vendor/mediatek/proprietary/bootable/bootloader/lk/app/mt_boot/mt_boot.c</span><span class="w"></span>
+<span class="gu">@@ -1748,6 +1748,17 @@ int boot_linux_from_storage(void)</span><span class="w"></span>
+<span class="w"> </span>       cmdline_append(cmdline_tmpbuf);<span class="w"></span>
+<span class="w"> </span>       sprintf(cmdline_tmpbuf, &quot;%s%s%d&quot;, CMDLINE_TMP_CONCAT_SIZE, &quot;androidboot.lcm.id=&quot;, lcm_id);<span class="w"></span>
+<span class="w"> </span>       cmdline_append(cmdline_tmpbuf);<span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+// [NEW FEATURE]-BEGIN by wugangnan@paxsz.com 2022-10-17,  for compatible tee for new machine</span><span class="w"></span>
+<span class="gi">+       if (!strcmp(g_boot_arg-&gt;socid, &quot;pax_new_board&quot;))</span><span class="w"></span>
+<span class="gi">+       {</span><span class="w"></span>
+<span class="gi">+               sprintf(cmdline_tmpbuf, &quot;%s%s%d&quot;, CMDLINE_TMP_CONCAT_SIZE, &quot;androidboot.pax.newmachine=&quot;, 1);</span><span class="w"></span>
+<span class="gi">+               cmdline_append(cmdline_tmpbuf);</span><span class="w"></span>
+<span class="gi">+       }</span><span class="w"></span>
+<span class="gi">+       pal_log_err(&quot;[%s]pax_socid (%s)\n&quot;,</span><span class="w"></span>
+<span class="gi">+               __func__,</span><span class="w"></span>
+<span class="gi">+               g_boot_arg-&gt;socid);</span><span class="w"></span>
+<span class="gi">+// [NEW FEATURE]-END by wugangnan@paxsz.com 2022-10-17,  for compatible tee for new machine</span><span class="w"></span>
+
+<span class="w"> </span>       switch (g_boot_mode) {<span class="w"></span>
+<span class="w"> </span>       case NORMAL_BOOT:<span class="w"></span>
+<span class="gh">diff --git a/vendor/mediatek/proprietary/bootable/bootloader/preloader/platform/mt6765/src/drivers/platform.c b/vendor/mediatek/proprietary/bootable/bootloader/preloader/platform/mt6765/src/drivers/platform.c</span><span class="w"></span>
+<span class="gh">index 00846c09bf9..7015473a533 100644</span><span class="w"></span>
+<span class="gd">--- a/vendor/mediatek/proprietary/bootable/bootloader/preloader/platform/mt6765/src/drivers/platform.c</span><span class="w"></span>
+<span class="gi">+++ b/vendor/mediatek/proprietary/bootable/bootloader/preloader/platform/mt6765/src/drivers/platform.c</span><span class="w"></span>
+<span class="gu">@@ -531,6 +531,7 @@ void platform_set_boot_args_by_atag(unsigned int *ptr)</span><span class="w"></span>
+<span class="w"> </span>    tags = (boot_tag *)ptr;<span class="w"></span>
+<span class="w"> </span>    tags-&gt;hdr.size  = boot_tag_size(boot_tag_emi_info);<span class="w"></span>
+<span class="w"> </span>    tags-&gt;hdr.tag   = BOOT_TAG_EMI_INFO;<span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="w"> </span>#if !CFG_FPGA_PLATFORM<span class="w"></span>
+<span class="w"> </span>    tags-&gt;u.emi_info.dram_type = (mt_get_dram_type() &amp; 0xF) | ((get_dram_mr(5) &lt;&lt; 24) &amp; 0xFF000000);<span class="w"></span>
+<span class="w"> </span>    tags-&gt;u.emi_info.ch_num = get_dram_channel_nr();<span class="w"></span>
+<span class="gu">@@ -640,7 +641,10 @@ void platform_set_boot_args_by_atag(unsigned int *ptr)</span><span class="w"></span>
+<span class="w"> </span>    tags = (boot_tag *)ptr;<span class="w"></span>
+<span class="w"> </span>    tags-&gt;hdr.size = boot_tag_size(boot_tag_soc_id);<span class="w"></span>
+<span class="w"> </span>    tags-&gt;hdr.tag  = BOOT_TAG_SOC_ID;<span class="w"></span>
+<span class="gd">-    memcpy(tags-&gt;u.socid.id, p_bldr_param-&gt;socid, SOC_ID_LEN);</span><span class="w"></span>
+<span class="gi">+       // [NEW FEATURE]-BEGIN by wugangnan@paxsz.com 2022-10-17,  for compatible tee for new machine</span><span class="w"></span>
+<span class="gi">+       //memcpy(tags-&gt;u.socid.id, p_bldr_param-&gt;socid, SOC_ID_LEN);</span><span class="w"></span>
+<span class="gi">+    memcpy(tags-&gt;u.socid.id, &quot;pax_new_board&quot;, SOC_ID_LEN);</span><span class="w"></span>
+<span class="gi">+       // [NEW FEATURE]-END by wugangnan@paxsz.com 2022-10-17,  for compatible tee for new machine</span><span class="w"></span>
+<span class="w"> </span>    ptr += tags-&gt;hdr.size;<span class="w"></span>
+</pre></div>
+</div>
+</section>
+<section id="id4">
+<h2>豆荚及瓶钵TEE配置都打开配置<a class="headerlink" href="#id4" title="此标题的永久链接"></a></h2>
+<section id="id5">
+<h3>TEE服务编译<a class="headerlink" href="#id5" title="此标题的永久链接"></a></h3>
+<p>同时打开豆荚及瓶钵TEE配置后，我们需要将豆荚和瓶钵编译的TEE相关服务都编译进系统，瓶钵的TEE OS不编译进系统，即tee.img。</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">device/mediatek/vendor/common/device.mk</span></code>”豆荚和瓶钵tee服务如下：</p></li>
+</ul>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>//豆荚
+<span class="nv">PRODUCT_PACKAGES</span> <span class="o">+=</span> android.hardware.keymaster@4.0-service.beanpod
+ifeq <span class="o">(</span><span class="k">$(</span>strip <span class="k">$(</span>MICROTRUST_TEE_SUPPORT<span class="k">))</span>, yes<span class="o">)</span>
+  <span class="nv">PRODUCT_PACKAGES</span> <span class="o">+=</span> teei_daemon
+  <span class="nv">PRODUCT_PACKAGES</span> <span class="o">+=</span> bp_kmsetkey_ca
+  <span class="nv">PRODUCT_PACKAGES</span> <span class="o">+=</span> libTEECommon
+  <span class="nv">PRODUCT_PACKAGES</span> <span class="o">+=</span> kmsetkey.beanpod
+  <span class="nv">PRODUCT_PACKAGES</span> <span class="o">+=</span> gatekeeper.beanpod
+  <span class="c1"># lib@paxsz.com dynamic set the property start</span>
+  <span class="c1">#PRODUCT_PROPERTY_OVERRIDES += ro.hardware.kmsetkey=beanpod</span>
+  <span class="c1">#PRODUCT_PROPERTY_OVERRIDES += ro.hardware.gatekeeper=beanpod</span>
+  <span class="c1">#PRODUCT_PROPERTY_OVERRIDES += ro.vendor.mtk_microtrust_tee_support=1</span>
+  <span class="c1">#lib@paxsz.com dynamic set the property end</span>
+  ifeq <span class="o">(</span><span class="k">$(</span>strip <span class="k">$(</span>MTK_SEC_VIDEO_PATH_SUPPORT<span class="k">))</span>, yes<span class="o">)</span>
+    ifeq <span class="o">(</span><span class="k">$(</span>strip <span class="k">$(</span>MTK_TEE_GP_SUPPORT<span class="k">))</span>,yes<span class="o">)</span>
+      <span class="nv">PRODUCT_PACKAGES</span> <span class="o">+=</span> AVCSecureVdecCA
+      <span class="nv">PRODUCT_PACKAGES</span> <span class="o">+=</span> HEVCSecureVdecCA
+    endif
+  endif
+  ifeq <span class="o">(</span><span class="k">$(</span>strip <span class="k">$(</span>MICROTRUST_TEE_LITE_SUPPORT<span class="k">))</span>, yes<span class="o">)</span>
+    <span class="nv">PRODUCT_PACKAGES</span> <span class="o">+=</span> isee_product.cfg
+    <span class="nv">PRODUCT_PACKAGES</span> <span class="o">+=</span> TAs_list
+  <span class="k">else</span>
+    <span class="nv">PRODUCT_PACKAGES</span> <span class="o">+=</span> keymaster_server4
+    <span class="nv">PRODUCT_PACKAGES</span> <span class="o">+=</span> gatekeeper_server
+    <span class="nv">PRODUCT_PACKAGES</span> <span class="o">+=</span> km_key_manager_ta
+    <span class="c1">#[NEW FEATURE]-BEGIN by wugangnan@paxsz.com 2022-10-13, add beapond TEE</span>
+    <span class="nv">PRODUCT_PACKAGES</span> <span class="o">+=</span> isee_model.json
+    <span class="nv">PRODUCT_PACKAGES</span> <span class="o">+=</span> 93feffccd8ca11e796c7c7a21acb4932.ta
+    <span class="c1">#[NEW FEATURE]-END by wugangnan@paxsz.com 2022-10-13, add beapond TEE</span>
+  endif
+endif <span class="c1">#MICROTRUST_TEE_SUPPORT</span>
+
+//瓶钵
+ifeq <span class="o">(</span><span class="k">$(</span>strip <span class="k">$(</span>TRUSTKERNEL_TEE_SUPPORT<span class="k">))</span>, yes<span class="o">)</span>
+<span class="c1"># FEATURE]-BEGIN by wugangnan@paxsz.com 2022-10-17, add trustkernel tee build for trustkernel and microtrust tee compatible</span>
+  <span class="nv">PRODUCT_PACKAGES</span> <span class="o">+=</span> android.hardware.keymaster@4.0-service.trustkernel
+<span class="c1"># FEATURE]-END by wugangnan@paxsz.com 2022-10-17, add trustkernel tee build for trustkernel and microtrust tee compatible</span>
+  <span class="nv">PRODUCT_PACKAGES</span> <span class="o">+=</span> teed
+  <span class="nv">PRODUCT_PACKAGES</span> <span class="o">+=</span> pld
+  <span class="nv">PRODUCT_PACKAGES</span> <span class="o">+=</span> kph
+  <span class="nv">PRODUCT_PACKAGES</span> <span class="o">+=</span> DAccessProxy
+  <span class="nv">PRODUCT_PACKAGES</span> <span class="o">+=</span> dpci
+  <span class="c1"># install keybox</span>
+  <span class="nv">PRODUCT_PACKAGES</span> <span class="o">+=</span> 6B6579626F785F6372797074
+
+
+  <span class="nv">PRODUCT_PACKAGES</span> <span class="o">+=</span> kmsetkey.trustkernel
+  <span class="c1">#FEATURE]-BEGIN by lib@paxsz.com 2022-10-17, dynmaic set the property in init.cpp</span>
+  <span class="c1">#PRODUCT_PROPERTY_OVERRIDES += ro.hardware.kmsetkey=trustkernel</span>
+  <span class="c1">#PRODUCT_PROPERTY_OVERRIDES += ro.hardware.gatekeeper=trustkernel</span>
+  <span class="c1">#PRODUCT_PROPERTY_OVERRIDES += ro.vendor.mtk_trustkernel_tee_support=1</span>
+  <span class="c1">#FEATURE]-END by lib@paxsz.com 2022-10-17,</span>
+  <span class="nv">PRODUCT_PACKAGES</span> <span class="o">+=</span> gatekeeper.trustkernel
+
+  <span class="c1"># for check keybox and productline state</span>
+  <span class="nv">PRODUCT_PACKAGES</span> <span class="o">+=</span> tee_check_keybox
+
+<span class="c1">#  PRODUCT_PROPERTY_OVERRIDES += ro.vendor.trustkernel.keystore=persist</span>
+
+  <span class="nv">PRODUCT_COPY_FILES</span> <span class="o">+=</span> <span class="se">\</span>
+      vendor/mediatek/proprietary/trustzone/trustkernel/source/ta/02662e8e-e126-11e5-b86d9a79f06e9478.ta:vendor/app/t6/02662e8e-e126-11e5-b86d9a79f06e9478.ta
+
+  <span class="nv">PRODUCT_COPY_FILES</span> <span class="o">+=</span> <span class="se">\</span>
+      vendor/mediatek/proprietary/trustzone/trustkernel/source/ta/9ef77781-7bd5-4e39-965f20f6f211f46b.ta:vendor/app/t6/9ef77781-7bd5-4e39-965f20f6f211f46b.ta
+
+  <span class="nv">PRODUCT_COPY_FILES</span> <span class="o">+=</span> <span class="se">\</span>
+      vendor/mediatek/proprietary/trustzone/trustkernel/source/ta/b46325e6-5c90-8252-2eada8e32e5180d6.ta:vendor/app/t6/b46325e6-5c90-8252-2eada8e32e5180d6.ta
+
+  <span class="nv">PRODUCT_COPY_FILES</span> <span class="o">+=</span> <span class="se">\</span>
+      vendor/mediatek/proprietary/trustzone/trustkernel/source/bsp/platform/common/scripts/kph_cfg/cfg.ini:vendor/app/t6/cfg.ini
+
+  <span class="nv">PRODUCT_COPY_FILES</span> <span class="o">+=</span> <span class="se">\</span>
+      frameworks/native/data/etc/android.software.device_id_attestation.xml:vendor/etc/permissions/android.software.device_id_attestation.xml
+endif
+</pre></div>
+</div>
+<p>其中写googlekey的TA应用如<code class="docutils literal notranslate"><span class="pre">6B6579626F785F6372797074</span></code>和<code class="docutils literal notranslate"><span class="pre">keymaster_server4</span></code>，<code class="docutils literal notranslate"><span class="pre">keymaster_server4</span></code>指的就是<code class="docutils literal notranslate"><span class="pre">c09c9c5daa504b78b0e46eda61556c3a.ta</span></code>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">vendor/mediatek/proprietary/trustzone/microtrust/source/common/Android.mk</span></code>:</p></li>
+</ul>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>include <span class="k">$(</span>CLEAR_VARS<span class="k">)</span>
+LOCAL_MODULE :<span class="o">=</span> keymaster_server4
+LOCAL_SRC_FILES :<span class="o">=</span> <span class="k">$(</span>MICROTRUST_TEE_VERSION<span class="k">)</span>/teei/<span class="k">$(</span>LOCAL_MODULE<span class="k">)</span>
+LOCAL_MODULE_PATH :<span class="o">=</span> <span class="k">$(</span>TARGET_OUT_VENDOR<span class="k">)</span>/thh/ta
+LOCAL_INSTALLED_MODULE_STEM :<span class="o">=</span> c09c9c5daa504b78b0e46eda61556c3a.ta
+LOCAL_MODULE_CLASS :<span class="o">=</span> ETC
+LOCAL_PROPRIETARY_MODULE :<span class="o">=</span> <span class="nb">true</span>
+LOCAL_MODULE_OWNER :<span class="o">=</span> mtk
+LOCAL_MULTILIB :<span class="o">=</span> <span class="m">32</span>
+include <span class="k">$(</span>BUILD_PREBUILT<span class="k">)</span>
+</pre></div>
+</div>
+</section>
+<section id="tee-imgos">
+<h3>tee.img去掉瓶钵OS<a class="headerlink" href="#tee-imgos" title="此标题的永久链接"></a></h3>
+<p>只需删除瓶钵编译脚本即可，路径是<code class="docutils literal notranslate"><span class="pre">vendor/mediatek/proprietary/trustzone/custom/build/trustkernel_config.mk</span></code>，将如下的全部注释：</p>
+<div class="highlight-diff notranslate"><div class="highlight"><pre><span></span><span class="gd">--- a/vendor/mediatek/proprietary/trustzone/custom/build/build_trustzone.mk</span><span class="w"></span>
+<span class="gi">+++ b/vendor/mediatek/proprietary/trustzone/custom/build/build_trustzone.mk</span><span class="w"></span>
+<span class="gu">@@ -46,13 +46,15 @@ endif</span><span class="w"></span>
+<span class="w"> </span>endif<span class="w"></span>
+
+<span class="w"> </span># trustkernel<span class="w"></span>
+<span class="gd">-ifeq ($(TRUSTKERNEL_TEE_SUPPORT),yes)</span><span class="w"></span>
+<span class="gd">-ifneq ($(wildcard $(MTK_PATH_SOURCE)/trustzone/trustkernel/source),)</span><span class="w"></span>
+<span class="gd">-include $(TRUSTZONE_CUSTOM_BUILD_PATH)/trustkernel_config.mk</span><span class="w"></span>
+<span class="gd">-TRUSTZONE_ALL_SECURE_OS += $(my_secure_os)</span><span class="w"></span>
+<span class="gd">-TRUSTZONE_modules_to_check += $(TRUSTKERNEL_modules_to_check)</span><span class="w"></span>
+<span class="gd">-endif</span><span class="w"></span>
+<span class="gd">-endif</span><span class="w"></span>
+<span class="gi">+# FEATURE]-BEGIN by wugangnan@paxsz.com 2022-10-17, delete trustkernel tee build for trustkernel and microtrust tee compatible</span><span class="w"></span>
+<span class="gi">+#ifeq ($(TRUSTKERNEL_TEE_SUPPORT),yes)</span><span class="w"></span>
+<span class="gi">+#ifneq ($(wildcard $(MTK_PATH_SOURCE)/trustzone/trustkernel/source),)</span><span class="w"></span>
+<span class="gi">+#include $(TRUSTZONE_CUSTOM_BUILD_PATH)/trustkernel_config.mk</span><span class="w"></span>
+<span class="gi">+#TRUSTZONE_ALL_SECURE_OS += $(my_secure_os)</span><span class="w"></span>
+<span class="gi">+#TRUSTZONE_modules_to_check += $(TRUSTKERNEL_modules_to_check)</span><span class="w"></span>
+<span class="gi">+#endif</span><span class="w"></span>
+<span class="gi">+#endif</span><span class="w"></span>
+<span class="gi">+# FEATURE]-END by wugangnan@paxsz.com 2022-10-17, delete trustkernel tee build for trustkernel and microtrust tee compatible</span><span class="w"></span>
+</pre></div>
+</div>
+<p>在编译时，会调用到这个编译文件，在该文件中，就是将bl31.bin和tee.raw拼在了一起，其中raw是<code class="docutils literal notranslate"><span class="pre">./trustkernel/source/bsp/platform/mt6765/tee/tee.bin</span></code>，形成了tee.img。</p>
+</section>
+<section id="pl">
+<h3>pl阶段去掉瓶钵配置<a class="headerlink" href="#pl" title="此标题的永久链接"></a></h3>
+<p>pl阶段不烧录，主要因为他只能启动豆荚tee os，所以需要将瓶钵的都去掉。</p>
+<div class="highlight-diff notranslate"><div class="highlight"><pre><span></span><span class="gd">--- a/vendor/mediatek/proprietary/bootable/bootloader/preloader/custom/k62v1_64_pax/cust_bldr.mak</span><span class="w"></span>
+<span class="gi">+++ b/vendor/mediatek/proprietary/bootable/bootloader/preloader/custom/k62v1_64_pax/cust_bldr.mak</span><span class="w"></span>
+<span class="gu">@@ -32,7 +32,10 @@ ifeq ($(strip $(MTK_TEE_SUPPORT)),yes)</span><span class="w"></span>
+<span class="w"> </span>    CFG_GOOGLE_TRUSTY_SUPPORT = 0<span class="w"></span>
+<span class="w"> </span>  endif<span class="w"></span>
+<span class="w"> </span>  ifeq ($(strip $(TRUSTKERNEL_TEE_SUPPORT)),yes)<span class="w"></span>
+<span class="gd">-    CFG_TRUSTKERNEL_TEE_SUPPORT = 1</span><span class="w"></span>
+<span class="gi">+# [NEW FEATURE]-BEGIN by wugangnan@paxsz.com 2022-10-17,  for trustkernel and microtrust tee compatible</span><span class="w"></span>
+<span class="gi">+    #CFG_TRUSTKERNEL_TEE_SUPPORT = 1</span><span class="w"></span>
+<span class="gi">+       CFG_TRUSTKERNEL_TEE_SUPPORT = 0</span><span class="w"></span>
+<span class="gi">+# [NEW FEATURE]-END by wugangnan@paxsz.com 2022-10-17,  for trustkernel and microtrust tee compatible</span><span class="w"></span>
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+<section id="id6">
+<h1>问题点<a class="headerlink" href="#id6" title="此标题的永久链接"></a></h1>
+<section id="google-key">
+<h2>google key写号失败<a class="headerlink" href="#google-key" title="此标题的永久链接"></a></h2>
+<p>fae分析是数组和bin文件不匹配，解密失败了，打印如下：</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">&lt;</span><span class="mi">6</span><span class="o">&gt;</span><span class="p">[</span>    <span class="mf">9.707597</span><span class="p">]</span> <span class="o">-</span><span class="p">(</span><span class="mi">2</span><span class="p">)[</span><span class="mi">252</span><span class="p">:</span><span class="n">teei_log_thread</span><span class="p">][</span><span class="n">TZ_LOG</span><span class="p">]</span> <span class="n">uTSecMan</span><span class="o">|</span> <span class="n">lookup</span> <span class="n">ta</span><span class="p">:</span> <span class="s1">&#39;c09c9c5daa504b78b0e46eda61556c3a&#39;</span> <span class="p">(</span><span class="mi">40</span><span class="p">)</span>
+<span class="o">&lt;</span><span class="mi">6</span><span class="o">&gt;</span><span class="p">[</span>    <span class="mf">9.708870</span><span class="p">]</span> <span class="o">-</span><span class="p">(</span><span class="mi">2</span><span class="p">)[</span><span class="mi">252</span><span class="p">:</span><span class="n">teei_log_thread</span><span class="p">][</span><span class="n">TZ_LOG</span><span class="p">]</span> <span class="n">uTSecMan</span><span class="o">|</span> <span class="n">enable</span> <span class="n">model</span> <span class="n">control</span>
+<span class="o">&lt;</span><span class="mi">6</span><span class="o">&gt;</span><span class="p">[</span>    <span class="mf">9.709804</span><span class="p">]</span> <span class="o">-</span><span class="p">(</span><span class="mi">2</span><span class="p">)[</span><span class="mi">252</span><span class="p">:</span><span class="n">teei_log_thread</span><span class="p">][</span><span class="n">TZ_LOG</span><span class="p">]</span> <span class="n">uTSecMan</span><span class="o">|</span> <span class="n">ta</span> <span class="n">don</span><span class="s1">&#39;t need verify model</span>
+<span class="o">&lt;</span><span class="mi">6</span><span class="o">&gt;</span><span class="p">[</span>    <span class="mf">9.761463</span><span class="p">]</span> <span class="o">-</span><span class="p">(</span><span class="mi">2</span><span class="p">)[</span><span class="mi">252</span><span class="p">:</span><span class="n">teei_log_thread</span><span class="p">][</span><span class="n">TZ_LOG</span><span class="p">]</span> <span class="n">uTSecMan</span><span class="o">|</span> <span class="n">Secmanager</span> <span class="n">Initialization</span><span class="p">:</span> <span class="n">total</span> <span class="n">spent</span> <span class="mf">4.0</span> <span class="n">ms</span>
+<span class="o">&lt;</span><span class="mi">6</span><span class="o">&gt;</span><span class="p">[</span>    <span class="mf">9.777627</span><span class="p">]</span> <span class="o">-</span><span class="p">(</span><span class="mi">2</span><span class="p">)[</span><span class="mi">252</span><span class="p">:</span><span class="n">teei_log_thread</span><span class="p">][</span><span class="n">TZ_LOG</span><span class="p">]</span> <span class="n">uTSecMan</span><span class="o">|</span> <span class="n">use</span> <span class="n">VFY_PROTOCOL_UUID</span>
+<span class="o">&lt;</span><span class="mi">6</span><span class="o">&gt;</span><span class="p">[</span>    <span class="mf">9.778592</span><span class="p">]</span> <span class="o">-</span><span class="p">(</span><span class="mi">2</span><span class="p">)[</span><span class="mi">252</span><span class="p">:</span><span class="n">teei_log_thread</span><span class="p">][</span><span class="n">TZ_LOG</span><span class="p">]</span> <span class="n">uTSecMan</span><span class="o">|</span> <span class="mi">1</span> <span class="n">uuid</span> <span class="n">active</span> <span class="n">offset</span><span class="p">:</span><span class="mi">15</span>
+<span class="o">&lt;</span><span class="mi">6</span><span class="o">&gt;</span><span class="p">[</span>    <span class="mf">9.779558</span><span class="p">]</span> <span class="o">-</span><span class="p">(</span><span class="mi">2</span><span class="p">)[</span><span class="mi">252</span><span class="p">:</span><span class="n">teei_log_thread</span><span class="p">][</span><span class="n">TZ_LOG</span><span class="p">]</span> <span class="n">uTSecMan</span><span class="o">|</span> <span class="n">a</span> <span class="n">free</span> <span class="n">ta</span><span class="o">.</span>
+<span class="o">&lt;</span><span class="mi">6</span><span class="o">&gt;</span><span class="p">[</span>    <span class="mf">9.780379</span><span class="p">]</span> <span class="o">-</span><span class="p">(</span><span class="mi">2</span><span class="p">)[</span><span class="mi">252</span><span class="p">:</span><span class="n">teei_log_thread</span><span class="p">][</span><span class="n">TZ_LOG</span><span class="p">]</span> <span class="n">uTSecMan</span><span class="o">|</span> <span class="n">ta</span> <span class="n">verify</span> <span class="n">success</span><span class="o">.</span>
+<span class="o">&lt;</span><span class="mi">6</span><span class="o">&gt;</span><span class="p">[</span>    <span class="mf">9.781287</span><span class="p">]</span> <span class="o">-</span><span class="p">(</span><span class="mi">2</span><span class="p">)[</span><span class="mi">252</span><span class="p">:</span><span class="n">teei_log_thread</span><span class="p">][</span><span class="n">TZ_LOG</span><span class="p">]</span> <span class="n">km4</span>     <span class="o">|</span> <span class="n">km</span> <span class="n">ta</span> <span class="n">create</span> <span class="n">entry</span><span class="o">.</span>
+<span class="o">&lt;</span><span class="mi">6</span><span class="o">&gt;</span><span class="p">[</span>    <span class="mf">9.782207</span><span class="p">]</span> <span class="o">-</span><span class="p">(</span><span class="mi">2</span><span class="p">)[</span><span class="mi">252</span><span class="p">:</span><span class="n">teei_log_thread</span><span class="p">][</span><span class="n">TZ_LOG</span><span class="p">]</span> <span class="n">km4</span>     <span class="o">|</span> <span class="n">KEYMASTER</span> <span class="n">VERSION</span><span class="p">:</span> <span class="n">km4</span><span class="mf">.0</span><span class="o">.</span>
+<span class="o">&lt;</span><span class="mi">6</span><span class="o">&gt;</span><span class="p">[</span>    <span class="mf">9.783190</span><span class="p">]</span> <span class="o">-</span><span class="p">(</span><span class="mi">2</span><span class="p">)[</span><span class="mi">252</span><span class="p">:</span><span class="n">teei_log_thread</span><span class="p">][</span><span class="n">TZ_LOG</span><span class="p">]</span> <span class="n">km4</span>     <span class="o">|</span> 
+<span class="o">&lt;</span><span class="mi">6</span><span class="o">&gt;</span><span class="p">[</span>    <span class="mf">9.783904</span><span class="p">]</span> <span class="o">-</span><span class="p">(</span><span class="mi">2</span><span class="p">)[</span><span class="mi">252</span><span class="p">:</span><span class="n">teei_log_thread</span><span class="p">][</span><span class="n">TZ_LOG</span><span class="p">]</span> <span class="n">km4</span>     <span class="o">|</span> <span class="n">km4</span><span class="mf">.0</span>  <span class="n">PAX_mt6762_R_isee350_persist_M8</span>  <span class="n">save</span>  <span class="n">B</span>  <span class="n">cert</span>  <span class="n">kb</span>  <span class="o">&amp;</span>  <span class="n">utagent</span>  <span class="o">&amp;</span>  <span class="n">fp_driver</span>  <span class="mi">202210081405</span>  <span class="n">sunchenghao</span>
+<span class="o">&lt;</span><span class="mi">6</span><span class="o">&gt;</span><span class="p">[</span>    <span class="mf">9.787812</span><span class="p">]</span> <span class="o">-</span><span class="p">(</span><span class="mi">2</span><span class="p">)[</span><span class="mi">252</span><span class="p">:</span><span class="n">teei_log_thread</span><span class="p">][</span><span class="n">TZ_LOG</span><span class="p">]</span> <span class="n">km4</span>     <span class="o">|</span> <span class="n">AndroidKeymaster</span> <span class="n">Configure</span> <span class="n">finish</span> <span class="mi">0</span>
+<span class="o">&lt;</span><span class="mi">6</span><span class="o">&gt;</span><span class="p">[</span>    <span class="mf">9.796038</span><span class="p">]</span> <span class="o">-</span><span class="p">(</span><span class="mi">2</span><span class="p">)[</span><span class="mi">252</span><span class="p">:</span><span class="n">teei_log_thread</span><span class="p">][</span><span class="n">TZ_LOG</span><span class="p">]</span> <span class="n">km4</span>     <span class="o">|</span> <span class="n">params</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="ow">is</span> <span class="n">empty</span>
+<span class="o">&lt;</span><span class="mi">6</span><span class="o">&gt;</span><span class="p">[</span>    <span class="mf">9.796960</span><span class="p">]</span> <span class="o">-</span><span class="p">(</span><span class="mi">2</span><span class="p">)[</span><span class="mi">252</span><span class="p">:</span><span class="n">teei_log_thread</span><span class="p">][</span><span class="n">TZ_LOG</span><span class="p">]</span> <span class="n">km4</span>     <span class="o">|</span> <span class="n">enter</span> <span class="n">generate</span> <span class="n">random</span> <span class="kn">from</span> <span class="nn">openssl</span>
+<span class="o">&lt;</span><span class="mi">6</span><span class="o">&gt;</span><span class="p">[</span>    <span class="mf">9.798044</span><span class="p">]</span> <span class="o">-</span><span class="p">(</span><span class="mi">2</span><span class="p">)[</span><span class="mi">252</span><span class="p">:</span><span class="n">teei_log_thread</span><span class="p">][</span><span class="n">TZ_LOG</span><span class="p">]</span> <span class="n">km4</span>     <span class="o">|</span> <span class="n">generate</span> <span class="n">random</span> <span class="kn">from</span> <span class="nn">openssl</span><span class="p">,</span><span class="n">buflen</span><span class="o">=</span><span class="mi">32</span>
+</pre></div>
+</div>
+<p>解决方案：
+将<code class="docutils literal notranslate"><span class="pre">vendor\mediatek\proprietary\trustzone\microtrust\source\common\300\km4.0\ut_kmsetkey.cpp</span></code>修改为豆荚匹配的数组。</p>
+</section>
+<section id="pin">
+<h2>不能设置pin码的问题<a class="headerlink" href="#pin" title="此标题的永久链接"></a></h2>
+<p>由于软件做了tee兼容，所以需要根据当前的TEE OS来设置使用哪家的gatekeeper和kmsetkey，具体是以下三条属性：</p>
+<div class="highlight-diff notranslate"><div class="highlight"><pre><span></span><span class="gd">--- a/system/core/init/property_service.cpp</span><span class="w"></span>
+<span class="gi">+++ b/system/core/init/property_service.cpp</span><span class="w"></span>
+<span class="gu">@@ -154,6 +154,7 @@ static void DebugPropertyThreadLogging() {</span><span class="w"></span>
+<span class="w"> </span>    UnwindPropertythreadStack();<span class="w"></span>
+<span class="w"> </span>}<span class="w"></span>
+
+<span class="gi">+</span><span class="w"></span>
+<span class="w"> </span>static void DropWDSocket() {<span class="w"></span>
+<span class="w"> </span>    uint64_t counter;<span class="w"></span>
+<span class="w"> </span>    TEMP_FAILURE_RETRY(read(wake_wd_thread_fd, &amp;counter, sizeof(counter)));<span class="w"></span>
+<span class="gu">@@ -1022,6 +1023,20 @@ static void update_sys_usb_config() {</span><span class="w"></span>
+<span class="w"> </span>    }<span class="w"></span>
+<span class="w"> </span>}<span class="w"></span>
+
+<span class="gi">+static void pax_init_tee_param(){</span><span class="w"></span>
+<span class="gi">+    std::string error;</span><span class="w"></span>
+<span class="gi">+     std::string machineId = android::base::GetProperty(&quot;ro.boot.pax.newmachine&quot;, &quot;0&quot;);</span><span class="w"></span>
+<span class="gi">+     if(machineId == &quot;1&quot;){</span><span class="w"></span>
+<span class="gi">+         PropertySet(&quot;ro.hardware.gatekeeper&quot;,&quot;beanpod&quot;,&amp;error);</span><span class="w"></span>
+<span class="gi">+         PropertySet(&quot;ro.hardware.kmsetkey&quot;,&quot;beanpod&quot;,&amp;error);</span><span class="w"></span>
+<span class="gi">+         PropertySet(&quot;ro.vendor.mtk_microtrust_tee_support&quot;,&quot;1&quot;,&amp;error);</span><span class="w"></span>
+<span class="gi">+    }else{</span><span class="w"></span>
+<span class="gi">+         PropertySet(&quot;ro.hardware.gatekeeper&quot;,&quot;trustkernel&quot;,&amp;error);</span><span class="w"></span>
+<span class="gi">+         PropertySet(&quot;ro.hardware.kmsetkey&quot;,&quot;trustkernel&quot;,&amp;error);</span><span class="w"></span>
+<span class="gi">+         PropertySet(&quot;ro.vendor.mtk_trustkernel_tee_support&quot;,&quot;1&quot;,&amp;error);</span><span class="w"></span>
+<span class="gi">+    }</span><span class="w"></span>
+<span class="gi">+}</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="w"> </span>static void load_override_properties() {<span class="w"></span>
+<span class="w"> </span>    if (ALLOW_LOCAL_PROP_OVERRIDE) {<span class="w"></span>
+<span class="w"> </span>        std::map&lt;std::string, std::string&gt; properties;<span class="w"></span>
+<span class="gu">@@ -1342,6 +1357,9 @@ void PropertyLoadBootDefaults() {</span><span class="w"></span>
+<span class="w"> </span>                       &lt;&lt; &quot;&#39; while loading .prop files&quot; &lt;&lt; error;<span class="w"></span>
+<span class="w"> </span>        }<span class="w"></span>
+<span class="w"> </span>    }<span class="w"></span>
+<span class="gi">+    //[FEATURE]-Add-BEGIN by (lib@paxsz.com),2 2022/10/20, init tee param</span><span class="w"></span>
+<span class="gi">+    pax_init_tee_param();</span><span class="w"></span>
+<span class="gi">+    //[FEATURE]-Add-BEGIN by lib@paxsz.com,2022/10/20,init tee param</span><span class="w"></span>
+
+<span class="w"> </span>    //[FEATURE]-Add-BEGIN by (wugangnan@paxsz.com),2 021/10/21, set ro.pax.product.id for pax usb pid<span class="w"></span>
+<span class="w"> </span>    pax_property_set_usb_pid();<span class="w"></span>
+</pre></div>
+</div>
+</section>
 </section>
 
 

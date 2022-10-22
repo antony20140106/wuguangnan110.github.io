@@ -327,26 +327,26 @@ charger的软件驱动架构比较简单，主要步骤为以下：
 
 ```C++
 * mp2721_charger_probe
-  * mp2721_parse_dt(&client->dev, mp); //获取dts
-  * mp2721_init_device(mp);
-    * mp2721_enable_watchdog_timer(mp, true);
-    * mp2721_set_term_current(mp, mp->cfg.term_current);//Termination current setting 终端电流设置
-    * mp2721_set_chargevoltage(mp, mp->cfg.charge_voltage);
-    * mp2721_set_chargecurrent(mp, mp->cfg.charge_current);
-    * mp2721_set_recharge_offset_voltage(mp, mp->cfg.rechg_threshold_offset);   //回充电压200mv
-    * mp2721_set_batlowv(mp, mp->cfg.prechg_to_fastchg_threshold); //Pre-charge to fast charge， battery voltage threshold 预充到快充的阈值
-    * mp2721_set_treg(mp, mp->cfg.treg);// 芯片最高耐温度数
-    * mp2721_set_input_volt_limit(mp, MP2721_VIN_LIMIT_DEFAULT);
-    * mp2721_set_input_current_limit(mp, MP2721_IIN_LIMIT_DEFAULT);
-    * mp2721_enable_charger(mp);
-    * mp2721_set_charging_safety_timer(mp, mp->cfg.max_chg_time); //充电安全时间
-  * gpio_request(mp->irq_pin, "mp2721 irq pin"); 
-  * mp2721_psy_register(mp);
-    *  power_supply_register(mp->dev, &psy_desc_adapter, &psy_cfg);
-  * INIT_WORK(&mp->irq_work, mp2721_charger_irq_workfunc); //中断工作
-  *  sysfs_create_group(&mp->wall->dev.kobj, &mp2721_attr_group); //创建调试用的文件节点registers、idpm_limit、charge_fault、charge_cur_limit
-  * request_irq(client->irq, mp2721_charger_interrupt, IRQF_TRIGGER_FALLING | IRQF_ONESHOT, "mp2721_charger_irq", mp); //申请中断
-  * queue_work(mp->adp_workqueue, &mp->irq_work);/*in case of adapter has been in when power off*/ 初始化一次
+  ├── mp2721_parse_dt(&client->dev, mp); //获取dts
+  ├── mp2721_init_device(mp);
+  │   ├── mp2721_enable_watchdog_timer(mp, true);
+  │   ├── mp2721_set_term_current(mp, mp->cfg.term_current);//Termination current setting 终端电流设置
+  │   ├── mp2721_set_chargevoltage(mp, mp->cfg.charge_voltage);
+  │   ├── mp2721_set_chargecurrent(mp, mp->cfg.charge_current);
+  │   ├── mp2721_set_recharge_offset_voltage(mp, mp->cfg.rechg_threshold_offset);   //回充电压200mv
+  │   ├── mp2721_set_batlowv(mp, mp->cfg.prechg_to_fastchg_threshold); //Pre-charge to fast charge， battery voltage threshold 预充到快充的阈值
+  │   ├── mp2721_set_treg(mp, mp->cfg.treg);// 芯片最高耐温度数
+  │   ├── mp2721_set_input_volt_limit(mp, MP2721_VIN_LIMIT_DEFAULT);
+  │   ├── mp2721_set_input_current_limit(mp, MP2721_IIN_LIMIT_DEFAULT);
+  │   ├── mp2721_enable_charger(mp);
+  │   └── mp2721_set_charging_safety_timer(mp, mp->cfg.max_chg_time); //充电安全时间
+  ├── gpio_request(mp->irq_pin, "mp2721 irq pin"); 
+  ├── mp2721_psy_register(mp);
+  │   └──  power_supply_register(mp->dev, &psy_desc_adapter, &psy_cfg);
+  ├── INIT_WORK(&mp->irq_work, mp2721_charger_irq_workfunc); //中断工作
+  ├──  sysfs_create_group(&mp->wall->dev.kobj, &mp2721_attr_group); //创建调试用的文件节点registers、idpm_limit、charge_fault、charge_cur_limit
+  ├── request_irq(client->irq, mp2721_charger_interrupt, IRQF_TRIGGER_FALLING | IRQF_ONESHOT, "mp2721_charger_irq", mp); //申请中断
+  └── queue_work(mp->adp_workqueue, &mp->irq_work);/*in case of adapter has been in when power off*/ 初始化一次
 ```
 
 * 中断处理函数如下,bc1.2检测判断是插入还是拔出，插入调用mp2721_plug_in函数设置vin和iin，使能充电并调用monitor_work工作队列监控dpm状态（中断下半段）：
@@ -2050,3 +2050,42 @@ healthd会周期性的读取charger的online状态，目前使用0x12寄存器�
 [ 9593.417533] send_afe_cal_type: No cal sent for cal_index 0, port_id = 0xb030! ret -22
 USB
 ```
+
+fae怀疑是charger输入端vbus电压由跳变，因为VIN_GD状态就是根据vbus状态来的，`VIN_UV < VIN <VIN_OV`如下：
+
+![0013_0047.png](images/0013_0047.png)
+
+VIN_UV和VIN_OV对应关系如下：
+
+![0013_0048.png](images/0013_0048.png)
+
+用示波器看并没有跳变，不知道什么原因，由于VIN_RD和VIN_GD状态不稳定，charger online属性改为读取DPDM_STAT状态，修改如下：
+```diff
+--- a/UM.9.15/kernel/msm-4.19/drivers/misc/pax/power/mp2721_charger.c
++++ b/UM.9.15/kernel/msm-4.19/drivers/misc/pax/power/mp2721_charger.c
+
++/**********Reg11**********/
++
++static int _is_charger_present(void)
++{
++       u8 status = 0, ret = 0;
++
++       ret = mp2721_get_byte_interface(MP2721_REG_11, MP2721_VIN_STAT_MASK, MP2721_VIN_STAT_SHIFT, &status);
++       if (ret)
++               return -1;
++
++       chr_debug("%s:status:%d\n", __func__, status);
++       return !!status;
++}
++
+@@ -1022,7 +1038,7 @@ static int mp2721_is_charge_online(struct charger_device *chg_dev)
+ {
+        u8 ret;
+
+-       ret = _is_vin_ready();
++       ret = _is_charger_present();
+        return ret;
+ }
+```
+
+![0013_0049.png](images/0013_0049.png)

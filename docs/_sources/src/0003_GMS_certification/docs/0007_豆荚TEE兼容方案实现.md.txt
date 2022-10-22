@@ -6,7 +6,7 @@
 
 * [《手机安全与可信应用开发指南：TrustZone和OP-TEE技术详解》读书笔记](https://www.jianshu.com/p/74a26ede5d1d?u_atoken=66a51267-285d-4567-aafe-d6d50738f585&u_asession=01f_sxVixP7Vy0Jrzdzb2dAKAXWsbgK4Lio9vOpRlZGo2yLXa_J9zNufE9HVDP2c4VX0KNBwm7Lovlpxjd_P_q4JsKWYrT3W_NKPr8w6oU7K8Ns3QXhI7dv48uDqh6tscGp0TkEaMSMNP4umocQhrjq2BkFo3NEHBv0PZUm6pbxQU&u_asig=05J29Yav8usuQyWHInRl-Ad-PI68YevoqVxG8Gsuu7qA6JF6zf9CBeoFrCshGsajK2Z3UW7m6GmsSmZQTgaHpvMMoX1EJ_9B6XMFEwJ5tAEn8k7OGYu5QsOGXsIHC5LMq8kRH1sD4Gn1B-q1ZGYpDUwHT6-ibI6mzpVPVCVS1j9GP9JS7q8ZD7Xtz2Ly-b0kmuyAKRFSVJkkdwVUnyHAIJzXKB41hxxphEWr3t12svy7v-ZxzmlGsA1bKYzw3seMh-G3pf5vm7LeeSuJ_913VgsO3h9VXwMyh6PgyDIVSG1W8frrwHwetKpxMGwfYjeCGf0lxEO2egZLn_KjcvC2APzImtRq45EGDpyiOknHXmFzAdnFJRYAdzAZXbpwUdMC3MmWspDxyAEEo4kbsryBKb9Q&u_aref=S4YI8eA5zTurlBbbCqy3Y1rwnYQ%3D)
 
-# 方案一：瓶钵读取属性旧方式
+# 欺骗tee服务读取设备device属性
 
 * 修改如下：
 ```diff
@@ -172,14 +172,14 @@ btlfpserver: type=1400 audit(0.0:52): avc: denied { read write } for name="isee_
 +allow btlfpserver teei_client_device:chr_file { read write open ioctl };
 ```
 
-# 根据硬件启动不同TEE方案
+# 新老机器启动不同TEE方案
 
 由于需要适配老机器(瓶钵TEE)，需要根据硬件启动不同TEE OS，方案如下：
-* 1. 后续升级OTA/Uniphiz包不包含tee.img镜像，因为tee os编译在里面。
-* 2. pl阶段根据boardid加载不同的TEE OS。
-* 3. kernel阶段两个都打开。
+* 1. 后续升级OTA/Uniphiz包不包含tee.img和preloader镜像，因为tee os编译在里面。
+* 2. pl阶段根据烧录的不同preloader加载不同的TEE OS，这里主要是利用preloader向lk传参并设置属性。
+* 3. kernel阶段两个TEE API兼容。
 
-# kernel阶段兼容
+## kernel TEE API兼容
 
 GP定义的客户端接口包括9个函数和1个宏：
 
@@ -195,27 +195,60 @@ ld.lld: error: duplicate symbol: TEEC_ReleaseSharedMemory
 >>>            drivers/tee/tkcore/core/tee_kernel_api.o:(.text+0x574) in archive built-in.a
 ```
 
-那么我们将瓶钵驱动中的9和函数名称修改一下`drivers/tee/tkcore`：
+瓶钵TEE提供给Linux端驱动使用的接口源代码的实现存放在`drivers/tee/tkcore/core/tee_kernel_api.c`文件中。
+豆荚TEE提供给Linux端驱动使用的接口源代码的实现存放在`drivers/tee/teei/300/tee/tee_client_api.c`文件中。
+基本上驱动调用该接口的仅有指纹驱动，下面是指纹读取chip_id流程：
+* `drivers/input/fingerprint/betterlife_fp/bf_fp_spi.c`:
 ```
- 2018  sed -i "s/TEEC_InitializeContext/TK_TEEC_InitializeContext/g"  `grep TEEC_InitializeContext -rl . `
- 2020  sed -i "s/TEEC_FinalizeContext/TK_TEEC_FinalizeContext/g"  `grepTEEC_FinalizeContext -rl . `
- 2021  sed -i "s/TEEC_FinalizeContext/TK_TEEC_FinalizeContext/g"  `grep TEEC_FinalizeContext -rl . `
- 2023  sed -i "s/TEEC_OpenSession/TK_TEEC_OpenSession/g"  `grep TEEC_OpenSession -rl . `
- 2027  sed -i "s/TEEC_CloseSession/TK_TEEC_CloseSession/g"  `grep TEEC_CloseSession -rl . `
- 2028  sed -i "s/TEEC_InvokeCommand/TK_TEEC_InvokeCommand/g"  `grep TEEC_InvokeCommand -rl . `
- 2029  sed -i "s/TEEC_RegisterSharedMemory/TK_TEEC_RegisterSharedMemory/g"  `grep TEEC_RegisterSharedMemory -rl . `
- 2030  sed -i "s/TEEC_AllocateSharedMemory/TK_TEEC_AllocateSharedMemory/g"  `grep TEEC_AllocateSharedMemory -rl . `
- 2031  sed -i "s/TEEC_ReleaseSharedMemory/TK_TEEC_ReleaseSharedMemory/g"  `grep TEEC_ReleaseSharedMemory -rl . `
+* bf_read_chipid
+  └── bf_spi_read_reg (0x12);
+      └── spi_send_cmd(g_bf_dev, data_tx, data_rx, 2);
+          └── tee_spi_transfer(&spi_conf_tk, sizeof(spi_conf_tk), tx, rx, spilen);
+              ├── TK_TEEC_InitializeContext(NULL, &context); //drivers/tee/tkcore/core/peridev.c
+              ├── TK_TEEC_OpenSession(&context, &session, &SENSOR_DETECTOR_TA_UUID,  // 根据TA UUID打开TA应用
+              ├── TK_TEEC_InvokeCommand(&session, CMD_READ_CHIPID, &op, &returnOrigin); //重要  发送CMD_READ_CHIPID指令给TA端获取chip id
+              ├── TK_TEEC_CloseSession(&session);
+              └── TK_TEEC_FinalizeContext(&context);
+```
+
+想要指纹在豆荚的TEE中使用也需要使用到瓶钵封装的spi接口，因为豆荚没有专门封装spi接口：
+* `drivers/input/fingerprint/betterlife_fp/Makefile`:
+```shell
+ifeq ($(strip $(TEE_PLATFORM)), TEE_BEANPOD)
+ccflags-y += -I$(srctree)/drivers/tee/tkcore/include/linux
+$(info "**************** beanpod tee ****************")
+ccflags-y += -DTEE_BEANPOD
+ccflags-y += -DCONFIG_MTK_CLK
+endif
+```
+
+另外libteec库提供给上层用户使用的API一共有10个，都按照GP标准进行定义，使用这10个API能够满足用户在Linux用户空间的需求，在系统中这部分会被编译成libteec库，保存在REE侧的文件系统中以备上层使用。
+具体api接口路径在`microtrust/source/common/300/optee_client/public/tee_client_api.h`和`trustkernel/source/services/teeclient/include/tee_client_api.h`。
+
+
+具体请参考：
+* [《手机安全与可信应用开发指南：TrustZone和OP-TEE技术详解》读书笔记](https://www.jianshu.com/p/74a26ede5d1d?u_atoken=66a51267-285d-4567-aafe-d6d50738f585&u_asession=01f_sxVixP7Vy0Jrzdzb2dAKAXWsbgK4Lio9vOpRlZGo2yLXa_J9zNufE9HVDP2c4VX0KNBwm7Lovlpxjd_P_q4JsKWYrT3W_NKPr8w6oU7K8Ns3QXhI7dv48uDqh6tscGp0TkEaMSMNP4umocQhrjq2BkFo3NEHBv0PZUm6pbxQU&u_asig=05J29Yav8usuQyWHInRl-Ad-PI68YevoqVxG8Gsuu7qA6JF6zf9CBeoFrCshGsajK2Z3UW7m6GmsSmZQTgaHpvMMoX1EJ_9B6XMFEwJ5tAEn8k7OGYu5QsOGXsIHC5LMq8kRH1sD4Gn1B-q1ZGYpDUwHT6-ibI6mzpVPVCVS1j9GP9JS7q8ZD7Xtz2Ly-b0kmuyAKRFSVJkkdwVUnyHAIJzXKB41hxxphEWr3t12svy7v-ZxzmlGsA1bKYzw3seMh-G3pf5vm7LeeSuJ_913VgsO3h9VXwMyh6PgyDIVSG1W8frrwHwetKpxMGwfYjeCGf0lxEO2egZLn_KjcvC2APzImtRq45EGDpyiOknHXmFzAdnFJRYAdzAZXbpwUdMC3MmWspDxyAEEo4kbsryBKb9Q&u_aref=S4YI8eA5zTurlBbbCqy3Y1rwnYQ%3D)
+
+那么我们将瓶钵驱动中的10个函数名称修改一下`drivers/tee/tkcore`：
+```
+sed -i "s/TEEC_InitializeContext/TK_TEEC_InitializeContext/g"  `grep TEEC_InitializeContext -rl . `
+sed -i "s/TEEC_FinalizeContext/TK_TEEC_FinalizeContext/g"  `grepTEEC_FinalizeContext -rl . `
+sed -i "s/TEEC_FinalizeContext/TK_TEEC_FinalizeContext/g"  `grep TEEC_FinalizeContext -rl . `
+sed -i "s/TEEC_OpenSession/TK_TEEC_OpenSession/g"  `grep TEEC_OpenSession -rl . `
+sed -i "s/TEEC_CloseSession/TK_TEEC_CloseSession/g"  `grep TEEC_CloseSession -rl . `
+sed -i "s/TEEC_InvokeCommand/TK_TEEC_InvokeCommand/g"  `grep TEEC_InvokeCommand -rl . `
+sed -i "s/TEEC_RegisterSharedMemory/TK_TEEC_RegisterSharedMemory/g"  `grep TEEC_RegisterSharedMemory -rl . `
+sed -i "s/TEEC_AllocateSharedMemory/TK_TEEC_AllocateSharedMemory/g"  `grep TEEC_AllocateSharedMemory -rl . `
+sed -i "s/TEEC_ReleaseSharedMemory/TK_TEEC_ReleaseSharedMemory/g"  `grep TEEC_ReleaseSharedMemory -rl . `
 ```
 
 经验证，修改后瓶钵指纹依然能够正常读取chip id，正常使用。
 
-# tee.img生成兼容
 
-首先看看tee.img是如何生成的，
+## pl阶段传参lk流程
 
-
-# pl阶段传参lk流程
+* 参考：
+* [如何添加从preloader向lk的传递参数, 并在lk中解析使用](https://bbs.16rd.com/thread-19436-1-1.html)
 
 * 根据pl阶段打印如下：
 ```
@@ -383,9 +416,6 @@ typedef struct {
 }boot_tag;
 ```
 
-
-
-
 可以看到存在`boot_tag`结构体，看注释这个就是要传递的参数，那`g_dram_buf->boottag`这个参数是怎么来的？看一下`bldr_post_process`函数的`platform_post_init`流程：
 ```C++
 static void bldr_post_process(void)
@@ -397,5 +427,350 @@ static void bldr_post_process(void)
     BOOTING_TIME_PROFILING_LOG("gz_post_init");
 #endif
 }
+```
 
+流程如下：
+```
+* platform_post_init
+  └── platform_set_boot_args();
+      └── #if CFG_BOOT_ARGUMENT_BY_ATAG //这里定义了
+          └── platform_set_boot_args_by_atag((unsigned int *)&(g_dram_buf->boottag)); // set jump addr
+```
+
+
+简单看一下里面内容，主要是按照结构体顺序填充变量：
+```C++
+#if CFG_BOOT_ARGUMENT_BY_ATAG
+void platform_set_boot_args_by_atag(unsigned int *ptr)
+{
+  int i=0, j=0;
+    boot_tag *tags;
+
+    tags = (boot_tag *)ptr;
+    tags->hdr.size = boot_tag_size(boot_tag_boot_reason);
+    tags->hdr.tag = BOOT_TAG_BOOT_REASON;
+    tags->u.boot_reason.boot_reason = g_boot_reason;
+    ptr += tags->hdr.size;
+
+  tags = (boot_tag *)ptr;
+    tags->hdr.size = boot_tag_size(boot_tag_boot_mode);
+    tags->hdr.tag = BOOT_TAG_BOOT_MODE;
+#if CFG_FAST_META_SUPPORT
+    if(g_is_fast_meta)
+        tags->u.boot_mode.boot_mode = META_BOOT;
+    else
+ #endif
+        tags->u.boot_mode.boot_mode = g_boot_mode;
+    ptr += tags->hdr.size;
+
+    tags = (boot_tag *)ptr;
+    tags->hdr.size = boot_tag_size(boot_tag_meta_com);
+    tags->hdr.tag = BOOT_TAG_META_COM;
+    tags->u.meta_com.meta_com_id = g_meta_com_id;
+}
+```
+
+但是发现一个bug，就是pl和lk两个结构共同体对不上，从箭头处就开始不对应了，难怪加到最后面发现lk中死活读不到数据。
+
+![0007_0001.png](images/0007_0001.png)
+
+将两边结构体同步整理了一下，发现起不来，看串口ATF就死机了，提示没有`is_abnormal_boot`这个TAG：
+```
+[TZ_SEC_CFG] [A]SRAMROM SEC_CTRL:0xB69, SEC_CTRL2:0x0, SEC_CTRL5:0x1680000, SEC_CTRL6:0x0
+[ATF](0)[1.691436]INFO:    BOOT_REASON: 4
+[ATF](0)[1.692623]INFO:    RAM_CONSOLE_INFO: addr:0x10dc00, size:0x800, type:0x1, offset:0xac0
+[ATF](0)[1.693650]INFO:    RAM_CONSOLE_INFO: add▒:0x0, siz▒:0x0, type:0x0, offset:0▒0
+[ATF](0)[1.694583]INFO:    Preloader is without is_abnormal_boot tag, try to keep data i▒ crash buffer
+[ATF](0)[1.695705]INFO:    CPUxGPT reg(0)
+[ATF](0)[1.696165]INFO:    [sys▒imer] CNTCR_REG(0x505)
+[ATF](0)[1.696771]INFO:    Secondary boo▒loader is AArch32
+[ATF](0)[1.697416]INFO:    GZ PARAMS = 0x11002000, 0x0, 0x0
+[ATF](0)[1.698074]INFO:    bl31_plat_arch_setup()
+···省略···
+[ATF](0)[1.739142]INFO:    abnormal_boot: 0xffffffff, cflag: 0xdead1abf
+[ATF](0)[1.739911]INFO:    atf RA▒ dump
+[ATF](0)[1.740377]INFO:    ATF l▒g service is registered (0xbfe00000, aee:0xbfe3c000)
+[ATF](0)[1.741294]NOTICE:  BL31_BASE=0x47d80800, BL31▒TZRAM_SIZE=0x31800
+[ATF](0)[1.742091]NOTICE:  TZRAM2_BASE=0x47d▒2000, TZRAM2_SIZE=0x1d000
+[ATF](0)[1.742867]NOTICE:  BL31: v1.4(debug):Uniphiz_11.0.0_Birch_V15.3.01_20220611_Release-143-g60a30ee1f2d-dirty
+```
+
+正常启动如下：
+```
+[ATF](0)[1.747990]INFO:    BOOT_REASON: 6
+?ATF](0)[1.749171]INFO:    IS_ABNORMAL_BOOT: 0
+[ATF](0)[1.749681]INFO:    RAM_CONSOLE_INFO: addr:0x10dc00, size:0x800, type:0x1, offset:0xac0
+[ATF](0)[1.750714]INFO:    CPUxGPT reg(0)
+[ATF](0)[1.751174]INFO:    [systimer] CNTCR_REG(0x505)
+[ATF](0)[1.751780]INFO:    Secondary bootloader is AArch32
+[ATF](0)[1.752424]INFO:    GZ PARAMS = 0x11002000, 0x0, 0x0
+[ATF](0)[1.753081]INFO:    bl31_plat_arch_setup()
+···省略···
+[ATF](0)[1.796678]INFO:    abnormal_boot: 0x0, cflag: 0x41544241
+```
+
+最后发现结构体中soc_id没用，那我们用这个来做，修改如下：
+```diff
+--- a/vendor/mediatek/proprietary/bootable/bootloader/lk/app/mt_boot/mt_boot.c
++++ b/vendor/mediatek/proprietary/bootable/bootloader/lk/app/mt_boot/mt_boot.c
+@@ -1748,6 +1748,17 @@ int boot_linux_from_storage(void)
+        cmdline_append(cmdline_tmpbuf);
+        sprintf(cmdline_tmpbuf, "%s%s%d", CMDLINE_TMP_CONCAT_SIZE, "androidboot.lcm.id=", lcm_id);
+        cmdline_append(cmdline_tmpbuf);
++
++// [NEW FEATURE]-BEGIN by wugangnan@paxsz.com 2022-10-17,  for compatible tee for new machine
++       if (!strcmp(g_boot_arg->socid, "pax_new_board"))
++       {
++               sprintf(cmdline_tmpbuf, "%s%s%d", CMDLINE_TMP_CONCAT_SIZE, "androidboot.pax.newmachine=", 1);
++               cmdline_append(cmdline_tmpbuf);
++       }
++       pal_log_err("[%s]pax_socid (%s)\n",
++               __func__,
++               g_boot_arg->socid);
++// [NEW FEATURE]-END by wugangnan@paxsz.com 2022-10-17,  for compatible tee for new machine
+
+        switch (g_boot_mode) {
+        case NORMAL_BOOT:
+diff --git a/vendor/mediatek/proprietary/bootable/bootloader/preloader/platform/mt6765/src/drivers/platform.c b/vendor/mediatek/proprietary/bootable/bootloader/preloader/platform/mt6765/src/drivers/platform.c
+index 00846c09bf9..7015473a533 100644
+--- a/vendor/mediatek/proprietary/bootable/bootloader/preloader/platform/mt6765/src/drivers/platform.c
++++ b/vendor/mediatek/proprietary/bootable/bootloader/preloader/platform/mt6765/src/drivers/platform.c
+@@ -531,6 +531,7 @@ void platform_set_boot_args_by_atag(unsigned int *ptr)
+     tags = (boot_tag *)ptr;
+     tags->hdr.size  = boot_tag_size(boot_tag_emi_info);
+     tags->hdr.tag   = BOOT_TAG_EMI_INFO;
++
+ #if !CFG_FPGA_PLATFORM
+     tags->u.emi_info.dram_type = (mt_get_dram_type() & 0xF) | ((get_dram_mr(5) << 24) & 0xFF000000);
+     tags->u.emi_info.ch_num = get_dram_channel_nr();
+@@ -640,7 +641,10 @@ void platform_set_boot_args_by_atag(unsigned int *ptr)
+     tags = (boot_tag *)ptr;
+     tags->hdr.size = boot_tag_size(boot_tag_soc_id);
+     tags->hdr.tag  = BOOT_TAG_SOC_ID;
+-    memcpy(tags->u.socid.id, p_bldr_param->socid, SOC_ID_LEN);
++       // [NEW FEATURE]-BEGIN by wugangnan@paxsz.com 2022-10-17,  for compatible tee for new machine
++       //memcpy(tags->u.socid.id, p_bldr_param->socid, SOC_ID_LEN);
++    memcpy(tags->u.socid.id, "pax_new_board", SOC_ID_LEN);
++       // [NEW FEATURE]-END by wugangnan@paxsz.com 2022-10-17,  for compatible tee for new machine
+     ptr += tags->hdr.size;
+```
+
+## 豆荚及瓶钵TEE配置都打开配置
+
+### TEE服务编译
+
+同时打开豆荚及瓶钵TEE配置后，我们需要将豆荚和瓶钵编译的TEE相关服务都编译进系统，瓶钵的TEE OS不编译进系统，即tee.img。
+
+* `device/mediatek/vendor/common/device.mk`"豆荚和瓶钵tee服务如下：
+```shell
+//豆荚
+PRODUCT_PACKAGES += android.hardware.keymaster@4.0-service.beanpod
+ifeq ($(strip $(MICROTRUST_TEE_SUPPORT)), yes)
+  PRODUCT_PACKAGES += teei_daemon
+  PRODUCT_PACKAGES += bp_kmsetkey_ca
+  PRODUCT_PACKAGES += libTEECommon
+  PRODUCT_PACKAGES += kmsetkey.beanpod
+  PRODUCT_PACKAGES += gatekeeper.beanpod
+  # lib@paxsz.com dynamic set the property start
+  #PRODUCT_PROPERTY_OVERRIDES += ro.hardware.kmsetkey=beanpod
+  #PRODUCT_PROPERTY_OVERRIDES += ro.hardware.gatekeeper=beanpod
+  #PRODUCT_PROPERTY_OVERRIDES += ro.vendor.mtk_microtrust_tee_support=1
+  #lib@paxsz.com dynamic set the property end
+  ifeq ($(strip $(MTK_SEC_VIDEO_PATH_SUPPORT)), yes)
+    ifeq ($(strip $(MTK_TEE_GP_SUPPORT)),yes)
+      PRODUCT_PACKAGES += AVCSecureVdecCA
+      PRODUCT_PACKAGES += HEVCSecureVdecCA
+    endif
+  endif
+  ifeq ($(strip $(MICROTRUST_TEE_LITE_SUPPORT)), yes)
+    PRODUCT_PACKAGES += isee_product.cfg
+    PRODUCT_PACKAGES += TAs_list
+  else
+    PRODUCT_PACKAGES += keymaster_server4
+    PRODUCT_PACKAGES += gatekeeper_server
+    PRODUCT_PACKAGES += km_key_manager_ta
+    #[NEW FEATURE]-BEGIN by wugangnan@paxsz.com 2022-10-13, add beapond TEE
+    PRODUCT_PACKAGES += isee_model.json
+    PRODUCT_PACKAGES += 93feffccd8ca11e796c7c7a21acb4932.ta
+    #[NEW FEATURE]-END by wugangnan@paxsz.com 2022-10-13, add beapond TEE
+  endif
+endif #MICROTRUST_TEE_SUPPORT
+
+//瓶钵
+ifeq ($(strip $(TRUSTKERNEL_TEE_SUPPORT)), yes)
+# FEATURE]-BEGIN by wugangnan@paxsz.com 2022-10-17, add trustkernel tee build for trustkernel and microtrust tee compatible
+  PRODUCT_PACKAGES += android.hardware.keymaster@4.0-service.trustkernel
+# FEATURE]-END by wugangnan@paxsz.com 2022-10-17, add trustkernel tee build for trustkernel and microtrust tee compatible
+  PRODUCT_PACKAGES += teed
+  PRODUCT_PACKAGES += pld
+  PRODUCT_PACKAGES += kph
+  PRODUCT_PACKAGES += DAccessProxy
+  PRODUCT_PACKAGES += dpci
+  # install keybox
+  PRODUCT_PACKAGES += 6B6579626F785F6372797074
+
+
+  PRODUCT_PACKAGES += kmsetkey.trustkernel
+  #FEATURE]-BEGIN by lib@paxsz.com 2022-10-17, dynmaic set the property in init.cpp
+  #PRODUCT_PROPERTY_OVERRIDES += ro.hardware.kmsetkey=trustkernel
+  #PRODUCT_PROPERTY_OVERRIDES += ro.hardware.gatekeeper=trustkernel
+  #PRODUCT_PROPERTY_OVERRIDES += ro.vendor.mtk_trustkernel_tee_support=1
+  #FEATURE]-END by lib@paxsz.com 2022-10-17,
+  PRODUCT_PACKAGES += gatekeeper.trustkernel
+
+  # for check keybox and productline state
+  PRODUCT_PACKAGES += tee_check_keybox
+
+#  PRODUCT_PROPERTY_OVERRIDES += ro.vendor.trustkernel.keystore=persist
+
+  PRODUCT_COPY_FILES += \
+      vendor/mediatek/proprietary/trustzone/trustkernel/source/ta/02662e8e-e126-11e5-b86d9a79f06e9478.ta:vendor/app/t6/02662e8e-e126-11e5-b86d9a79f06e9478.ta
+
+  PRODUCT_COPY_FILES += \
+      vendor/mediatek/proprietary/trustzone/trustkernel/source/ta/9ef77781-7bd5-4e39-965f20f6f211f46b.ta:vendor/app/t6/9ef77781-7bd5-4e39-965f20f6f211f46b.ta
+
+  PRODUCT_COPY_FILES += \
+      vendor/mediatek/proprietary/trustzone/trustkernel/source/ta/b46325e6-5c90-8252-2eada8e32e5180d6.ta:vendor/app/t6/b46325e6-5c90-8252-2eada8e32e5180d6.ta
+
+  PRODUCT_COPY_FILES += \
+      vendor/mediatek/proprietary/trustzone/trustkernel/source/bsp/platform/common/scripts/kph_cfg/cfg.ini:vendor/app/t6/cfg.ini
+
+  PRODUCT_COPY_FILES += \
+      frameworks/native/data/etc/android.software.device_id_attestation.xml:vendor/etc/permissions/android.software.device_id_attestation.xml
+endif
+```
+
+其中写googlekey的TA应用如`6B6579626F785F6372797074`和`keymaster_server4`，`keymaster_server4`指的就是`c09c9c5daa504b78b0e46eda61556c3a.ta`:
+* `vendor/mediatek/proprietary/trustzone/microtrust/source/common/Android.mk`:
+```shell
+include $(CLEAR_VARS)
+LOCAL_MODULE := keymaster_server4
+LOCAL_SRC_FILES := $(MICROTRUST_TEE_VERSION)/teei/$(LOCAL_MODULE)
+LOCAL_MODULE_PATH := $(TARGET_OUT_VENDOR)/thh/ta
+LOCAL_INSTALLED_MODULE_STEM := c09c9c5daa504b78b0e46eda61556c3a.ta
+LOCAL_MODULE_CLASS := ETC
+LOCAL_PROPRIETARY_MODULE := true
+LOCAL_MODULE_OWNER := mtk
+LOCAL_MULTILIB := 32
+include $(BUILD_PREBUILT)
+```
+
+### tee.img去掉瓶钵OS
+
+只需删除瓶钵编译脚本即可，路径是`vendor/mediatek/proprietary/trustzone/custom/build/trustkernel_config.mk`，将如下的全部注释：
+```diff
+--- a/vendor/mediatek/proprietary/trustzone/custom/build/build_trustzone.mk
++++ b/vendor/mediatek/proprietary/trustzone/custom/build/build_trustzone.mk
+@@ -46,13 +46,15 @@ endif
+ endif
+
+ # trustkernel
+-ifeq ($(TRUSTKERNEL_TEE_SUPPORT),yes)
+-ifneq ($(wildcard $(MTK_PATH_SOURCE)/trustzone/trustkernel/source),)
+-include $(TRUSTZONE_CUSTOM_BUILD_PATH)/trustkernel_config.mk
+-TRUSTZONE_ALL_SECURE_OS += $(my_secure_os)
+-TRUSTZONE_modules_to_check += $(TRUSTKERNEL_modules_to_check)
+-endif
+-endif
++# FEATURE]-BEGIN by wugangnan@paxsz.com 2022-10-17, delete trustkernel tee build for trustkernel and microtrust tee compatible
++#ifeq ($(TRUSTKERNEL_TEE_SUPPORT),yes)
++#ifneq ($(wildcard $(MTK_PATH_SOURCE)/trustzone/trustkernel/source),)
++#include $(TRUSTZONE_CUSTOM_BUILD_PATH)/trustkernel_config.mk
++#TRUSTZONE_ALL_SECURE_OS += $(my_secure_os)
++#TRUSTZONE_modules_to_check += $(TRUSTKERNEL_modules_to_check)
++#endif
++#endif
++# FEATURE]-END by wugangnan@paxsz.com 2022-10-17, delete trustkernel tee build for trustkernel and microtrust tee compatible
+```
+在编译时，会调用到这个编译文件，在该文件中，就是将bl31.bin和tee.raw拼在了一起，其中raw是`./trustkernel/source/bsp/platform/mt6765/tee/tee.bin`，形成了tee.img。
+
+### pl阶段去掉瓶钵配置
+
+pl阶段不烧录，主要因为他只能启动豆荚tee os，所以需要将瓶钵的都去掉。
+```diff
+--- a/vendor/mediatek/proprietary/bootable/bootloader/preloader/custom/k62v1_64_pax/cust_bldr.mak
++++ b/vendor/mediatek/proprietary/bootable/bootloader/preloader/custom/k62v1_64_pax/cust_bldr.mak
+@@ -32,7 +32,10 @@ ifeq ($(strip $(MTK_TEE_SUPPORT)),yes)
+     CFG_GOOGLE_TRUSTY_SUPPORT = 0
+   endif
+   ifeq ($(strip $(TRUSTKERNEL_TEE_SUPPORT)),yes)
+-    CFG_TRUSTKERNEL_TEE_SUPPORT = 1
++# [NEW FEATURE]-BEGIN by wugangnan@paxsz.com 2022-10-17,  for trustkernel and microtrust tee compatible
++    #CFG_TRUSTKERNEL_TEE_SUPPORT = 1
++       CFG_TRUSTKERNEL_TEE_SUPPORT = 0
++# [NEW FEATURE]-END by wugangnan@paxsz.com 2022-10-17,  for trustkernel and microtrust tee compatible
+```
+
+# 问题点
+
+## google key写号失败
+
+fae分析是数组和bin文件不匹配，解密失败了，打印如下：
+```
+<6>[    9.707597] -(2)[252:teei_log_thread][TZ_LOG] uTSecMan| lookup ta: 'c09c9c5daa504b78b0e46eda61556c3a' (40)
+<6>[    9.708870] -(2)[252:teei_log_thread][TZ_LOG] uTSecMan| enable model control
+<6>[    9.709804] -(2)[252:teei_log_thread][TZ_LOG] uTSecMan| ta don't need verify model
+<6>[    9.761463] -(2)[252:teei_log_thread][TZ_LOG] uTSecMan| Secmanager Initialization: total spent 4.0 ms
+<6>[    9.777627] -(2)[252:teei_log_thread][TZ_LOG] uTSecMan| use VFY_PROTOCOL_UUID
+<6>[    9.778592] -(2)[252:teei_log_thread][TZ_LOG] uTSecMan| 1 uuid active offset:15
+<6>[    9.779558] -(2)[252:teei_log_thread][TZ_LOG] uTSecMan| a free ta.
+<6>[    9.780379] -(2)[252:teei_log_thread][TZ_LOG] uTSecMan| ta verify success.
+<6>[    9.781287] -(2)[252:teei_log_thread][TZ_LOG] km4     | km ta create entry.
+<6>[    9.782207] -(2)[252:teei_log_thread][TZ_LOG] km4     | KEYMASTER VERSION: km4.0.
+<6>[    9.783190] -(2)[252:teei_log_thread][TZ_LOG] km4     | 
+<6>[    9.783904] -(2)[252:teei_log_thread][TZ_LOG] km4     | km4.0  PAX_mt6762_R_isee350_persist_M8  save  B  cert  kb  &  utagent  &  fp_driver  202210081405  sunchenghao
+<6>[    9.787812] -(2)[252:teei_log_thread][TZ_LOG] km4     | AndroidKeymaster Configure finish 0
+<6>[    9.796038] -(2)[252:teei_log_thread][TZ_LOG] km4     | params[1] is empty
+<6>[    9.796960] -(2)[252:teei_log_thread][TZ_LOG] km4     | enter generate random from openssl
+<6>[    9.798044] -(2)[252:teei_log_thread][TZ_LOG] km4     | generate random from openssl,buflen=32
+```
+
+解决方案：
+将`vendor\mediatek\proprietary\trustzone\microtrust\source\common\300\km4.0\ut_kmsetkey.cpp`修改为豆荚匹配的数组。
+
+## 不能设置pin码的问题
+
+由于软件做了tee兼容，所以需要根据当前的TEE OS来设置使用哪家的gatekeeper和kmsetkey，具体是以下三条属性：
+```diff
+--- a/system/core/init/property_service.cpp
++++ b/system/core/init/property_service.cpp
+@@ -154,6 +154,7 @@ static void DebugPropertyThreadLogging() {
+     UnwindPropertythreadStack();
+ }
+
++
+ static void DropWDSocket() {
+     uint64_t counter;
+     TEMP_FAILURE_RETRY(read(wake_wd_thread_fd, &counter, sizeof(counter)));
+@@ -1022,6 +1023,20 @@ static void update_sys_usb_config() {
+     }
+ }
+
++static void pax_init_tee_param(){
++    std::string error;
++     std::string machineId = android::base::GetProperty("ro.boot.pax.newmachine", "0");
++     if(machineId == "1"){
++         PropertySet("ro.hardware.gatekeeper","beanpod",&error);
++         PropertySet("ro.hardware.kmsetkey","beanpod",&error);
++         PropertySet("ro.vendor.mtk_microtrust_tee_support","1",&error);
++    }else{
++         PropertySet("ro.hardware.gatekeeper","trustkernel",&error);
++         PropertySet("ro.hardware.kmsetkey","trustkernel",&error);
++         PropertySet("ro.vendor.mtk_trustkernel_tee_support","1",&error);
++    }
++}
++
+ static void load_override_properties() {
+     if (ALLOW_LOCAL_PROP_OVERRIDE) {
+         std::map<std::string, std::string> properties;
+@@ -1342,6 +1357,9 @@ void PropertyLoadBootDefaults() {
+                        << "' while loading .prop files" << error;
+         }
+     }
++    //[FEATURE]-Add-BEGIN by (lib@paxsz.com),2 2022/10/20, init tee param
++    pax_init_tee_param();
++    //[FEATURE]-Add-BEGIN by lib@paxsz.com,2022/10/20,init tee param
+
+     //[FEATURE]-Add-BEGIN by (wugangnan@paxsz.com),2 021/10/21, set ro.pax.product.id for pax usb pid
+     pax_property_set_usb_pid();
 ```

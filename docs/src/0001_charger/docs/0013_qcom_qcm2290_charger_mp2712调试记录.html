@@ -437,27 +437,27 @@ In this condition, the buck converter and the battery provide power for system t
 <li><p>然后就是下降沿触发中断<code class="docutils literal notranslate"><span class="pre">mp2721_charger_interrupt</span> <span class="pre">-&gt;</span> <span class="pre">queue_work(mp-&gt;adp_workqueue,</span> <span class="pre">&amp;mp-&gt;irq_work);</span></code>调用工作队列函数<code class="docutils literal notranslate"><span class="pre">mp2721_charger_irq_workfunc</span></code>处理判断中断类型，最主要的是BC1.2检测判断插入还是拔出。</p></li>
 <li><p>设置最小输入电压、最大电流限制，设置充电电压电流，打开wdt，使能充电。</p></li>
 </ul>
-<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="o">*</span><span class="w"> </span><span class="n">mp2721_charger_probe</span><span class="w"></span>
-<span class="w">  </span><span class="o">*</span><span class="w"> </span><span class="n">mp2721_parse_dt</span><span class="p">(</span><span class="o">&amp;</span><span class="n">client</span><span class="o">-&gt;</span><span class="n">dev</span><span class="p">,</span><span class="w"> </span><span class="n">mp</span><span class="p">);</span><span class="w"> </span><span class="c1">//获取dts</span>
-<span class="w">  </span><span class="o">*</span><span class="w"> </span><span class="n">mp2721_init_device</span><span class="p">(</span><span class="n">mp</span><span class="p">);</span><span class="w"></span>
-<span class="w">    </span><span class="o">*</span><span class="w"> </span><span class="n">mp2721_enable_watchdog_timer</span><span class="p">(</span><span class="n">mp</span><span class="p">,</span><span class="w"> </span><span class="nb">true</span><span class="p">);</span><span class="w"></span>
-<span class="w">    </span><span class="o">*</span><span class="w"> </span><span class="n">mp2721_set_term_current</span><span class="p">(</span><span class="n">mp</span><span class="p">,</span><span class="w"> </span><span class="n">mp</span><span class="o">-&gt;</span><span class="n">cfg</span><span class="p">.</span><span class="n">term_current</span><span class="p">);</span><span class="c1">//Termination current setting 终端电流设置</span>
-<span class="w">    </span><span class="o">*</span><span class="w"> </span><span class="n">mp2721_set_chargevoltage</span><span class="p">(</span><span class="n">mp</span><span class="p">,</span><span class="w"> </span><span class="n">mp</span><span class="o">-&gt;</span><span class="n">cfg</span><span class="p">.</span><span class="n">charge_voltage</span><span class="p">);</span><span class="w"></span>
-<span class="w">    </span><span class="o">*</span><span class="w"> </span><span class="n">mp2721_set_chargecurrent</span><span class="p">(</span><span class="n">mp</span><span class="p">,</span><span class="w"> </span><span class="n">mp</span><span class="o">-&gt;</span><span class="n">cfg</span><span class="p">.</span><span class="n">charge_current</span><span class="p">);</span><span class="w"></span>
-<span class="w">    </span><span class="o">*</span><span class="w"> </span><span class="n">mp2721_set_recharge_offset_voltage</span><span class="p">(</span><span class="n">mp</span><span class="p">,</span><span class="w"> </span><span class="n">mp</span><span class="o">-&gt;</span><span class="n">cfg</span><span class="p">.</span><span class="n">rechg_threshold_offset</span><span class="p">);</span><span class="w">   </span><span class="c1">//回充电压200mv</span>
-<span class="w">    </span><span class="o">*</span><span class="w"> </span><span class="n">mp2721_set_batlowv</span><span class="p">(</span><span class="n">mp</span><span class="p">,</span><span class="w"> </span><span class="n">mp</span><span class="o">-&gt;</span><span class="n">cfg</span><span class="p">.</span><span class="n">prechg_to_fastchg_threshold</span><span class="p">);</span><span class="w"> </span><span class="c1">//Pre-charge to fast charge， battery voltage threshold 预充到快充的阈值</span>
-<span class="w">    </span><span class="o">*</span><span class="w"> </span><span class="n">mp2721_set_treg</span><span class="p">(</span><span class="n">mp</span><span class="p">,</span><span class="w"> </span><span class="n">mp</span><span class="o">-&gt;</span><span class="n">cfg</span><span class="p">.</span><span class="n">treg</span><span class="p">);</span><span class="c1">// 芯片最高耐温度数</span>
-<span class="w">    </span><span class="o">*</span><span class="w"> </span><span class="n">mp2721_set_input_volt_limit</span><span class="p">(</span><span class="n">mp</span><span class="p">,</span><span class="w"> </span><span class="n">MP2721_VIN_LIMIT_DEFAULT</span><span class="p">);</span><span class="w"></span>
-<span class="w">    </span><span class="o">*</span><span class="w"> </span><span class="n">mp2721_set_input_current_limit</span><span class="p">(</span><span class="n">mp</span><span class="p">,</span><span class="w"> </span><span class="n">MP2721_IIN_LIMIT_DEFAULT</span><span class="p">);</span><span class="w"></span>
-<span class="w">    </span><span class="o">*</span><span class="w"> </span><span class="n">mp2721_enable_charger</span><span class="p">(</span><span class="n">mp</span><span class="p">);</span><span class="w"></span>
-<span class="w">    </span><span class="o">*</span><span class="w"> </span><span class="n">mp2721_set_charging_safety_timer</span><span class="p">(</span><span class="n">mp</span><span class="p">,</span><span class="w"> </span><span class="n">mp</span><span class="o">-&gt;</span><span class="n">cfg</span><span class="p">.</span><span class="n">max_chg_time</span><span class="p">);</span><span class="w"> </span><span class="c1">//充电安全时间</span>
-<span class="w">  </span><span class="o">*</span><span class="w"> </span><span class="n">gpio_request</span><span class="p">(</span><span class="n">mp</span><span class="o">-&gt;</span><span class="n">irq_pin</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;mp2721 irq pin&quot;</span><span class="p">);</span><span class="w"> </span>
-<span class="w">  </span><span class="o">*</span><span class="w"> </span><span class="n">mp2721_psy_register</span><span class="p">(</span><span class="n">mp</span><span class="p">);</span><span class="w"></span>
-<span class="w">    </span><span class="o">*</span><span class="w">  </span><span class="n">power_supply_register</span><span class="p">(</span><span class="n">mp</span><span class="o">-&gt;</span><span class="n">dev</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">psy_desc_adapter</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">psy_cfg</span><span class="p">);</span><span class="w"></span>
-<span class="w">  </span><span class="o">*</span><span class="w"> </span><span class="n">INIT_WORK</span><span class="p">(</span><span class="o">&amp;</span><span class="n">mp</span><span class="o">-&gt;</span><span class="n">irq_work</span><span class="p">,</span><span class="w"> </span><span class="n">mp2721_charger_irq_workfunc</span><span class="p">);</span><span class="w"> </span><span class="c1">//中断工作</span>
-<span class="w">  </span><span class="o">*</span><span class="w">  </span><span class="n">sysfs_create_group</span><span class="p">(</span><span class="o">&amp;</span><span class="n">mp</span><span class="o">-&gt;</span><span class="n">wall</span><span class="o">-&gt;</span><span class="n">dev</span><span class="p">.</span><span class="n">kobj</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">mp2721_attr_group</span><span class="p">);</span><span class="w"> </span><span class="c1">//创建调试用的文件节点registers、idpm_limit、charge_fault、charge_cur_limit</span>
-<span class="w">  </span><span class="o">*</span><span class="w"> </span><span class="n">request_irq</span><span class="p">(</span><span class="n">client</span><span class="o">-&gt;</span><span class="n">irq</span><span class="p">,</span><span class="w"> </span><span class="n">mp2721_charger_interrupt</span><span class="p">,</span><span class="w"> </span><span class="n">IRQF_TRIGGER_FALLING</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">IRQF_ONESHOT</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;mp2721_charger_irq&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">mp</span><span class="p">);</span><span class="w"> </span><span class="c1">//申请中断</span>
-<span class="w">  </span><span class="o">*</span><span class="w"> </span><span class="n">queue_work</span><span class="p">(</span><span class="n">mp</span><span class="o">-&gt;</span><span class="n">adp_workqueue</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">mp</span><span class="o">-&gt;</span><span class="n">irq_work</span><span class="p">);</span><span class="cm">/*in case of adapter has been in when power off*/</span><span class="w"> </span><span class="n">初始化一次</span><span class="w"></span>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span>* mp2721_charger_probe
+  ├── mp2721_parse_dt(&amp;client-&gt;dev, mp); //获取dts
+  ├── mp2721_init_device(mp);
+  │   ├── mp2721_enable_watchdog_timer(mp, true);
+  │   ├── mp2721_set_term_current(mp, mp-&gt;cfg.term_current);//Termination current setting 终端电流设置
+  │   ├── mp2721_set_chargevoltage(mp, mp-&gt;cfg.charge_voltage);
+  │   ├── mp2721_set_chargecurrent(mp, mp-&gt;cfg.charge_current);
+  │   ├── mp2721_set_recharge_offset_voltage(mp, mp-&gt;cfg.rechg_threshold_offset);   //回充电压200mv
+  │   ├── mp2721_set_batlowv(mp, mp-&gt;cfg.prechg_to_fastchg_threshold); //Pre-charge to fast charge， battery voltage threshold 预充到快充的阈值
+  │   ├── mp2721_set_treg(mp, mp-&gt;cfg.treg);// 芯片最高耐温度数
+  │   ├── mp2721_set_input_volt_limit(mp, MP2721_VIN_LIMIT_DEFAULT);
+  │   ├── mp2721_set_input_current_limit(mp, MP2721_IIN_LIMIT_DEFAULT);
+  │   ├── mp2721_enable_charger(mp);
+  │   └── mp2721_set_charging_safety_timer(mp, mp-&gt;cfg.max_chg_time); //充电安全时间
+  ├── gpio_request(mp-&gt;irq_pin, &quot;mp2721 irq pin&quot;); 
+  ├── mp2721_psy_register(mp);
+  │   └──  power_supply_register(mp-&gt;dev, &amp;psy_desc_adapter, &amp;psy_cfg);
+  ├── INIT_WORK(&amp;mp-&gt;irq_work, mp2721_charger_irq_workfunc); //中断工作
+  ├──  sysfs_create_group(&amp;mp-&gt;wall-&gt;dev.kobj, &amp;mp2721_attr_group); //创建调试用的文件节点registers、idpm_limit、charge_fault、charge_cur_limit
+  ├── request_irq(client-&gt;irq, mp2721_charger_interrupt, IRQF_TRIGGER_FALLING | IRQF_ONESHOT, &quot;mp2721_charger_irq&quot;, mp); //申请中断
+  └── queue_work(mp-&gt;adp_workqueue, &amp;mp-&gt;irq_work);/*in case of adapter has been in when power off*/ 初始化一次
 </pre></div>
 </div>
 <ul class="simple">
@@ -2100,6 +2100,39 @@ Reg[0x09] = 0x50
 USB
 </pre></div>
 </div>
+<p>fae怀疑是charger输入端vbus电压由跳变，因为VIN_GD状态就是根据vbus状态来的，<code class="docutils literal notranslate"><span class="pre">VIN_UV</span> <span class="pre">&lt;</span> <span class="pre">VIN</span> <span class="pre">&lt;VIN_OV</span></code>如下：</p>
+<p><img alt="0013_0047.png" src="../../../_images/0013_0047.png" /></p>
+<p>VIN_UV和VIN_OV对应关系如下：</p>
+<p><img alt="0013_0048.png" src="../../../_images/0013_0048.png" /></p>
+<p>用示波器看并没有跳变，不知道什么原因，由于VIN_RD和VIN_GD状态不稳定，charger online属性改为读取DPDM_STAT状态，修改如下：</p>
+<div class="highlight-diff notranslate"><div class="highlight"><pre><span></span><span class="gd">--- a/UM.9.15/kernel/msm-4.19/drivers/misc/pax/power/mp2721_charger.c</span><span class="w"></span>
+<span class="gi">+++ b/UM.9.15/kernel/msm-4.19/drivers/misc/pax/power/mp2721_charger.c</span><span class="w"></span>
+
+<span class="gi">+/**********Reg11**********/</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+static int _is_charger_present(void)</span><span class="w"></span>
+<span class="gi">+{</span><span class="w"></span>
+<span class="gi">+       u8 status = 0, ret = 0;</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+       ret = mp2721_get_byte_interface(MP2721_REG_11, MP2721_VIN_STAT_MASK, MP2721_VIN_STAT_SHIFT, &amp;status);</span><span class="w"></span>
+<span class="gi">+       if (ret)</span><span class="w"></span>
+<span class="gi">+               return -1;</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+       chr_debug(&quot;%s:status:%d\n&quot;, __func__, status);</span><span class="w"></span>
+<span class="gi">+       return !!status;</span><span class="w"></span>
+<span class="gi">+}</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gu">@@ -1022,7 +1038,7 @@ static int mp2721_is_charge_online(struct charger_device *chg_dev)</span><span class="w"></span>
+<span class="w"> </span>{<span class="w"></span>
+<span class="w"> </span>       u8 ret;<span class="w"></span>
+
+<span class="gd">-       ret = _is_vin_ready();</span><span class="w"></span>
+<span class="gi">+       ret = _is_charger_present();</span><span class="w"></span>
+<span class="w"> </span>       return ret;<span class="w"></span>
+<span class="w"> </span>}<span class="w"></span>
+</pre></div>
+</div>
+<p><img alt="0013_0049.png" src="../../../_images/0013_0049.png" /></p>
 </section>
 </section>
 

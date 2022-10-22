@@ -1,0 +1,80 @@
+# qcom qcm2290 功耗调试记录
+
+记录一下qcm2290平台功耗调试记录。
+
+# 系统无法休眠调试
+
+* 先清掉bugreport，休眠一段时间并导出：
+```
+adb shell dumpsys batterystats --reset
+adb shell dumpsys batterystats --enable full-wake-history
+adb bugreport
+```
+
+首先抓取bugreport看一下，发现是内核持锁：
+
+![0004_0000.png](images/0004_0000.png)
+
+查看持锁如下`ws_charge`和`4a84000.qcom,qup_uart`：
+
+![0004_0001.png](images/0004_0001.png)
+
+
+`ws_charge`中的最后一个参数是1668485，`prevent_suspend_time`表示阻止系统休眠时间，基本上打开后就没进行释放。
+```
+A6650:/ # cat d/wakeup_sources | grep charge
+pax-base-charger        2               2               0               0               0               74             37
+6373            0
+charger suspend wakelock        282             282             0               0               39              19702                                                                                                                       323              1676089         0
+pax-charger     7               7               0               0               0               1005            299                                                                                                                         1284884          0
+ws_charge       1               1               0               0               1668485         1668485         1668485
+7643            0
+```
+
+`ws_charge`是在pax-battery-class.c中注册的wakelock，用于休眠后防止过放，通过计算放电时间唤醒系统，这个功能已经放到bms中做了。之所以持锁，是因为没有进行释放，干脆直接去掉。
+```diff
+--- a/UM.9.15/kernel/msm-4.19/drivers/misc/pax/power/pax_battery_class.c
++++ b/UM.9.15/kernel/msm-4.19/drivers/misc/pax/power/pax_battery_class.c
+@@ -807,6 +807,7 @@ int pax_battery_set_status(int new_status)
+                        status = POWER_SUPPLY_STATUS_NOT_CHARGING;
+                }
+
++#ifndef CONFIG_PAX_BMS
+                if (g_pax_battery_dev) {
+                        if (status == POWER_SUPPLY_STATUS_CHARGING) {
+                                if (!g_pax_battery_dev->ws_charge->active)
+@@ -816,6 +817,7 @@ int pax_battery_set_status(int new_status)
+                                __pm_relax(g_pax_battery_dev->ws_charge);
+                        }
+                }
++#endif
+
+                pax_battery_sply.BAT_STATUS = status;
+                pax_battery_supply_changed();
+@@ -989,7 +991,10 @@ struct pax_battery_device *pax_battery_device_register(const char *name,
+                return ERR_PTR(ret);
+        }
+        battery_dev->ops = ops;
++
++#ifndef CONFIG_PAX_BMS
+        battery_dev->ws_charge = wakeup_source_register(NULL, "ws_charge");
++#endif
+        g_pax_battery_dev = battery_dev;
+```
+
+另外关于锁`4a84000.qcom,qup_uart`是谢工改出来的，将串口改成了永不休眠，修改如下可避免：
+```diff
+--- a/UM.9.15/kernel/msm-4.19/drivers/tty/serial/msm_geni_serial.c
++++ b/UM.9.15/kernel/msm-4.19/drivers/tty/serial/msm_geni_serial.c
+@@ -3636,7 +3636,7 @@ static int msm_geni_serial_probe(struct platform_device *pdev)
+
+                pm_runtime_set_suspended(&pdev->dev);
+ //[feature]-modify-begin xielianxiong@paxsz.com,20220826,for msm-geni-serial-hs uart close auto sleep
+-               pm_runtime_set_autosuspend_delay(&pdev->dev, -1);//150
++               pm_runtime_set_autosuspend_delay(&pdev->dev, 150);//150
+```
+
+去掉以上两个锁后系统正常进入休眠：
+
+![0004_0002.png](images/0004_0002.png)
+![0004_0003.png](images/0004_0003.png)
