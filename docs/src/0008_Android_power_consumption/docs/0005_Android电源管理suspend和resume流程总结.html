@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="zh-CN" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>wugn</title>
+
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script src="../../../_static/translations.js"></script>
+        <script src="../../../_static/js/baidutongji.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="索引" href="../../../genindex.html" />
+    <link rel="search" title="搜索" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../index.html" class="icon icon-home"> wugn_note
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="在文档中搜索" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">概述</a></li>
+<li><a class="reference internal" href="#id2">参考</a></li>
+<li><a class="reference internal" href="#suspend">Suspend功能有关的代码分布</a><ul>
+<li><a class="reference internal" href="#pm-core">PM Core</a></li>
+<li><a class="reference internal" href="#device-pm">Device PM</a></li>
+<li><a class="reference internal" href="#platform-dependent-pm">Platform dependent PM</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id3">简述</a></li>
+<li><a class="reference internal" href="#id4">休眠休眠软件流程</a></li>
+<li><a class="reference internal" href="#suspend-resume">suspend/resume过程总结</a><ul>
+<li><a class="reference internal" href="#pm-notifier">PM notifier</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id5">驱动实例</a></li>
+</ul>
+</div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">wugn_note</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs"> 
+<li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+<li>概述</li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.forward()">Forward</a></li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.back()">Go Back</a> | </li>
+<li style="float: right;margin-left: 10px;"><a href="/index.html">Home</a> | </li>
+
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="id1">
+<h1>概述<a class="headerlink" href="#id1" title="此标题的永久链接"></a></h1>
+<p>Linux内核提供了三种Suspend: Freeze、Standby和STR(Suspend to RAM)，在用户空间向”/sys/power/state”文件分别写入”freeze”、”standby”和”mem”，即可触发它们。</p>
+<p>内核中，Suspend及Resume过程涉及到PM Core、Device PM、各个设备的驱动、Platform dependent PM、CPU control等多个模块，涉及了console switch、process freeze、CPU hotplug、wakeup处理等过个知识点。就让我们跟着内核代码，一一见识它们吧。</p>
+</section>
+<section id="id2">
+<h1>参考<a class="headerlink" href="#id2" title="此标题的永久链接"></a></h1>
+<ul class="simple">
+<li><p><a class="reference external" href="https://blog.csdn.net/longwang155069/article/details/52935394">Linux电源管理-Suspend/Resume流程</a></p></li>
+<li><p><a class="reference external" href="https://www.cnblogs.com/zxc2man/p/6897293.html">android 系统的休眠与唤醒+linux 系统休眠</a></p></li>
+<li><p><a class="reference external" href="https://mp.weixin.qq.com/s?__biz=MzIxMjE1MzU4OA%3D%3D&amp;mid=2648932297&amp;idx=1&amp;sn=4650cf57480c4d3b540f16d18516c63e&amp;chksm=8f5dba52b82a33442329648690c52c4327501903d62fb261e558f97497f91042c101641e585e&amp;cur_album_id=2603484247609540608&amp;scene=190#rd">Linux 电源管理子系统</a></p></li>
+</ul>
+</section>
+<section id="suspend">
+<h1>Suspend功能有关的代码分布<a class="headerlink" href="#suspend" title="此标题的永久链接"></a></h1>
+<p>内核中Suspend功能有关的代码包括PM core、Device PM、Platform PM等几大块，具体如下：</p>
+<section id="pm-core">
+<h2>PM Core<a class="headerlink" href="#pm-core" title="此标题的永久链接"></a></h2>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">kernel</span><span class="o">/</span><span class="n">power</span><span class="o">/</span><span class="n">main</span><span class="o">.</span><span class="n">c</span><span class="o">----</span><span class="n">提供用户空间接口</span><span class="p">(</span><span class="o">/</span><span class="n">sys</span><span class="o">/</span><span class="n">power</span><span class="o">/</span><span class="n">state</span><span class="p">)</span>
+<span class="n">kernel</span><span class="o">/</span><span class="n">power</span><span class="o">/</span><span class="n">suspend</span><span class="o">.</span><span class="n">c</span><span class="o">----</span><span class="n">Suspend功能的主逻辑</span>
+<span class="n">kernel</span><span class="o">/</span><span class="n">power</span><span class="o">/</span><span class="n">suspend_test</span><span class="o">.</span><span class="n">c</span><span class="o">----</span><span class="n">Suspend功能的测试逻辑</span>
+<span class="n">kernel</span><span class="o">/</span><span class="n">power</span><span class="o">/</span><span class="n">console</span><span class="o">.</span><span class="n">c</span><span class="o">----</span><span class="n">Suspend过程中对控制台的处理逻辑</span>
+<span class="n">kernel</span><span class="o">/</span><span class="n">power</span><span class="o">/</span><span class="n">process</span><span class="o">.</span><span class="n">c</span><span class="o">----</span><span class="n">Suspend过程中对进程的处理逻辑</span>
+</pre></div>
+</div>
+</section>
+<section id="device-pm">
+<h2>Device PM<a class="headerlink" href="#device-pm" title="此标题的永久链接"></a></h2>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">drivers</span><span class="o">/</span><span class="n">base</span><span class="o">/</span><span class="n">power</span><span class="o">/*</span>
+</pre></div>
+</div>
+<p>具体可参考* <a class="reference internal" href="0006_Android%E7%94%B5%E6%BA%90%E7%AE%A1%E7%90%86Power_Management_Interface.html"><span class="doc std std-doc">0006_Android电源管理Power_Management_Interface.md</span></a>的描述。</p>
+</section>
+<section id="platform-dependent-pm">
+<h2>Platform dependent PM<a class="headerlink" href="#platform-dependent-pm" title="此标题的永久链接"></a></h2>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">include</span><span class="o">/</span><span class="n">linux</span><span class="o">/</span><span class="n">suspend</span><span class="o">.</span><span class="n">h</span><span class="o">----</span><span class="n">定义platform</span> <span class="n">dependent</span> <span class="n">PM有关的操作函数集</span>
+<span class="n">arch</span><span class="o">/</span><span class="n">xxx</span><span class="o">/</span><span class="n">mach</span><span class="o">-</span><span class="n">xxx</span><span class="o">/</span><span class="n">xxx</span><span class="o">.</span><span class="n">c或者</span>
+<span class="n">arch</span><span class="o">/</span><span class="n">xxx</span><span class="o">/</span><span class="n">plat</span><span class="o">-</span><span class="n">xxx</span><span class="o">/</span><span class="n">xxx</span><span class="o">.</span><span class="n">c</span><span class="o">----</span><span class="n">平台相关的电源管理操作</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="id3">
+<h1>简述<a class="headerlink" href="#id3" title="此标题的永久链接"></a></h1>
+<p>用户可以通过sys文件系统控制系统进入休眠：</p>
+<p>查看系统支持的休眠方式：</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1">#cat /sys/power/state</span>
+</pre></div>
+</div>
+<p>Linux支持STANDBY、挂起到RAM、挂起到硬盘等形式的待机，如图所示。常见有<code class="docutils literal notranslate"><span class="pre">standby(suspendto</span> <span class="pre">RAM)</span></code>、<code class="docutils literal notranslate"><span class="pre">mem(suspend</span> <span class="pre">toRAM)</span></code>和<code class="docutils literal notranslate"><span class="pre">disk(suspend</span> <span class="pre">todisk)</span></code>，只是standby耗电更多，返回到正常工作状态的时间更短。
+一般的嵌入式产品仅仅只实现了挂起到RAM（也简称为s2ram，或常简称为STR），即将系统的状态保存于内存中，并将SDRAM置于自刷新状态，待用户按键等操作后再重新恢复系统。少数嵌入式Linux系统会实现挂起到硬盘（简称STD），它与挂起到RAM的不同是s2ram并不关机，STD则把系统的状态保持于磁盘，然后关闭整个系统。</p>
+<p><img alt="0005_0000.png" src="../../../_images/0005_00004.png" /></p>
+<p>通过<code class="docutils literal notranslate"><span class="pre">echo</span> <span class="pre">mem</span> <span class="pre">&gt;</span> <span class="pre">/sys/power/state</span></code>让系统进入休眠。</p>
+<ul class="simple">
+<li><p>标准Linux休眠过程：</p>
+<ul>
+<li><p>powermanagement notifiers are executed with PM_SUSPEND_PREPARE</p></li>
+<li><p>tasksare frozen</p></li>
+<li><p>targetsystem sleep state is announced to the platform-handling code</p></li>
+<li><p>devicesare suspended</p></li>
+<li><p>platform-specificglobal suspend preparation methods are executed</p></li>
+<li><p>non-bootCPUs are taken off-line</p></li>
+<li><p>interruptsare disabled on the remaining (main) CPU</p></li>
+<li><p>latesuspend of devices is carried out (一般有一些BUSdriver的动作进行)</p></li>
+<li><p>platform-specificglobal methods are invoked to put the system to sleep</p></li>
+</ul>
+</li>
+<li><p>标准linux唤醒过程：</p>
+<ul>
+<li><p>themain CPU is switched to the appropriate mode, if necessary</p></li>
+<li><p>earlyresume of devices is carried out(一般有一些BUSdriver的动作进行)</p></li>
+<li><p>interruptsare enabled on the main CPU</p></li>
+<li><p>non-bootCPUs are enabled</p></li>
+<li><p>platform-specificglobal resume preparation methods are invoked</p></li>
+<li><p>devicesare woken up</p></li>
+<li><p>tasksare thawed</p></li>
+<li><p>powermanagement notifiers are executed with PM_POST_SUSPEND</p></li>
+</ul>
+</li>
+</ul>
+<p>下面图片对Linux suspend&amp;resume过程做了一个概述，读者可以顺着这个流程阅读内核源代码。具体的说明，可以参考后面的代码分析。</p>
+<p><img alt="0005_0001.png" src="../../../_images/0005_00013.png" /></p>
+<p>在用户空间执行如下操作：</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="nb">echo</span> <span class="s2">&quot;mem&quot;</span> &gt; /sys/power/state
+</pre></div>
+</div>
+<p>会通过sysfs触发suspend的执行，相应的处理代码如下：</p>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="k">static</span><span class="w"> </span><span class="kt">ssize_t</span><span class="w"> </span><span class="nf">state_store</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">kobject</span><span class="w"> </span><span class="o">*</span><span class="n">kobj</span><span class="p">,</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">kobj_attribute</span><span class="w"> </span><span class="o">*</span><span class="n">attr</span><span class="p">,</span><span class="w"></span>
+<span class="w">                           </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">buf</span><span class="p">,</span><span class="w"> </span><span class="kt">size_t</span><span class="w"> </span><span class="n">n</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="n">suspend_state_t</span><span class="w"> </span><span class="n">state</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="n">error</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">        </span><span class="n">error</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pm_autosleep_lock</span><span class="p">();</span><span class="w"></span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">error</span><span class="p">)</span><span class="w"></span>
+<span class="w">                </span><span class="k">return</span><span class="w"> </span><span class="n">error</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">pm_autosleep_state</span><span class="p">()</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">PM_SUSPEND_ON</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="n">error</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">-</span><span class="n">EBUSY</span><span class="p">;</span><span class="w"></span>
+<span class="w">                </span><span class="k">goto</span><span class="w"> </span><span class="n">out</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">        </span><span class="n">state</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">decode_state</span><span class="p">(</span><span class="n">buf</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">state</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">PM_SUSPEND_MAX</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">state</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">PM_SUSPEND_MEM</span><span class="p">)</span><span class="w"></span>
+<span class="w">                        </span><span class="n">state</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mem_sleep_current</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">                </span><span class="n">error</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pm_suspend</span><span class="p">(</span><span class="n">state</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">state</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">PM_SUSPEND_MAX</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="n">error</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">hibernate</span><span class="p">();</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="n">error</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">-</span><span class="n">EINVAL</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+
+<span class="w"> </span><span class="nl">out</span><span class="p">:</span><span class="w"></span>
+<span class="w">        </span><span class="n">pm_autosleep_unlock</span><span class="p">();</span><span class="w"></span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">error</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="n">error</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">n</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+</section>
+<section id="id4">
+<h1>休眠休眠软件流程<a class="headerlink" href="#id4" title="此标题的永久链接"></a></h1>
+<ul class="simple">
+<li><p><a class="reference external" href="https://blog.csdn.net/longwang155069/article/details/52935394">Linux电源管理-Suspend/Resume流程</a></p></li>
+<li><p><a class="reference external" href="http://t.zoukankan.com/rzq232-p-3835897.html">android 休眠唤醒机制分析(三) — suspend</a>
+以上这篇文章对每个函数进行了详细的分析。</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">include/linux/suspend.h</span></code>休眠唤醒通知，一般只需关注<code class="docutils literal notranslate"><span class="pre">PM_POST_SUSPEND</span></code>和<code class="docutils literal notranslate"><span class="pre">PM_SUSPEND_PREPARE</span></code>即可，如下定义：</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="cm">/* Hibernation and suspend events */</span><span class="w"></span>
+<span class="cp">#define PM_HIBERNATION_PREPARE  0x0001 </span><span class="cm">/* Going to hibernate */</span><span class="cp"></span>
+<span class="cp">#define PM_POST_HIBERNATION     0x0002 </span><span class="cm">/* Hibernation finished */</span><span class="cp"></span>
+<span class="cp">#define PM_SUSPEND_PREPARE      0x0003 </span><span class="cm">/* Going to suspend the system */</span><span class="cp"></span>
+<span class="cp">#define PM_POST_SUSPEND         0x0004 </span><span class="cm">/* Suspend finished */</span><span class="cp"></span>
+<span class="cp">#define PM_RESTORE_PREPARE      0x0005 </span><span class="cm">/* Going to restore a saved image */</span><span class="cp"></span>
+<span class="cp">#define PM_POST_RESTORE         0x0006 </span><span class="cm">/* Restore failed */</span><span class="cp"></span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>休眠流程请关注<code class="docutils literal notranslate"><span class="pre">syscore_suspend</span></code>，<code class="docutils literal notranslate"><span class="pre">syscore_resume</span></code>。</p>
+<ul>
+<li><p>唤醒流程关注当我们按下某个按键并且这个按键是唤醒源的话，就会唤醒CPU，上面讲到调用<code class="docutils literal notranslate"><span class="pre">enter</span></code>函数后就真正进入休眠了，会阻塞在enter，当系统唤醒后会调用<code class="docutils literal notranslate"><span class="pre">syscore_resume</span></code>来执行唤醒流程。</p></li>
+</ul>
+</li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">suspend_enter</span><span class="p">(</span><span class="n">suspend_state_t</span><span class="w"> </span><span class="n">state</span><span class="p">,</span><span class="w"> </span><span class="kt">bool</span><span class="w"> </span><span class="o">*</span><span class="n">wakeup</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="n">error</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">syscore_suspend</span><span class="p">();</span><span class="w"></span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">error</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="o">*</span><span class="n">wakeup</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pm_wakeup_pending</span><span class="p">();</span><span class="w"></span>
+<span class="w">                </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="p">(</span><span class="n">suspend_test</span><span class="p">(</span><span class="n">TEST_CORE</span><span class="p">)</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="o">*</span><span class="n">wakeup</span><span class="p">))</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                        </span><span class="n">trace_suspend_resume</span><span class="p">(</span><span class="n">TPS</span><span class="p">(</span><span class="s">&quot;machine_suspend&quot;</span><span class="p">),</span><span class="w"></span>
+<span class="w">                                </span><span class="n">state</span><span class="p">,</span><span class="w"> </span><span class="nb">true</span><span class="p">);</span><span class="w"></span>
+<span class="w">                        </span><span class="n">error</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">suspend_ops</span><span class="o">-&gt;</span><span class="n">enter</span><span class="p">(</span><span class="n">state</span><span class="p">);</span><span class="w"> </span><span class="c1">//真正进入休眠，阻塞</span>
+<span class="w">                        </span><span class="n">trace_suspend_resume</span><span class="p">(</span><span class="n">TPS</span><span class="p">(</span><span class="s">&quot;machine_suspend&quot;</span><span class="p">),</span><span class="w"></span>
+<span class="w">                                </span><span class="n">state</span><span class="p">,</span><span class="w"> </span><span class="nb">false</span><span class="p">);</span><span class="w"></span>
+<span class="w">                </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="n">wakeup</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                        </span><span class="n">error</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">-</span><span class="n">EBUSY</span><span class="p">;</span><span class="w"></span>
+<span class="w">                </span><span class="p">}</span><span class="w"></span>
+<span class="w">                </span><span class="n">syscore_resume</span><span class="p">();</span><span class="c1">//suspend过程中，唤醒事件发生，系统唤醒，该函数接着执行resume动作，并最终返回。resume动作基本上是suspend的反动作</span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span>* state_store //(kernel/power/main.c)
+  └── pm_suspend //(kernel/power/suspend.c)
+      ├── error = enter_state(state);//(kernel/power/suspend.c)
+      │   ├── valid_state(state) //(kernel/power/suspend.c) 检查单板是否支持电源管理，就是全局suspend_ops有没有被赋值，并调用其suspend_ops-&gt;valid()
+      │   │   └── return suspend_ops &amp;&amp; suspend_ops-&gt;valid &amp;&amp; suspend_ops-&gt;valid(state);
+      │   ├── suspend_prepare(state); //(kernel/power/suspend.c)
+      │   │   ├── pm_prepare_console(); //(kernel/power/console.c)
+      │   │   ├── pm_notifier_call_chain(PM_SUSPEND_PREPARE) //(kernel/power/main.c) 通知所有关心这个消息的驱动程序！依次调用静态全局链表pm_chain_head中的每一个函数
+      │   │   └── suspend_freeze_processes(); //(kernel/power/power.h) 冻结App和内核线程
+      │   ├── suspend_devices_and_enter(state); //(kernel/power/suspend.c) 让设备进入suspend状态
+      │   │   ├── platform_suspend_begin(state)
+      │   │   │   └── suspend_ops-&gt;begin //如果平台相关的代码有begin函数就去调用它，例如Renesas的平台进入suspend时需要一些预先准备工作，就可以实现这个begin函数
+      │   │   ├── suspend_console(); //(kernel/printk/printk.c) 串口suspend状态，此时串口就用不了了
+      │   │   ├── dpm_suspend_start(PMSG_SUSPEND); //(drivers/base/power/main.c)
+      │   │   │   ├── dpm_prepare(state); //(drivers/base/power/main.c)对全局链表dpm_list(drivers/base/power/power.c)中的每一个设备都调用其prepare函数，在这里面可以做一些准备工作
+      │   │   │   │   ├── dev-&gt;pm_domain-&gt;ops.prepare   或 [struct dev_pm_ops ops]
+      │   │   │   │   ├── dev-&gt;type-&gt;pm-&gt;prepare        或 [struct dev_pm_ops *pm]
+      │   │   │   │   ├── dev-&gt;class-&gt;pm-&gt;prepare       或 [struct dev_pm_ops *pm]
+      │   │   │   │   ├── dev-&gt;bus-&gt;pm-&gt;prepare         或 [struct dev_pm_ops *pm]
+      │   │   │   │   └── dev-&gt;driver-&gt;pm-&gt;prepare     或  [struct dev_pm_ops *pm] [struct device_driver中的在这，优先级最低]
+      │   │   │   └── dpm_suspend(state); //(drivers/base/power/main.c)  对全局链表dpm_prepared_list中的每一个设备都调用device_suspend()
+      │   │   │       ├── device_suspend(dev); //(drivers/base/power/main.c)
+      │   │   │       │   ├── __device_suspend(dev, pm_transition, false);
+      │   │   │       │   │   └── dpm_wait_for_subordinate(dev, async);
+      │   │   │       │   │       ├── dpm_wait_for_children(dev, async); //(drivers/base/power/main.c) 等待其每一个孩子进入suspend状态
+      │   │   │       │   │       └── dpm_wait_for_consumers(dev, async);
+      │   │   │       │   ├── dev-&gt;pm_domain-&gt;ops-&gt;suspend //因此自己在写驱动的时候可以在其pm_domain中或type-&gt;pm中或class-&gt;pm中或bus-&gt;pm中加入suspend函数
+      │   │   │       │   ├── dev-&gt;type-&gt;pm-&gt;suspend
+      │   │   │       │   ├── dev-&gt;class-&gt;pm-&gt;suspend
+      │   │   │       │   └── dev-&gt;bus-&gt;pm-&gt;suspend            
+      │   │   │       └── suspend_enter(state, &amp;wakeup); //(kernel/power/suspend.c) 设备都进入suspend状态了接下来就是CPU了
+      │   │   │           ├── platform_suspend_prepare(state);
+      │   │   │           │   └── suspend_ops-&gt;prepare //单板的prepare函数若存在就调用
+      │   │   │           ├── dpm_suspend_late(PMSG_SUSPEND); //(drivers/base/power/main.c) 对全局静态链表dpm_suspended_list中的每一个条目都调用device_suspend_late()
+      │   │   │           │   └── device_suspend_late(dev); //(drivers/base/power/main.c) 调用此设备的
+      │   │   │           │       └──  __device_suspend_late(dev, pm_transition, false);
+      │   │   │           │           ├── dev-&gt;pm_domain-&gt;ops-&gt;suspend_late 或
+      │   │   │           │           ├── dev-&gt;type-&gt;pm-&gt;suspend_late 或
+      │   │   │           │           ├── dev-&gt;class-&gt;pm-&gt;suspend_late  或
+      │   │   │           │           ├── dev-&gt;bus-&gt;pm-&gt;suspend_late  或
+      │   │   │           │           └── dev-&gt;driver-&gt;pm-&gt;suspend_late  或
+      │   │   │           ├── platform_suspend_prepare_late(state);
+      │   │   │           │   └── suspend_ops-&gt;prepare_late //调用单板相关的函数，可以做一些清理，若单板不需要也可以不实现它
+      │   │   │           ├── disable_nonboot_cpus(); //(kernel/cpu.c) 多核Soc中非用于启动内核的CPU叫做nonboot_cpu，停止non-boot CPU
+      │   │   │           ├── arch_suspend_disable_irqs();   //(include/linux/suspend.h)//关闭中断，extern的，Renesas上没有实现
+      │   │   │           ├── //休眠流程
+      │   │   │           ├── syscore_suspend(); //   关闭核心模块
+      │   │   │           │   └── *wakeup = pm_wakeup_pending()//还得调用pm_wakeup_pending检查一下，这段时间内，是否有唤醒事件发生，如果有就要终止suspend。
+      │   │   │           │       └── if (!(suspend_test(TEST_CORE) || *wakeup)) 
+      │   │   │           │           └── suspend_ops-&gt;enter(); // 如果一切顺利，调用suspend_ops的enter回调，进行状态切换。这时，系统应该已经suspend了
+      │   │   │           ├── //唤醒流程
+      │   │   │           ├── syscore_resume //(drivers/base/syscore.c) 对全局链表syscore_ops_list中的每一个node都调用其resume()
+      │   │   │           ├── arch_suspend_enable_irqs //(include/linux/suspend.h)
+      │   │   │           ├── enable_nonboot_cpus //(kernel/cpu.c)
+      │   │   │           ├── platform_resume_noirq(state);
+      │   │   │           │   └── suspend_ops-&gt;wake  //如果单板有对应的wake()就调用
+      │   │   │           ├── dpm_resume_noirq(state); //(drivers/base/power/main.c) 对全局链表dpm_noirq_list中的每一个设备都执行device_resume_noirq
+      │   │   │           │   └── dpm_noirq_resume_devices(state);
+      │   │   │           │       ├── device_resume_noirq //(drivers/base/power/main.c) 对每一个设备都调用
+      │   │   │           │       │   ├── dev-&gt;pm_domain-&gt;ops-&gt;resume_noirq    或
+      │   │   │           │       │   ├── dev-&gt;type-&gt;pm-&gt;resume_noirq          或
+      │   │   │           │       │   ├── dev-&gt;class-&gt;pm-&gt;resume_noirq         或
+      │   │   │           │       │   ├── dev-&gt;bus-&gt;pm-&gt;resume_noirq           或
+      │   │   │           │       │   ├── dev-&gt;driver-&gt;pm-&gt;resume_noirq        或
+      │   │   │           │       │   └── //执行完resume_noirq的所有设备都会被放在全局链表dpm_late_early_list中
+      │   │   │           │       └── dpm_noirq_end();
+      │   │   │           │           └── resume_device_irqs //(kernel/irq/pm.c)
+      │   │   │           │               └── resume_irqs //(kernel/irq/pm.c)
+      │   │   │           │                   └── __enable_irq //(kernel/irq/pm.c) 对全局数组irq_desc中的每一个irq都调用__enable_irq，但是Renesas的BSP没有实现，里面还有一个野指针
+      │   │   │           ├── platform_resume_early(state);
+      │   │   │           ├── dpm_resume_early(state); //(drivers/base/power/main.c) 对全局链表dpm_late_early_list中的每一个元素都执行device_resume_early
+      │   │   │           │   └── device_resume_early(dev, state, false); //(drivers/base/power/main.c) 
+      │   │   │           │       ├── dev-&gt;pm_domain-&gt;ops-&gt;resume_early    或
+      │   │   │           │       ├── dev-&gt;type-&gt;pm-&gt;resume_early          或
+      │   │   │           │       ├── dev-&gt;class-&gt;pm-&gt;resume_early         或
+      │   │   │           │       ├── dev-&gt;bus-&gt;pm-&gt;resume_early           或
+      │   │   │           │       └── dev-&gt;driver-&gt;pm-&gt;resume_early        或
+      │   │   │           └── platform_resume_finish(state);
+      │   │   └── suspend_ops-&gt;finish() //如果单板有对应的finish()就调用
+      │   ├── Resume_devices:
+      │   ├── suspend_test_start //(kernel/power/suspend_test.c)
+      │   ├── dpm_resume_end(PMSG_RESUME); //(drivers/base/power/main.c)
+      │   │   ├── dpm_resume(state); //(drivers/base/power/main.c) 对全局链表dpm_suspended_list中的每一个dev都调用device_resume()
+      │   │   │   └── device_resume(dev, state, false); //(drivers/base/power/main.c)
+      │   │   │       ├── dev-&gt;pm_domain-&gt;ops-&gt;resume    或
+      │   │   │       ├── dev-&gt;type-&gt;pm-&gt;resume          或
+      │   │   │       ├── dev-&gt;class-&gt;pm-&gt;resume         或
+      │   │   │       ├── dev-&gt;bus-&gt;pm-&gt;resume           或
+      │   │   │       ├── dev-&gt;driver-&gt;pm-&gt;resume        或                                    
+      │   │   │       └── //然后将所有的设备移动到全局链表dpm_prepared_list中
+      │   │   └── dpm_complete(state); //(drivers/base/power/main.c) 对全局链表dpm_prepared_list中的每一个设备都调用device_complete()
+      │   │       └── device_complete(dev, state); //(drivers/base/power/main.c)
+      │   │           ├── dev-&gt;pm_domain-&gt;ops.complete    或
+      │   │           ├── dev-&gt;type-&gt;pm.complete          或
+      │   │           ├── dev-&gt;class-&gt;pm.complete         或
+      │   │           └── dev-&gt;driver-&gt;pm.complete        或
+      │   ├── suspend_test_finish(&quot;resume devices&quot;); //(kernel/power/suspend_test.c) 打印一些log出来
+      │   ├── resume_console //(kernel/printk.c)
+      │   │   └── console_unlock(); //(kernel/printk.c)
+      │   │       └── call_console_drivers(ext_text, ext_len, text, len); //(kernel/printk.c) 关闭本地中断获取spin锁后调用控制台打印函数以poll方式打印内核log
+      │   ├── Close:
+      │   ├── platform_resume_end(state);
+      │   │   └── suspend_ops-&gt;end() //如果单板有对应的end()就调用
+      │   ├── Recover_platform:
+      │   └── platform_recover(state);
+      │       └── suspend_ops-&gt;recover(); //如果dpm_suspend_start失败或者suspend_test失败，单板有对应的recover()就调用
+      ├── Finish:
+      ├── suspend_finish //(kernel/power/suspend.c)
+      │   └── suspend_thaw_processes(); //(kernel/power/power.h)唤醒应用程序
+      │       └── thaw_processes();
+      ├── pm_notifier_call_chain(PM_POST_SUSPEND); //(kernel/power/main.c) 通知关注这个事件的App程序，对全局pm_chain_head-&gt;head中的每一个都调用其notifier_call()
+      └── pm_restore_console(); //(kernel/power/console.c)
+</pre></div>
+</div>
+</section>
+<section id="suspend-resume">
+<h1>suspend/resume过程总结<a class="headerlink" href="#suspend-resume" title="此标题的永久链接"></a></h1>
+<p>如下是suspend/resume过程的简图：</p>
+<p><img alt="0005_0002.png" src="../../../_images/0005_00023.png" /></p>
+<ul class="simple">
+<li><p>以上就是整个系统的suspend/resume执行过程，但是对于一般的驱动开发工程师来说主要关心的是Device Suspend和Device Resume过程。</p>
+<ul>
+<li><p>suspend:  prepare-&gt;suspend-&gt;suspend_late-&gt;suspend_noirq</p></li>
+<li><p>resume： resume_noirq-&gt;resume_early-&gt;resume-&gt;complete</p></li>
+</ul>
+</li>
+</ul>
+<section id="pm-notifier">
+<h2>PM notifier<a class="headerlink" href="#pm-notifier" title="此标题的永久链接"></a></h2>
+<p>PM notifier是基于内核blocking notifier功能实现的。blocking notifier提供了一种kernel内部的消息通知机制，消息接受者通过notifier注册的方式，注册一个回调函数，关注消息发送者发出的notifier。当消息产生时，消息产生者通过调用回调函数的形式，通知消息接受者。这种调用，是可以被阻塞的，因此称作blocking notifier。</p>
+<p>那suspend功能为什么使用notifier呢？原因可能有多种，这里我举一个例子，这是我们日常开发中可能会遇到的。</p>
+<p>由之前的描述可知，suspend过程中，suspend device发生在进程被freeze之后，resume device发生在进程被恢复之前。那么：</p>
+<ol class="arabic simple">
+<li><p>如果有些设备就需要在freeze进程之前suspend怎么办？</p></li>
+<li><p>如果有些设备的resume动作需要较多延时，或者要等待什么事情发生，那么如果它的resume动作发生在进程恢复之前，岂不是要阻止所有进程的恢复？更甚者，如果该设备要等待某个进程的数据才能resume，怎么办？</p></li>
+</ol>
+<p>再来看suspend_prepare和suspend_finish中的处理：</p>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span>static int suspend_prepare(suspend_state_t state) {
+…
+        error = pm_notifier_call_chain(PM_SUSPEND_PREPARE);
+        if (error)
+                goto Finish;
+ 
+        error = suspend_freeze_processes();
+        …
+}
+ 
+static void suspend_finish(void)
+{
+        suspend_thaw_processes();
+        pm_notifier_call_chain(PM_POST_SUSPEND);
+        pm_restore_console();
+}
+</pre></div>
+</div>
+<p>原来PM notifier是在设备模型的框架外，开了一个后门，那些比较特殊的driver，可以绕过设备模型，直接接收PM发送的suspend信息，以便执行自身的suspend动作。特别是resume时，可以在其它进程都正好工作的时候，只让suspend进程等待driver的resume。</p>
+<p>感兴趣的读者，可以围观一下下面这个活生生的例子:</p>
+<ul class="simple">
+<li><p><span class="xref myst">0017_qcom_pax_charger架构.md</span></p></li>
+</ul>
+</section>
+</section>
+<section id="id5">
+<h1>驱动实例<a class="headerlink" href="#id5" title="此标题的永久链接"></a></h1>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">include/linux/pm.h</span></code>我们一般<code class="docutils literal notranslate"><span class="pre">platform</span> <span class="pre">driver</span></code>采用<code class="docutils literal notranslate"><span class="pre">dev_pm_domain</span></code>方式注册休眠唤醒ops:</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="k">struct</span><span class="w"> </span><span class="nc">dev_pm_ops</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="n">prepare</span><span class="p">)(</span><span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w"> </span><span class="o">*</span><span class="n">dev</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="kt">void</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="n">complete</span><span class="p">)(</span><span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w"> </span><span class="o">*</span><span class="n">dev</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="n">suspend</span><span class="p">)(</span><span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w"> </span><span class="o">*</span><span class="n">dev</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="n">resume</span><span class="p">)(</span><span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w"> </span><span class="o">*</span><span class="n">dev</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="n">freeze</span><span class="p">)(</span><span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w"> </span><span class="o">*</span><span class="n">dev</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="n">thaw</span><span class="p">)(</span><span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w"> </span><span class="o">*</span><span class="n">dev</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="n">poweroff</span><span class="p">)(</span><span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w"> </span><span class="o">*</span><span class="n">dev</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="n">restore</span><span class="p">)(</span><span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w"> </span><span class="o">*</span><span class="n">dev</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="n">suspend_late</span><span class="p">)(</span><span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w"> </span><span class="o">*</span><span class="n">dev</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="n">resume_early</span><span class="p">)(</span><span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w"> </span><span class="o">*</span><span class="n">dev</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="n">freeze_late</span><span class="p">)(</span><span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w"> </span><span class="o">*</span><span class="n">dev</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="n">thaw_early</span><span class="p">)(</span><span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w"> </span><span class="o">*</span><span class="n">dev</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="n">poweroff_late</span><span class="p">)(</span><span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w"> </span><span class="o">*</span><span class="n">dev</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="n">restore_early</span><span class="p">)(</span><span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w"> </span><span class="o">*</span><span class="n">dev</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="n">suspend_noirq</span><span class="p">)(</span><span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w"> </span><span class="o">*</span><span class="n">dev</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="n">resume_noirq</span><span class="p">)(</span><span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w"> </span><span class="o">*</span><span class="n">dev</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="n">freeze_noirq</span><span class="p">)(</span><span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w"> </span><span class="o">*</span><span class="n">dev</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="n">thaw_noirq</span><span class="p">)(</span><span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w"> </span><span class="o">*</span><span class="n">dev</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="n">poweroff_noirq</span><span class="p">)(</span><span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w"> </span><span class="o">*</span><span class="n">dev</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="n">restore_noirq</span><span class="p">)(</span><span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w"> </span><span class="o">*</span><span class="n">dev</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="n">runtime_suspend</span><span class="p">)(</span><span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w"> </span><span class="o">*</span><span class="n">dev</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="n">runtime_resume</span><span class="p">)(</span><span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w"> </span><span class="o">*</span><span class="n">dev</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="n">runtime_idle</span><span class="p">)(</span><span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w"> </span><span class="o">*</span><span class="n">dev</span><span class="p">);</span><span class="w"></span>
+<span class="p">};</span><span class="w"></span>
+
+<span class="k">struct</span><span class="w"> </span><span class="nc">dev_pm_domain</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="k">struct</span><span class="w"> </span><span class="nc">dev_pm_ops</span><span class="w">       </span><span class="n">ops</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="kt">void</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="n">detach</span><span class="p">)(</span><span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w"> </span><span class="o">*</span><span class="n">dev</span><span class="p">,</span><span class="w"> </span><span class="kt">bool</span><span class="w"> </span><span class="n">power_off</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="n">activate</span><span class="p">)(</span><span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w"> </span><span class="o">*</span><span class="n">dev</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="kt">void</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="n">sync</span><span class="p">)(</span><span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w"> </span><span class="o">*</span><span class="n">dev</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="kt">void</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="n">dismiss</span><span class="p">)(</span><span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w"> </span><span class="o">*</span><span class="n">dev</span><span class="p">);</span><span class="w"></span>
+<span class="p">};</span><span class="w"></span>
+</pre></div>
+</div>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="k">static</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">dev_pm_ops</span><span class="w"> </span><span class="n">pax_bat_pm_ops</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="p">.</span><span class="n">suspend</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="n">pax_battery_suspend</span><span class="p">,</span><span class="w"></span>
+<span class="w">        </span><span class="p">.</span><span class="n">resume</span><span class="w">   </span><span class="o">=</span><span class="w"> </span><span class="n">pax_battery_resume</span><span class="p">,</span><span class="w"></span>
+<span class="p">};</span><span class="w"></span>
+
+<span class="k">static</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">platform_driver</span><span class="w"> </span><span class="n">pax_battery_driver</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">probe</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pax_battery_probe</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">remove</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pax_battery_remove</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">driver</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		   </span><span class="p">.</span><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;battery&quot;</span><span class="p">,</span><span class="w"></span>
+<span class="w">		   </span><span class="p">.</span><span class="n">of_match_table</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pax_battery_of_match</span><span class="p">,</span><span class="w"></span>
+<span class="cp">#ifdef CONFIG_PM</span>
+<span class="w">			</span><span class="p">.</span><span class="n">pm</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">&amp;</span><span class="n">pax_bat_pm_ops</span><span class="p">,</span><span class="w"></span>
+<span class="cp">#endif</span>
+<span class="w">	</span><span class="p">},</span><span class="w"></span>
+<span class="p">};</span><span class="w"></span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">__init</span><span class="w"> </span><span class="nf">pax_battery_init</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="k">return</span><span class="w"> </span><span class="n">platform_driver_register</span><span class="p">(</span><span class="o">&amp;</span><span class="n">pax_battery_driver</span><span class="p">);</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+</section>
+
+
+           </div>
+             <div class="articleComments">
+                <comments>
+  <script src="https://utteranc.es/client.js"
+    repo="iswbm/magic-python"
+    issue-term="pathname"
+    theme="github-light"
+    crossorigin="anonymous"
+    async>
+  </script>
+</comments>
+             </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; 版权所有 2022, wugn.</p>
+  </div>
+
+  利用 <a href="https://www.sphinx-doc.org/">Sphinx</a> 构建，使用了 
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">主题</a>
+    由 <a href="https://readthedocs.org">Read the Docs</a>开发.
+  
+
+<script charset="UTF-8" id="LA_COLLECT" src="//sdk.51.la/js-sdk-pro.min.js"></script>
+<script>LA.init({id: "JoV5csIHTGhHiGQ4",ck: "JoV5csIHTGhHiGQ4"})</script>
+
+<br/>
+<script id="LA-DATA-WIDGET" crossorigin="anonymous" charset="UTF-8" src="https://v6-widget.51.la/v6/JoV5csIHTGhHiGQ4/quote.js?theme=#4C8AC2,#BB2626,#040000,#333333,#AE3535,#1690FF,14&f=14"></script>
+
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

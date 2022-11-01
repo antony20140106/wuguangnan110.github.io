@@ -12,6 +12,7 @@
 * [什么是3PL实验室？申请谷歌认证为什么要提供3PL实验室？](https://baijiahao.baidu.com/s?id=1731319635456329091&wfr=spider&for=pc)
 * [产线写号工具写Google key及TEE key操作流程v2.0](https://blog.csdn.net/weixin_44016441/article/details/115354853)
 * [MTK for Google AttestationKey介绍](https://www.365seal.com/y/qevqOrZopX.html)
+* [谷歌Key的申请条件以及方式](http://ressrc.com/2018/07/13/%E8%B0%B7%E6%AD%8Ckey%E7%9A%84%E7%94%B3%E8%AF%B7%E6%9D%A1%E4%BB%B6%E4%BB%A5%E5%8F%8A%E6%96%B9%E5%BC%8F/)
 
 # 抛开问题看本质，什么是google attestationkey
 

@@ -61,9 +61,10 @@
 <li><a class="reference internal" href="#android-12">Android 12无法发送广播</a></li>
 </ul>
 </li>
+<li><a class="reference internal" href="#id11">4.防止过放功能</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#id11">四、底层BMS功能接口提供</a><ul>
+<li><a class="reference internal" href="#id12">四、底层BMS功能接口提供</a><ul>
 <li><a class="reference internal" href="#hal">HAL层接口实现</a><ul>
 <li><a class="reference internal" href="#hw-module-t-pax-bms-c">hw_module_t pax_bms.c</a></li>
 <li><a class="reference internal" href="#hw-device-t-paxbms-cpp">hw_device_t PaxBMS.cpp</a></li>
@@ -71,10 +72,10 @@
 </li>
 <li><a class="reference internal" href="#hidl-arch">HIDL Arch</a><ul>
 <li><a class="reference internal" href="#hidl">注册HIDL服务</a></li>
-<li><a class="reference internal" href="#id12">添加HIDL服务编译选项</a></li>
+<li><a class="reference internal" href="#id13">添加HIDL服务编译选项</a></li>
 <li><a class="reference internal" href="#hidl-manifest">添加HIDL manifest</a></li>
-<li><a class="reference internal" href="#id13">启动HIDL服务</a></li>
-<li><a class="reference internal" href="#id14">查看HIDL服务进程</a></li>
+<li><a class="reference internal" href="#id14">启动HIDL服务</a></li>
+<li><a class="reference internal" href="#id15">查看HIDL服务进程</a></li>
 </ul>
 </li>
 </ul>
@@ -1190,9 +1191,142 @@ static void bms_status_notify()
 <p><img alt="0009_0015.png" src="../../../_images/0009_0015.png" /></p>
 </section>
 </section>
-</section>
 <section id="id11">
-<h1>四、底层BMS功能接口提供<a class="headerlink" href="#id11" title="此标题的永久链接"></a></h1>
+<h2>4.防止过放功能<a class="headerlink" href="#id11" title="此标题的永久链接"></a></h2>
+<p>实现原理是休眠时根据整机底电流<code class="docutils literal notranslate"><span class="pre">suspend_current_ua</span></code>计算整机能运行最大时长<code class="docutils literal notranslate"><span class="pre">secs</span></code>，启动唤醒定时器进行唤醒。</p>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="k">static</span><span class="w"> </span><span class="k">enum</span><span class="w"> </span><span class="nc">alarmtimer_restart</span><span class="w"> </span><span class="n">pax_battery_alarm_func</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">alarm</span><span class="w"> </span><span class="o">*</span><span class="n">alarm</span><span class="p">,</span><span class="w"> </span><span class="n">ktime_t</span><span class="w"> </span><span class="n">ktime</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="n">pr_info</span><span class="p">(</span><span class="s">&quot;%s: enter</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">__func__</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="n">__pm_wakeup_event</span><span class="p">(</span><span class="n">g_bms_data</span><span class="p">.</span><span class="n">bms_ws</span><span class="p">,</span><span class="w"> </span><span class="mi">1000</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">	</span><span class="k">return</span><span class="w"> </span><span class="n">ALARMTIMER_NORESTART</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">bms_start_alarm</span><span class="p">(</span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">long</span><span class="w"> </span><span class="kt">long</span><span class="w"> </span><span class="n">secs</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="k">struct</span><span class="w"> </span><span class="nc">timespec</span><span class="w"> </span><span class="n">time</span><span class="p">,</span><span class="w"> </span><span class="n">time_now</span><span class="p">,</span><span class="w"> </span><span class="n">end_time</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="n">ktime_t</span><span class="w"> </span><span class="n">ktime</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">get_monotonic_boottime</span><span class="p">(</span><span class="o">&amp;</span><span class="n">time_now</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="n">time</span><span class="p">.</span><span class="n">tv_sec</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">secs</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="n">time</span><span class="p">.</span><span class="n">tv_nsec</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="n">end_time</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">timespec_add</span><span class="p">(</span><span class="n">time_now</span><span class="p">,</span><span class="w"> </span><span class="n">time</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="n">ktime</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ktime_set</span><span class="p">(</span><span class="n">end_time</span><span class="p">.</span><span class="n">tv_sec</span><span class="p">,</span><span class="w"> </span><span class="n">end_time</span><span class="p">.</span><span class="n">tv_nsec</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">alarm_start</span><span class="p">(</span><span class="o">&amp;</span><span class="n">g_bms_data</span><span class="p">.</span><span class="n">bms_alarm</span><span class="p">,</span><span class="w"> </span><span class="n">ktime</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">	</span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">bms_suspend</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">platform_device</span><span class="w"> </span><span class="o">*</span><span class="n">pdev</span><span class="p">,</span><span class="w"> </span><span class="n">pm_message_t</span><span class="w"> </span><span class="n">state</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">long</span><span class="w"> </span><span class="kt">long</span><span class="w"> </span><span class="n">secs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="k">union</span><span class="w"> </span><span class="nc">power_supply_propval</span><span class="w"> </span><span class="n">val</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="mi">0</span><span class="p">};</span><span class="w"></span>
+<span class="w">	</span><span class="kt">int</span><span class="w"> </span><span class="n">rm_cap</span><span class="p">,</span><span class="w"> </span><span class="n">full_cap</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="kt">int</span><span class="w"> </span><span class="n">low_rm_cap</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="kt">int</span><span class="w"> </span><span class="n">ret</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">g_bms_data</span><span class="p">.</span><span class="n">bat_psy</span><span class="p">)</span><span class="w"></span>
+<span class="w">		</span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">power_supply_get_property</span><span class="p">(</span><span class="n">g_bms_data</span><span class="p">.</span><span class="n">bat_psy</span><span class="p">,</span><span class="w"> </span><span class="n">POWER_SUPPLY_PROP_CHARGE_FULL</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">val</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ret</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"></span>
+<span class="w">		</span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="n">full_cap</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">val</span><span class="p">.</span><span class="n">intval</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">power_supply_get_property</span><span class="p">(</span><span class="n">g_bms_data</span><span class="p">.</span><span class="n">bat_psy</span><span class="p">,</span><span class="w"> </span><span class="n">POWER_SUPPLY_PROP_CHARGE_COUNTER</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">val</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ret</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"></span>
+<span class="w">		</span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="n">rm_cap</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">val</span><span class="p">.</span><span class="n">intval</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">low_rm_cap</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">full_cap</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">5</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">100</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">rm_cap</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="n">low_rm_cap</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="n">secs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">5</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">60</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+<span class="w">	</span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="n">secs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">((</span><span class="n">rm_cap</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">low_rm_cap</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">g_bms_data</span><span class="p">.</span><span class="n">suspend_current_ua</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">60</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">5</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">60</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">pr_err</span><span class="p">(</span><span class="s">&quot;%s. secs = %d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="n">__func__</span><span class="p">,</span><span class="w"> </span><span class="n">secs</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="n">bms_start_alarm</span><span class="p">(</span><span class="n">secs</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">	</span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">bms_resume</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">platform_device</span><span class="w"> </span><span class="o">*</span><span class="n">pdev</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="o">[</span> <span class="m">3850</span>.395822<span class="o">]</span> PAX_CHG: charger_pm_event: enter PM_SUSPEND_PREPARE //进入休眠
+<span class="o">[</span> <span class="m">3850</span>.401988<span class="o">]</span> Freezing user space processes ...
+<span class="o">[</span> <span class="m">3850</span>.403149<span class="o">]</span> i2c_read: err wakeup of wq
+<span class="o">[</span> <span class="m">3850</span>.414895<span class="o">]</span> <span class="o">(</span>elapsed <span class="m">0</span>.012 seconds<span class="o">)</span> <span class="k">done</span>.
+<span class="o">[</span> <span class="m">3850</span>.418990<span class="o">]</span> OOM killer disabled.
+<span class="o">[</span> <span class="m">3850</span>.422260<span class="o">]</span> Freezing remaining freezable tasks ... <span class="o">(</span>elapsed <span class="m">0</span>.005 seconds<span class="o">)</span> <span class="k">do</span>                                                                                                                               ne.
+<span class="o">[</span> <span class="m">3850</span>.434994<span class="o">]</span> Suspending console<span class="o">(</span>s<span class="o">)</span> <span class="o">(</span>use no_console_suspend to debug<span class="o">)</span>
+<span class="o">[</span> <span class="m">3850</span>.447211<span class="o">]</span> ILITEK: <span class="o">(</span>ilitek_tp_pm_suspend, <span class="m">765</span><span class="o">)</span>: CALL BACK TP PM SUSPEND
+<span class="o">[</span> <span class="m">3850</span>.460164<span class="o">]</span> <span class="o">[</span>Binder<span class="o">][</span>0x295c2a685fe<span class="o">][</span><span class="m">03</span>:18:30.189330<span class="o">]</span> wlan: <span class="o">[</span><span class="m">4077</span>:I:HDD<span class="o">]</span> __wlan_hdd_bus_suspend: <span class="m">1035</span>: starting bus <span class="nb">suspend</span>
+<span class="o">[</span> <span class="m">3850</span>.464172<span class="o">]</span> <span class="o">======</span>sp_cat_tp_suspend <span class="m">336</span>
+<span class="o">[</span> <span class="m">3850</span>.464189<span class="o">]</span> <span class="o">[</span>pax_authinfo<span class="o">]</span>: gpio_sleep_sp, <span class="nv">en</span><span class="o">=</span><span class="m">1</span>
+<span class="o">[</span> <span class="m">3850</span>.464189<span class="o">]</span>
+<span class="o">[</span> <span class="m">3850</span>.464219<span class="o">]</span> PAX_BMS:bms_suspend. <span class="nv">secs</span> <span class="o">=</span> <span class="m">300</span> //计算resume时间为300s
+<span class="o">[</span> <span class="m">3850</span>.464253<span class="o">]</span> pax_base_detect_suspend
+<span class="o">[</span> <span class="m">3850</span>.587708<span class="o">]</span> Disabling non-boot CPUs ...
+<span class="o">[</span> <span class="m">3850</span>.588992<span class="o">]</span> CPU1: shutdown
+<span class="o">[</span> <span class="m">3850</span>.590215<span class="o">]</span> psci: CPU1 killed <span class="o">(</span>polled <span class="m">0</span> ms<span class="o">)</span>
+<span class="o">[</span> <span class="m">3850</span>.592165<span class="o">]</span> CPU2: shutdown
+<span class="o">[</span> <span class="m">3850</span>.593348<span class="o">]</span> psci: CPU2 killed <span class="o">(</span>polled <span class="m">4</span> ms<span class="o">)</span>
+<span class="o">[</span> <span class="m">3850</span>.595233<span class="o">]</span> CPU3: shutdown
+<span class="o">[</span> <span class="m">3850</span>.596534<span class="o">]</span> psci: CPU3 killed <span class="o">(</span>polled <span class="m">4</span> ms<span class="o">)</span>
+<span class="o">[</span> <span class="m">3850</span>.597307<span class="o">]</span> <span class="nb">suspend</span> ns:    <span class="m">3850597302664</span>     <span class="nb">suspend</span> cycles:    <span class="m">2842241709175</span>
+
+
+<span class="o">[</span> <span class="m">3850</span>.597302<span class="o">]</span> resume cycles:    <span class="m">2845988528127</span>
+<span class="o">[</span> <span class="m">3850</span>.597370<span class="o">]</span> pm_system_irq_wakeup: <span class="m">173</span> triggered pm8xxx_rtc_alarm //唤醒
+<span class="o">[</span> <span class="m">3850</span>.597932<span class="o">]</span> Enabling non-boot CPUs ...
+<span class="o">[</span> <span class="m">3850</span>.598690<span class="o">]</span> Detected VIPT I-cache on CPU1
+<span class="o">[</span> <span class="m">3850</span>.598780<span class="o">]</span> arch_timer: CPU1: Trapping CNTVCT access
+<span class="o">[</span> <span class="m">3850</span>.598834<span class="o">]</span> CPU1: Booted secondary processor 0x0000000001 <span class="o">[</span>0x51af8014<span class="o">]</span>
+<span class="o">[</span> <span class="m">3850</span>.599825<span class="o">]</span> CPU1 is up
+<span class="o">[</span> <span class="m">3850</span>.600901<span class="o">]</span> Detected VIPT I-cache on CPU2
+<span class="o">[</span> <span class="m">3850</span>.600992<span class="o">]</span> arch_timer: CPU2: Trapping CNTVCT access
+<span class="o">[</span> <span class="m">3850</span>.601048<span class="o">]</span> CPU2: Booted secondary processor 0x0000000002 <span class="o">[</span>0x51af8014<span class="o">]</span>
+<span class="o">[</span> <span class="m">3850</span>.602044<span class="o">]</span> CPU2 is up
+<span class="o">[</span> <span class="m">3850</span>.603029<span class="o">]</span> Detected VIPT I-cache on CPU3
+<span class="o">[</span> <span class="m">3850</span>.603122<span class="o">]</span> arch_timer: CPU3: Trapping CNTVCT access
+<span class="o">[</span> <span class="m">3850</span>.603178<span class="o">]</span> CPU3: Booted secondary processor 0x0000000003 <span class="o">[</span>0x51af8014<span class="o">]</span>
+<span class="o">[</span> <span class="m">3850</span>.604146<span class="o">]</span> CPU3 is up
+<span class="o">[</span> <span class="m">3850</span>.721789<span class="o">]</span> pax_base_detect_resume
+<span class="o">[</span> <span class="m">3850</span>.722653<span class="o">]</span> PAX_BAT: pax_battery_resume: pre_soc: <span class="m">4</span> soc: <span class="m">4</span> //唤醒时电量为4%
+<span class="o">[</span> <span class="m">3850</span>.723752<span class="o">]</span> ///PD dbg info 127d
+<span class="o">[</span> <span class="m">3850</span>.723758<span class="o">]</span> &lt; <span class="m">3850</span>.723&gt;TCPC-TCPC:bat_update_work_func battery update <span class="nv">soc</span> <span class="o">=</span> <span class="m">4</span>
+<span class="o">[</span> <span class="m">3850</span>.723758<span class="o">]</span> &lt; <span class="m">3850</span>.723&gt;TCPC-TCPC:bat_update_work_func Battery Discharging
+<span class="o">[</span> <span class="m">3850</span>.723793<span class="o">]</span> <span class="o">======</span>sp_cat_tp_resume <span class="m">347</span>
+<span class="o">[</span> <span class="m">3850</span>.726769<span class="o">]</span> <span class="o">[</span>Binder<span class="o">][</span>0x296a2488d15<span class="o">][</span><span class="m">03</span>:21:45.602759<span class="o">]</span> wlan: <span class="o">[</span><span class="m">4077</span>:I:HDD<span class="o">]</span> wlan_hdd_bus_resume: <span class="m">1226</span>: starting bus resume
+<span class="o">[</span> <span class="m">3850</span>.730373<span class="o">]</span> ILITEK: <span class="o">(</span>drm_notifier_callback, <span class="m">471</span><span class="o">)</span>: DRM event:2,blank:3
+<span class="o">[</span> <span class="m">3850</span>.730379<span class="o">]</span> ILITEK: <span class="o">(</span>drm_notifier_callback, <span class="m">492</span><span class="o">)</span>: DRM BLANK<span class="o">(</span><span class="m">3</span><span class="o">)</span> <span class="k">do</span> not need process
+<span class="o">[</span> <span class="m">3850</span>.730450<span class="o">]</span> ILITEK: <span class="o">(</span>drm_notifier_callback, <span class="m">471</span><span class="o">)</span>: DRM event:1,blank:3
+<span class="o">[</span> <span class="m">3850</span>.730453<span class="o">]</span> ILITEK: <span class="o">(</span>drm_notifier_callback, <span class="m">492</span><span class="o">)</span>: DRM BLANK<span class="o">(</span><span class="m">3</span><span class="o">)</span> <span class="k">do</span> not need process
+<span class="o">[</span> <span class="m">3850</span>.731232<span class="o">]</span> ILITEK: <span class="o">(</span>ilitek_tp_pm_resume, <span class="m">779</span><span class="o">)</span>: CALL BACK TP PM RESUME
+<span class="o">[</span> <span class="m">3850</span>.794730<span class="o">]</span> PAX_BAT: <span class="o">[</span>status:Discharging, health:Good, present:1, tech:Li-ion, capcity:4,cap_rm:152 mah, vol:3567 mv, temp:29, curr:-60 ma, ui_soc:4<span class="o">]</span>
+<span class="o">[</span> <span class="m">3850</span>.795842<span class="o">]</span> ///PD dbg info 127d
+<span class="o">[</span> <span class="m">3850</span>.799272<span class="o">]</span> OOM killer enabled.
+<span class="o">[</span> <span class="m">3850</span>.799275<span class="o">]</span> Restarting tasks ... <span class="k">done</span>.
+<span class="o">[</span> <span class="m">3850</span>.825627<span class="o">]</span> healthd: battery <span class="nv">l</span><span class="o">=</span><span class="m">4</span> <span class="nv">v</span><span class="o">=</span><span class="m">3567</span> <span class="nv">t</span><span class="o">=</span><span class="m">29</span>.0 <span class="nv">h</span><span class="o">=</span><span class="m">2</span> <span class="nv">st</span><span class="o">=</span><span class="m">3</span> <span class="nv">c</span><span class="o">=</span>-60000 <span class="nv">fc</span><span class="o">=</span><span class="m">4481000</span> <span class="nv">cc</span><span class="o">=</span><span class="m">6</span> <span class="nv">chg</span><span class="o">=</span>
+<span class="o">[</span> <span class="m">3850</span>.829577<span class="o">]</span> thermal thermal_zone26: failed to <span class="nb">read</span> out thermal zone <span class="o">(</span>-61<span class="o">)</span>
+<span class="o">[</span> <span class="m">3850</span>.838820<span class="o">]</span> &lt; <span class="m">3850</span>.795&gt;TCPC-TCPC:bat_update_work_func battery update <span class="nv">soc</span> <span class="o">=</span> <span class="m">4</span>
+<span class="o">[</span> <span class="m">3850</span>.838820<span class="o">]</span> &lt; <span class="m">3850</span>.795&gt;TCPC-TCPC:bat_update_work_func Battery Discharging
+<span class="o">[</span> <span class="m">3850</span>.842930<span class="o">]</span> PAX_CHG: charger_pm_event: enter PM_POST_SUSPEND
+<span class="o">[</span> <span class="m">3851</span>.009018<span class="o">]</span> Resume caused by IRQ <span class="m">173</span>, pm8xxx_rtc_alarm // 唤醒源
+</pre></div>
+</div>
+</section>
+</section>
+<section id="id12">
+<h1>四、底层BMS功能接口提供<a class="headerlink" href="#id12" title="此标题的永久链接"></a></h1>
 <p>为了减少bms与charge、guage及平台的耦合性，BMS不和Charge、Guage直接交互，在他们中间增加了BMS Notify，BMS driver调用power_supply_get_property和power_supply_reg_notifier方法通过PSY core来获取Charger和Guage相关信息，同时可通过BMS Notify调bms_notify_call_chain向Charge发送相关指令.</p>
 <p><img alt="0009_0011.png" src="../../../_images/0009_0011.png" /></p>
 <section id="hal">
@@ -1573,8 +1707,8 @@ interface IPaxBMS {
 </pre></div>
 </div>
 </section>
-<section id="id12">
-<h3>添加HIDL服务编译选项<a class="headerlink" href="#id12" title="此标题的永久链接"></a></h3>
+<section id="id13">
+<h3>添加HIDL服务编译选项<a class="headerlink" href="#id13" title="此标题的永久链接"></a></h3>
 <div class="highlight-DIFF notranslate"><div class="highlight"><pre><span></span><span class="gd">--- a/device/mediatek/mt6765/device.mk</span><span class="w"></span>
 <span class="gi">+++ b/device/mediatek/mt6765/device.mk</span><span class="w"></span>
 <span class="gu">@@ -1051,6 +1051,14 @@ PRODUCT_PACKAGES += \</span><span class="w"></span>
@@ -1615,8 +1749,8 @@ interface IPaxBMS {
 </pre></div>
 </div>
 </section>
-<section id="id13">
-<h3>启动HIDL服务<a class="headerlink" href="#id13" title="此标题的永久链接"></a></h3>
+<section id="id14">
+<h3>启动HIDL服务<a class="headerlink" href="#id14" title="此标题的永久链接"></a></h3>
 <div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span>vendor/mediatek/proprietary/hardware/libpax_bms/1.0/default/android.hardware.pax_bms@1.0-service.rc
 @ -0,0 +1,9 @@
 service pax_bms-hal-1-0 /vendor/bin/hw/android.hardware.pax_bms@1.0-service
@@ -1661,8 +1795,8 @@ int main() {
 </pre></div>
 </div>
 </section>
-<section id="id14">
-<h3>查看HIDL服务进程<a class="headerlink" href="#id14" title="此标题的永久链接"></a></h3>
+<section id="id15">
+<h3>查看HIDL服务进程<a class="headerlink" href="#id15" title="此标题的永久链接"></a></h3>
 <p>实际上是一个<code class="docutils literal notranslate"><span class="pre">binder_ioctl_write_read</span></code>的进程。</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">PAYTABLETM8</span><span class="p">:</span><span class="o">/</span> <span class="c1"># ps -A | grep bms</span>
 <span class="n">system</span>          <span class="mi">479</span>      <span class="mi">1</span> <span class="mi">10776264</span>  <span class="mi">5036</span> <span class="n">binder_ioctl_write_read</span> <span class="mi">0</span> <span class="n">S</span> <span class="n">android</span><span class="o">.</span><span class="n">hardware</span><span class="o">.</span><span class="n">pax_bms</span><span class="o">@</span><span class="mf">1.0</span><span class="o">-</span><span class="n">service</span>

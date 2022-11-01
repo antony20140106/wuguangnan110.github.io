@@ -44,6 +44,7 @@
               <div class="local-toc"><ul>
 <li><a class="reference internal" href="#">qcom qcm2290 功耗调试记录</a></li>
 <li><a class="reference internal" href="#id1">系统无法休眠调试</a></li>
+<li><a class="reference internal" href="#rtc10">RTC中断每10分钟唤醒一次</a></li>
 </ul>
 </div>
         </div>
@@ -145,6 +146,126 @@
 <p>去掉以上两个锁后系统正常进入休眠：</p>
 <p><img alt="0004_0002.png" src="../../../_images/0004_00024.png" />
 <img alt="0004_0003.png" src="../../../_images/0004_00033.png" /></p>
+</section>
+<section id="rtc10">
+<h1>RTC中断每10分钟唤醒一次<a class="headerlink" href="#rtc10" title="此标题的永久链接"></a></h1>
+<p>发现机器休眠后没10分钟一次<code class="docutils literal notranslate"><span class="pre">pm8xxx_rtc_alarm</span></code>唤醒，如下：</p>
+<p><img alt="0004_0004.png" src="../../../_images/0004_00042.png" /></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">pm2250.dtsi</span></code>:</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>                <span class="n">pm2250_rtc</span><span class="p">:</span> <span class="n">qcom</span><span class="p">,</span><span class="n">pm2250_rtc</span> <span class="p">{</span>
+                        <span class="n">compatible</span> <span class="o">=</span> <span class="s2">&quot;qcom,pm8941-rtc&quot;</span><span class="p">;</span>
+                        <span class="n">interrupts</span> <span class="o">=</span> <span class="o">&lt;</span><span class="mh">0x0</span> <span class="mh">0x61</span> <span class="mh">0x1</span> <span class="n">IRQ_TYPE_NONE</span><span class="o">&gt;</span><span class="p">;</span>
+                <span class="p">};</span>
+
+</pre></div>
+</div>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">drivers/rtc/rtc-pm8xxx.c</span></code>:</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="k">static</span><span class="w"> </span><span class="n">irqreturn_t</span><span class="w"> </span><span class="nf">pm8xxx_alarm_trigger</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">irq</span><span class="p">,</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="o">*</span><span class="n">dev_id</span><span class="p">)</span><span class="w"> </span><span class="c1">//中断处理，清中断</span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="k">struct</span><span class="w"> </span><span class="nc">pm8xxx_rtc</span><span class="w"> </span><span class="o">*</span><span class="n">rtc_dd</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">dev_id</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="k">const</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">pm8xxx_rtc_regs</span><span class="w"> </span><span class="o">*</span><span class="n">regs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rtc_dd</span><span class="o">-&gt;</span><span class="n">regs</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">ctrl_reg</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="n">rc</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">long</span><span class="w"> </span><span class="n">irq_flags</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">        </span><span class="n">rtc_update_irq</span><span class="p">(</span><span class="n">rtc_dd</span><span class="o">-&gt;</span><span class="n">rtc</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">RTC_IRQF</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">RTC_AF</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">        </span><span class="n">spin_lock_irqsave</span><span class="p">(</span><span class="o">&amp;</span><span class="n">rtc_dd</span><span class="o">-&gt;</span><span class="n">ctrl_reg_lock</span><span class="p">,</span><span class="w"> </span><span class="n">irq_flags</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">        </span><span class="cm">/* Clear the alarm enable bit */</span><span class="w"></span>
+<span class="w">        </span><span class="n">rc</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">regmap_read</span><span class="p">(</span><span class="n">rtc_dd</span><span class="o">-&gt;</span><span class="n">regmap</span><span class="p">,</span><span class="w"> </span><span class="n">regs</span><span class="o">-&gt;</span><span class="n">alarm_ctrl</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">ctrl_reg</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">rc</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="n">spin_unlock_irqrestore</span><span class="p">(</span><span class="o">&amp;</span><span class="n">rtc_dd</span><span class="o">-&gt;</span><span class="n">ctrl_reg_lock</span><span class="p">,</span><span class="w"> </span><span class="n">irq_flags</span><span class="p">);</span><span class="w"></span>
+<span class="w">                </span><span class="k">goto</span><span class="w"> </span><span class="n">rtc_alarm_handled</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">        </span><span class="n">ctrl_reg</span><span class="w"> </span><span class="o">&amp;=</span><span class="w"> </span><span class="o">~</span><span class="n">regs</span><span class="o">-&gt;</span><span class="n">alarm_en</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">        </span><span class="n">rc</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">regmap_write</span><span class="p">(</span><span class="n">rtc_dd</span><span class="o">-&gt;</span><span class="n">regmap</span><span class="p">,</span><span class="w"> </span><span class="n">regs</span><span class="o">-&gt;</span><span class="n">alarm_ctrl</span><span class="p">,</span><span class="w"> </span><span class="n">ctrl_reg</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">rc</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="n">spin_unlock_irqrestore</span><span class="p">(</span><span class="o">&amp;</span><span class="n">rtc_dd</span><span class="o">-&gt;</span><span class="n">ctrl_reg_lock</span><span class="p">,</span><span class="w"> </span><span class="n">irq_flags</span><span class="p">);</span><span class="w"></span>
+<span class="w">                </span><span class="n">dev_err</span><span class="p">(</span><span class="n">rtc_dd</span><span class="o">-&gt;</span><span class="n">rtc_dev</span><span class="p">,</span><span class="w"></span>
+<span class="w">                        </span><span class="s">&quot;Write to alarm control register failed</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">                </span><span class="k">goto</span><span class="w"> </span><span class="n">rtc_alarm_handled</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">        </span><span class="n">spin_unlock_irqrestore</span><span class="p">(</span><span class="o">&amp;</span><span class="n">rtc_dd</span><span class="o">-&gt;</span><span class="n">ctrl_reg_lock</span><span class="p">,</span><span class="w"> </span><span class="n">irq_flags</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">        </span><span class="cm">/* Clear RTC alarm register */</span><span class="w"></span>
+<span class="w">        </span><span class="n">rc</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">regmap_read</span><span class="p">(</span><span class="n">rtc_dd</span><span class="o">-&gt;</span><span class="n">regmap</span><span class="p">,</span><span class="w"> </span><span class="n">regs</span><span class="o">-&gt;</span><span class="n">alarm_ctrl2</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">ctrl_reg</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">rc</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="n">dev_err</span><span class="p">(</span><span class="n">rtc_dd</span><span class="o">-&gt;</span><span class="n">rtc_dev</span><span class="p">,</span><span class="w"></span>
+<span class="w">                        </span><span class="s">&quot;RTC Alarm control2 register read failed</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">                </span><span class="k">goto</span><span class="w"> </span><span class="n">rtc_alarm_handled</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">        </span><span class="n">ctrl_reg</span><span class="w"> </span><span class="o">|=</span><span class="w"> </span><span class="n">PM8xxx_RTC_ALARM_CLEAR</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="n">rc</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">regmap_write</span><span class="p">(</span><span class="n">rtc_dd</span><span class="o">-&gt;</span><span class="n">regmap</span><span class="p">,</span><span class="w"> </span><span class="n">regs</span><span class="o">-&gt;</span><span class="n">alarm_ctrl2</span><span class="p">,</span><span class="w"> </span><span class="n">ctrl_reg</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">rc</span><span class="p">)</span><span class="w"></span>
+<span class="w">                </span><span class="n">dev_err</span><span class="p">(</span><span class="n">rtc_dd</span><span class="o">-&gt;</span><span class="n">rtc_dev</span><span class="p">,</span><span class="w"></span>
+<span class="w">                        </span><span class="s">&quot;Write to RTC Alarm control2 register failed</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span><span class="w"></span>
+
+<span class="nl">rtc_alarm_handled</span><span class="p">:</span><span class="w"></span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">IRQ_HANDLED</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="k">static</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">rtc_class_ops</span><span class="w"> </span><span class="n">pm8xxx_rtc_ops</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="c1">//rtc ops，给manager驱动用</span>
+<span class="w">        </span><span class="p">.</span><span class="n">read_time</span><span class="w">      </span><span class="o">=</span><span class="w"> </span><span class="n">pm8xxx_rtc_read_time</span><span class="p">,</span><span class="w"></span>
+<span class="w">        </span><span class="p">.</span><span class="n">set_time</span><span class="w">       </span><span class="o">=</span><span class="w"> </span><span class="n">pm8xxx_rtc_set_time</span><span class="p">,</span><span class="w"></span>
+<span class="w">        </span><span class="p">.</span><span class="n">set_alarm</span><span class="w">      </span><span class="o">=</span><span class="w"> </span><span class="n">pm8xxx_rtc_set_alarm</span><span class="p">,</span><span class="w"></span>
+<span class="w">        </span><span class="p">.</span><span class="n">read_alarm</span><span class="w">     </span><span class="o">=</span><span class="w"> </span><span class="n">pm8xxx_rtc_read_alarm</span><span class="p">,</span><span class="w"></span>
+<span class="w">        </span><span class="p">.</span><span class="n">alarm_irq_enable</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pm8xxx_rtc_alarm_irq_enable</span><span class="p">,</span><span class="w"></span>
+<span class="p">};</span><span class="w"></span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">pm8xxx_rtc_probe</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">platform_device</span><span class="w"> </span><span class="o">*</span><span class="n">pdev</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="n">rtc_dd</span><span class="o">-&gt;</span><span class="n">rtc_alarm_irq</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">platform_get_irq</span><span class="p">(</span><span class="n">pdev</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">rtc_dd</span><span class="o">-&gt;</span><span class="n">rtc_alarm_irq</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="n">dev_err</span><span class="p">(</span><span class="o">&amp;</span><span class="n">pdev</span><span class="o">-&gt;</span><span class="n">dev</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Alarm IRQ resource absent!</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">                </span><span class="k">return</span><span class="w"> </span><span class="o">-</span><span class="n">ENXIO</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">        </span><span class="n">rtc_dd</span><span class="o">-&gt;</span><span class="n">allow_set_time</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">of_property_read_bool</span><span class="p">(</span><span class="n">pdev</span><span class="o">-&gt;</span><span class="n">dev</span><span class="p">.</span><span class="n">of_node</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                      </span><span class="s">&quot;allow-set-time&quot;</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">        </span><span class="n">rtc_dd</span><span class="o">-&gt;</span><span class="n">regs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">match</span><span class="o">-&gt;</span><span class="n">data</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="n">rtc_dd</span><span class="o">-&gt;</span><span class="n">rtc_dev</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">&amp;</span><span class="n">pdev</span><span class="o">-&gt;</span><span class="n">dev</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">        </span><span class="n">rc</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pm8xxx_rtc_enable</span><span class="p">(</span><span class="n">rtc_dd</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="n">device_init_wakeup</span><span class="p">(</span><span class="o">&amp;</span><span class="n">pdev</span><span class="o">-&gt;</span><span class="n">dev</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">        </span><span class="cm">/* Register the RTC device */</span><span class="w"></span>
+<span class="w">        </span><span class="n">rtc_dd</span><span class="o">-&gt;</span><span class="n">rtc</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">devm_rtc_device_register</span><span class="p">(</span><span class="o">&amp;</span><span class="n">pdev</span><span class="o">-&gt;</span><span class="n">dev</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;pm8xxx_rtc&quot;</span><span class="p">,</span><span class="w"> </span><span class="c1">//注册rtc设备，ops注册</span>
+<span class="w">                                               </span><span class="o">&amp;</span><span class="n">pm8xxx_rtc_ops</span><span class="p">,</span><span class="w"> </span><span class="n">THIS_MODULE</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">IS_ERR</span><span class="p">(</span><span class="n">rtc_dd</span><span class="o">-&gt;</span><span class="n">rtc</span><span class="p">))</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="n">dev_err</span><span class="p">(</span><span class="o">&amp;</span><span class="n">pdev</span><span class="o">-&gt;</span><span class="n">dev</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;%s: RTC registration failed (%ld)</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"></span>
+<span class="w">                        </span><span class="n">__func__</span><span class="p">,</span><span class="w"> </span><span class="n">PTR_ERR</span><span class="p">(</span><span class="n">rtc_dd</span><span class="o">-&gt;</span><span class="n">rtc</span><span class="p">));</span><span class="w"></span>
+<span class="w">                </span><span class="k">return</span><span class="w"> </span><span class="n">PTR_ERR</span><span class="p">(</span><span class="n">rtc_dd</span><span class="o">-&gt;</span><span class="n">rtc</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">        </span><span class="cm">/* Request the alarm IRQ */</span><span class="w"></span>
+<span class="w">        </span><span class="n">rc</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">devm_request_any_context_irq</span><span class="p">(</span><span class="o">&amp;</span><span class="n">pdev</span><span class="o">-&gt;</span><span class="n">dev</span><span class="p">,</span><span class="w"> </span><span class="n">rtc_dd</span><span class="o">-&gt;</span><span class="n">rtc_alarm_irq</span><span class="p">,</span><span class="w"> </span><span class="c1">//申请alarm 中断</span>
+<span class="w">                                          </span><span class="n">pm8xxx_alarm_trigger</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                          </span><span class="n">IRQF_TRIGGER_RISING</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                          </span><span class="s">&quot;pm8xxx_rtc_alarm&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">rtc_dd</span><span class="p">);</span><span class="w"></span>
+
+<span class="p">}</span><span class="w"></span>
+<span class="k">static</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">of_device_id</span><span class="w"> </span><span class="n">pm8xxx_id_table</span><span class="p">[]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="p">{</span><span class="w"> </span><span class="p">.</span><span class="n">compatible</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;qcom,pm8921-rtc&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">.</span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">&amp;</span><span class="n">pm8921_regs</span><span class="w"> </span><span class="p">},</span><span class="w"></span>
+<span class="w">        </span><span class="p">{</span><span class="w"> </span><span class="p">.</span><span class="n">compatible</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;qcom,pm8018-rtc&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">.</span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">&amp;</span><span class="n">pm8921_regs</span><span class="w"> </span><span class="p">},</span><span class="w"></span>
+<span class="w">        </span><span class="p">{</span><span class="w"> </span><span class="p">.</span><span class="n">compatible</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;qcom,pm8058-rtc&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">.</span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">&amp;</span><span class="n">pm8058_regs</span><span class="w"> </span><span class="p">},</span><span class="w"></span>
+<span class="w">        </span><span class="p">{</span><span class="w"> </span><span class="p">.</span><span class="n">compatible</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;qcom,pm8941-rtc&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">.</span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">&amp;</span><span class="n">pm8941_regs</span><span class="w"> </span><span class="p">},</span><span class="w"></span>
+<span class="w">        </span><span class="p">{</span><span class="w"> </span><span class="p">.</span><span class="n">compatible</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;qcom,pmk8350-rtc&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">.</span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">&amp;</span><span class="n">pmk8350_regs</span><span class="w"> </span><span class="p">},</span><span class="w"></span>
+<span class="w">        </span><span class="p">{</span><span class="w"> </span><span class="p">.</span><span class="n">compatible</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;qcom,pm8916-rtc&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">.</span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">&amp;</span><span class="n">pm8916_regs</span><span class="w"> </span><span class="p">},</span><span class="w"></span>
+<span class="w">        </span><span class="p">{</span><span class="w"> </span><span class="p">},</span><span class="w"></span>
+<span class="p">};</span><span class="w"></span>
+<span class="n">MODULE_DEVICE_TABLE</span><span class="p">(</span><span class="n">of</span><span class="p">,</span><span class="w"> </span><span class="n">pm8xxx_id_table</span><span class="p">);</span><span class="w"></span>
+</pre></div>
+</div>
 </section>
 
 

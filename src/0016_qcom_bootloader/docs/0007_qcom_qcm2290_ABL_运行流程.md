@@ -176,3 +176,246 @@ stack_guard_update_default:
   return Status;
 }
 ```
+
+# fastboot最小电压要求
+
+* `QcomPkg/SocPkg/AgattiPkg/Settings/Charger/QcomChargerConfig_VbattTh.cfg`定义如下,MTK平台是3.5v：
+```C++
+#Minimum Battery Voltage to allow SW Flash Image
+SWFlashMinBattVoltageMv = 3600
+```
+
+* `QcomPkg/Drivers/QcomChargerDxe/QcomChargerPlatform.c`驱动中定义最小电压为3.6v:
+```C++
+/**
+ChargerPlatform_ReadCfgParams()
+
+@brief
+Battery Parameter Default Configurations file read Call Back
+*/
+VOID
+ChargerPlatform_ReadCfgParams
+(
+  UINT8* Section,
+  UINT8* Key,
+  UINT8* Value
+)
+{
+    if (AsciiStriCmp ((CHAR8*)Key, "SWFlashMinBattVoltageMv") == 0)
+    {
+      gChargerPlatformCfgData.SWFlashMinBattVoltageMv = ChargerPlatformFile_AsciiToInt((char *)Value);
+      return;
+    }
+
+}
+
+EFI_STATUS ChargerPlatformFile_GetChargerConfig(EFI_QCOM_CHARGER_CONFIG_KEY ChargerCfgKey, UINT32 *KeyValue)
+{
+  EFI_STATUS Status = EFI_SUCCESS;
+
+  if(FALSE == gChargerCfgInitialized)
+  {
+    return EFI_DEVICE_ERROR;
+  }
+
+  if(NULL == KeyValue)
+  {
+    return EFI_INVALID_PARAMETER;
+  }
+
+  switch(ChargerCfgKey)
+  {
+    case EFI_QCOM_CHARGER_CONFIG_KEY_SW_FLASH_VOLTAGE:
+      *KeyValue = gChargerPlatformCfgData.SWFlashMinBattVoltageMv;
+    break;
+    default:
+      Status = EFI_INVALID_PARAMETER;
+    break;
+  }
+
+  return Status;
+}
+```
+
+* `QcomPkg/Drivers/ChargerExDxe/ChargerExProtocol.c`ABL通过protocol的`ChargerExIsPowerOk`获取，其中调用驱动的protocol接口`GetChargerConfig`接口获取方式，主要是判断电压大于3.6v则返回TRUE：
+```C++
+/**
+EFI_ChargerExIsPowerOk ()
+
+@brief
+Returns if battery voltage is good to process with SW flash
+*/
+EFI_STATUS
+EFIAPI
+EFI_ChargerExIsPowerOk
+(
+  IN  EFI_CHARGER_EX_POWER_TYPE   PowerType,
+  OUT VOID                       *pPowerTypeInfo
+)
+{
+  EFI_STATUS Status                = EFI_SUCCESS;
+  EFI_CHARGER_EX_FLASH_INFO *pFlashInfo = NULL;
+  UINT32     SwFlashBattMinVoltage = 0;
+  UINT32     BatteryCurrentVoltage = 0;
+  BOOLEAN    BatteryPresent        = FALSE;
+  BOOLEAN    ChargerPresent        = FALSE;
+  EFI_PLATFORMINFO_PLATFORM_TYPE       PlatformType;
+
+  if(FALSE == IsChgPresent)
+  {
+        return EFI_UNSUPPORTED;
+  }
+
+  if(!pPowerTypeInfo)
+    return EFI_INVALID_PARAMETER;
+
+  pFlashInfo = (EFI_CHARGER_EX_FLASH_INFO *)pPowerTypeInfo;
+
+  Status |= GetPlatformType(&PlatformType);
+  if(EFI_SUCCESS != Status)
+  {
+    DEBUG((EFI_D_WARN, "ChargerExProtocol:: %a Error getting platform type  \r\n", __FUNCTION__));
+    return EFI_DEVICE_ERROR;
+  }
+
+  if((EFI_PLATFORMINFO_TYPE_CDP == PlatformType) || (EFI_PLATFORMINFO_TYPE_RUMI == PlatformType))
+  {
+    DEBUG(( EFI_D_WARN, "ChargerExProtocol:: %a CDP/RUMI/IDP (%d) Platform detected. No Battery information available. \r\n", __FUNCTION__, PlatformType));
+    return EFI_UNSUPPORTED;
+  }
+  else if(EFI_PLATFORMINFO_TYPE_CLS == PlatformType)
+  {
+    pFlashInfo->bCanFlash = TRUE;
+    return EFI_SUCCESS;
+  }
+
+  switch(PowerType)
+  {
+    case EFI_CHARGER_EX_POWER_FLASH_BATTERY_VOLTAGE_TYPE:
+      pFlashInfo = (EFI_CHARGER_EX_FLASH_INFO *)pPowerTypeInfo;
+      /* Get Battery Presence, Charger Presence, Voltage */
+      Status =  EFI_ChargerExGetBatteryPresence(&BatteryPresent);
+      Status |= EFI_ChargerExGetChargerPresence(&ChargerPresent);
+      Status |= EFI_ChargerExGetBatteryVoltage(&BatteryCurrentVoltage);
+
+      if(EFI_SUCCESS == Status)
+      {
+        pFlashInfo->BattCurrVoltage = BatteryCurrentVoltage;
+      }
+
+      if(!pQcomChargerProtocol)
+      {
+        Status |= gBS->LocateProtocol( &gQcomChargerProtocolGuid, NULL, (VOID **)&pQcomChargerProtocol );
+        if(EFI_SUCCESS != Status || NULL == pQcomChargerProtocol)
+        {
+          return EFI_DEVICE_ERROR;
+        }
+      }
+
+      Status |= pQcomChargerProtocol->GetChargerConfig(EFI_QCOM_CHARGER_CONFIG_KEY_SW_FLASH_VOLTAGE, &SwFlashBattMinVoltage);
+
+      if(Status == EFI_SUCCESS)
+      {
+        pFlashInfo->BattRequiredVoltage = SwFlashBattMinVoltage;
+        /* If battery not present but still device boot up have debug board */
+        if(!BatteryPresent || (BatteryPresent  && (BatteryCurrentVoltage >= SwFlashBattMinVoltage)))
+        {
+          pFlashInfo->bCanFlash = TRUE;
+        }
+        else
+        {
+          DEBUG(( EFI_D_WARN, "ChargerExProtocol:: %a SwFlashBattMinVoltage = %d mV\r\n", __FUNCTION__,SwFlashBattMinVoltage));
+          pFlashInfo->bCanFlash = FALSE;
+        }
+      }
+    break;
+    default:
+    break;
+  }
+
+  return Status;
+}
+
+/**
+Charger External UEFI Protocol implementation
+*/
+EFI_CHARGER_EX_PROTOCOL ChargerExProtocolImplementation =
+{
+    CHARGER_EX_REVISION,
+    EFI_ChargerExGetChargerPresence,
+    EFI_ChargerExGetBatteryPresence,
+    EFI_ChargerExGetBatteryVoltage,
+    EFI_ChargerExIsOffModeCharging,
+    EFI_ChargerExIsPowerOk,
+};
+```
+
+* ABL阶段代码，如果小于3.6v则不进行充电：
+```c++
+/**
+   Add safeguards such as refusing to flash if the battery levels is lower than
+ the min voltage
+   or bypass if the battery is not present.
+   @param[out] BatteryVoltage  The current voltage of battery
+   @retval     BOOLEAN         The value whether the device is allowed to flash
+ image.
+ **/
+BOOLEAN
+TargetBatterySocOk (UINT32 *BatteryVoltage)
+{
+  EFI_STATUS Status = EFI_SUCCESS;
+  EFI_CHARGER_EX_PROTOCOL *ChgDetectProtocol = NULL;
+  EFI_CHARGER_EX_FLASH_INFO FlashInfo = {0};
+  BOOLEAN BatteryPresent = FALSE;
+  BOOLEAN ChargerPresent = FALSE;
+
+  *BatteryVoltage = 0;
+  Status = gBS->LocateProtocol (&gChargerExProtocolGuid, NULL,
+                                (VOID **)&ChgDetectProtocol);
+  if (Status == EFI_NOT_FOUND) {
+    DEBUG ((EFI_D_VERBOSE, "Charger Protocol is not available.\n"));
+    return TRUE;
+  } else if (EFI_ERROR (Status)) {
+    DEBUG ((EFI_D_ERROR, "Error locating charger detect protocol\n"));
+    return FALSE;
+  }
+
+  /* The new protocol are supported on future chipsets */
+  if (ChgDetectProtocol->Revision >= CHARGER_EX_REVISION) {
+    Status = ChgDetectProtocol->IsPowerOk (
+        EFI_CHARGER_EX_POWER_FLASH_BATTERY_VOLTAGE_TYPE, &FlashInfo);
+    if (EFI_ERROR (Status)) {
+      /* But be bypassable where the device doesn't even have a battery */
+      if (Status == EFI_UNSUPPORTED)
+        return TRUE;
+
+      DEBUG ((EFI_D_ERROR, "Error getting the info of charger: %r\n", Status));
+      return FALSE;
+    }
+
+    *BatteryVoltage = FlashInfo.BattCurrVoltage;
+    if (!(FlashInfo.bCanFlash) ||
+        (*BatteryVoltage < FlashInfo.BattRequiredVoltage))
+    {
+      DEBUG ((EFI_D_ERROR, "Error battery voltage: %d "
+        "Requireed voltage: %d, can flash: %d\n", *BatteryVoltage,
+        FlashInfo.BattRequiredVoltage, FlashInfo.bCanFlash));
+      return FALSE;
+    }
+    return TRUE;
+  } else {
+    Status = TargetCheckBatteryStatus (&BatteryPresent, &ChargerPresent,
+                                       BatteryVoltage);
+    if (((Status == EFI_SUCCESS) &&
+         (!BatteryPresent ||
+          (BatteryPresent && (*BatteryVoltage > BATT_MIN_VOLT)))) ||
+        (Status == EFI_UNSUPPORTED)) {
+      return TRUE;
+    }
+
+    DEBUG ((EFI_D_ERROR, "Error battery check status: %r voltage: %d\n",
+        Status, *BatteryVoltage));
+    return FALSE;
+  }
+}
+```

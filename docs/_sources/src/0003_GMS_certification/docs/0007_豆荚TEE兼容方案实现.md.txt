@@ -701,28 +701,71 @@ pl阶段不烧录，主要因为他只能启动豆荚tee os，所以需要将瓶
 +# [NEW FEATURE]-END by wugangnan@paxsz.com 2022-10-17,  for trustkernel and microtrust tee compatible
 ```
 
+## googlekey写入判断属性
+
+* 豆荚判断属性为：
+```shell
+#未写入
+[vendor.soter.teei.googlekey.model]: [false]
+[vendor.soter.teei.googlekey.status]: [-1]
+
+#写入成功
+[vendor.soter.teei.googlekey.model]: [PAYTABLETM8]
+[vendor.soter.teei.googlekey.status]: [ok]
+```
+
+* 瓶钵判断属性：
+```shell
+[vendor.trustkernel.keybox.deployed] [true]
+```
+
+* 兼容修改如下：
+```diff
+--- a/paxdroid/hardware/libhardware/modules/systool/systool.c
++++ b/paxdroid/hardware/libhardware/modules/systool/systool.c
+@@ -950,10 +950,13 @@ int32_t getGoogleKeyValue(){
+     char productionline[PROPERTY_VALUE_MAX] = {0};
+     char deployedpass[] = "true";
+     char productionlinepass[] = "ready";
++    char teeistate[PROPERTY_VALUE_MAX] = {0};
++    char teeiPass[] = "ok";
+     property_get("vendor.trustkernel.keybox.deployed", deployed, "");
+     property_get("vendor.trustkernel.productionline.state", productionline, "");
++    property_get("vendor.soter.teei.googlekey.status", teeistate, "");
+     ALOGD("getGoogleKeyValue deployed:%s   deployedpass:%s", deployed,productionline);
+-    if(strcmp(deployed,deployedpass)==0 && strcmp(productionline,productionlinepass)==0){
++    if((strcmp(deployed,deployedpass)==0 && strcmp(productionline,productionlinepass)==0)||strcmp(teeistate,teeiPass)==0){
+         return 1;
+     }
+```
+
 # 问题点
 
 ## google key写号失败
 
 fae分析是数组和bin文件不匹配，解密失败了，打印如下：
 ```
-<6>[    9.707597] -(2)[252:teei_log_thread][TZ_LOG] uTSecMan| lookup ta: 'c09c9c5daa504b78b0e46eda61556c3a' (40)
-<6>[    9.708870] -(2)[252:teei_log_thread][TZ_LOG] uTSecMan| enable model control
-<6>[    9.709804] -(2)[252:teei_log_thread][TZ_LOG] uTSecMan| ta don't need verify model
-<6>[    9.761463] -(2)[252:teei_log_thread][TZ_LOG] uTSecMan| Secmanager Initialization: total spent 4.0 ms
-<6>[    9.777627] -(2)[252:teei_log_thread][TZ_LOG] uTSecMan| use VFY_PROTOCOL_UUID
-<6>[    9.778592] -(2)[252:teei_log_thread][TZ_LOG] uTSecMan| 1 uuid active offset:15
-<6>[    9.779558] -(2)[252:teei_log_thread][TZ_LOG] uTSecMan| a free ta.
-<6>[    9.780379] -(2)[252:teei_log_thread][TZ_LOG] uTSecMan| ta verify success.
-<6>[    9.781287] -(2)[252:teei_log_thread][TZ_LOG] km4     | km ta create entry.
-<6>[    9.782207] -(2)[252:teei_log_thread][TZ_LOG] km4     | KEYMASTER VERSION: km4.0.
-<6>[    9.783190] -(2)[252:teei_log_thread][TZ_LOG] km4     | 
-<6>[    9.783904] -(2)[252:teei_log_thread][TZ_LOG] km4     | km4.0  PAX_mt6762_R_isee350_persist_M8  save  B  cert  kb  &  utagent  &  fp_driver  202210081405  sunchenghao
-<6>[    9.787812] -(2)[252:teei_log_thread][TZ_LOG] km4     | AndroidKeymaster Configure finish 0
-<6>[    9.796038] -(2)[252:teei_log_thread][TZ_LOG] km4     | params[1] is empty
-<6>[    9.796960] -(2)[252:teei_log_thread][TZ_LOG] km4     | enter generate random from openssl
-<6>[    9.798044] -(2)[252:teei_log_thread][TZ_LOG] km4     | generate random from openssl,buflen=32
+<6>[    8.524129] -(7)[252:teei_log_thread][TZ_LOG] uTSecMan| lookup ta: 'd91f322ad5a441d5955110eda3272fc0' (40)
+<4>[    8.524154] -(7)[252:teei_log_thread]tz_driver_dump_logs: 154 callbacks suppressed
+<6>[    8.524160] -(7)[252:teei_log_thread][TZ_LOG] uTSecMan| enable model control
+<6>[    8.524173] -(7)[252:teei_log_thread][TZ_LOG] uTSecMan| verify device model already success
+<6>[    8.524182] -(7)[252:teei_log_thread][TZ_LOG] uTSecMan| verify config file model info success
+<6>[    8.539886] -(5)[252:teei_log_thread][TZ_LOG] uTSecMan| ta verify success.
+<6>[    8.539914] -(5)[252:teei_log_thread][TZ_LOG] SST_S   | l1_tee_dynamic: start=88000, size=29b000.
+<6>[    8.594505] -(7)[252:teei_log_thread][TZ_LOG] SST_S   | init pool success
+<6>[    8.594532] -(7)[252:teei_log_thread][TZ_LOG] SST_S   | ===slot=0, start:313000, size:10000
+<6>[    8.594541] -(7)[252:teei_log_thread][TZ_LOG] SST_S   | rpmb cap alloc success
+<6>[    8.594552] -(7)[252:teei_log_thread][TZ_LOG] SST_S   | vfs cap alloc success
+<6>[    8.594561] -(7)[252:teei_log_thread][TZ_LOG] kmsetkey| google keybox rpmb solution, VERSION:1.0
+<6>[    8.594567] -(7)[252:teei_log_thread][TZ_LOG] kmsetkey| 
+<6>[    8.594580] -(7)[252:teei_log_thread][TZ_LOG] kmsetkey| km_key_manager_ta  PAX_mt6762_R_isee350_persist_M8  Subject:Merge  from  trunk  202210081409  sunchenghao
+<6>[    8.595703] -(7)[252:teei_log_thread][TZ_LOG] kmsetkey| ~~~~~~ kb_store enter ~~~~~~
+<6>[    8.607514] -(7)[252:teei_log_thread][TZ_LOG] kmsetkey| keybox already stored
+<6>[    8.607539] -(7)[252:teei_log_thread][TZ_LOG] kmsetkey| [keybox_crypto.c:188/kb_rsa_decrypt]<err>rsa dec failed, -65530
+<6>[    8.607551] -(7)[252:teei_log_thread][TZ_LOG] kmsetkey| [keybox_crypto.c:314/kb_get_ekkb_pub_n]<err>cal kkb' failed, -13
+<6>[    8.607562] -(7)[252:teei_log_thread][TZ_LOG] kmsetkey| [keybox_crypto.c:491/kb_decrypt]<err>decrypt pubkey error
+<6>[    8.607578] -(7)[252:teei_log_thread][TZ_LOG] kmsetkey| [store_keybox.c:262/kb_store]<err>kb decrypt kb failed, -5
+<6>[    8.607586] -(7)[252:teei_log_thread][TZ_LOG] kmsetkey| ~~~~~~ kb_store leave ~~~~~~
 ```
 
 解决方案：
@@ -773,4 +816,56 @@ fae分析是数组和bin文件不匹配，解密失败了，打印如下：
 
      //[FEATURE]-Add-BEGIN by (wugangnan@paxsz.com),2 021/10/21, set ro.pax.product.id for pax usb pid
      pax_property_set_usb_pid();
+```
+
+## OTA升级失败
+
+目前老机器用flashtool格式化升级后，再用OTA升级发现升级完后黑屏了很久，开机后提示升级失败，原因如下：
+1. flashtool格式化升级只烧录了A分区，B分区是空的。
+2. OTA升级去掉了pl和tee，B分区本来是空的，升级后还是空的，所以起不来。
+
+![0007_0002.png](images/0007_0002.png)
+
+解决方案：
+1. 增加1029过渡OTA包，里面包含瓶钵TEE和PL。
+2. OTA升级不支持相同或小于机器本身版本号版本。
+3. 后续OTA包不包含TEE和PL镜像。
+
+# 补充点
+
+
+1.老机器(已写瓶钵googlekey)升级Uniphiz包或者OTA包后继续沿用瓶钵TEE。
+解释如下：
+我们根据机器是否烧写新preloader镜像来判断新老机器，只有新机器才启动豆荚TEE。
+一般新生产的会烧新的preloader镜像，从而会启用豆荚tee，另外我们在paydroid包和ota升级包中去掉了preloader和tee烧录镜像，老机器不会升级这两个，所以启动瓶钵TEE。
+
+2.由于瓶钵不提供写key服务，老机器未写googlekey如需用于测试，需升级豆荚TEE并写入豆荚key。
+请按照如下方法升级豆荚TEE OS：
+1. 先下载1027或更新版本。
+2. paydroid tool解压出Uniphiz包。
+3. 替换附件提供的M50_M8_Release_Android_scatter.txt。
+4. 再解压Uniphiz包中的tee.zip包出来。
+5. 用paydroid tool升级。
+6. 使用sn writer工具写入googlekey。
+
+3.豆荚tee如何写入googlekey？
+参考附件
+* [0007_豆荚google key写入教程.docx](refers/0007_豆荚google key写入教程.docx)
+
+4.如何判断是否写入googlekey？
+*#*#4444#*#*打开配置信息：
+豆荚tee判断如下：
+```
+#未写入
+[vendor.soter.teei.googlekey.model]: [false]
+[vendor.soter.teei.googlekey.status]: [-1]
+
+#写入成功
+[vendor.soter.teei.googlekey.model]: [PAYTABLETM8]
+[vendor.soter.teei.googlekey.status]: [ok]
+```
+
+瓶钵如下判断：
+```
+[vendor.trustkernel.keybox.deployed] [true]
 ```

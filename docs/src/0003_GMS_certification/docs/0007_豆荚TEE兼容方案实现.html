@@ -55,13 +55,16 @@
 <li><a class="reference internal" href="#pl">pl阶段去掉瓶钵配置</a></li>
 </ul>
 </li>
+<li><a class="reference internal" href="#googlekey">googlekey写入判断属性</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#id6">问题点</a><ul>
 <li><a class="reference internal" href="#google-key">google key写号失败</a></li>
 <li><a class="reference internal" href="#pin">不能设置pin码的问题</a></li>
+<li><a class="reference internal" href="#ota">OTA升级失败</a></li>
 </ul>
 </li>
+<li><a class="reference internal" href="#id7">补充点</a></li>
 </ul>
 </div>
         </div>
@@ -799,28 +802,75 @@ include <span class="k">$(</span>BUILD_PREBUILT<span class="k">)</span>
 </div>
 </section>
 </section>
+<section id="googlekey">
+<h2>googlekey写入判断属性<a class="headerlink" href="#googlekey" title="此标题的永久链接"></a></h2>
+<ul class="simple">
+<li><p>豆荚判断属性为：</p></li>
+</ul>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="c1">#未写入</span>
+<span class="o">[</span>vendor.soter.teei.googlekey.model<span class="o">]</span>: <span class="o">[</span>false<span class="o">]</span>
+<span class="o">[</span>vendor.soter.teei.googlekey.status<span class="o">]</span>: <span class="o">[</span>-1<span class="o">]</span>
+
+<span class="c1">#写入成功</span>
+<span class="o">[</span>vendor.soter.teei.googlekey.model<span class="o">]</span>: <span class="o">[</span>PAYTABLETM8<span class="o">]</span>
+<span class="o">[</span>vendor.soter.teei.googlekey.status<span class="o">]</span>: <span class="o">[</span>ok<span class="o">]</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>瓶钵判断属性：</p></li>
+</ul>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="o">[</span>vendor.trustkernel.keybox.deployed<span class="o">]</span> <span class="o">[</span>true<span class="o">]</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>兼容修改如下：</p></li>
+</ul>
+<div class="highlight-diff notranslate"><div class="highlight"><pre><span></span><span class="gd">--- a/paxdroid/hardware/libhardware/modules/systool/systool.c</span><span class="w"></span>
+<span class="gi">+++ b/paxdroid/hardware/libhardware/modules/systool/systool.c</span><span class="w"></span>
+<span class="gu">@@ -950,10 +950,13 @@ int32_t getGoogleKeyValue(){</span><span class="w"></span>
+<span class="w"> </span>    char productionline[PROPERTY_VALUE_MAX] = {0};<span class="w"></span>
+<span class="w"> </span>    char deployedpass[] = &quot;true&quot;;<span class="w"></span>
+<span class="w"> </span>    char productionlinepass[] = &quot;ready&quot;;<span class="w"></span>
+<span class="gi">+    char teeistate[PROPERTY_VALUE_MAX] = {0};</span><span class="w"></span>
+<span class="gi">+    char teeiPass[] = &quot;ok&quot;;</span><span class="w"></span>
+<span class="w"> </span>    property_get(&quot;vendor.trustkernel.keybox.deployed&quot;, deployed, &quot;&quot;);<span class="w"></span>
+<span class="w"> </span>    property_get(&quot;vendor.trustkernel.productionline.state&quot;, productionline, &quot;&quot;);<span class="w"></span>
+<span class="gi">+    property_get(&quot;vendor.soter.teei.googlekey.status&quot;, teeistate, &quot;&quot;);</span><span class="w"></span>
+<span class="w"> </span>    ALOGD(&quot;getGoogleKeyValue deployed:%s   deployedpass:%s&quot;, deployed,productionline);<span class="w"></span>
+<span class="gd">-    if(strcmp(deployed,deployedpass)==0 &amp;&amp; strcmp(productionline,productionlinepass)==0){</span><span class="w"></span>
+<span class="gi">+    if((strcmp(deployed,deployedpass)==0 &amp;&amp; strcmp(productionline,productionlinepass)==0)||strcmp(teeistate,teeiPass)==0){</span><span class="w"></span>
+<span class="w"> </span>        return 1;<span class="w"></span>
+<span class="w"> </span>    }<span class="w"></span>
+</pre></div>
+</div>
+</section>
 </section>
 <section id="id6">
 <h1>问题点<a class="headerlink" href="#id6" title="此标题的永久链接"></a></h1>
 <section id="google-key">
 <h2>google key写号失败<a class="headerlink" href="#google-key" title="此标题的永久链接"></a></h2>
 <p>fae分析是数组和bin文件不匹配，解密失败了，打印如下：</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">&lt;</span><span class="mi">6</span><span class="o">&gt;</span><span class="p">[</span>    <span class="mf">9.707597</span><span class="p">]</span> <span class="o">-</span><span class="p">(</span><span class="mi">2</span><span class="p">)[</span><span class="mi">252</span><span class="p">:</span><span class="n">teei_log_thread</span><span class="p">][</span><span class="n">TZ_LOG</span><span class="p">]</span> <span class="n">uTSecMan</span><span class="o">|</span> <span class="n">lookup</span> <span class="n">ta</span><span class="p">:</span> <span class="s1">&#39;c09c9c5daa504b78b0e46eda61556c3a&#39;</span> <span class="p">(</span><span class="mi">40</span><span class="p">)</span>
-<span class="o">&lt;</span><span class="mi">6</span><span class="o">&gt;</span><span class="p">[</span>    <span class="mf">9.708870</span><span class="p">]</span> <span class="o">-</span><span class="p">(</span><span class="mi">2</span><span class="p">)[</span><span class="mi">252</span><span class="p">:</span><span class="n">teei_log_thread</span><span class="p">][</span><span class="n">TZ_LOG</span><span class="p">]</span> <span class="n">uTSecMan</span><span class="o">|</span> <span class="n">enable</span> <span class="n">model</span> <span class="n">control</span>
-<span class="o">&lt;</span><span class="mi">6</span><span class="o">&gt;</span><span class="p">[</span>    <span class="mf">9.709804</span><span class="p">]</span> <span class="o">-</span><span class="p">(</span><span class="mi">2</span><span class="p">)[</span><span class="mi">252</span><span class="p">:</span><span class="n">teei_log_thread</span><span class="p">][</span><span class="n">TZ_LOG</span><span class="p">]</span> <span class="n">uTSecMan</span><span class="o">|</span> <span class="n">ta</span> <span class="n">don</span><span class="s1">&#39;t need verify model</span>
-<span class="o">&lt;</span><span class="mi">6</span><span class="o">&gt;</span><span class="p">[</span>    <span class="mf">9.761463</span><span class="p">]</span> <span class="o">-</span><span class="p">(</span><span class="mi">2</span><span class="p">)[</span><span class="mi">252</span><span class="p">:</span><span class="n">teei_log_thread</span><span class="p">][</span><span class="n">TZ_LOG</span><span class="p">]</span> <span class="n">uTSecMan</span><span class="o">|</span> <span class="n">Secmanager</span> <span class="n">Initialization</span><span class="p">:</span> <span class="n">total</span> <span class="n">spent</span> <span class="mf">4.0</span> <span class="n">ms</span>
-<span class="o">&lt;</span><span class="mi">6</span><span class="o">&gt;</span><span class="p">[</span>    <span class="mf">9.777627</span><span class="p">]</span> <span class="o">-</span><span class="p">(</span><span class="mi">2</span><span class="p">)[</span><span class="mi">252</span><span class="p">:</span><span class="n">teei_log_thread</span><span class="p">][</span><span class="n">TZ_LOG</span><span class="p">]</span> <span class="n">uTSecMan</span><span class="o">|</span> <span class="n">use</span> <span class="n">VFY_PROTOCOL_UUID</span>
-<span class="o">&lt;</span><span class="mi">6</span><span class="o">&gt;</span><span class="p">[</span>    <span class="mf">9.778592</span><span class="p">]</span> <span class="o">-</span><span class="p">(</span><span class="mi">2</span><span class="p">)[</span><span class="mi">252</span><span class="p">:</span><span class="n">teei_log_thread</span><span class="p">][</span><span class="n">TZ_LOG</span><span class="p">]</span> <span class="n">uTSecMan</span><span class="o">|</span> <span class="mi">1</span> <span class="n">uuid</span> <span class="n">active</span> <span class="n">offset</span><span class="p">:</span><span class="mi">15</span>
-<span class="o">&lt;</span><span class="mi">6</span><span class="o">&gt;</span><span class="p">[</span>    <span class="mf">9.779558</span><span class="p">]</span> <span class="o">-</span><span class="p">(</span><span class="mi">2</span><span class="p">)[</span><span class="mi">252</span><span class="p">:</span><span class="n">teei_log_thread</span><span class="p">][</span><span class="n">TZ_LOG</span><span class="p">]</span> <span class="n">uTSecMan</span><span class="o">|</span> <span class="n">a</span> <span class="n">free</span> <span class="n">ta</span><span class="o">.</span>
-<span class="o">&lt;</span><span class="mi">6</span><span class="o">&gt;</span><span class="p">[</span>    <span class="mf">9.780379</span><span class="p">]</span> <span class="o">-</span><span class="p">(</span><span class="mi">2</span><span class="p">)[</span><span class="mi">252</span><span class="p">:</span><span class="n">teei_log_thread</span><span class="p">][</span><span class="n">TZ_LOG</span><span class="p">]</span> <span class="n">uTSecMan</span><span class="o">|</span> <span class="n">ta</span> <span class="n">verify</span> <span class="n">success</span><span class="o">.</span>
-<span class="o">&lt;</span><span class="mi">6</span><span class="o">&gt;</span><span class="p">[</span>    <span class="mf">9.781287</span><span class="p">]</span> <span class="o">-</span><span class="p">(</span><span class="mi">2</span><span class="p">)[</span><span class="mi">252</span><span class="p">:</span><span class="n">teei_log_thread</span><span class="p">][</span><span class="n">TZ_LOG</span><span class="p">]</span> <span class="n">km4</span>     <span class="o">|</span> <span class="n">km</span> <span class="n">ta</span> <span class="n">create</span> <span class="n">entry</span><span class="o">.</span>
-<span class="o">&lt;</span><span class="mi">6</span><span class="o">&gt;</span><span class="p">[</span>    <span class="mf">9.782207</span><span class="p">]</span> <span class="o">-</span><span class="p">(</span><span class="mi">2</span><span class="p">)[</span><span class="mi">252</span><span class="p">:</span><span class="n">teei_log_thread</span><span class="p">][</span><span class="n">TZ_LOG</span><span class="p">]</span> <span class="n">km4</span>     <span class="o">|</span> <span class="n">KEYMASTER</span> <span class="n">VERSION</span><span class="p">:</span> <span class="n">km4</span><span class="mf">.0</span><span class="o">.</span>
-<span class="o">&lt;</span><span class="mi">6</span><span class="o">&gt;</span><span class="p">[</span>    <span class="mf">9.783190</span><span class="p">]</span> <span class="o">-</span><span class="p">(</span><span class="mi">2</span><span class="p">)[</span><span class="mi">252</span><span class="p">:</span><span class="n">teei_log_thread</span><span class="p">][</span><span class="n">TZ_LOG</span><span class="p">]</span> <span class="n">km4</span>     <span class="o">|</span> 
-<span class="o">&lt;</span><span class="mi">6</span><span class="o">&gt;</span><span class="p">[</span>    <span class="mf">9.783904</span><span class="p">]</span> <span class="o">-</span><span class="p">(</span><span class="mi">2</span><span class="p">)[</span><span class="mi">252</span><span class="p">:</span><span class="n">teei_log_thread</span><span class="p">][</span><span class="n">TZ_LOG</span><span class="p">]</span> <span class="n">km4</span>     <span class="o">|</span> <span class="n">km4</span><span class="mf">.0</span>  <span class="n">PAX_mt6762_R_isee350_persist_M8</span>  <span class="n">save</span>  <span class="n">B</span>  <span class="n">cert</span>  <span class="n">kb</span>  <span class="o">&amp;</span>  <span class="n">utagent</span>  <span class="o">&amp;</span>  <span class="n">fp_driver</span>  <span class="mi">202210081405</span>  <span class="n">sunchenghao</span>
-<span class="o">&lt;</span><span class="mi">6</span><span class="o">&gt;</span><span class="p">[</span>    <span class="mf">9.787812</span><span class="p">]</span> <span class="o">-</span><span class="p">(</span><span class="mi">2</span><span class="p">)[</span><span class="mi">252</span><span class="p">:</span><span class="n">teei_log_thread</span><span class="p">][</span><span class="n">TZ_LOG</span><span class="p">]</span> <span class="n">km4</span>     <span class="o">|</span> <span class="n">AndroidKeymaster</span> <span class="n">Configure</span> <span class="n">finish</span> <span class="mi">0</span>
-<span class="o">&lt;</span><span class="mi">6</span><span class="o">&gt;</span><span class="p">[</span>    <span class="mf">9.796038</span><span class="p">]</span> <span class="o">-</span><span class="p">(</span><span class="mi">2</span><span class="p">)[</span><span class="mi">252</span><span class="p">:</span><span class="n">teei_log_thread</span><span class="p">][</span><span class="n">TZ_LOG</span><span class="p">]</span> <span class="n">km4</span>     <span class="o">|</span> <span class="n">params</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="ow">is</span> <span class="n">empty</span>
-<span class="o">&lt;</span><span class="mi">6</span><span class="o">&gt;</span><span class="p">[</span>    <span class="mf">9.796960</span><span class="p">]</span> <span class="o">-</span><span class="p">(</span><span class="mi">2</span><span class="p">)[</span><span class="mi">252</span><span class="p">:</span><span class="n">teei_log_thread</span><span class="p">][</span><span class="n">TZ_LOG</span><span class="p">]</span> <span class="n">km4</span>     <span class="o">|</span> <span class="n">enter</span> <span class="n">generate</span> <span class="n">random</span> <span class="kn">from</span> <span class="nn">openssl</span>
-<span class="o">&lt;</span><span class="mi">6</span><span class="o">&gt;</span><span class="p">[</span>    <span class="mf">9.798044</span><span class="p">]</span> <span class="o">-</span><span class="p">(</span><span class="mi">2</span><span class="p">)[</span><span class="mi">252</span><span class="p">:</span><span class="n">teei_log_thread</span><span class="p">][</span><span class="n">TZ_LOG</span><span class="p">]</span> <span class="n">km4</span>     <span class="o">|</span> <span class="n">generate</span> <span class="n">random</span> <span class="kn">from</span> <span class="nn">openssl</span><span class="p">,</span><span class="n">buflen</span><span class="o">=</span><span class="mi">32</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">&lt;</span><span class="mi">6</span><span class="o">&gt;</span><span class="p">[</span>    <span class="mf">8.524129</span><span class="p">]</span> <span class="o">-</span><span class="p">(</span><span class="mi">7</span><span class="p">)[</span><span class="mi">252</span><span class="p">:</span><span class="n">teei_log_thread</span><span class="p">][</span><span class="n">TZ_LOG</span><span class="p">]</span> <span class="n">uTSecMan</span><span class="o">|</span> <span class="n">lookup</span> <span class="n">ta</span><span class="p">:</span> <span class="s1">&#39;d91f322ad5a441d5955110eda3272fc0&#39;</span> <span class="p">(</span><span class="mi">40</span><span class="p">)</span>
+<span class="o">&lt;</span><span class="mi">4</span><span class="o">&gt;</span><span class="p">[</span>    <span class="mf">8.524154</span><span class="p">]</span> <span class="o">-</span><span class="p">(</span><span class="mi">7</span><span class="p">)[</span><span class="mi">252</span><span class="p">:</span><span class="n">teei_log_thread</span><span class="p">]</span><span class="n">tz_driver_dump_logs</span><span class="p">:</span> <span class="mi">154</span> <span class="n">callbacks</span> <span class="n">suppressed</span>
+<span class="o">&lt;</span><span class="mi">6</span><span class="o">&gt;</span><span class="p">[</span>    <span class="mf">8.524160</span><span class="p">]</span> <span class="o">-</span><span class="p">(</span><span class="mi">7</span><span class="p">)[</span><span class="mi">252</span><span class="p">:</span><span class="n">teei_log_thread</span><span class="p">][</span><span class="n">TZ_LOG</span><span class="p">]</span> <span class="n">uTSecMan</span><span class="o">|</span> <span class="n">enable</span> <span class="n">model</span> <span class="n">control</span>
+<span class="o">&lt;</span><span class="mi">6</span><span class="o">&gt;</span><span class="p">[</span>    <span class="mf">8.524173</span><span class="p">]</span> <span class="o">-</span><span class="p">(</span><span class="mi">7</span><span class="p">)[</span><span class="mi">252</span><span class="p">:</span><span class="n">teei_log_thread</span><span class="p">][</span><span class="n">TZ_LOG</span><span class="p">]</span> <span class="n">uTSecMan</span><span class="o">|</span> <span class="n">verify</span> <span class="n">device</span> <span class="n">model</span> <span class="n">already</span> <span class="n">success</span>
+<span class="o">&lt;</span><span class="mi">6</span><span class="o">&gt;</span><span class="p">[</span>    <span class="mf">8.524182</span><span class="p">]</span> <span class="o">-</span><span class="p">(</span><span class="mi">7</span><span class="p">)[</span><span class="mi">252</span><span class="p">:</span><span class="n">teei_log_thread</span><span class="p">][</span><span class="n">TZ_LOG</span><span class="p">]</span> <span class="n">uTSecMan</span><span class="o">|</span> <span class="n">verify</span> <span class="n">config</span> <span class="n">file</span> <span class="n">model</span> <span class="n">info</span> <span class="n">success</span>
+<span class="o">&lt;</span><span class="mi">6</span><span class="o">&gt;</span><span class="p">[</span>    <span class="mf">8.539886</span><span class="p">]</span> <span class="o">-</span><span class="p">(</span><span class="mi">5</span><span class="p">)[</span><span class="mi">252</span><span class="p">:</span><span class="n">teei_log_thread</span><span class="p">][</span><span class="n">TZ_LOG</span><span class="p">]</span> <span class="n">uTSecMan</span><span class="o">|</span> <span class="n">ta</span> <span class="n">verify</span> <span class="n">success</span><span class="o">.</span>
+<span class="o">&lt;</span><span class="mi">6</span><span class="o">&gt;</span><span class="p">[</span>    <span class="mf">8.539914</span><span class="p">]</span> <span class="o">-</span><span class="p">(</span><span class="mi">5</span><span class="p">)[</span><span class="mi">252</span><span class="p">:</span><span class="n">teei_log_thread</span><span class="p">][</span><span class="n">TZ_LOG</span><span class="p">]</span> <span class="n">SST_S</span>   <span class="o">|</span> <span class="n">l1_tee_dynamic</span><span class="p">:</span> <span class="n">start</span><span class="o">=</span><span class="mi">88000</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mi">29</span><span class="n">b000</span><span class="o">.</span>
+<span class="o">&lt;</span><span class="mi">6</span><span class="o">&gt;</span><span class="p">[</span>    <span class="mf">8.594505</span><span class="p">]</span> <span class="o">-</span><span class="p">(</span><span class="mi">7</span><span class="p">)[</span><span class="mi">252</span><span class="p">:</span><span class="n">teei_log_thread</span><span class="p">][</span><span class="n">TZ_LOG</span><span class="p">]</span> <span class="n">SST_S</span>   <span class="o">|</span> <span class="n">init</span> <span class="n">pool</span> <span class="n">success</span>
+<span class="o">&lt;</span><span class="mi">6</span><span class="o">&gt;</span><span class="p">[</span>    <span class="mf">8.594532</span><span class="p">]</span> <span class="o">-</span><span class="p">(</span><span class="mi">7</span><span class="p">)[</span><span class="mi">252</span><span class="p">:</span><span class="n">teei_log_thread</span><span class="p">][</span><span class="n">TZ_LOG</span><span class="p">]</span> <span class="n">SST_S</span>   <span class="o">|</span> <span class="o">===</span><span class="n">slot</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">start</span><span class="p">:</span><span class="mi">313000</span><span class="p">,</span> <span class="n">size</span><span class="p">:</span><span class="mi">10000</span>
+<span class="o">&lt;</span><span class="mi">6</span><span class="o">&gt;</span><span class="p">[</span>    <span class="mf">8.594541</span><span class="p">]</span> <span class="o">-</span><span class="p">(</span><span class="mi">7</span><span class="p">)[</span><span class="mi">252</span><span class="p">:</span><span class="n">teei_log_thread</span><span class="p">][</span><span class="n">TZ_LOG</span><span class="p">]</span> <span class="n">SST_S</span>   <span class="o">|</span> <span class="n">rpmb</span> <span class="n">cap</span> <span class="n">alloc</span> <span class="n">success</span>
+<span class="o">&lt;</span><span class="mi">6</span><span class="o">&gt;</span><span class="p">[</span>    <span class="mf">8.594552</span><span class="p">]</span> <span class="o">-</span><span class="p">(</span><span class="mi">7</span><span class="p">)[</span><span class="mi">252</span><span class="p">:</span><span class="n">teei_log_thread</span><span class="p">][</span><span class="n">TZ_LOG</span><span class="p">]</span> <span class="n">SST_S</span>   <span class="o">|</span> <span class="n">vfs</span> <span class="n">cap</span> <span class="n">alloc</span> <span class="n">success</span>
+<span class="o">&lt;</span><span class="mi">6</span><span class="o">&gt;</span><span class="p">[</span>    <span class="mf">8.594561</span><span class="p">]</span> <span class="o">-</span><span class="p">(</span><span class="mi">7</span><span class="p">)[</span><span class="mi">252</span><span class="p">:</span><span class="n">teei_log_thread</span><span class="p">][</span><span class="n">TZ_LOG</span><span class="p">]</span> <span class="n">kmsetkey</span><span class="o">|</span> <span class="n">google</span> <span class="n">keybox</span> <span class="n">rpmb</span> <span class="n">solution</span><span class="p">,</span> <span class="n">VERSION</span><span class="p">:</span><span class="mf">1.0</span>
+<span class="o">&lt;</span><span class="mi">6</span><span class="o">&gt;</span><span class="p">[</span>    <span class="mf">8.594567</span><span class="p">]</span> <span class="o">-</span><span class="p">(</span><span class="mi">7</span><span class="p">)[</span><span class="mi">252</span><span class="p">:</span><span class="n">teei_log_thread</span><span class="p">][</span><span class="n">TZ_LOG</span><span class="p">]</span> <span class="n">kmsetkey</span><span class="o">|</span> 
+<span class="o">&lt;</span><span class="mi">6</span><span class="o">&gt;</span><span class="p">[</span>    <span class="mf">8.594580</span><span class="p">]</span> <span class="o">-</span><span class="p">(</span><span class="mi">7</span><span class="p">)[</span><span class="mi">252</span><span class="p">:</span><span class="n">teei_log_thread</span><span class="p">][</span><span class="n">TZ_LOG</span><span class="p">]</span> <span class="n">kmsetkey</span><span class="o">|</span> <span class="n">km_key_manager_ta</span>  <span class="n">PAX_mt6762_R_isee350_persist_M8</span>  <span class="n">Subject</span><span class="p">:</span><span class="n">Merge</span>  <span class="kn">from</span>  <span class="nn">trunk</span>  <span class="mi">202210081409</span>  <span class="n">sunchenghao</span>
+<span class="o">&lt;</span><span class="mi">6</span><span class="o">&gt;</span><span class="p">[</span>    <span class="mf">8.595703</span><span class="p">]</span> <span class="o">-</span><span class="p">(</span><span class="mi">7</span><span class="p">)[</span><span class="mi">252</span><span class="p">:</span><span class="n">teei_log_thread</span><span class="p">][</span><span class="n">TZ_LOG</span><span class="p">]</span> <span class="n">kmsetkey</span><span class="o">|</span> <span class="o">~~~~~~</span> <span class="n">kb_store</span> <span class="n">enter</span> <span class="o">~~~~~~</span>
+<span class="o">&lt;</span><span class="mi">6</span><span class="o">&gt;</span><span class="p">[</span>    <span class="mf">8.607514</span><span class="p">]</span> <span class="o">-</span><span class="p">(</span><span class="mi">7</span><span class="p">)[</span><span class="mi">252</span><span class="p">:</span><span class="n">teei_log_thread</span><span class="p">][</span><span class="n">TZ_LOG</span><span class="p">]</span> <span class="n">kmsetkey</span><span class="o">|</span> <span class="n">keybox</span> <span class="n">already</span> <span class="n">stored</span>
+<span class="o">&lt;</span><span class="mi">6</span><span class="o">&gt;</span><span class="p">[</span>    <span class="mf">8.607539</span><span class="p">]</span> <span class="o">-</span><span class="p">(</span><span class="mi">7</span><span class="p">)[</span><span class="mi">252</span><span class="p">:</span><span class="n">teei_log_thread</span><span class="p">][</span><span class="n">TZ_LOG</span><span class="p">]</span> <span class="n">kmsetkey</span><span class="o">|</span> <span class="p">[</span><span class="n">keybox_crypto</span><span class="o">.</span><span class="n">c</span><span class="p">:</span><span class="mi">188</span><span class="o">/</span><span class="n">kb_rsa_decrypt</span><span class="p">]</span><span class="o">&lt;</span><span class="n">err</span><span class="o">&gt;</span><span class="n">rsa</span> <span class="n">dec</span> <span class="n">failed</span><span class="p">,</span> <span class="o">-</span><span class="mi">65530</span>
+<span class="o">&lt;</span><span class="mi">6</span><span class="o">&gt;</span><span class="p">[</span>    <span class="mf">8.607551</span><span class="p">]</span> <span class="o">-</span><span class="p">(</span><span class="mi">7</span><span class="p">)[</span><span class="mi">252</span><span class="p">:</span><span class="n">teei_log_thread</span><span class="p">][</span><span class="n">TZ_LOG</span><span class="p">]</span> <span class="n">kmsetkey</span><span class="o">|</span> <span class="p">[</span><span class="n">keybox_crypto</span><span class="o">.</span><span class="n">c</span><span class="p">:</span><span class="mi">314</span><span class="o">/</span><span class="n">kb_get_ekkb_pub_n</span><span class="p">]</span><span class="o">&lt;</span><span class="n">err</span><span class="o">&gt;</span><span class="n">cal</span> <span class="n">kkb</span><span class="s1">&#39; failed, -13</span>
+<span class="o">&lt;</span><span class="mi">6</span><span class="o">&gt;</span><span class="p">[</span>    <span class="mf">8.607562</span><span class="p">]</span> <span class="o">-</span><span class="p">(</span><span class="mi">7</span><span class="p">)[</span><span class="mi">252</span><span class="p">:</span><span class="n">teei_log_thread</span><span class="p">][</span><span class="n">TZ_LOG</span><span class="p">]</span> <span class="n">kmsetkey</span><span class="o">|</span> <span class="p">[</span><span class="n">keybox_crypto</span><span class="o">.</span><span class="n">c</span><span class="p">:</span><span class="mi">491</span><span class="o">/</span><span class="n">kb_decrypt</span><span class="p">]</span><span class="o">&lt;</span><span class="n">err</span><span class="o">&gt;</span><span class="n">decrypt</span> <span class="n">pubkey</span> <span class="n">error</span>
+<span class="o">&lt;</span><span class="mi">6</span><span class="o">&gt;</span><span class="p">[</span>    <span class="mf">8.607578</span><span class="p">]</span> <span class="o">-</span><span class="p">(</span><span class="mi">7</span><span class="p">)[</span><span class="mi">252</span><span class="p">:</span><span class="n">teei_log_thread</span><span class="p">][</span><span class="n">TZ_LOG</span><span class="p">]</span> <span class="n">kmsetkey</span><span class="o">|</span> <span class="p">[</span><span class="n">store_keybox</span><span class="o">.</span><span class="n">c</span><span class="p">:</span><span class="mi">262</span><span class="o">/</span><span class="n">kb_store</span><span class="p">]</span><span class="o">&lt;</span><span class="n">err</span><span class="o">&gt;</span><span class="n">kb</span> <span class="n">decrypt</span> <span class="n">kb</span> <span class="n">failed</span><span class="p">,</span> <span class="o">-</span><span class="mi">5</span>
+<span class="o">&lt;</span><span class="mi">6</span><span class="o">&gt;</span><span class="p">[</span>    <span class="mf">8.607586</span><span class="p">]</span> <span class="o">-</span><span class="p">(</span><span class="mi">7</span><span class="p">)[</span><span class="mi">252</span><span class="p">:</span><span class="n">teei_log_thread</span><span class="p">][</span><span class="n">TZ_LOG</span><span class="p">]</span> <span class="n">kmsetkey</span><span class="o">|</span> <span class="o">~~~~~~</span> <span class="n">kb_store</span> <span class="n">leave</span> <span class="o">~~~~~~</span>
 </pre></div>
 </div>
 <p>解决方案：
@@ -873,6 +923,59 @@ include <span class="k">$(</span>BUILD_PREBUILT<span class="k">)</span>
 </pre></div>
 </div>
 </section>
+<section id="ota">
+<h2>OTA升级失败<a class="headerlink" href="#ota" title="此标题的永久链接"></a></h2>
+<p>目前老机器用flashtool格式化升级后，再用OTA升级发现升级完后黑屏了很久，开机后提示升级失败，原因如下：</p>
+<ol class="arabic simple">
+<li><p>flashtool格式化升级只烧录了A分区，B分区是空的。</p></li>
+<li><p>OTA升级去掉了pl和tee，B分区本来是空的，升级后还是空的，所以起不来。</p></li>
+</ol>
+<p><img alt="0007_0002.png" src="../../../_images/0007_00021.png" /></p>
+<p>解决方案：</p>
+<ol class="arabic simple">
+<li><p>增加1029过渡OTA包，里面包含瓶钵TEE和PL。</p></li>
+<li><p>OTA升级不支持相同或小于机器本身版本号版本。</p></li>
+<li><p>后续OTA包不包含TEE和PL镜像。</p></li>
+</ol>
+</section>
+</section>
+<section id="id7">
+<h1>补充点<a class="headerlink" href="#id7" title="此标题的永久链接"></a></h1>
+<p>1.老机器(已写瓶钵googlekey)升级Uniphiz包或者OTA包后继续沿用瓶钵TEE。
+解释如下：
+我们根据机器是否烧写新preloader镜像来判断新老机器，只有新机器才启动豆荚TEE。
+一般新生产的会烧新的preloader镜像，从而会启用豆荚tee，另外我们在paydroid包和ota升级包中去掉了preloader和tee烧录镜像，老机器不会升级这两个，所以启动瓶钵TEE。</p>
+<p>2.由于瓶钵不提供写key服务，老机器未写googlekey如需用于测试，需升级豆荚TEE并写入豆荚key。
+请按照如下方法升级豆荚TEE OS：</p>
+<ol class="arabic simple">
+<li><p>先下载1027或更新版本。</p></li>
+<li><p>paydroid tool解压出Uniphiz包。</p></li>
+<li><p>替换附件提供的M50_M8_Release_Android_scatter.txt。</p></li>
+<li><p>再解压Uniphiz包中的tee.zip包出来。</p></li>
+<li><p>用paydroid tool升级。</p></li>
+<li><p>使用sn writer工具写入googlekey。</p></li>
+</ol>
+<p>3.豆荚tee如何写入googlekey？
+参考附件</p>
+<ul class="simple">
+<li><p>[0007_豆荚google key写入教程.docx](refers/0007_豆荚google key写入教程.docx)</p></li>
+</ul>
+<p>4.如何判断是否写入googlekey？
+<em>#</em>#4444#*#*打开配置信息：
+豆荚tee判断如下：</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1">#未写入</span>
+<span class="p">[</span><span class="n">vendor</span><span class="o">.</span><span class="n">soter</span><span class="o">.</span><span class="n">teei</span><span class="o">.</span><span class="n">googlekey</span><span class="o">.</span><span class="n">model</span><span class="p">]:</span> <span class="p">[</span><span class="n">false</span><span class="p">]</span>
+<span class="p">[</span><span class="n">vendor</span><span class="o">.</span><span class="n">soter</span><span class="o">.</span><span class="n">teei</span><span class="o">.</span><span class="n">googlekey</span><span class="o">.</span><span class="n">status</span><span class="p">]:</span> <span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+<span class="c1">#写入成功</span>
+<span class="p">[</span><span class="n">vendor</span><span class="o">.</span><span class="n">soter</span><span class="o">.</span><span class="n">teei</span><span class="o">.</span><span class="n">googlekey</span><span class="o">.</span><span class="n">model</span><span class="p">]:</span> <span class="p">[</span><span class="n">PAYTABLETM8</span><span class="p">]</span>
+<span class="p">[</span><span class="n">vendor</span><span class="o">.</span><span class="n">soter</span><span class="o">.</span><span class="n">teei</span><span class="o">.</span><span class="n">googlekey</span><span class="o">.</span><span class="n">status</span><span class="p">]:</span> <span class="p">[</span><span class="n">ok</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>瓶钵如下判断：</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="n">vendor</span><span class="o">.</span><span class="n">trustkernel</span><span class="o">.</span><span class="n">keybox</span><span class="o">.</span><span class="n">deployed</span><span class="p">]</span> <span class="p">[</span><span class="n">true</span><span class="p">]</span>
+</pre></div>
+</div>
 </section>
 
 

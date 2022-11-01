@@ -46,6 +46,7 @@
 <li><a class="reference internal" href="#id1">概述</a></li>
 <li><a class="reference internal" href="#id2">参考</a></li>
 <li><a class="reference internal" href="#linuxloader-c">1. LinuxLoader.c</a></li>
+<li><a class="reference internal" href="#fastboot">fastboot最小电压要求</a></li>
 </ul>
 </div>
         </div>
@@ -249,6 +250,254 @@
 <span class="w">  </span><span class="cm">/*Update stack check guard with defualt value then return*/</span><span class="w"></span>
 <span class="w">  </span><span class="n">__stack_chk_guard</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">DEFAULT_STACK_CHK_GUARD</span><span class="p">;</span><span class="w"></span>
 <span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">Status</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+</section>
+<section id="fastboot">
+<h1>fastboot最小电压要求<a class="headerlink" href="#fastboot" title="此标题的永久链接"></a></h1>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">QcomPkg/SocPkg/AgattiPkg/Settings/Charger/QcomChargerConfig_VbattTh.cfg</span></code>定义如下,MTK平台是3.5v：</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="cp">#Minimum Battery Voltage to allow SW Flash Image</span>
+<span class="n">SWFlashMinBattVoltageMv</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">3600</span><span class="w"></span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">QcomPkg/Drivers/QcomChargerDxe/QcomChargerPlatform.c</span></code>驱动中定义最小电压为3.6v:</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="cm">/**</span>
+<span class="cm">ChargerPlatform_ReadCfgParams()</span>
+
+<span class="cm">@brief</span>
+<span class="cm">Battery Parameter Default Configurations file read Call Back</span>
+<span class="cm">*/</span><span class="w"></span>
+<span class="n">VOID</span><span class="w"></span>
+<span class="nf">ChargerPlatform_ReadCfgParams</span><span class="w"></span>
+<span class="p">(</span><span class="w"></span>
+<span class="w">  </span><span class="n">UINT8</span><span class="o">*</span><span class="w"> </span><span class="n">Section</span><span class="p">,</span><span class="w"></span>
+<span class="w">  </span><span class="n">UINT8</span><span class="o">*</span><span class="w"> </span><span class="n">Key</span><span class="p">,</span><span class="w"></span>
+<span class="w">  </span><span class="n">UINT8</span><span class="o">*</span><span class="w"> </span><span class="n">Value</span><span class="w"></span>
+<span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">AsciiStriCmp</span><span class="w"> </span><span class="p">((</span><span class="n">CHAR8</span><span class="o">*</span><span class="p">)</span><span class="n">Key</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;SWFlashMinBattVoltageMv&quot;</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="p">{</span><span class="w"></span>
+<span class="w">      </span><span class="n">gChargerPlatformCfgData</span><span class="p">.</span><span class="n">SWFlashMinBattVoltageMv</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ChargerPlatformFile_AsciiToInt</span><span class="p">((</span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="n">Value</span><span class="p">);</span><span class="w"></span>
+<span class="w">      </span><span class="k">return</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+
+<span class="p">}</span><span class="w"></span>
+
+<span class="n">EFI_STATUS</span><span class="w"> </span><span class="nf">ChargerPlatformFile_GetChargerConfig</span><span class="p">(</span><span class="n">EFI_QCOM_CHARGER_CONFIG_KEY</span><span class="w"> </span><span class="n">ChargerCfgKey</span><span class="p">,</span><span class="w"> </span><span class="n">UINT32</span><span class="w"> </span><span class="o">*</span><span class="n">KeyValue</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="n">EFI_STATUS</span><span class="w"> </span><span class="n">Status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">EFI_SUCCESS</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">  </span><span class="k">if</span><span class="p">(</span><span class="n">FALSE</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">gChargerCfgInitialized</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">EFI_DEVICE_ERROR</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">  </span><span class="k">if</span><span class="p">(</span><span class="nb">NULL</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">KeyValue</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">EFI_INVALID_PARAMETER</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">  </span><span class="k">switch</span><span class="p">(</span><span class="n">ChargerCfgKey</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="k">case</span><span class="w"> </span><span class="no">EFI_QCOM_CHARGER_CONFIG_KEY_SW_FLASH_VOLTAGE</span><span class="p">:</span><span class="w"></span>
+<span class="w">      </span><span class="o">*</span><span class="n">KeyValue</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">gChargerPlatformCfgData</span><span class="p">.</span><span class="n">SWFlashMinBattVoltageMv</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="k">default</span><span class="o">:</span><span class="w"></span>
+<span class="w">      </span><span class="n">Status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">EFI_INVALID_PARAMETER</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">Status</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">QcomPkg/Drivers/ChargerExDxe/ChargerExProtocol.c</span></code>ABL通过protocol的<code class="docutils literal notranslate"><span class="pre">ChargerExIsPowerOk</span></code>获取，其中调用驱动的protocol接口<code class="docutils literal notranslate"><span class="pre">GetChargerConfig</span></code>接口获取方式，主要是判断电压大于3.6v则返回TRUE：</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="cm">/**</span>
+<span class="cm">EFI_ChargerExIsPowerOk ()</span>
+
+<span class="cm">@brief</span>
+<span class="cm">Returns if battery voltage is good to process with SW flash</span>
+<span class="cm">*/</span><span class="w"></span>
+<span class="n">EFI_STATUS</span><span class="w"></span>
+<span class="n">EFIAPI</span><span class="w"></span>
+<span class="n">EFI_ChargerExIsPowerOk</span><span class="w"></span>
+<span class="p">(</span><span class="w"></span>
+<span class="w">  </span><span class="n">IN</span><span class="w">  </span><span class="n">EFI_CHARGER_EX_POWER_TYPE</span><span class="w">   </span><span class="n">PowerType</span><span class="p">,</span><span class="w"></span>
+<span class="w">  </span><span class="n">OUT</span><span class="w"> </span><span class="n">VOID</span><span class="w">                       </span><span class="o">*</span><span class="n">pPowerTypeInfo</span><span class="w"></span>
+<span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="n">EFI_STATUS</span><span class="w"> </span><span class="n">Status</span><span class="w">                </span><span class="o">=</span><span class="w"> </span><span class="n">EFI_SUCCESS</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="n">EFI_CHARGER_EX_FLASH_INFO</span><span class="w"> </span><span class="o">*</span><span class="n">pFlashInfo</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">NULL</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="n">UINT32</span><span class="w">     </span><span class="n">SwFlashBattMinVoltage</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="n">UINT32</span><span class="w">     </span><span class="n">BatteryCurrentVoltage</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="n">BOOLEAN</span><span class="w">    </span><span class="n">BatteryPresent</span><span class="w">        </span><span class="o">=</span><span class="w"> </span><span class="n">FALSE</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="n">BOOLEAN</span><span class="w">    </span><span class="n">ChargerPresent</span><span class="w">        </span><span class="o">=</span><span class="w"> </span><span class="n">FALSE</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="n">EFI_PLATFORMINFO_PLATFORM_TYPE</span><span class="w">       </span><span class="n">PlatformType</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">  </span><span class="k">if</span><span class="p">(</span><span class="n">FALSE</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">IsChgPresent</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">EFI_UNSUPPORTED</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">  </span><span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="n">pPowerTypeInfo</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">EFI_INVALID_PARAMETER</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">  </span><span class="n">pFlashInfo</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">EFI_CHARGER_EX_FLASH_INFO</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="n">pPowerTypeInfo</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">  </span><span class="n">Status</span><span class="w"> </span><span class="o">|=</span><span class="w"> </span><span class="n">GetPlatformType</span><span class="p">(</span><span class="o">&amp;</span><span class="n">PlatformType</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="k">if</span><span class="p">(</span><span class="n">EFI_SUCCESS</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">Status</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">DEBUG</span><span class="p">((</span><span class="n">EFI_D_WARN</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;ChargerExProtocol:: %a Error getting platform type  </span><span class="se">\r\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">__FUNCTION__</span><span class="p">));</span><span class="w"></span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">EFI_DEVICE_ERROR</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">  </span><span class="k">if</span><span class="p">((</span><span class="n">EFI_PLATFORMINFO_TYPE_CDP</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">PlatformType</span><span class="p">)</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="p">(</span><span class="n">EFI_PLATFORMINFO_TYPE_RUMI</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">PlatformType</span><span class="p">))</span><span class="w"></span>
+<span class="w">  </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">DEBUG</span><span class="p">((</span><span class="w"> </span><span class="n">EFI_D_WARN</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;ChargerExProtocol:: %a CDP/RUMI/IDP (%d) Platform detected. No Battery information available. </span><span class="se">\r\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">__FUNCTION__</span><span class="p">,</span><span class="w"> </span><span class="n">PlatformType</span><span class="p">));</span><span class="w"></span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">EFI_UNSUPPORTED</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
+<span class="w">  </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="p">(</span><span class="n">EFI_PLATFORMINFO_TYPE_CLS</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">PlatformType</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">pFlashInfo</span><span class="o">-&gt;</span><span class="n">bCanFlash</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">TRUE</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">EFI_SUCCESS</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">  </span><span class="k">switch</span><span class="p">(</span><span class="n">PowerType</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="k">case</span><span class="w"> </span><span class="no">EFI_CHARGER_EX_POWER_FLASH_BATTERY_VOLTAGE_TYPE</span><span class="p">:</span><span class="w"></span>
+<span class="w">      </span><span class="n">pFlashInfo</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">EFI_CHARGER_EX_FLASH_INFO</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="n">pPowerTypeInfo</span><span class="p">;</span><span class="w"></span>
+<span class="w">      </span><span class="cm">/* Get Battery Presence, Charger Presence, Voltage */</span><span class="w"></span>
+<span class="w">      </span><span class="n">Status</span><span class="w"> </span><span class="o">=</span><span class="w">  </span><span class="n">EFI_ChargerExGetBatteryPresence</span><span class="p">(</span><span class="o">&amp;</span><span class="n">BatteryPresent</span><span class="p">);</span><span class="w"></span>
+<span class="w">      </span><span class="n">Status</span><span class="w"> </span><span class="o">|=</span><span class="w"> </span><span class="n">EFI_ChargerExGetChargerPresence</span><span class="p">(</span><span class="o">&amp;</span><span class="n">ChargerPresent</span><span class="p">);</span><span class="w"></span>
+<span class="w">      </span><span class="n">Status</span><span class="w"> </span><span class="o">|=</span><span class="w"> </span><span class="n">EFI_ChargerExGetBatteryVoltage</span><span class="p">(</span><span class="o">&amp;</span><span class="n">BatteryCurrentVoltage</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">      </span><span class="k">if</span><span class="p">(</span><span class="n">EFI_SUCCESS</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">Status</span><span class="p">)</span><span class="w"></span>
+<span class="w">      </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="n">pFlashInfo</span><span class="o">-&gt;</span><span class="n">BattCurrVoltage</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">BatteryCurrentVoltage</span><span class="p">;</span><span class="w"></span>
+<span class="w">      </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">      </span><span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="n">pQcomChargerProtocol</span><span class="p">)</span><span class="w"></span>
+<span class="w">      </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="n">Status</span><span class="w"> </span><span class="o">|=</span><span class="w"> </span><span class="n">gBS</span><span class="o">-&gt;</span><span class="n">LocateProtocol</span><span class="p">(</span><span class="w"> </span><span class="o">&amp;</span><span class="n">gQcomChargerProtocolGuid</span><span class="p">,</span><span class="w"> </span><span class="nb">NULL</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">VOID</span><span class="w"> </span><span class="o">**</span><span class="p">)</span><span class="o">&amp;</span><span class="n">pQcomChargerProtocol</span><span class="w"> </span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="k">if</span><span class="p">(</span><span class="n">EFI_SUCCESS</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">Status</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="nb">NULL</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">pQcomChargerProtocol</span><span class="p">)</span><span class="w"></span>
+<span class="w">        </span><span class="p">{</span><span class="w"></span>
+<span class="w">          </span><span class="k">return</span><span class="w"> </span><span class="n">EFI_DEVICE_ERROR</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">      </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">      </span><span class="n">Status</span><span class="w"> </span><span class="o">|=</span><span class="w"> </span><span class="n">pQcomChargerProtocol</span><span class="o">-&gt;</span><span class="n">GetChargerConfig</span><span class="p">(</span><span class="n">EFI_QCOM_CHARGER_CONFIG_KEY_SW_FLASH_VOLTAGE</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">SwFlashBattMinVoltage</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">      </span><span class="k">if</span><span class="p">(</span><span class="n">Status</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">EFI_SUCCESS</span><span class="p">)</span><span class="w"></span>
+<span class="w">      </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="n">pFlashInfo</span><span class="o">-&gt;</span><span class="n">BattRequiredVoltage</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">SwFlashBattMinVoltage</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="cm">/* If battery not present but still device boot up have debug board */</span><span class="w"></span>
+<span class="w">        </span><span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="n">BatteryPresent</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="p">(</span><span class="n">BatteryPresent</span><span class="w">  </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="p">(</span><span class="n">BatteryCurrentVoltage</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="n">SwFlashBattMinVoltage</span><span class="p">)))</span><span class="w"></span>
+<span class="w">        </span><span class="p">{</span><span class="w"></span>
+<span class="w">          </span><span class="n">pFlashInfo</span><span class="o">-&gt;</span><span class="n">bCanFlash</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">TRUE</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="k">else</span><span class="w"></span>
+<span class="w">        </span><span class="p">{</span><span class="w"></span>
+<span class="w">          </span><span class="n">DEBUG</span><span class="p">((</span><span class="w"> </span><span class="n">EFI_D_WARN</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;ChargerExProtocol:: %a SwFlashBattMinVoltage = %d mV</span><span class="se">\r\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">__FUNCTION__</span><span class="p">,</span><span class="n">SwFlashBattMinVoltage</span><span class="p">));</span><span class="w"></span>
+<span class="w">          </span><span class="n">pFlashInfo</span><span class="o">-&gt;</span><span class="n">bCanFlash</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">FALSE</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">      </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="k">default</span><span class="o">:</span><span class="w"></span>
+<span class="w">    </span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">Status</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="cm">/**</span>
+<span class="cm">Charger External UEFI Protocol implementation</span>
+<span class="cm">*/</span><span class="w"></span>
+<span class="n">EFI_CHARGER_EX_PROTOCOL</span><span class="w"> </span><span class="n">ChargerExProtocolImplementation</span><span class="w"> </span><span class="o">=</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">CHARGER_EX_REVISION</span><span class="p">,</span><span class="w"></span>
+<span class="w">    </span><span class="n">EFI_ChargerExGetChargerPresence</span><span class="p">,</span><span class="w"></span>
+<span class="w">    </span><span class="n">EFI_ChargerExGetBatteryPresence</span><span class="p">,</span><span class="w"></span>
+<span class="w">    </span><span class="n">EFI_ChargerExGetBatteryVoltage</span><span class="p">,</span><span class="w"></span>
+<span class="w">    </span><span class="n">EFI_ChargerExIsOffModeCharging</span><span class="p">,</span><span class="w"></span>
+<span class="w">    </span><span class="n">EFI_ChargerExIsPowerOk</span><span class="p">,</span><span class="w"></span>
+<span class="p">};</span><span class="w"></span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>ABL阶段代码，如果小于3.6v则不进行充电：</p></li>
+</ul>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="cm">/**</span>
+<span class="cm">   Add safeguards such as refusing to flash if the battery levels is lower than</span>
+<span class="cm"> the min voltage</span>
+<span class="cm">   or bypass if the battery is not present.</span>
+<span class="cm">   @param[out] BatteryVoltage  The current voltage of battery</span>
+<span class="cm">   @retval     BOOLEAN         The value whether the device is allowed to flash</span>
+<span class="cm"> image.</span>
+<span class="cm"> **/</span><span class="w"></span>
+<span class="n">BOOLEAN</span><span class="w"></span>
+<span class="nf">TargetBatterySocOk</span><span class="w"> </span><span class="p">(</span><span class="n">UINT32</span><span class="w"> </span><span class="o">*</span><span class="n">BatteryVoltage</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="n">EFI_STATUS</span><span class="w"> </span><span class="n">Status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">EFI_SUCCESS</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="n">EFI_CHARGER_EX_PROTOCOL</span><span class="w"> </span><span class="o">*</span><span class="n">ChgDetectProtocol</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">NULL</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="n">EFI_CHARGER_EX_FLASH_INFO</span><span class="w"> </span><span class="n">FlashInfo</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="mi">0</span><span class="p">};</span><span class="w"></span>
+<span class="w">  </span><span class="n">BOOLEAN</span><span class="w"> </span><span class="n">BatteryPresent</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">FALSE</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="n">BOOLEAN</span><span class="w"> </span><span class="n">ChargerPresent</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">FALSE</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">  </span><span class="o">*</span><span class="n">BatteryVoltage</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="n">Status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">gBS</span><span class="o">-&gt;</span><span class="n">LocateProtocol</span><span class="w"> </span><span class="p">(</span><span class="o">&amp;</span><span class="n">gChargerExProtocolGuid</span><span class="p">,</span><span class="w"> </span><span class="nb">NULL</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                </span><span class="p">(</span><span class="n">VOID</span><span class="w"> </span><span class="o">**</span><span class="p">)</span><span class="o">&amp;</span><span class="n">ChgDetectProtocol</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">Status</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">EFI_NOT_FOUND</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">DEBUG</span><span class="w"> </span><span class="p">((</span><span class="n">EFI_D_VERBOSE</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Charger Protocol is not available.</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">));</span><span class="w"></span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">TRUE</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">EFI_ERROR</span><span class="w"> </span><span class="p">(</span><span class="n">Status</span><span class="p">))</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">DEBUG</span><span class="w"> </span><span class="p">((</span><span class="n">EFI_D_ERROR</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Error locating charger detect protocol</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">));</span><span class="w"></span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">FALSE</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">  </span><span class="cm">/* The new protocol are supported on future chipsets */</span><span class="w"></span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ChgDetectProtocol</span><span class="o">-&gt;</span><span class="n">Revision</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="n">CHARGER_EX_REVISION</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">Status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ChgDetectProtocol</span><span class="o">-&gt;</span><span class="n">IsPowerOk</span><span class="w"> </span><span class="p">(</span><span class="w"></span>
+<span class="w">        </span><span class="n">EFI_CHARGER_EX_POWER_FLASH_BATTERY_VOLTAGE_TYPE</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">FlashInfo</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">EFI_ERROR</span><span class="w"> </span><span class="p">(</span><span class="n">Status</span><span class="p">))</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">      </span><span class="cm">/* But be bypassable where the device doesn&#39;t even have a battery */</span><span class="w"></span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">Status</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">EFI_UNSUPPORTED</span><span class="p">)</span><span class="w"></span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">TRUE</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">      </span><span class="n">DEBUG</span><span class="w"> </span><span class="p">((</span><span class="n">EFI_D_ERROR</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Error getting the info of charger: %r</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">Status</span><span class="p">));</span><span class="w"></span>
+<span class="w">      </span><span class="k">return</span><span class="w"> </span><span class="n">FALSE</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">    </span><span class="o">*</span><span class="n">BatteryVoltage</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">FlashInfo</span><span class="p">.</span><span class="n">BattCurrVoltage</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="p">(</span><span class="n">FlashInfo</span><span class="p">.</span><span class="n">bCanFlash</span><span class="p">)</span><span class="w"> </span><span class="o">||</span><span class="w"></span>
+<span class="w">        </span><span class="p">(</span><span class="o">*</span><span class="n">BatteryVoltage</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">FlashInfo</span><span class="p">.</span><span class="n">BattRequiredVoltage</span><span class="p">))</span><span class="w"></span>
+<span class="w">    </span><span class="p">{</span><span class="w"></span>
+<span class="w">      </span><span class="n">DEBUG</span><span class="w"> </span><span class="p">((</span><span class="n">EFI_D_ERROR</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Error battery voltage: %d &quot;</span><span class="w"></span>
+<span class="w">        </span><span class="s">&quot;Requireed voltage: %d, can flash: %d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="n">BatteryVoltage</span><span class="p">,</span><span class="w"></span>
+<span class="w">        </span><span class="n">FlashInfo</span><span class="p">.</span><span class="n">BattRequiredVoltage</span><span class="p">,</span><span class="w"> </span><span class="n">FlashInfo</span><span class="p">.</span><span class="n">bCanFlash</span><span class="p">));</span><span class="w"></span>
+<span class="w">      </span><span class="k">return</span><span class="w"> </span><span class="n">FALSE</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">TRUE</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">Status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">TargetCheckBatteryStatus</span><span class="w"> </span><span class="p">(</span><span class="o">&amp;</span><span class="n">BatteryPresent</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">ChargerPresent</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                       </span><span class="n">BatteryVoltage</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(((</span><span class="n">Status</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">EFI_SUCCESS</span><span class="p">)</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"></span>
+<span class="w">         </span><span class="p">(</span><span class="o">!</span><span class="n">BatteryPresent</span><span class="w"> </span><span class="o">||</span><span class="w"></span>
+<span class="w">          </span><span class="p">(</span><span class="n">BatteryPresent</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="n">BatteryVoltage</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">BATT_MIN_VOLT</span><span class="p">))))</span><span class="w"> </span><span class="o">||</span><span class="w"></span>
+<span class="w">        </span><span class="p">(</span><span class="n">Status</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">EFI_UNSUPPORTED</span><span class="p">))</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">      </span><span class="k">return</span><span class="w"> </span><span class="n">TRUE</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">    </span><span class="n">DEBUG</span><span class="w"> </span><span class="p">((</span><span class="n">EFI_D_ERROR</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Error battery check status: %r voltage: %d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"></span>
+<span class="w">        </span><span class="n">Status</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="n">BatteryVoltage</span><span class="p">));</span><span class="w"></span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">FALSE</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
 <span class="p">}</span><span class="w"></span>
 </pre></div>
 </div>

@@ -13,6 +13,10 @@
 * [Linux源代码在线检索](https://elixir.bootlin.com/linux/latest/source)
 * [The Linux Kernel’s documentation](https://www.kernel.org/doc/html/latest/)
 
+# 宝藏博主
+
+* [蜗窝科技-Android内核电源中断时间等子系统](http://www.wowotech.net/)
+
 # docs
 
 NO.|文件名称|摘要

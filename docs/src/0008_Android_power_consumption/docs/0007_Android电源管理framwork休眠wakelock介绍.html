@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="zh-CN" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>wugn</title>
+
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script src="../../../_static/translations.js"></script>
+        <script src="../../../_static/js/baidutongji.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="索引" href="../../../genindex.html" />
+    <link rel="search" title="搜索" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../index.html" class="icon icon-home"> wugn_note
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="在文档中搜索" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">概述</a></li>
+<li><a class="reference internal" href="#id2">参考</a></li>
+<li><a class="reference internal" href="#id3">软件架构</a></li>
+<li><a class="reference internal" href="#id4">代码路径</a><ul>
+<li><a class="reference internal" href="#frameworks">Frameworks</a></li>
+<li><a class="reference internal" href="#jni">JNI</a></li>
+<li><a class="reference internal" href="#hal">HAL</a></li>
+<li><a class="reference internal" href="#kernel">Kernel</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#wake-lock">获得wake_lock唤醒锁</a></li>
+<li><a class="reference internal" href="#java">java实例</a></li>
+<li><a class="reference internal" href="#suspend">系统进入休眠（suspend）</a></li>
+</ul>
+</div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">wugn_note</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs"> 
+<li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+<li>概述</li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.forward()">Forward</a></li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.back()">Go Back</a> | </li>
+<li style="float: right;margin-left: 10px;"><a href="/index.html">Home</a> | </li>
+
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="id1">
+<h1>概述<a class="headerlink" href="#id1" title="此标题的永久链接"></a></h1>
+<p>当启动一个应用程序的时候，它可以申请一个wake_lock唤醒锁，每当申请成功后都会在内核中注册一下（通知系统内核，现在已经有锁被申请，系统内核的wake_lock_store把它加入锁中），当应用程序在某种情况下释放wake_lock的时候，会注销之前所申请的wake_lock。特别要注意的是：只要是系统中有一个wake_lock的时候，系统此时都不能进行睡眠。</p>
+</section>
+<section id="id2">
+<h1>参考<a class="headerlink" href="#id2" title="此标题的永久链接"></a></h1>
+<ul class="simple">
+<li><p><a class="reference external" href="http://t.zoukankan.com/yejintianming00-p-8078596.html">Android休眠唤醒机制</a></p></li>
+</ul>
+</section>
+<section id="id3">
+<h1>软件架构<a class="headerlink" href="#id3" title="此标题的永久链接"></a></h1>
+<p>从Android最上层（Java的应用程序），经过Java、C++和C语言写的Framework层、JNI层、HAL层最后到达android的最底层（Kernel层）。</p>
+<p><img alt="0007_0000.png" src="../../../_images/0007_00003.png" /></p>
+</section>
+<section id="id4">
+<h1>代码路径<a class="headerlink" href="#id4" title="此标题的永久链接"></a></h1>
+<p>相关代码位置：</p>
+<section id="frameworks">
+<h2>Frameworks<a class="headerlink" href="#frameworks" title="此标题的永久链接"></a></h2>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>// 供给上层应用程序调用的接口
+frameworks/base/core/java/android/os/PowerManager.java
+// 具体实现PowerManager类中的接口
+frameworks/base/services/java/com/android/server/PowerManagerService.java
+// 被PowerManagerService类调用
+frameworks/base/core/java/android/os/ Power.java
+</pre></div>
+</div>
+</section>
+<section id="jni">
+<h2>JNI<a class="headerlink" href="#jni" title="此标题的永久链接"></a></h2>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>// 实现Power类中的JNI接口
+frameworks/base/core/jni/android_os_Power.cpp
+</pre></div>
+</div>
+</section>
+<section id="hal">
+<h2>HAL<a class="headerlink" href="#hal" title="此标题的永久链接"></a></h2>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>// 进行sysfs用户接口的操作
+hardware/libhardware_legacy/power/power.c
+</pre></div>
+</div>
+</section>
+<section id="kernel">
+<h2>Kernel<a class="headerlink" href="#kernel" title="此标题的永久链接"></a></h2>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>kernel/kernel/power/main.c
+kernel/kernel/power/earlysuspend.c
+kernel/kernel/power/suspend.c
+kernel/kernel/power/wakelock.c
+kernel/kernel/power/userwakelock.c
+</pre></div>
+</div>
+<p>在应用程序框架层中，PowerManager类是面向上层应用程序的接口类，提供了Wake Lock机制（同时也是睡眠唤醒子系统）的基本接口（唤醒锁的获取和释放）。上层应用程序通过调用这些接口，实现对系统电源状态的监控。</p>
+<p>PowerManager类通过IBinder这种Android中特有的通信模式，与PowerManagerService 类进行通信。</p>
+<p>PowerManagerService 是PowerManager 类中定义的接口的具体实现，并进一步调用Power 类来与下一层进行通信。PowerManagerService 类是WakeLock 机制在应用程序框架层的核心，他们对应用程调用PowerManager类接口时所传递的参数进行初步的分析和对应的设置，并管理一个唤醒锁队列，然后配合其他模块（例如WatchDog、BatteryService、ShutdownThread 等）的状态信息，做出决策，调用Power类的对应接口，最终通过JNI 接口，调用到硬件抽象层中的函数，对sysfs 的用户接口进行操作，从而触发内核态实现的功能。</p>
+</section>
+</section>
+<section id="wake-lock">
+<h1>获得wake_lock唤醒锁<a class="headerlink" href="#wake-lock" title="此标题的永久链接"></a></h1>
+<p>比如在应用程序中，当获得wakelock唤醒锁的时候，它首先调用<code class="docutils literal notranslate"><span class="pre">/android/frameworks/base/core/java/android/os/PowerManager</span></code>类中的<code class="docutils literal notranslate"><span class="pre">public</span> <span class="pre">void</span> <span class="pre">acquire（）</span></code>办法，而此方法通过Binder将调用PowerManagerService类中的public void acquireWakeLock。</p>
+<p>Android wakelocks提供的功能包括：</p>
+<ol class="arabic simple">
+<li><p>一个sysfs文件：/sys/power/wake_lock，用户程序向文件写入一个字符串，即可创建一个wakelock，该字符串就是wakelock的名字。该wakelock可以阻止系统进入低功耗模式。</p></li>
+<li><p>一个sysfs文件：：/sys/power/wake_unlock，用户程序向文件写入相同的字符串，即可注销一个wakelock。</p></li>
+<li><p>当系统中所有的wakelock都注销后，系统可以自动进入低功耗状态。</p></li>
+<li><p>向内核其它driver也提供了wakelock的创建和注销接口，允许driver创建wakelock以阻止睡眠、注销wakelock以允许睡眠。</p></li>
+</ol>
+<p>有关Android wakelocks更为详细的描述，可以参考下面的一个链接：
+http://elinux.org/Android_Power_Management</p>
+<p>在用户态的调用流程如下：</p>
+<p><img alt="0007_0001.png" src="../../../_images/0007_00012.png" /></p>
+<p>上述write实质上是文件sysfs: /sys/power/wake_lock，当write时，它将调用userwakelock.c::wake_lock_store()函数，其实现如下：</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">kernel/power/main.c</span></code>:</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="k">static</span><span class="w"> </span><span class="kt">ssize_t</span><span class="w"> </span><span class="nf">wake_lock_store</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">kobject</span><span class="w"> </span><span class="o">*</span><span class="n">kobj</span><span class="p">,</span><span class="w"></span>
+<span class="w">                               </span><span class="k">struct</span><span class="w"> </span><span class="nc">kobj_attribute</span><span class="w"> </span><span class="o">*</span><span class="n">attr</span><span class="p">,</span><span class="w"></span>
+<span class="w">                               </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">buf</span><span class="p">,</span><span class="w"> </span><span class="kt">size_t</span><span class="w"> </span><span class="n">n</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="n">error</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pm_wake_lock</span><span class="p">(</span><span class="n">buf</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">error</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="n">error</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">n</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="n">power_attr</span><span class="p">(</span><span class="n">wake_lock</span><span class="p">);</span><span class="w"></span>
+
+<span class="kt">int</span><span class="w"> </span><span class="nf">pm_wake_lock</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">buf</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">str</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">buf</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="k">struct</span><span class="w"> </span><span class="nc">wakelock</span><span class="w"> </span><span class="o">*</span><span class="n">wl</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="n">u64</span><span class="w"> </span><span class="n">timeout_ns</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="kt">size_t</span><span class="w"> </span><span class="n">len</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">capable</span><span class="p">(</span><span class="n">CAP_BLOCK_SUSPEND</span><span class="p">))</span><span class="w"></span>
+<span class="w">                </span><span class="k">return</span><span class="w"> </span><span class="o">-</span><span class="n">EPERM</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">        </span><span class="k">while</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="n">str</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="o">!</span><span class="n">isspace</span><span class="p">(</span><span class="o">*</span><span class="n">str</span><span class="p">))</span><span class="w"></span>
+<span class="w">                </span><span class="n">str</span><span class="o">++</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">        </span><span class="n">len</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">str</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">buf</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">len</span><span class="p">)</span><span class="w"></span>
+<span class="w">                </span><span class="k">return</span><span class="w"> </span><span class="o">-</span><span class="n">EINVAL</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="n">str</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="o">*</span><span class="n">str</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="sc">&#39;\n&#39;</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="cm">/* Find out if there&#39;s a valid timeout string appended. */</span><span class="w"></span>
+<span class="w">                </span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">kstrtou64</span><span class="p">(</span><span class="n">skip_spaces</span><span class="p">(</span><span class="n">str</span><span class="p">),</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">timeout_ns</span><span class="p">);</span><span class="w"></span>
+<span class="w">                </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ret</span><span class="p">)</span><span class="w"></span>
+<span class="w">                        </span><span class="k">return</span><span class="w"> </span><span class="o">-</span><span class="n">EINVAL</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">        </span><span class="n">mutex_lock</span><span class="p">(</span><span class="o">&amp;</span><span class="n">wakelocks_lock</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">        </span><span class="n">wl</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">wakelock_lookup_add</span><span class="p">(</span><span class="n">buf</span><span class="p">,</span><span class="w"> </span><span class="n">len</span><span class="p">,</span><span class="w"> </span><span class="nb">true</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">IS_ERR</span><span class="p">(</span><span class="n">wl</span><span class="p">))</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">PTR_ERR</span><span class="p">(</span><span class="n">wl</span><span class="p">);</span><span class="w"></span>
+<span class="w">                </span><span class="k">goto</span><span class="w"> </span><span class="n">out</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">timeout_ns</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="n">u64</span><span class="w"> </span><span class="n">timeout_ms</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">timeout_ns</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">NSEC_PER_MSEC</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">                </span><span class="n">do_div</span><span class="p">(</span><span class="n">timeout_ms</span><span class="p">,</span><span class="w"> </span><span class="n">NSEC_PER_MSEC</span><span class="p">);</span><span class="w"></span>
+<span class="w">                </span><span class="n">__pm_wakeup_event</span><span class="p">(</span><span class="n">wl</span><span class="o">-&gt;</span><span class="n">ws</span><span class="p">,</span><span class="w"> </span><span class="n">timeout_ms</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="n">__pm_stay_awake</span><span class="p">(</span><span class="n">wl</span><span class="o">-&gt;</span><span class="n">ws</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">        </span><span class="n">wakelocks_lru_most_recent</span><span class="p">(</span><span class="n">wl</span><span class="p">);</span><span class="w"></span>
+
+<span class="w"> </span><span class="nl">out</span><span class="p">:</span><span class="w"></span>
+<span class="w">        </span><span class="n">mutex_unlock</span><span class="p">(</span><span class="o">&amp;</span><span class="n">wakelocks_lock</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">ret</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="k">static</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">wakelock</span><span class="w"> </span><span class="o">*</span><span class="n">wakelock_lookup_add</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="kt">size_t</span><span class="w"> </span><span class="n">len</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                            </span><span class="kt">bool</span><span class="w"> </span><span class="n">add_if_not_found</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="n">wl</span><span class="o">-&gt;</span><span class="n">ws</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">wakeup_source_register</span><span class="p">(</span><span class="nb">NULL</span><span class="p">,</span><span class="w"> </span><span class="n">wl</span><span class="o">-&gt;</span><span class="n">name</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">wl</span><span class="o">-&gt;</span><span class="n">ws</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="n">kfree</span><span class="p">(</span><span class="n">wl</span><span class="o">-&gt;</span><span class="n">name</span><span class="p">);</span><span class="w"></span>
+<span class="w">                </span><span class="n">kfree</span><span class="p">(</span><span class="n">wl</span><span class="p">);</span><span class="w"></span>
+<span class="w">                </span><span class="k">return</span><span class="w"> </span><span class="n">ERR_PTR</span><span class="p">(</span><span class="o">-</span><span class="n">ENOMEM</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<p>最终调用<code class="docutils literal notranslate"><span class="pre">wakeup_source_register</span></code>注册了一个wakelock，wakelock的名字就是写进来的字符串。</p>
+</section>
+<section id="java">
+<h1>java实例<a class="headerlink" href="#java" title="此标题的永久链接"></a></h1>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="c1">//先定义一个mWakeLock</span><span class="w"></span>
+<span class="n">PowerManager</span><span class="w"> </span><span class="n">pm</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">PowerManager</span><span class="p">)</span><span class="w"> </span><span class="n">getSystemService</span><span class="p">(</span><span class="n">Context</span><span class="p">.</span><span class="na">POWER_SERVICE</span><span class="p">);</span><span class="w"></span>
+<span class="n">mWakeLock</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pm</span><span class="p">.</span><span class="na">newWakeLock</span><span class="p">(</span><span class="n">PowerManager</span><span class="p">.</span><span class="na">PARTIAL_WAKE_LOCK</span><span class="p">,</span><span class="w"> </span><span class="k">this</span><span class="w"></span>
+<span class="w">                </span><span class="p">.</span><span class="na">getClass</span><span class="p">().</span><span class="na">getName</span><span class="p">());</span><span class="w"></span>
+
+<span class="c1">//一直保持唤醒的话，就调用</span><span class="w"></span>
+<span class="n">mWakeLock</span><span class="p">.</span><span class="na">acquire</span><span class="p">();</span><span class="w"></span>
+
+<span class="c1">//恢复正常睡眠</span><span class="w"></span>
+<span class="n">mWakeLock</span><span class="p">.</span><span class="na">release</span><span class="p">();</span><span class="w"></span>
+</pre></div>
+</div>
+</section>
+<section id="suspend">
+<h1>系统进入休眠（suspend）<a class="headerlink" href="#suspend" title="此标题的永久链接"></a></h1>
+<p>当按了手机的power键，经过一系统列的事务处理后，它会调用到PowerManager类中的goToSleep。在用户态的调用流程如下所示：</p>
+<p><img alt="0007_0002.png" src="../../../_images/0007_00022.png" /></p>
+<p>最后一步write()写操作把”mem”写入/sys/power/state中。接下来，在kernel态，state_store函数将被调用，kernel层具体休眠逻辑请参考：</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="0005_Android%E7%94%B5%E6%BA%90%E7%AE%A1%E7%90%86suspend%E5%92%8Cresume%E6%B5%81%E7%A8%8B%E6%80%BB%E7%BB%93.html"><span class="doc std std-doc">0005_Android电源管理suspend和resume流程总结.md</span></a></p></li>
+</ul>
+</section>
+
+
+           </div>
+             <div class="articleComments">
+                <comments>
+  <script src="https://utteranc.es/client.js"
+    repo="iswbm/magic-python"
+    issue-term="pathname"
+    theme="github-light"
+    crossorigin="anonymous"
+    async>
+  </script>
+</comments>
+             </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; 版权所有 2022, wugn.</p>
+  </div>
+
+  利用 <a href="https://www.sphinx-doc.org/">Sphinx</a> 构建，使用了 
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">主题</a>
+    由 <a href="https://readthedocs.org">Read the Docs</a>开发.
+  
+
+<script charset="UTF-8" id="LA_COLLECT" src="//sdk.51.la/js-sdk-pro.min.js"></script>
+<script>LA.init({id: "JoV5csIHTGhHiGQ4",ck: "JoV5csIHTGhHiGQ4"})</script>
+
+<br/>
+<script id="LA-DATA-WIDGET" crossorigin="anonymous" charset="UTF-8" src="https://v6-widget.51.la/v6/JoV5csIHTGhHiGQ4/quote.js?theme=#4C8AC2,#BB2626,#040000,#333333,#AE3535,#1690FF,14&f=14"></script>
+
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

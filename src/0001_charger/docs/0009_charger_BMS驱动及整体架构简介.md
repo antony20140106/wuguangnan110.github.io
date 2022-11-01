@@ -954,6 +954,140 @@ int broadcastIntent(in IApplicationThread caller, in Intent intent,
 
 ![0009_0015.png](images/0009_0015.png)
 
+## 4.防止过放功能
+
+实现原理是休眠时根据整机底电流`suspend_current_ua`计算整机能运行最大时长`secs`，启动唤醒定时器进行唤醒。
+```C++
+static enum alarmtimer_restart pax_battery_alarm_func(struct alarm *alarm, ktime_t ktime)
+{
+	pr_info("%s: enter\n", __func__);
+	__pm_wakeup_event(g_bms_data.bms_ws, 1000);
+
+	return ALARMTIMER_NORESTART;
+}
+
+static int bms_start_alarm(unsigned long long secs)
+{
+	struct timespec time, time_now, end_time;
+	ktime_t ktime;
+
+	get_monotonic_boottime(&time_now);
+	time.tv_sec = secs;
+	time.tv_nsec = 0;
+	end_time = timespec_add(time_now, time);
+	ktime = ktime_set(end_time.tv_sec, end_time.tv_nsec);
+
+	alarm_start(&g_bms_data.bms_alarm, ktime);
+
+	return 0;
+}
+
+static int bms_suspend(struct platform_device *pdev, pm_message_t state)
+{
+	unsigned long long secs = 0;
+	union power_supply_propval val = {0};
+	int rm_cap, full_cap;
+	int low_rm_cap;
+	int ret;
+
+	if (!g_bms_data.bat_psy)
+		return 0;
+
+	ret = power_supply_get_property(g_bms_data.bat_psy, POWER_SUPPLY_PROP_CHARGE_FULL, &val);
+	if (ret < 0)
+		return 0;
+	full_cap = val.intval;
+
+	ret = power_supply_get_property(g_bms_data.bat_psy, POWER_SUPPLY_PROP_CHARGE_COUNTER, &val);
+	if (ret < 0)
+		return 0;
+	rm_cap = val.intval;
+
+	low_rm_cap = full_cap * 5 / 100;
+
+	if (rm_cap <= low_rm_cap) {
+		secs = 5 * 60;
+	}
+	else {
+		secs = ((rm_cap - low_rm_cap) / g_bms_data.suspend_current_ua * 60 + 5) * 60;
+	}
+
+	pr_err("%s. secs = %d\n",__func__, secs);
+	bms_start_alarm(secs);
+
+	return 0;
+}
+
+static int bms_resume(struct platform_device *pdev)
+{
+	return 0;
+}
+```
+
+```shell
+[ 3850.395822] PAX_CHG: charger_pm_event: enter PM_SUSPEND_PREPARE //进入休眠
+[ 3850.401988] Freezing user space processes ...
+[ 3850.403149] i2c_read: err wakeup of wq
+[ 3850.414895] (elapsed 0.012 seconds) done.
+[ 3850.418990] OOM killer disabled.
+[ 3850.422260] Freezing remaining freezable tasks ... (elapsed 0.005 seconds) do                                                                                                                               ne.
+[ 3850.434994] Suspending console(s) (use no_console_suspend to debug)
+[ 3850.447211] ILITEK: (ilitek_tp_pm_suspend, 765): CALL BACK TP PM SUSPEND
+[ 3850.460164] [Binder][0x295c2a685fe][03:18:30.189330] wlan: [4077:I:HDD] __wlan_hdd_bus_suspend: 1035: starting bus suspend
+[ 3850.464172] ======sp_cat_tp_suspend 336
+[ 3850.464189] [pax_authinfo]: gpio_sleep_sp, en=1
+[ 3850.464189]
+[ 3850.464219] PAX_BMS:bms_suspend. secs = 300 //计算resume时间为300s
+[ 3850.464253] pax_base_detect_suspend
+[ 3850.587708] Disabling non-boot CPUs ...
+[ 3850.588992] CPU1: shutdown
+[ 3850.590215] psci: CPU1 killed (polled 0 ms)
+[ 3850.592165] CPU2: shutdown
+[ 3850.593348] psci: CPU2 killed (polled 4 ms)
+[ 3850.595233] CPU3: shutdown
+[ 3850.596534] psci: CPU3 killed (polled 4 ms)
+[ 3850.597307] suspend ns:    3850597302664     suspend cycles:    2842241709175
+
+
+[ 3850.597302] resume cycles:    2845988528127
+[ 3850.597370] pm_system_irq_wakeup: 173 triggered pm8xxx_rtc_alarm //唤醒
+[ 3850.597932] Enabling non-boot CPUs ...
+[ 3850.598690] Detected VIPT I-cache on CPU1
+[ 3850.598780] arch_timer: CPU1: Trapping CNTVCT access
+[ 3850.598834] CPU1: Booted secondary processor 0x0000000001 [0x51af8014]
+[ 3850.599825] CPU1 is up
+[ 3850.600901] Detected VIPT I-cache on CPU2
+[ 3850.600992] arch_timer: CPU2: Trapping CNTVCT access
+[ 3850.601048] CPU2: Booted secondary processor 0x0000000002 [0x51af8014]
+[ 3850.602044] CPU2 is up
+[ 3850.603029] Detected VIPT I-cache on CPU3
+[ 3850.603122] arch_timer: CPU3: Trapping CNTVCT access
+[ 3850.603178] CPU3: Booted secondary processor 0x0000000003 [0x51af8014]
+[ 3850.604146] CPU3 is up
+[ 3850.721789] pax_base_detect_resume
+[ 3850.722653] PAX_BAT: pax_battery_resume: pre_soc: 4 soc: 4 //唤醒时电量为4%
+[ 3850.723752] ///PD dbg info 127d
+[ 3850.723758] < 3850.723>TCPC-TCPC:bat_update_work_func battery update soc = 4
+[ 3850.723758] < 3850.723>TCPC-TCPC:bat_update_work_func Battery Discharging
+[ 3850.723793] ======sp_cat_tp_resume 347
+[ 3850.726769] [Binder][0x296a2488d15][03:21:45.602759] wlan: [4077:I:HDD] wlan_hdd_bus_resume: 1226: starting bus resume
+[ 3850.730373] ILITEK: (drm_notifier_callback, 471): DRM event:2,blank:3
+[ 3850.730379] ILITEK: (drm_notifier_callback, 492): DRM BLANK(3) do not need process
+[ 3850.730450] ILITEK: (drm_notifier_callback, 471): DRM event:1,blank:3
+[ 3850.730453] ILITEK: (drm_notifier_callback, 492): DRM BLANK(3) do not need process
+[ 3850.731232] ILITEK: (ilitek_tp_pm_resume, 779): CALL BACK TP PM RESUME
+[ 3850.794730] PAX_BAT: [status:Discharging, health:Good, present:1, tech:Li-ion, capcity:4,cap_rm:152 mah, vol:3567 mv, temp:29, curr:-60 ma, ui_soc:4]
+[ 3850.795842] ///PD dbg info 127d
+[ 3850.799272] OOM killer enabled.
+[ 3850.799275] Restarting tasks ... done.
+[ 3850.825627] healthd: battery l=4 v=3567 t=29.0 h=2 st=3 c=-60000 fc=4481000 cc=6 chg=
+[ 3850.829577] thermal thermal_zone26: failed to read out thermal zone (-61)
+[ 3850.838820] < 3850.795>TCPC-TCPC:bat_update_work_func battery update soc = 4
+[ 3850.838820] < 3850.795>TCPC-TCPC:bat_update_work_func Battery Discharging
+[ 3850.842930] PAX_CHG: charger_pm_event: enter PM_POST_SUSPEND
+[ 3851.009018] Resume caused by IRQ 173, pm8xxx_rtc_alarm // 唤醒源
+```
+
 # 四、底层BMS功能接口提供
 
 为了减少bms与charge、guage及平台的耦合性，BMS不和Charge、Guage直接交互，在他们中间增加了BMS Notify，BMS driver调用power_supply_get_property和power_supply_reg_notifier方法通过PSY core来获取Charger和Guage相关信息，同时可通过BMS Notify调bms_notify_call_chain向Charge发送相关指令. 

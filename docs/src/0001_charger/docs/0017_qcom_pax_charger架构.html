@@ -47,6 +47,7 @@
 <li><a class="reference internal" href="#id3">架构图</a></li>
 <li><a class="reference internal" href="#charger-class">charger_class架构介绍</a></li>
 <li><a class="reference internal" href="#id4">充电状态上报逻辑</a></li>
+<li><a class="reference internal" href="#pm">PM电源管理</a></li>
 <li><a class="reference internal" href="#id5">底座充电功能开发</a></li>
 <li><a class="reference internal" href="#id6">问题点</a><ul>
 <li><a class="reference internal" href="#bc1-2">bc1.2轮询方案</a></li>
@@ -389,6 +390,195 @@ static int mp2721_charger_probe(struct i2c_client *client,
 <span class="p">{</span><span class="w"></span>
 <span class="w">	</span><span class="n">pax_charger_check_status</span><span class="p">(</span><span class="n">info</span><span class="p">);</span><span class="w"></span>
 <span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+</section>
+<section id="pm">
+<h1>PM电源管理<a class="headerlink" href="#pm" title="此标题的永久链接"></a></h1>
+<p>目前wakelock充电逻辑如下：</p>
+<p><img alt="0017_0007.png" src="../../../_images/0017_0007.png" /></p>
+<p>主要讲解一下充电时阻止系统进入休眠，方案流程如下：</p>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="k">static</span><span class="w"> </span><span class="k">enum</span><span class="w"> </span><span class="nc">alarmtimer_restart</span><span class="w"></span>
+<span class="w">	</span><span class="n">pax_charger_alarm_timer_func</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">alarm</span><span class="w"> </span><span class="o">*</span><span class="n">alarm</span><span class="p">,</span><span class="w"> </span><span class="n">ktime_t</span><span class="w"> </span><span class="n">now</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="k">struct</span><span class="w"> </span><span class="nc">pax_charger</span><span class="w"> </span><span class="o">*</span><span class="n">info</span><span class="w"> </span><span class="o">=</span><span class="w"></span>
+<span class="w">	</span><span class="n">container_of</span><span class="p">(</span><span class="n">alarm</span><span class="p">,</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">pax_charger</span><span class="p">,</span><span class="w"> </span><span class="n">charger_timer</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">info</span><span class="o">-&gt;</span><span class="n">is_suspend</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="nb">false</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="n">chr_debug</span><span class="p">(</span><span class="s">&quot;%s: not suspend, wake up charger</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">__func__</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="n">_wake_up_charger</span><span class="p">(</span><span class="n">info</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="n">chr_info</span><span class="p">(</span><span class="s">&quot;%s: alarm timer timeout</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">__func__</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="n">__pm_stay_awake</span><span class="p">(</span><span class="n">info</span><span class="o">-&gt;</span><span class="n">charger_wakelock</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+
+<span class="w">	</span><span class="k">return</span><span class="w"> </span><span class="n">ALARMTIMER_NORESTART</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">pax_charger_start_timer</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">pax_charger</span><span class="w"> </span><span class="o">*</span><span class="n">info</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="k">struct</span><span class="w"> </span><span class="nc">timespec</span><span class="w"> </span><span class="n">time</span><span class="p">,</span><span class="w"> </span><span class="n">time_now</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="n">ktime_t</span><span class="w"> </span><span class="n">ktime</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="kt">int</span><span class="w"> </span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">	</span><span class="cm">/* If the timer was already set, cancel it */</span><span class="w"></span>
+<span class="w">	</span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">alarm_try_to_cancel</span><span class="p">(</span><span class="o">&amp;</span><span class="n">info</span><span class="o">-&gt;</span><span class="n">charger_timer</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ret</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="n">chr_err</span><span class="p">(</span><span class="s">&quot;%s: callback was running, skip timer</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">__func__</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="k">return</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">get_monotonic_boottime</span><span class="p">(</span><span class="o">&amp;</span><span class="n">time_now</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="n">time</span><span class="p">.</span><span class="n">tv_sec</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">info</span><span class="o">-&gt;</span><span class="n">polling_interval</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="n">time</span><span class="p">.</span><span class="n">tv_nsec</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="n">info</span><span class="o">-&gt;</span><span class="n">endtime</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">timespec_add</span><span class="p">(</span><span class="n">time_now</span><span class="p">,</span><span class="w"> </span><span class="n">time</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="n">ktime</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ktime_set</span><span class="p">(</span><span class="n">info</span><span class="o">-&gt;</span><span class="n">endtime</span><span class="p">.</span><span class="n">tv_sec</span><span class="p">,</span><span class="w"> </span><span class="n">info</span><span class="o">-&gt;</span><span class="n">endtime</span><span class="p">.</span><span class="n">tv_nsec</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">	</span><span class="c1">//chr_err(&quot;%s: alarm timer start:%d, %ld %ld\n&quot;, __func__, ret,</span>
+<span class="c1">//		info-&gt;endtime.tv_sec, info-&gt;endtime.tv_nsec);</span>
+<span class="w">	</span><span class="n">alarm_start</span><span class="p">(</span><span class="o">&amp;</span><span class="n">info</span><span class="o">-&gt;</span><span class="n">charger_timer</span><span class="p">,</span><span class="w"> </span><span class="n">ktime</span><span class="p">);</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="cp">#ifdef CONFIG_PM</span>
+<span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">charger_pm_event</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">notifier_block</span><span class="w"> </span><span class="o">*</span><span class="n">notifier</span><span class="p">,</span><span class="w"></span>
+<span class="w">			</span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">long</span><span class="w"> </span><span class="n">pm_event</span><span class="p">,</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="o">*</span><span class="n">unused</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="k">struct</span><span class="w"> </span><span class="nc">timespec</span><span class="w"> </span><span class="n">now</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="k">struct</span><span class="w"> </span><span class="nc">pax_charger</span><span class="w"> </span><span class="o">*</span><span class="n">info</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">info</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">container_of</span><span class="p">(</span><span class="n">notifier</span><span class="p">,</span><span class="w"></span>
+<span class="w">		</span><span class="k">struct</span><span class="w"> </span><span class="nc">pax_charger</span><span class="p">,</span><span class="w"> </span><span class="n">pm_notifier</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">	</span><span class="k">switch</span><span class="w"> </span><span class="p">(</span><span class="n">pm_event</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="k">case</span><span class="w"> </span><span class="no">PM_SUSPEND_PREPARE</span><span class="p">:</span><span class="w"></span>
+<span class="w">		</span><span class="n">info</span><span class="o">-&gt;</span><span class="n">is_suspend</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">true</span><span class="p">;</span><span class="w"></span>
+<span class="w">		</span><span class="n">chr_err</span><span class="p">(</span><span class="s">&quot;%s: enter PM_SUSPEND_PREPARE</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">__func__</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="k">case</span><span class="w"> </span><span class="no">PM_POST_SUSPEND</span><span class="p">:</span><span class="w"></span>
+<span class="w">		</span><span class="n">info</span><span class="o">-&gt;</span><span class="n">is_suspend</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">false</span><span class="p">;</span><span class="w"></span>
+<span class="w">		</span><span class="n">chr_err</span><span class="p">(</span><span class="s">&quot;%s: enter PM_POST_SUSPEND</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">__func__</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="n">get_monotonic_boottime</span><span class="p">(</span><span class="o">&amp;</span><span class="n">now</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">		</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">timespec_compare</span><span class="p">(</span><span class="o">&amp;</span><span class="n">now</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">info</span><span class="o">-&gt;</span><span class="n">endtime</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"></span>
+<span class="w">			</span><span class="n">info</span><span class="o">-&gt;</span><span class="n">endtime</span><span class="p">.</span><span class="n">tv_sec</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"></span>
+<span class="w">			</span><span class="n">info</span><span class="o">-&gt;</span><span class="n">endtime</span><span class="p">.</span><span class="n">tv_nsec</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">			</span><span class="n">chr_err</span><span class="p">(</span><span class="s">&quot;%s: alarm timeout, wake up charger</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"></span>
+<span class="w">				</span><span class="n">__func__</span><span class="p">);</span><span class="w"></span>
+<span class="w">			</span><span class="n">__pm_relax</span><span class="p">(</span><span class="n">info</span><span class="o">-&gt;</span><span class="n">charger_wakelock</span><span class="p">);</span><span class="w"></span>
+<span class="w">			</span><span class="n">info</span><span class="o">-&gt;</span><span class="n">endtime</span><span class="p">.</span><span class="n">tv_sec</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="w">			</span><span class="n">info</span><span class="o">-&gt;</span><span class="n">endtime</span><span class="p">.</span><span class="n">tv_nsec</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="w">			</span><span class="n">_wake_up_charger</span><span class="p">(</span><span class="n">info</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="p">}</span><span class="w"></span>
+<span class="w">		</span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="k">default</span><span class="o">:</span><span class="w"></span>
+<span class="w">		</span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+<span class="w">	</span><span class="k">return</span><span class="w"> </span><span class="n">NOTIFY_DONE</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+<span class="cp">#endif </span><span class="cm">/* CONFIG_PM */</span><span class="cp"></span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">charger_routine_thread</span><span class="p">(</span><span class="kt">void</span><span class="w"> </span><span class="o">*</span><span class="n">arg</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="n">mutex_lock</span><span class="p">(</span><span class="o">&amp;</span><span class="n">info</span><span class="o">-&gt;</span><span class="n">charger_lock</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="n">spin_lock_irqsave</span><span class="p">(</span><span class="o">&amp;</span><span class="n">info</span><span class="o">-&gt;</span><span class="n">slock</span><span class="p">,</span><span class="w"> </span><span class="n">flags</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">info</span><span class="o">-&gt;</span><span class="n">charger_wakelock</span><span class="o">-&gt;</span><span class="n">active</span><span class="p">)</span><span class="w"></span>
+<span class="w">			</span><span class="n">__pm_stay_awake</span><span class="p">(</span><span class="n">info</span><span class="o">-&gt;</span><span class="n">charger_wakelock</span><span class="p">);</span><span class="w"> </span><span class="c1">//进入线程，持锁</span>
+<span class="w">		</span><span class="n">spin_unlock_irqrestore</span><span class="p">(</span><span class="o">&amp;</span><span class="n">info</span><span class="o">-&gt;</span><span class="n">slock</span><span class="p">,</span><span class="w"> </span><span class="n">flags</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="n">info</span><span class="o">-&gt;</span><span class="n">charger_thread_timeout</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">false</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">		</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">info</span><span class="o">-&gt;</span><span class="n">charger_thread_polling</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="nb">true</span><span class="p">)</span><span class="w"></span>
+<span class="w">			</span><span class="n">pax_charger_start_timer</span><span class="p">(</span><span class="n">info</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">		</span><span class="n">spin_lock_irqsave</span><span class="p">(</span><span class="o">&amp;</span><span class="n">info</span><span class="o">-&gt;</span><span class="n">slock</span><span class="p">,</span><span class="w"> </span><span class="n">flags</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="n">__pm_relax</span><span class="p">(</span><span class="n">info</span><span class="o">-&gt;</span><span class="n">charger_wakelock</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="n">spin_unlock_irqrestore</span><span class="p">(</span><span class="o">&amp;</span><span class="n">info</span><span class="o">-&gt;</span><span class="n">slock</span><span class="p">,</span><span class="w"> </span><span class="n">flags</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="n">chr_debug</span><span class="p">(</span><span class="s">&quot;%s end , %d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"></span>
+<span class="w">			</span><span class="n">__func__</span><span class="p">,</span><span class="w"> </span><span class="n">info</span><span class="o">-&gt;</span><span class="n">charger_thread_timeout</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="n">mutex_unlock</span><span class="p">(</span><span class="o">&amp;</span><span class="n">info</span><span class="o">-&gt;</span><span class="n">charger_lock</span><span class="p">);</span><span class="w">		</span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="n">probe</span><span class="p">()</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="cp">#ifdef CONFIG_PM</span>
+<span class="w">	</span><span class="n">info</span><span class="o">-&gt;</span><span class="n">pm_notifier</span><span class="p">.</span><span class="n">notifier_call</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">charger_pm_event</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<p>休眠唤醒流程如下：</p>
+<ul class="simple">
+<li><p>1、<code class="docutils literal notranslate"><span class="pre">PM_SUSPEND_PREPARE</span></code>阶段:当系统调用suspend_prepare做进一步suspend前期准备工作，准备控制台，冻结内核线程等，此时充电线程<code class="docutils literal notranslate"><span class="pre">is_suspend</span></code>标志位置1。</p></li>
+<li><p>2、定时器超时函数<code class="docutils literal notranslate"><span class="pre">pax_charger_alarm_timer_func</span></code>，根据<code class="docutils literal notranslate"><span class="pre">is_suspend</span></code>状态，这里会持锁唤醒系统。</p></li>
+<li><p>3、<code class="docutils literal notranslate"><span class="pre">PM_POST_SUSPEND阶段</span></code>:唤醒后进入PM_POST_SUSPEND阶段，就是退出休眠，并唤醒充电线程。</p></li>
+</ul>
+<p>以下是阻止休眠的全过程打印：</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="o">[</span><span class="m">10990</span>.074535<span class="o">]</span> PM: <span class="nb">suspend</span> entry <span class="o">(</span>deep<span class="o">)</span>
+<span class="o">[</span><span class="m">10990</span>.078255<span class="o">]</span> PM: Syncing filesystems ... <span class="k">done</span>.
+<span class="o">[</span><span class="m">10990</span>.193251<span class="o">]</span> PAX_CHG: charger_pm_event: enter PM_SUSPEND_PREPARE //调用suspend_prepare做进一步suspend前期准备工作，准备控制台，冻结内核线程等
+<span class="o">[</span><span class="m">10990</span>.199399<span class="o">]</span> Freezing user space processes ...
+<span class="o">[</span><span class="m">10990</span>.200488<span class="o">]</span> i2c_read: err wakeup of wq
+<span class="o">[</span><span class="m">10990</span>.215157<span class="o">]</span> <span class="o">(</span>elapsed <span class="m">0</span>.015 seconds<span class="o">)</span> <span class="k">done</span>.
+<span class="o">[</span><span class="m">10990</span>.219229<span class="o">]</span> OOM killer disabled.
+<span class="o">[</span><span class="m">10990</span>.222500<span class="o">]</span> Freezing remaining freezable tasks ... <span class="o">(</span>elapsed <span class="m">0</span>.004 seconds<span class="o">)</span> <span class="k">done</span>.
+<span class="o">[</span><span class="m">10990</span>.234057<span class="o">]</span> Suspending console<span class="o">(</span>s<span class="o">)</span> <span class="o">(</span>use no_console_suspend to debug<span class="o">)</span>
+<span class="o">[</span><span class="m">10990</span>.245041<span class="o">]</span> ILITEK: <span class="o">(</span>ilitek_tp_pm_suspend, <span class="m">765</span><span class="o">)</span>: CALL BACK TP PM SUSPEND
+<span class="o">[</span><span class="m">10990</span>.255154<span class="o">]</span> <span class="o">[</span>Binder<span class="o">][</span>0x474f46a859<span class="o">][</span><span class="m">13</span>:37:07.732510<span class="o">]</span> wlan: <span class="o">[</span><span class="m">4210</span>:I:HDD<span class="o">]</span> __wlan_hdd_bus_suspend: <span class="m">1035</span>: starting bus <span class="nb">suspend</span>
+<span class="o">[</span><span class="m">10990</span>.258777<span class="o">]</span> <span class="o">======</span>sp_cat_tp_suspend <span class="m">336</span>
+<span class="o">[</span><span class="m">10990</span>.258791<span class="o">]</span> <span class="o">[</span>pax_authinfo<span class="o">]</span>: gpio_sleep_sp, <span class="nv">en</span><span class="o">=</span><span class="m">1</span>
+<span class="o">[</span><span class="m">10990</span>.258791<span class="o">]</span>
+<span class="o">[</span><span class="m">10990</span>.258812<span class="o">]</span> PAX_BMS:bms_suspend. <span class="nv">secs</span> <span class="o">=</span> <span class="m">572700</span>
+<span class="o">[</span><span class="m">10990</span>.258838<span class="o">]</span> pax_base_detect_suspend
+<span class="o">[</span><span class="m">10990</span>.378107<span class="o">]</span> Disabling non-boot CPUs ...
+<span class="o">[</span><span class="m">10990</span>.378846<span class="o">]</span> IRQ <span class="m">6</span>: no longer affine to CPU1
+<span class="o">[</span><span class="m">10990</span>.379073<span class="o">]</span> CPU1: shutdown
+<span class="o">[</span><span class="m">10990</span>.379642<span class="o">]</span> psci: CPU1 killed <span class="o">(</span>polled <span class="m">4</span> ms<span class="o">)</span>
+<span class="o">[</span><span class="m">10990</span>.380939<span class="o">]</span> IRQ <span class="m">1</span>: no longer affine to CPU2
+<span class="o">[</span><span class="m">10990</span>.381172<span class="o">]</span> CPU2: shutdown
+<span class="o">[</span><span class="m">10990</span>.382284<span class="o">]</span> psci: CPU2 killed <span class="o">(</span>polled <span class="m">0</span> ms<span class="o">)</span>
+<span class="o">[</span><span class="m">10990</span>.384069<span class="o">]</span> CPU3: shutdown
+<span class="o">[</span><span class="m">10990</span>.384115<span class="o">]</span> psci: CPU3 killed <span class="o">(</span>polled <span class="m">0</span> ms<span class="o">)</span>
+<span class="o">[</span><span class="m">10990</span>.384718<span class="o">]</span> <span class="nb">suspend</span> ns:   <span class="m">10990384714503</span>     <span class="nb">suspend</span> cycles:     <span class="m">306275196449</span>
+<span class="o">[</span><span class="m">10990</span>.384714<span class="o">]</span> resume cycles:     <span class="m">306373970012</span>
+<span class="o">[</span><span class="m">10990</span>.384761<span class="o">]</span> pm_system_irq_wakeup: <span class="m">173</span> triggered pm8xxx_rtc_alarm
+<span class="o">[</span><span class="m">10990</span>.385117<span class="o">]</span> PAX_CHG: pax_charger_alarm_timer_func: alarm timer timeout //定时器超时函数，这里会持锁唤醒系统
+<span class="o">[</span><span class="m">10990</span>.385230<span class="o">]</span> Enabling non-boot CPUs ...
+<span class="o">[</span><span class="m">10990</span>.385768<span class="o">]</span> Detected VIPT I-cache on CPU1
+<span class="o">[</span><span class="m">10990</span>.385843<span class="o">]</span> arch_timer: CPU1: Trapping CNTVCT access
+<span class="o">[</span><span class="m">10990</span>.385895<span class="o">]</span> CPU1: Booted secondary processor 0x0000000001 <span class="o">[</span>0x51af8014<span class="o">]</span>
+<span class="o">[</span><span class="m">10990</span>.386670<span class="o">]</span> CPU1 is up
+<span class="o">[</span><span class="m">10990</span>.387438<span class="o">]</span> Detected VIPT I-cache on CPU2
+<span class="o">[</span><span class="m">10990</span>.387518<span class="o">]</span> arch_timer: CPU2: Trapping CNTVCT access
+<span class="o">[</span><span class="m">10990</span>.387566<span class="o">]</span> CPU2: Booted secondary processor 0x0000000002 <span class="o">[</span>0x51af8014<span class="o">]</span>
+<span class="o">[</span><span class="m">10990</span>.388390<span class="o">]</span> CPU2 is up
+<span class="o">[</span><span class="m">10990</span>.389089<span class="o">]</span> Detected VIPT I-cache on CPU3
+<span class="o">[</span><span class="m">10990</span>.389169<span class="o">]</span> arch_timer: CPU3: Trapping CNTVCT access
+<span class="o">[</span><span class="m">10990</span>.389220<span class="o">]</span> CPU3: Booted secondary processor 0x0000000003 <span class="o">[</span>0x51af8014<span class="o">]</span>
+<span class="o">[</span><span class="m">10990</span>.389987<span class="o">]</span> CPU3 is up
+<span class="o">[</span><span class="m">10990</span>.506155<span class="o">]</span> pax_base_detect_resume
+<span class="o">[</span><span class="m">10990</span>.506957<span class="o">]</span> PAX_BAT: pax_battery_resume: pre_soc: <span class="m">100</span> soc: <span class="m">100</span>
+<span class="o">[</span><span class="m">10990</span>.507767<span class="o">]</span> <span class="o">======</span>sp_cat_tp_resume <span class="m">347</span>
+<span class="o">[</span><span class="m">10990</span>.507931<span class="o">]</span> ///PD dbg info 122d
+<span class="o">[</span><span class="m">10990</span>.507937<span class="o">]</span> &lt;<span class="m">10990</span>.507&gt;TCPC-TCPC:bat_update_work_func battery update <span class="nv">soc</span> <span class="o">=</span> <span class="m">100</span>
+<span class="o">[</span><span class="m">10990</span>.507937<span class="o">]</span> &lt;<span class="m">10990</span>.507&gt;TCPC-TCPC:bat_update_work_func Battery Idle
+<span class="o">[</span><span class="m">10990</span>.510388<span class="o">]</span> <span class="o">[</span>Binder<span class="o">][</span>0x475574994c<span class="o">][</span><span class="m">13</span>:37:13.132203<span class="o">]</span> wlan: <span class="o">[</span><span class="m">4210</span>:I:HDD<span class="o">]</span> wlan_hdd_bus_resume: <span class="m">1226</span>: starting bus resume
+<span class="o">[</span><span class="m">10990</span>.513090<span class="o">]</span> ILITEK: <span class="o">(</span>drm_notifier_callback, <span class="m">471</span><span class="o">)</span>: DRM event:2,blank:3
+<span class="o">[</span><span class="m">10990</span>.513094<span class="o">]</span> ILITEK: <span class="o">(</span>drm_notifier_callback, <span class="m">492</span><span class="o">)</span>: DRM BLANK<span class="o">(</span><span class="m">3</span><span class="o">)</span> <span class="k">do</span> not need process
+<span class="o">[</span><span class="m">10990</span>.513147<span class="o">]</span> ILITEK: <span class="o">(</span>drm_notifier_callback, <span class="m">471</span><span class="o">)</span>: DRM event:1,blank:3
+<span class="o">[</span><span class="m">10990</span>.513149<span class="o">]</span> ILITEK: <span class="o">(</span>drm_notifier_callback, <span class="m">492</span><span class="o">)</span>: DRM BLANK<span class="o">(</span><span class="m">3</span><span class="o">)</span> <span class="k">do</span> not need process
+<span class="o">[</span><span class="m">10990</span>.513663<span class="o">]</span> ILITEK: <span class="o">(</span>ilitek_tp_pm_resume, <span class="m">779</span><span class="o">)</span>: CALL BACK TP PM RESUME
+<span class="o">[</span><span class="m">10990</span>.577217<span class="o">]</span> PAX_BAT: <span class="o">[</span>status:Full, health:Good, present:1, tech:Li-ion, capcity:100,cap_rm:5045 mah, vol:4301 mv, temp:29, curr:0 ma, ui_soc:100<span class="o">]</span>
+<span class="o">[</span><span class="m">10990</span>.577935<span class="o">]</span> ///PD dbg info 122d
+<span class="o">[</span><span class="m">10990</span>.581826<span class="o">]</span> OOM killer enabled.
+<span class="o">[</span><span class="m">10990</span>.584558<span class="o">]</span> &lt;<span class="m">10990</span>.577&gt;TCPC-TCPC:bat_update_work_func battery update <span class="nv">soc</span> <span class="o">=</span> <span class="m">100</span>
+<span class="o">[</span><span class="m">10990</span>.584558<span class="o">]</span> &lt;<span class="m">10990</span>.577&gt;TCPC-TCPC:bat_update_work_func Battery Idle
+<span class="o">[</span><span class="m">10990</span>.778158<span class="o">]</span> Restarting tasks ...
+<span class="o">[</span><span class="m">10990</span>.784613<span class="o">]</span> healthd: battery <span class="nv">l</span><span class="o">=</span><span class="m">100</span> <span class="nv">v</span><span class="o">=</span><span class="m">4301</span> <span class="nv">t</span><span class="o">=</span><span class="m">29</span>.0 <span class="nv">h</span><span class="o">=</span><span class="m">2</span> <span class="nv">st</span><span class="o">=</span><span class="m">5</span> <span class="nv">c</span><span class="o">=</span><span class="m">0</span> <span class="nv">fc</span><span class="o">=</span><span class="m">5045000</span> <span class="nv">cc</span><span class="o">=</span><span class="m">6</span> <span class="nv">chg</span><span class="o">=</span>u
+<span class="o">[</span><span class="m">10990</span>.790006<span class="o">]</span> <span class="k">done</span>.
+<span class="o">[</span><span class="m">10990</span>.797764<span class="o">]</span> thermal thermal_zone26: failed to <span class="nb">read</span> out thermal zone <span class="o">(</span>-61<span class="o">)</span>
+<span class="o">[</span><span class="m">10990</span>.804820<span class="o">]</span> PAX_CHG: charger_pm_event: enter PM_POST_SUSPEND //唤醒后进入PM_POST_SUSPEND阶段，就是退出休眠
+<span class="o">[</span><span class="m">10990</span>.810534<span class="o">]</span> PAX_CHG: charger_pm_event: alarm timeout, wake up charger //并唤醒充电线程
+<span class="o">[</span><span class="m">10990</span>.817061<span class="o">]</span> Resume caused by IRQ <span class="m">173</span>, pm8xxx_rtc_alarm
+<span class="o">[</span><span class="m">10990</span>.817305<span class="o">]</span> PAX_CHG: pax_is_charger_on <span class="nv">chr_type</span> <span class="o">=</span> <span class="o">[</span>DCP<span class="o">]</span> <span class="nv">last_chr_type</span> <span class="o">=</span> <span class="o">[</span>DCP<span class="o">]</span>
+<span class="o">[</span><span class="m">10990</span>.822242<span class="o">]</span> PM: <span class="nb">suspend</span> <span class="nb">exit</span>
 </pre></div>
 </div>
 </section>

@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="zh-CN" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>wugn</title>
+
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script src="../../../_static/translations.js"></script>
+        <script src="../../../_static/js/baidutongji.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="索引" href="../../../genindex.html" />
+    <link rel="search" title="搜索" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../index.html" class="icon icon-home"> wugn_note
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="在文档中搜索" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">1. 前言</a></li>
+<li><a class="reference internal" href="#device-pm-callbacks">2. device PM callbacks</a></li>
+<li><a class="reference internal" href="#id2">3. device PM callbacks在设备模型中的体现</a><ul>
+<li><a class="reference internal" href="#power">power变量</a></li>
+<li><a class="reference internal" href="#pm-domain">pm_domain指针</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id3">4. device PM callbacks的操作函数</a></li>
+</ul>
+</div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">wugn_note</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs"> 
+<li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+<li>1. 前言</li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.forward()">Forward</a></li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.back()">Go Back</a> | </li>
+<li style="float: right;margin-left: 10px;"><a href="/index.html">Home</a> | </li>
+
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="id1">
+<h1>1. 前言<a class="headerlink" href="#id1" title="此标题的永久链接"></a></h1>
+<p>Linux电源管理中，相当多的部分是在处理Hibernate、Suspend、Runtime PM等功能。而这些功能都基于一套相似的逻辑，即“Power management interface”。该Interface的代码实现于“include/linux/pm.h”、“drivers/base/power/main.c”等文件中。主要功能是：对下，定义Device PM相关的回调函数，让各个Driver实现；对上，实现统一的PM操作函数，供PM核心逻辑调用。</p>
+<p>因此在对Hibernate、Suspend、Runtime PM等功能解析之前，有必要先熟悉一下PM Interface，这就是本文的主要目的。</p>
+</section>
+<section id="device-pm-callbacks">
+<h1>2. device PM callbacks<a class="headerlink" href="#device-pm-callbacks" title="此标题的永久链接"></a></h1>
+<p>在一个系统中，数量最多的是设备，耗电最多的也是设备，因此设备的电源管理是Linux电源管理的核心内容。而设备电源管理最核心的操作就是：在合适的时机（如不再使用，如暂停使用），将设备置为合理的状态（如关闭，如睡眠）。这就是device PM callbacks的目的：定义一套统一的方式，让设备在特定的时机，步调一致的进入类似的状态（可以想象一下军训时的“一二一”口令）。</p>
+<p>在旧版本的内核中，这些PM callbacks分布在设备模型的大型数据结构中，如struct bus_type中的suspend、suspend_late、resume、resume_late，如struct device_driver/struct class/struct device_type中的suspend、resume。很显然这样不具备良好的封装特性，因为随着设备复杂度的增加，简单的suspend、resume已经不能满足电源管理的需求，就需要扩充PM callbacks，就会不可避免的改动这些数据结构。</p>
+<p>于是新版本的内核，就将这些Callbacks统一封装为一个数据结构—-struct dev_pm_ops，上层的数据结构只需要包含这个结构即可。这样如果需要增加或者修改PM callbacks，就不用改动上层结构了（这就是软件设计中抽象和封装的生动体现，像艺术一样优雅）。当然，内核为了兼容旧的设计，也保留了上述的suspend/resume类型的callbacks，只是已不建议使用，本文就不再介绍它们了。</p>
+<p>相信每一个熟悉了旧版本内核的Linux工程师，看到struct dev_pm_ops时都会虎躯一震，这玩意也太复杂了吧！不信您请看：</p>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="cm">/* include/linux/pm.h, line 276 in linux-3.10.29 */</span><span class="w"></span>
+<span class="k">struct</span><span class="w"> </span><span class="nc">dev_pm_ops</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="n">prepare</span><span class="p">)(</span><span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w"> </span><span class="o">*</span><span class="n">dev</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="kt">void</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="n">complete</span><span class="p">)(</span><span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w"> </span><span class="o">*</span><span class="n">dev</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="n">suspend</span><span class="p">)(</span><span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w"> </span><span class="o">*</span><span class="n">dev</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="n">resume</span><span class="p">)(</span><span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w"> </span><span class="o">*</span><span class="n">dev</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="n">freeze</span><span class="p">)(</span><span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w"> </span><span class="o">*</span><span class="n">dev</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="n">thaw</span><span class="p">)(</span><span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w"> </span><span class="o">*</span><span class="n">dev</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="n">poweroff</span><span class="p">)(</span><span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w"> </span><span class="o">*</span><span class="n">dev</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="n">restore</span><span class="p">)(</span><span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w"> </span><span class="o">*</span><span class="n">dev</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="n">suspend_late</span><span class="p">)(</span><span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w"> </span><span class="o">*</span><span class="n">dev</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="n">resume_early</span><span class="p">)(</span><span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w"> </span><span class="o">*</span><span class="n">dev</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="n">freeze_late</span><span class="p">)(</span><span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w"> </span><span class="o">*</span><span class="n">dev</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="n">thaw_early</span><span class="p">)(</span><span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w"> </span><span class="o">*</span><span class="n">dev</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="n">poweroff_late</span><span class="p">)(</span><span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w"> </span><span class="o">*</span><span class="n">dev</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="n">restore_early</span><span class="p">)(</span><span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w"> </span><span class="o">*</span><span class="n">dev</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="n">suspend_noirq</span><span class="p">)(</span><span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w"> </span><span class="o">*</span><span class="n">dev</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="n">resume_noirq</span><span class="p">)(</span><span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w"> </span><span class="o">*</span><span class="n">dev</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="n">freeze_noirq</span><span class="p">)(</span><span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w"> </span><span class="o">*</span><span class="n">dev</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="n">thaw_noirq</span><span class="p">)(</span><span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w"> </span><span class="o">*</span><span class="n">dev</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="n">poweroff_noirq</span><span class="p">)(</span><span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w"> </span><span class="o">*</span><span class="n">dev</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="n">restore_noirq</span><span class="p">)(</span><span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w"> </span><span class="o">*</span><span class="n">dev</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="n">runtime_suspend</span><span class="p">)(</span><span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w"> </span><span class="o">*</span><span class="n">dev</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="n">runtime_resume</span><span class="p">)(</span><span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w"> </span><span class="o">*</span><span class="n">dev</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="n">runtime_idle</span><span class="p">)(</span><span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w"> </span><span class="o">*</span><span class="n">dev</span><span class="p">);</span><span class="w"></span>
+<span class="p">};</span><span class="w"></span>
+</pre></div>
+</div>
+<p>从Linux PM Core的角度来说，这些callbacks并不复杂，因为PM Core要做的就是在特定的电源管理阶段，调用相应的callbacks，例如在suspend/resume的过程中，PM Core会依次调用“prepare—&gt;suspend—&gt;suspend_late—&gt;suspend_noirq——-wakeup———&gt;resume_noirq—&gt;resume_early—&gt;resume–&gt;complete”。</p>
+<p>但由于这些callbacks需要由具体的设备Driver实现，这就要求驱动工程师在设计每个Driver时，清晰的知道这些callbacks的使用场景、是否需要实现、怎么实现，这才是struct dev_pm_ops的复杂之处。</p>
+<p>Linux kernel对struct dev_pm_ops的注释已经非常详细了，但要弄清楚每个callback的使用场景、背后的思考，并不是一件容易的事情。因此不准备在本文对它们进行过多的解释，而打算结合具体的电源管理行为，基于具体的场景，再进行解释。</p>
+</section>
+<section id="id2">
+<h1>3. device PM callbacks在设备模型中的体现<a class="headerlink" href="#id2" title="此标题的永久链接"></a></h1>
+<p>我们在介绍“Linux设备模型”时，曾多次提及电源管理相关的内容，那时采取忽略的方式，暂不说明。现在是时候回过头再去看看了。</p>
+<p>Linux设备模型中的很多数据结构，都会包含struct dev_pm_ops变量，具体如下：</p>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="k">struct</span><span class="w"> </span><span class="nc">bus_type</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="p">...</span><span class="w"></span>
+<span class="w">        </span><span class="k">const</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">dev_pm_ops</span><span class="w"> </span><span class="o">*</span><span class="n">pm</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="p">...</span><span class="w"></span>
+<span class="p">};</span><span class="w"></span>
+<span class="w"> </span>
+<span class="k">struct</span><span class="w"> </span><span class="nc">device_driver</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="p">...</span><span class="w"></span>
+<span class="w">        </span><span class="k">const</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">dev_pm_ops</span><span class="w"> </span><span class="o">*</span><span class="n">pm</span><span class="p">;</span><span class="w"></span>
+<span class="w">          </span><span class="p">...</span><span class="w"></span>
+<span class="p">};</span><span class="w"></span>
+<span class="w"> </span>
+<span class="k">struct</span><span class="w"> </span><span class="nc">class</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="p">...</span><span class="w"></span>
+<span class="w">        </span><span class="k">const</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">dev_pm_ops</span><span class="w"> </span><span class="o">*</span><span class="n">pm</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="p">...</span><span class="w"></span>
+<span class="p">};</span><span class="w"></span>
+<span class="w"> </span>
+<span class="k">struct</span><span class="w"> </span><span class="nc">device_type</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="p">...</span><span class="w"></span>
+<span class="w">        </span><span class="k">const</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">dev_pm_ops</span><span class="w"> </span><span class="o">*</span><span class="n">pm</span><span class="p">;</span><span class="w"></span>
+<span class="p">};</span><span class="w"></span>
+<span class="w"> </span>
+<span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="p">...</span><span class="w"></span>
+<span class="w">        </span><span class="k">struct</span><span class="w"> </span><span class="nc">dev_pm_info</span><span class="w">      </span><span class="n">power</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="k">struct</span><span class="w"> </span><span class="nc">dev_pm_domain</span><span class="w">    </span><span class="o">*</span><span class="n">pm_domain</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="p">...</span><span class="w"></span>
+<span class="p">};</span><span class="w"></span>
+</pre></div>
+</div>
+<p>bus_type、device_driver、class、device_type等结构中的pm指针，比较容易理解，和旧的suspend/resume callbacks类似。我们重点关注一下device结构中的power和pm_domain变量。</p>
+<section id="power">
+<h2>power变量<a class="headerlink" href="#power" title="此标题的永久链接"></a></h2>
+<p>power是一个struct dev_pm_info类型的变量，也在“include/linux/pm.h”中定义。一直工作于的Linux-2.6.23内核，到写这篇文章所用的Linux-3.10.29内核，这个数据结构可是一路发展壮大，从那时的只有4个字段，到现在有40多个字段，简直是想起来什么就放什么啊！</p>
+<p>power变量主要保存PM相关的状态，如当前的power_state、是否可以被唤醒、是否已经prepare完成、是否已经suspend完成等等。由于涉及的内容非常多，我们在具体使用的时候，顺便说明。</p>
+</section>
+<section id="pm-domain">
+<h2>pm_domain指针<a class="headerlink" href="#pm-domain" title="此标题的永久链接"></a></h2>
+<p>在当前的内核中，struct dev_pm_domain结构只包含了一个struct dev_pm_ops ops。猜测这是从可扩展性方面考虑的，后续随着内核的进化，可能会在该结构中添加其他内容。</p>
+<p>所谓的PM Domain（电源域），是针对“device”来说的。bus_type、device_driver、class、device_type等结构，本质上代表的是设备驱动，电源管理的操作，由设备驱动负责，是理所应当的。但在内核中，由于各种原因，是允许没有driver的device存在的，那么怎么处理这些设备的电源管理呢？就是通过设备的电源域实现的。</p>
+</section>
+</section>
+<section id="id3">
+<h1>4. device PM callbacks的操作函数<a class="headerlink" href="#id3" title="此标题的永久链接"></a></h1>
+<p>内核在定义device PM callbacks数据结构的同时，为了方便使用该数据结构，也定义了大量的操作API，这些API分为两类。</p>
+<p>◆通用的辅助性质的API，直接调用指定设备所绑定的driver的、pm指针的、相应的callback，如下</p>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="k">extern</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">pm_generic_prepare</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w"> </span><span class="o">*</span><span class="n">dev</span><span class="p">);</span><span class="w"></span>
+<span class="k">extern</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">pm_generic_suspend_late</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w"> </span><span class="o">*</span><span class="n">dev</span><span class="p">);</span><span class="w"></span>
+<span class="k">extern</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">pm_generic_suspend_noirq</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w"> </span><span class="o">*</span><span class="n">dev</span><span class="p">);</span><span class="w"></span>
+<span class="k">extern</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">pm_generic_suspend</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w"> </span><span class="o">*</span><span class="n">dev</span><span class="p">);</span><span class="w"></span>
+<span class="k">extern</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">pm_generic_resume_early</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w"> </span><span class="o">*</span><span class="n">dev</span><span class="p">);</span><span class="w"></span>
+<span class="k">extern</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">pm_generic_resume_noirq</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w"> </span><span class="o">*</span><span class="n">dev</span><span class="p">);</span><span class="w"></span>
+<span class="k">extern</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">pm_generic_resume</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w"> </span><span class="o">*</span><span class="n">dev</span><span class="p">);</span><span class="w"> </span>
+<span class="k">extern</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">pm_generic_freeze_noirq</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w"> </span><span class="o">*</span><span class="n">dev</span><span class="p">);</span><span class="w"></span>
+<span class="k">extern</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">pm_generic_freeze_late</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w"> </span><span class="o">*</span><span class="n">dev</span><span class="p">);</span><span class="w"></span>
+<span class="k">extern</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">pm_generic_freeze</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w"> </span><span class="o">*</span><span class="n">dev</span><span class="p">);</span><span class="w"></span>
+<span class="k">extern</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">pm_generic_thaw_noirq</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w"> </span><span class="o">*</span><span class="n">dev</span><span class="p">);</span><span class="w"></span>
+<span class="k">extern</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">pm_generic_thaw_early</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w"> </span><span class="o">*</span><span class="n">dev</span><span class="p">);</span><span class="w"></span>
+<span class="k">extern</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">pm_generic_thaw</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w"> </span><span class="o">*</span><span class="n">dev</span><span class="p">);</span><span class="w"></span>
+<span class="k">extern</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">pm_generic_restore_noirq</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w"> </span><span class="o">*</span><span class="n">dev</span><span class="p">);</span><span class="w"></span>
+<span class="k">extern</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">pm_generic_restore_early</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w"> </span><span class="o">*</span><span class="n">dev</span><span class="p">);</span><span class="w"></span>
+<span class="k">extern</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">pm_generic_restore</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w"> </span><span class="o">*</span><span class="n">dev</span><span class="p">);</span><span class="w"></span>
+<span class="k">extern</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">pm_generic_poweroff_noirq</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w"> </span><span class="o">*</span><span class="n">dev</span><span class="p">);</span><span class="w"></span>
+<span class="k">extern</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">pm_generic_poweroff_late</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w"> </span><span class="o">*</span><span class="n">dev</span><span class="p">);</span><span class="w"></span>
+<span class="k">extern</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">pm_generic_poweroff</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w"> </span><span class="o">*</span><span class="n">dev</span><span class="p">);</span><span class="w"> </span>
+<span class="k">extern</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">pm_generic_complete</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w"> </span><span class="o">*</span><span class="n">dev</span><span class="p">);</span><span class="w"></span>
+</pre></div>
+</div>
+<p>以pm_generic_prepare为例，就是查看dev-&gt;driver-&gt;pm-&gt;prepare接口是否存在，如果存在，直接调用并返回结果。</p>
+<p>和整体电源管理行为相关的API，目的是将各个独立的电源管理行为组合起来，组成一个较为简单的功能，</p>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="cp">#ifdef CONFIG_PM_SLEEP</span>
+<span class="k">extern</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">device_pm_lock</span><span class="p">(</span><span class="kt">void</span><span class="p">);</span><span class="w"></span>
+<span class="k">extern</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">dpm_resume_start</span><span class="p">(</span><span class="n">pm_message_t</span><span class="w"> </span><span class="n">state</span><span class="p">);</span><span class="w"></span>
+<span class="k">extern</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">dpm_resume_end</span><span class="p">(</span><span class="n">pm_message_t</span><span class="w"> </span><span class="n">state</span><span class="p">);</span><span class="w"></span>
+<span class="k">extern</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">dpm_resume</span><span class="p">(</span><span class="n">pm_message_t</span><span class="w"> </span><span class="n">state</span><span class="p">);</span><span class="w"></span>
+<span class="k">extern</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">dpm_complete</span><span class="p">(</span><span class="n">pm_message_t</span><span class="w"> </span><span class="n">state</span><span class="p">);</span><span class="w"></span>
+<span class="w"> </span>
+<span class="k">extern</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">device_pm_unlock</span><span class="p">(</span><span class="kt">void</span><span class="p">);</span><span class="w"></span>
+<span class="k">extern</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">dpm_suspend_end</span><span class="p">(</span><span class="n">pm_message_t</span><span class="w"> </span><span class="n">state</span><span class="p">);</span><span class="w"></span>
+<span class="k">extern</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">dpm_suspend_start</span><span class="p">(</span><span class="n">pm_message_t</span><span class="w"> </span><span class="n">state</span><span class="p">);</span><span class="w"></span>
+<span class="k">extern</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">dpm_suspend</span><span class="p">(</span><span class="n">pm_message_t</span><span class="w"> </span><span class="n">state</span><span class="p">);</span><span class="w"></span>
+<span class="k">extern</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">dpm_prepare</span><span class="p">(</span><span class="n">pm_message_t</span><span class="w"> </span><span class="n">state</span><span class="p">);</span><span class="w"></span>
+<span class="w"> </span>
+<span class="k">extern</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">__suspend_report_result</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">function</span><span class="p">,</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="o">*</span><span class="n">fn</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">ret</span><span class="p">);</span><span class="w"></span>
+<span class="w"> </span>
+<span class="cp">#define suspend_report_result(fn, ret)                                  \</span>
+<span class="cp">        do {                                                            \</span>
+<span class="cp">                __suspend_report_result(__func__, fn, ret);             \</span>
+<span class="cp">        } while (0)</span>
+<span class="w"> </span>
+<span class="k">extern</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">device_pm_wait_for_dev</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w"> </span><span class="o">*</span><span class="n">sub</span><span class="p">,</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w"> </span><span class="o">*</span><span class="n">dev</span><span class="p">);</span><span class="w"></span>
+<span class="k">extern</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">dpm_for_each_dev</span><span class="p">(</span><span class="kt">void</span><span class="w"> </span><span class="o">*</span><span class="n">data</span><span class="p">,</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="n">fn</span><span class="p">)(</span><span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w"> </span><span class="o">*</span><span class="p">,</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="o">*</span><span class="p">));</span><span class="w"></span>
+</pre></div>
+</div>
+<p>这些API的功能和动作解析如下。</p>
+<p>dpm_prepare，执行所有设备的“-&gt;prepare() callback(s)”，内部动作为：</p>
+<ol class="arabic simple">
+<li><p>遍历dpm_list，依次取出挂在该list中的device指针。
+【注1：设备模型在添加设备（device_add）时，会调用device_pm_add接口，将该设备添加到全局链表dpm_list中，以方便后续的遍历操作。】</p></li>
+<li><p>调用内部接口device_prepare，执行实际的prepare动作。该接口会返回执行的结果。</p></li>
+<li><p>如果执行失败，打印错误信息。</p></li>
+<li><p>如果执行成功，将dev-&gt;power.is_prepared(就是上面我们提到的struct dev_pm_info类型的变量）设为TRUE，表示设备已经prepared了。同时，将该设备添加到dpm_prepared_list中（该链表保存了所有已经处于prepared状态的设备）。</p></li>
+</ol>
+<p>内部接口device_prepare的执行动作为：</p>
+<ol class="arabic simple">
+<li><p>根据dev-&gt;power.syscore，断该设备是否为syscore设备。如果是，则直接返回（因为syscore设备会单独处理）。</p></li>
+<li><p>在prepare时期，调用pm_runtime_get_noresume接口，关闭Runtime suspend功能。以避免由Runtime suspend造成的不能正常唤醒的Issue。该功能会在complete时被重新开启。
+【注2：pm_runtime_get_noresume的实现很简单，就是增加该设备power变量的引用计数（dev-&gt;power.usage_count），Runtime PM会根据该计数是否大于零，判断是否开启Runtime PM功能。】</p></li>
+<li><p>调用device_may_wakeup接口，根据当前设备是否有wakeup source（dev-&gt;power.wakeup）以及是否允许wakeup（dev-&gt;power.can_wakeup），判定该设备是否是一个wakeup path（记录在dev-&gt;power.wakeup_path中）。
+【注3：设备的wake up功能，是指系统在低功耗状态下（如suspend、hibernate），某些设备具备唤醒系统的功能。这是电源管理过程的一部分。】</p></li>
+<li><p>根据优先顺序，获得用于prepare的callback函数。由于设备模型有bus、driver、device等多个层级，而prepare接口可能由任意一个层级实现。这里的优先顺序是指，只要优先级高的层级注册了prepare，就会优先使用它，而不会使用优先级低的prepare。优先顺序为：dev-&gt;pm_domain-&gt;ops、dev-&gt;type-&gt;pm、dev-&gt;class-&gt;pm、dev-&gt;bus-&gt;pm、dev-&gt;driver-&gt;pm（这个优先顺序同样适用于其它callbacks）。</p></li>
+<li><p>如果得到有限的prepare函数，调用并返回结果。</p></li>
+</ol>
+<p>dpm_suspend，执行所有设备的“-&gt;suspend() callback(s)”，其内部动作和dpm_prepare类似：</p>
+<ol class="arabic simple">
+<li><p>遍历dpm_list，依次取出挂在该list中的device指针。</p></li>
+<li><p>调用内部接口device_suspend，执行实际的prepare动作。该接口会返回执行的结果。</p></li>
+<li><p>如果suspend失败，将该设备的信息记录在一个struct suspend_stats类型的数组中，并打印错误错误信息。</p></li>
+<li><p>最后将设备从其它链表（如dpm_prepared_list），转移到dpm_suspended_list链表中。</p></li>
+</ol>
+<p>内部接口device_suspend的动作和device_prepare类似，这里不再描述了。</p>
+<p>dpm_suspend_start，依次执行dpm_prepare和dpm_suspend两个动作。</p>
+<p>dpm_suspend_end，依次执行所有设备的“-&gt;suspend_late() callback(s)”以及所有设备的“-&gt;suspend_noirq() callback(s)”。动作和上面描述的类似，这里不再说明了。</p>
+<p>dpm_resume、dpm_complete、dpm_resume_start、dpm_resume_end，是电源管理过程的唤醒动作，和dpm_suspend_xxx系列的接口类似。不再说明了。</p>
+</section>
+
+
+           </div>
+             <div class="articleComments">
+                <comments>
+  <script src="https://utteranc.es/client.js"
+    repo="iswbm/magic-python"
+    issue-term="pathname"
+    theme="github-light"
+    crossorigin="anonymous"
+    async>
+  </script>
+</comments>
+             </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; 版权所有 2022, wugn.</p>
+  </div>
+
+  利用 <a href="https://www.sphinx-doc.org/">Sphinx</a> 构建，使用了 
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">主题</a>
+    由 <a href="https://readthedocs.org">Read the Docs</a>开发.
+  
+
+<script charset="UTF-8" id="LA_COLLECT" src="//sdk.51.la/js-sdk-pro.min.js"></script>
+<script>LA.init({id: "JoV5csIHTGhHiGQ4",ck: "JoV5csIHTGhHiGQ4"})</script>
+
+<br/>
+<script id="LA-DATA-WIDGET" crossorigin="anonymous" charset="UTF-8" src="https://v6-widget.51.la/v6/JoV5csIHTGhHiGQ4/quote.js?theme=#4C8AC2,#BB2626,#040000,#333333,#AE3535,#1690FF,14&f=14"></script>
+
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

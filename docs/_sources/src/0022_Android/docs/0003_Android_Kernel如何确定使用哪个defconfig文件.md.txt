@@ -47,6 +47,29 @@ KERNEL_DEFCONFIG := vendor/$(KERNEL_DEFCONFIG)
 endif
 ```
 
+根据不同项目使用不同的kernel config文件：
+```diff
+--- a/UM.9.15/device/qcom/kernelscripts/kernel_definitions.mk
++++ b/UM.9.15/device/qcom/kernelscripts/kernel_definitions.mk
+@@ -1,10 +1,16 @@
+ # Android Kernel compilation/common definitions
+ ifeq ($(TARGET_BUILD_VARIANT),user)
+-     KERNEL_DEFCONFIG ?= vendor/$(TARGET_BOARD_PLATFORM)-perf_defconfig
++     ifeq ($(TARGET_PRODUCT), bengal_32go)
++       KERNEL_DEFCONFIG ?= vendor/$(TARGET_BOARD_PLATFORM)_32go-perf_defconfig
++     else
++        KERNEL_DEFCONFIG ?= vendor/$(TARGET_BOARD_PLATFORM)-perf_defconfig
+ endif
+
+ ifeq ($(KERNEL_DEFCONFIG),)
+-     KERNEL_DEFCONFIG := vendor/$(TARGET_PRODUCT)_defconfig
++     ifeq ($(TARGET_PRODUCT), bengal_32go)
++         KERNEL_DEFCONFIG := vendor/$(TARGET_PRODUCT)_32go_defconfig
++     else
++         KERNEL_DEFCONFIG := vendor/$(TARGET_PRODUCT)_defconfig
+ endif
+```
+
 
 # 控制kernel编译的AndroidKernel.mk
 在内核源码中的`kernel/msm-4.14/AndroidKernel.mk`文件确定了具体使用哪个config文件:

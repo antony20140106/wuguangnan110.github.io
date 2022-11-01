@@ -6,6 +6,7 @@
 
 NO.|文件名称|摘要
 :--:|:--|:--
+0026| [kernel工作队列(workqueue)简介](docs/0026_kernel工作队列(workqueue)简介.md) | 特性：
 0025| [内核卡死实例分析](docs/0025_内核卡死实例分析.md) | 项目实际遇到的一些内核卡死问题分析汇总。
 0024| [mtk_qcom_添加cmdline实现方案](docs/0024_mtk_qcom_添加cmdline实现方案.md) | 我们经常要在开机阶段检测某些硬件信息传递给kernel，可以通过cmdline方式传递。
 0023| [class_create_device_create功能分析](docs/0023_class_create_device_create功能分析.md) | 本文介绍linux中class_create和device_create的相关使用方法。

@@ -296,6 +296,197 @@ static int charger_routine_thread(void *arg)
 }
 ```
 
+# PM电源管理
+
+目前wakelock充电逻辑如下：
+
+![0017_0007.png](images/0017_0007.png)
+
+主要讲解一下充电时阻止系统进入休眠，方案流程如下：
+```C++
+static enum alarmtimer_restart
+	pax_charger_alarm_timer_func(struct alarm *alarm, ktime_t now)
+{
+	struct pax_charger *info =
+	container_of(alarm, struct pax_charger, charger_timer);
+
+	if (info->is_suspend == false) {
+		chr_debug("%s: not suspend, wake up charger\n", __func__);
+		_wake_up_charger(info);
+	} else {
+		chr_info("%s: alarm timer timeout\n", __func__);
+		__pm_stay_awake(info->charger_wakelock);
+	}
+
+	return ALARMTIMER_NORESTART;
+}
+
+static void pax_charger_start_timer(struct pax_charger *info)
+{
+	struct timespec time, time_now;
+	ktime_t ktime;
+	int ret = 0;
+
+	/* If the timer was already set, cancel it */
+	ret = alarm_try_to_cancel(&info->charger_timer);
+	if (ret < 0) {
+		chr_err("%s: callback was running, skip timer\n", __func__);
+		return;
+	}
+
+	get_monotonic_boottime(&time_now);
+	time.tv_sec = info->polling_interval;
+	time.tv_nsec = 0;
+	info->endtime = timespec_add(time_now, time);
+	ktime = ktime_set(info->endtime.tv_sec, info->endtime.tv_nsec);
+
+	//chr_err("%s: alarm timer start:%d, %ld %ld\n", __func__, ret,
+//		info->endtime.tv_sec, info->endtime.tv_nsec);
+	alarm_start(&info->charger_timer, ktime);
+}
+
+#ifdef CONFIG_PM
+static int charger_pm_event(struct notifier_block *notifier,
+			unsigned long pm_event, void *unused)
+{
+	struct timespec now;
+	struct pax_charger *info;
+
+	info = container_of(notifier,
+		struct pax_charger, pm_notifier);
+
+	switch (pm_event) {
+	case PM_SUSPEND_PREPARE:
+		info->is_suspend = true;
+		chr_err("%s: enter PM_SUSPEND_PREPARE\n", __func__);
+		break;
+	case PM_POST_SUSPEND:
+		info->is_suspend = false;
+		chr_err("%s: enter PM_POST_SUSPEND\n", __func__);
+		get_monotonic_boottime(&now);
+
+		if (timespec_compare(&now, &info->endtime) >= 0 &&
+			info->endtime.tv_sec != 0 &&
+			info->endtime.tv_nsec != 0) {
+			chr_err("%s: alarm timeout, wake up charger\n",
+				__func__);
+			__pm_relax(info->charger_wakelock);
+			info->endtime.tv_sec = 0;
+			info->endtime.tv_nsec = 0;
+			_wake_up_charger(info);
+		}
+		break;
+	default:
+		break;
+	}
+	return NOTIFY_DONE;
+}
+#endif /* CONFIG_PM */
+
+static int charger_routine_thread(void *arg)
+{
+		mutex_lock(&info->charger_lock);
+		spin_lock_irqsave(&info->slock, flags);
+		if (!info->charger_wakelock->active)
+			__pm_stay_awake(info->charger_wakelock); //进入线程，持锁
+		spin_unlock_irqrestore(&info->slock, flags);
+		info->charger_thread_timeout = false;
+
+		if (info->charger_thread_polling == true)
+			pax_charger_start_timer(info);
+
+		spin_lock_irqsave(&info->slock, flags);
+		__pm_relax(info->charger_wakelock);
+		spin_unlock_irqrestore(&info->slock, flags);
+		chr_debug("%s end , %d\n",
+			__func__, info->charger_thread_timeout);
+		mutex_unlock(&info->charger_lock);		
+}
+
+probe()
+{
+	#ifdef CONFIG_PM
+	info->pm_notifier.notifier_call = charger_pm_event;
+}
+```
+
+
+休眠唤醒流程如下：
+* 1、`PM_SUSPEND_PREPARE`阶段:当系统调用suspend_prepare做进一步suspend前期准备工作，准备控制台，冻结内核线程等，此时充电线程`is_suspend`标志位置1。
+* 2、定时器超时函数`pax_charger_alarm_timer_func`，根据`is_suspend`状态，这里会持锁唤醒系统。
+* 3、`PM_POST_SUSPEND阶段`:唤醒后进入PM_POST_SUSPEND阶段，就是退出休眠，并唤醒充电线程。
+
+以下是阻止休眠的全过程打印：
+```shell
+[10990.074535] PM: suspend entry (deep)
+[10990.078255] PM: Syncing filesystems ... done.
+[10990.193251] PAX_CHG: charger_pm_event: enter PM_SUSPEND_PREPARE //调用suspend_prepare做进一步suspend前期准备工作，准备控制台，冻结内核线程等
+[10990.199399] Freezing user space processes ...
+[10990.200488] i2c_read: err wakeup of wq
+[10990.215157] (elapsed 0.015 seconds) done.
+[10990.219229] OOM killer disabled.
+[10990.222500] Freezing remaining freezable tasks ... (elapsed 0.004 seconds) done.
+[10990.234057] Suspending console(s) (use no_console_suspend to debug)
+[10990.245041] ILITEK: (ilitek_tp_pm_suspend, 765): CALL BACK TP PM SUSPEND
+[10990.255154] [Binder][0x474f46a859][13:37:07.732510] wlan: [4210:I:HDD] __wlan_hdd_bus_suspend: 1035: starting bus suspend
+[10990.258777] ======sp_cat_tp_suspend 336
+[10990.258791] [pax_authinfo]: gpio_sleep_sp, en=1
+[10990.258791]
+[10990.258812] PAX_BMS:bms_suspend. secs = 572700
+[10990.258838] pax_base_detect_suspend
+[10990.378107] Disabling non-boot CPUs ...
+[10990.378846] IRQ 6: no longer affine to CPU1
+[10990.379073] CPU1: shutdown
+[10990.379642] psci: CPU1 killed (polled 4 ms)
+[10990.380939] IRQ 1: no longer affine to CPU2
+[10990.381172] CPU2: shutdown
+[10990.382284] psci: CPU2 killed (polled 0 ms)
+[10990.384069] CPU3: shutdown
+[10990.384115] psci: CPU3 killed (polled 0 ms)
+[10990.384718] suspend ns:   10990384714503     suspend cycles:     306275196449
+[10990.384714] resume cycles:     306373970012
+[10990.384761] pm_system_irq_wakeup: 173 triggered pm8xxx_rtc_alarm
+[10990.385117] PAX_CHG: pax_charger_alarm_timer_func: alarm timer timeout //定时器超时函数，这里会持锁唤醒系统
+[10990.385230] Enabling non-boot CPUs ...
+[10990.385768] Detected VIPT I-cache on CPU1
+[10990.385843] arch_timer: CPU1: Trapping CNTVCT access
+[10990.385895] CPU1: Booted secondary processor 0x0000000001 [0x51af8014]
+[10990.386670] CPU1 is up
+[10990.387438] Detected VIPT I-cache on CPU2
+[10990.387518] arch_timer: CPU2: Trapping CNTVCT access
+[10990.387566] CPU2: Booted secondary processor 0x0000000002 [0x51af8014]
+[10990.388390] CPU2 is up
+[10990.389089] Detected VIPT I-cache on CPU3
+[10990.389169] arch_timer: CPU3: Trapping CNTVCT access
+[10990.389220] CPU3: Booted secondary processor 0x0000000003 [0x51af8014]
+[10990.389987] CPU3 is up
+[10990.506155] pax_base_detect_resume
+[10990.506957] PAX_BAT: pax_battery_resume: pre_soc: 100 soc: 100
+[10990.507767] ======sp_cat_tp_resume 347
+[10990.507931] ///PD dbg info 122d
+[10990.507937] <10990.507>TCPC-TCPC:bat_update_work_func battery update soc = 100
+[10990.507937] <10990.507>TCPC-TCPC:bat_update_work_func Battery Idle
+[10990.510388] [Binder][0x475574994c][13:37:13.132203] wlan: [4210:I:HDD] wlan_hdd_bus_resume: 1226: starting bus resume
+[10990.513090] ILITEK: (drm_notifier_callback, 471): DRM event:2,blank:3
+[10990.513094] ILITEK: (drm_notifier_callback, 492): DRM BLANK(3) do not need process
+[10990.513147] ILITEK: (drm_notifier_callback, 471): DRM event:1,blank:3
+[10990.513149] ILITEK: (drm_notifier_callback, 492): DRM BLANK(3) do not need process
+[10990.513663] ILITEK: (ilitek_tp_pm_resume, 779): CALL BACK TP PM RESUME
+[10990.577217] PAX_BAT: [status:Full, health:Good, present:1, tech:Li-ion, capcity:100,cap_rm:5045 mah, vol:4301 mv, temp:29, curr:0 ma, ui_soc:100]
+[10990.577935] ///PD dbg info 122d
+[10990.581826] OOM killer enabled.
+[10990.584558] <10990.577>TCPC-TCPC:bat_update_work_func battery update soc = 100
+[10990.584558] <10990.577>TCPC-TCPC:bat_update_work_func Battery Idle
+[10990.778158] Restarting tasks ...
+[10990.784613] healthd: battery l=100 v=4301 t=29.0 h=2 st=5 c=0 fc=5045000 cc=6 chg=u
+[10990.790006] done.
+[10990.797764] thermal thermal_zone26: failed to read out thermal zone (-61)
+[10990.804820] PAX_CHG: charger_pm_event: enter PM_POST_SUSPEND //唤醒后进入PM_POST_SUSPEND阶段，就是退出休眠
+[10990.810534] PAX_CHG: charger_pm_event: alarm timeout, wake up charger //并唤醒充电线程
+[10990.817061] Resume caused by IRQ 173, pm8xxx_rtc_alarm
+[10990.817305] PAX_CHG: pax_is_charger_on chr_type = [DCP] last_chr_type = [DCP]
+[10990.822242] PM: suspend exit
+```
 
 # 底座充电功能开发
 
