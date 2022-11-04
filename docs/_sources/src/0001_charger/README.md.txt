@@ -6,6 +6,7 @@ Android平台charger、BMS相关知识及调试整理。
 
 NO.|文件名称|摘要
 :--:|:--|:--
+0028| [qcom_qcm2290_bms移植过程](docs/0028_qcom_qcm2290_bms移植过程.md) | 记录一下移植过程。
 0027| [charger_jeita限流功能介绍](docs/0027_charger_jeita限流功能介绍.md) | JEITA（Japan Electronics and Information Technology Industries Association）
 0026| [Android充电相关代码简单总结](docs/0026_Android充电相关代码简单总结.md) | charger/gauge相关，从上层到底层软件简单做个总结。
 0025| [qcom_qcm2290_qpnp_power_on驱动分析](docs/0025_qcom_qcm2290_qpnp_power_on驱动分析.md) | 高通qcm2290平台，目前有专门的开关机原因检测驱动，分析一下。
@@ -24,7 +25,7 @@ NO.|文件名称|摘要
 0011| [mt6762_charger_相关参数说明](docs/0011_mt6762_charger_相关参数说明.md) | mtk平台charger相关参数说明
 0010| [mt6762_charger_相关调试经验](docs/0010_mt6762_charger_相关调试经验.md) | charger相关改动经验
 0009| [charger_BMS驱动及整体架构简介](docs/0009_charger_BMS驱动及整体架构简介.md) | BMS功能介绍
-0008| [charger_BMS功能介绍](docs/0008_charger_BMS功能介绍.md) | BMS功能介绍
+0008| [charger_BMS功能调试](docs/0008_charger_BMS功能调试.md) | BMS功能介绍
 0007| [charger相关英语名字解释](docs/0007_charger相关英语名字解释.md) | charger/typec相关名词、连接状态解释
 0006| [mt6762开机默认设置host及switch切换](docs/0006_mt6762开机默认设置host及switch切换.md) | mt6762平台如何设置开机默认host功能
 0005| [Android_power_supply介绍及uevent上报详解](docs/0005_Android_power_supply介绍及uevent上报详解.md) | mt6762平台psy uevent上报分析

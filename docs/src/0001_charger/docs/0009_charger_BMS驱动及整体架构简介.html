@@ -80,7 +80,7 @@
 </li>
 </ul>
 </li>
-<li><a class="reference internal" href="#a6650bms">A6650项目BMS测试结果</a><ul>
+<li><a class="reference internal" href="#a6650kernel-bms">A6650项目kernel BMS测试结果</a><ul>
 <li><a class="reference internal" href="#nc-chg-ov">1.NC_CHG_OV测试</a></li>
 <li><a class="reference internal" href="#nc-bat-utnc-bat-uv">2.NC_BAT_UT低温NC_BAT_UV低压测试</a></li>
 <li><a class="reference internal" href="#nc-chg-tmo">3.NC_CHG_TMO超时测试</a></li>
@@ -138,7 +138,7 @@
 <ul class="simple">
 <li><p>上面架构图有两个改进点：</p>
 <ul>
-<li><p><code class="docutils literal notranslate"><span class="pre">PaxBmsService.java</span></code>和<code class="docutils literal notranslate"><span class="pre">PaxBatteryManagerService.java</span></code>都是系统服务，都是在<code class="docutils literal notranslate"><span class="pre">system_server</span></code>里面，所以不需要binder通信，最好的做法是在<code class="docutils literal notranslate"><span class="pre">PaxBatteryManagerService.java</span></code>直接调用JNI方法。</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">PaxBmsService.java</span></code>和<code class="docutils literal notranslate"><span class="pre">PaxBatteryManagerService.java</span></code>都是系统服务，都是在<code class="docutils literal notranslate"><span class="pre">system_server</span></code>里面，所以不需要binder通信，最好的做法是在<code class="docutils literal notranslate"><span class="pre">PaxBatteryManagerService.java</span></code>直接调用JNI方法，这里主要是通过manager管理接口，比较合理。</p></li>
 <li><p>HIDL中还是采用传统HAL方式，即module/device模型，这种需要将HAL编译成so库，其实是可以在HIDL中直接ioctrl驱动的，更加方便。</p></li>
 </ul>
 </li>
@@ -476,7 +476,8 @@ frameworks/base/services/core/jni/com_android_server_paxbms_PaxBmsService.cpp //
 </tr>
 </tbody>
 </table>
-<p>在表格中，满充电量表示电池充电到某个电量后停止充电，由于存在适配器供电不足以满足系统供电场景和有些模块由电池直接供电，因此电量会缓慢下降，当电量下降至回充电量时，重新使能充电。</p>
+<p>在表格中，满充电量表示电池充电到某个电量后停止充电，由于存在适配器供电不足以满足系统供电场景和有些模块由电池直接供电，因此电量会缓慢下降，当电量下降至回充电量时，重新使能充电。
+f</p>
 </section>
 <section id="id5">
 <h2>电池模式切换<a class="headerlink" href="#id5" title="此标题的永久链接"></a></h2>
@@ -1805,8 +1806,8 @@ int main() {
 </section>
 </section>
 </section>
-<section id="a6650bms">
-<h1>A6650项目BMS测试结果<a class="headerlink" href="#a6650bms" title="此标题的永久链接"></a></h1>
+<section id="a6650kernel-bms">
+<h1>A6650项目kernel BMS测试结果<a class="headerlink" href="#a6650kernel-bms" title="此标题的永久链接"></a></h1>
 <ul class="simple">
 <li><p>根据notify APP中得知：</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">BatteryWarningReceiver.java</span></code>当收到<code class="docutils literal notranslate"><span class="pre">pax.intent.action.BATTERY_ABNORMAL</span></code>广播时，只处理广播type值为<code class="docutils literal notranslate"><span class="pre">PAX_BAT_NC_UV</span></code>低压事件，处理方式是关机。也就是其他异常没处理，但是都上报上来了:</p></li>

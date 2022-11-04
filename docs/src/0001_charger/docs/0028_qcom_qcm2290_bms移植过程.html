@@ -1,0 +1,908 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="zh-CN" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>wugn</title>
+
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script src="../../../_static/translations.js"></script>
+        <script src="../../../_static/js/baidutongji.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="索引" href="../../../genindex.html" />
+    <link rel="search" title="搜索" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../index.html" class="icon icon-home"> wugn_note
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="在文档中搜索" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">qcom qcm2290 bms移植过程</a></li>
+<li><a class="reference internal" href="#id1">参考</a></li>
+<li><a class="reference internal" href="#aidl">编写AIDL文件</a></li>
+<li><a class="reference internal" href="#context">Context定义变量</a></li>
+<li><a class="reference internal" href="#bms">编写BMS服务</a></li>
+<li><a class="reference internal" href="#id2">注册BMS服务</a></li>
+<li><a class="reference internal" href="#paxbmsmanager">编写并注册PaxBmsManager类</a></li>
+<li><a class="reference internal" href="#paxbmsservice">编写PaxBmsService类</a></li>
+<li><a class="reference internal" href="#jni-ioctrl">调用JNI(ioctrl)</a></li>
+<li><a class="reference internal" href="#id3">调用 PaxBmsService类</a></li>
+<li><a class="reference internal" href="#make-update-api">make update-api更新接口</a></li>
+<li><a class="reference internal" href="#selinux">增加SELINUX权限</a></li>
+<li><a class="reference internal" href="#dev">增加dev节点权限</a></li>
+<li><a class="reference internal" href="#id4">问题点</a><ul>
+<li><a class="reference internal" href="#id5">1.开机后不断重启</a></li>
+</ul>
+</li>
+</ul>
+</div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">wugn_note</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs"> 
+<li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+<li>qcom qcm2290 bms移植过程</li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.forward()">Forward</a></li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.back()">Go Back</a> | </li>
+<li style="float: right;margin-left: 10px;"><a href="/index.html">Home</a> | </li>
+
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="qcom-qcm2290-bms">
+<h1>qcom qcm2290 bms移植过程<a class="headerlink" href="#qcom-qcm2290-bms" title="此标题的永久链接"></a></h1>
+<p>记录一下移植过程。</p>
+</section>
+<section id="id1">
+<h1>参考<a class="headerlink" href="#id1" title="此标题的永久链接"></a></h1>
+<ul class="simple">
+<li><p><a class="reference external" href="https://lequ7.com/guan-yu-android-ru-he-shi-xian-yi-ge-systemservices.html">关于android:如何实现一个-System-Services</a></p></li>
+</ul>
+</section>
+<section id="aidl">
+<h1>编写AIDL文件<a class="headerlink" href="#aidl" title="此标题的永久链接"></a></h1>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">QSSI.12/frameworks/base/core/java/android/os/IPaxBms.aidl</span></code>:</p></li>
+</ul>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="o">+</span><span class="kn">package</span><span class="w"> </span><span class="nn">android.os</span><span class="p">;</span><span class="w"></span>
+<span class="cm">/** </span>
+<span class="cm"> * @hide </span>
+<span class="cm">*/</span><span class="w"></span>
+<span class="kd">interface</span> <span class="nc">IPaxBms</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="cm">/**</span>
+<span class="cm">     * Set the provided set mode to device.</span>
+<span class="cm">     *</span>
+<span class="cm">     * @param mode: logical mode to set</span>
+<span class="cm">     * @return res: result of applying state transformation.</span>
+<span class="cm">     */</span><span class="w"></span>
+<span class="w">    </span><span class="kt">void</span><span class="w"> </span><span class="nf">enableCharge</span><span class="p">();</span><span class="w"></span>
+<span class="w">    </span><span class="kt">void</span><span class="w"> </span><span class="nf">disableCharge</span><span class="p">();</span><span class="w"></span>
+<span class="w">    </span><span class="kt">void</span><span class="w"> </span><span class="nf">enablePowerPath</span><span class="p">();</span><span class="w"></span>
+<span class="w">    </span><span class="kt">void</span><span class="w"> </span><span class="nf">disablePowerPath</span><span class="p">();</span><span class="w"></span>
+<span class="w">	</span><span class="kt">void</span><span class="w"> </span><span class="nf">setTemporaryFullCharge</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">charge</span><span class="p">);</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+</section>
+<section id="context">
+<h1>Context定义变量<a class="headerlink" href="#context" title="此标题的永久链接"></a></h1>
+<p>在 Context 里定义一个代表<code class="docutils literal notranslate"><span class="pre">BMS</span></code>服务的字符串:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">frameworks/base/core/java/android/content/Context.java</span></code>:</p></li>
+</ul>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span>@ -5529,6 +5529,8 @@ public abstract class Context {
+  		public static final String PAXBMS_SERVICE=&quot;paxbms&quot;;
+</pre></div>
+</div>
+</section>
+<section id="bms">
+<h1>编写BMS服务<a class="headerlink" href="#bms" title="此标题的永久链接"></a></h1>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">QSSI.12/frameworks/base/services/core/java/com/pax/server/PaxBatteryManagerService.java</span></code>:</p></li>
+</ul>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="kd">public</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="kd">class</span> <span class="nc">PaxBatteryManagerService</span><span class="w"> </span><span class="kd">extends</span><span class="w"> </span><span class="n">SystemService</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="c1">//IPaxBms pax_bms;</span><span class="w"></span>
+<span class="w">	</span><span class="n">PaxBmsManager</span><span class="w"> </span><span class="n">paxBmsManager</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">	</span><span class="kd">public</span><span class="w"> </span><span class="nf">PaxBatteryManagerService</span><span class="p">(</span><span class="n">Context</span><span class="w"> </span><span class="n">context</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="kd">super</span><span class="p">(</span><span class="n">context</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="k">if</span><span class="p">(</span><span class="n">DEBUG</span><span class="p">)</span><span class="n">Log</span><span class="p">.</span><span class="na">d</span><span class="p">(</span><span class="n">TAG</span><span class="p">,</span><span class="s">&quot;PaxBatteryManagerService&quot;</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">        </span><span class="n">mContext</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">context</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="n">mBatteryManagerInternal</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">getLocalService</span><span class="p">(</span><span class="n">BatteryManagerInternal</span><span class="p">.</span><span class="na">class</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="n">myReceiver</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">BatteryReceiver</span><span class="p">();</span><span class="w"></span>
+<span class="w">		</span><span class="n">mContext</span><span class="p">.</span><span class="na">registerReceiver</span><span class="p">(</span><span class="n">myReceiver</span><span class="p">,</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">IntentFilter</span><span class="p">(</span><span class="n">broadcastDel_DB</span><span class="p">));</span><span class="w"></span>
+<span class="w">		</span><span class="n">mContext</span><span class="p">.</span><span class="na">registerReceiver</span><span class="p">(</span><span class="n">myReceiver</span><span class="p">,</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">IntentFilter</span><span class="p">(</span><span class="n">Intent</span><span class="p">.</span><span class="na">ACTION_BOOT_COMPLETED</span><span class="p">));</span><span class="c1">//监听开机广播</span><span class="w"></span>
+<span class="w">		</span><span class="n">mContext</span><span class="p">.</span><span class="na">registerReceiver</span><span class="p">(</span><span class="n">myReceiver</span><span class="p">,</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">IntentFilter</span><span class="p">(</span><span class="n">Intent</span><span class="p">.</span><span class="na">ACTION_SHUTDOWN</span><span class="p">));</span><span class="c1">//监听关机广播</span><span class="w"></span>
+<span class="w">		</span><span class="n">mContext</span><span class="p">.</span><span class="na">registerReceiver</span><span class="p">(</span><span class="n">myReceiver</span><span class="p">,</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">IntentFilter</span><span class="p">(</span><span class="n">ACTION_DISABLE</span><span class="p">));</span><span class="c1">//监听工厂测试程序广播</span><span class="w"></span>
+<span class="w">		</span><span class="n">mContext</span><span class="p">.</span><span class="na">registerReceiver</span><span class="p">(</span><span class="n">myReceiver</span><span class="p">,</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">IntentFilter</span><span class="p">(</span><span class="n">ACTION_ENABLE</span><span class="p">));</span><span class="c1">//监听工厂测试程序广播</span><span class="w"></span>
+
+<span class="w">		</span><span class="n">paxBmsManager</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">PaxBmsManager</span><span class="p">)</span><span class="n">mContext</span><span class="p">.</span><span class="na">getSystemService</span><span class="p">(</span><span class="n">Context</span><span class="p">.</span><span class="na">PAXBMS_SERVICE</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+
+<span class="w">	</span><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">onStart</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="k">if</span><span class="p">(</span><span class="n">DEBUG</span><span class="p">)</span><span class="n">Log</span><span class="p">.</span><span class="na">d</span><span class="p">(</span><span class="n">TAG</span><span class="p">,</span><span class="s">&quot;onStart&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="n">am</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">AlarmManager</span><span class="p">)</span><span class="n">mContext</span><span class="p">.</span><span class="na">getSystemService</span><span class="p">(</span><span class="n">ALARM_SERVICE</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="n">PowerManager</span><span class="w"> </span><span class="n">pm</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">PowerManager</span><span class="p">)</span><span class="w"> </span><span class="n">mContext</span><span class="p">.</span><span class="na">getSystemService</span><span class="p">(</span><span class="n">Context</span><span class="p">.</span><span class="na">POWER_SERVICE</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="n">wl</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pm</span><span class="p">.</span><span class="na">newWakeLock</span><span class="p">(</span><span class="n">PowerManager</span><span class="p">.</span><span class="na">PARTIAL_WAKE_LOCK</span><span class="p">,</span><span class="w"> </span><span class="n">TAG</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="n">wl</span><span class="p">.</span><span class="na">acquire</span><span class="p">();</span><span class="w"></span>
+<span class="w">		</span><span class="c1">//PaxBatteryThread1 pbthread = new PaxBatteryThread1();</span><span class="w"></span>
+<span class="w">		</span><span class="n">PaxBatteryThread</span><span class="w"> </span><span class="n">pbthread</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">PaxBatteryThread</span><span class="p">();</span><span class="w"></span>
+<span class="w">		</span><span class="n">pbthread</span><span class="p">.</span><span class="na">start</span><span class="p">();</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+</section>
+<section id="id2">
+<h1>注册BMS服务<a class="headerlink" href="#id2" title="此标题的永久链接"></a></h1>
+<ul class="simple">
+<li><p>注册<code class="docutils literal notranslate"><span class="pre">PaxBatteryManagerService</span></code>服务，并执行<code class="docutils literal notranslate"><span class="pre">startService</span></code>，会调用服务中的<code class="docutils literal notranslate"><span class="pre">onstart</span></code>方法。</p></li>
+<li><p>注册静态服务<code class="docutils literal notranslate"><span class="pre">PaxBmsService</span></code>，供服务调用接口。</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">PaxBmsService</span></code>是<code class="docutils literal notranslate"><span class="pre">binder</span> <span class="pre">server</span></code>端，<code class="docutils literal notranslate"><span class="pre">PaxBmsManager</span></code>是服务于<code class="docutils literal notranslate"><span class="pre">PaxBmsService</span></code>的<code class="docutils literal notranslate"><span class="pre">binder</span> <span class="pre">client</span></code>端，并给外部提供接口的。</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">QSSI.12/frameworks/base/services/java/com/android/server/SystemServer.java</span></code>:</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">+//</span><span class="n">ADD</span> <span class="n">BEGIN</span> <span class="n">by</span> <span class="p">(</span><span class="n">wugangnan</span><span class="nd">@paxsz</span><span class="o">.</span><span class="n">com</span><span class="p">),</span> <span class="mi">2022</span><span class="o">/</span><span class="mi">11</span><span class="o">/</span><span class="mi">01</span> <span class="n">add</span> <span class="k">for</span> <span class="n">BMS</span>
+  	<span class="o">+</span><span class="kn">import</span> <span class="nn">com.android.server.paxbms.PaxBmsService</span><span class="p">;</span>
+  	<span class="o">+</span><span class="kn">import</span> <span class="nn">com.pax.server.PaxBatteryManagerService</span><span class="p">;</span>
+  	<span class="o">+//</span><span class="n">ADD</span> <span class="n">END</span> <span class="n">by</span> <span class="p">(</span><span class="n">wugangnan</span><span class="nd">@paxsz</span><span class="o">.</span><span class="n">com</span><span class="p">),</span> <span class="mi">2022</span><span class="o">/</span><span class="mi">11</span><span class="o">/</span><span class="mi">01</span> <span class="n">add</span> <span class="k">for</span> <span class="n">BMS</span>
+ 
+ <span class="o">/**</span>
+ <span class="o">/**</span>
+  <span class="o">*</span> <span class="n">Entry</span> <span class="n">point</span> <span class="n">to</span> <span class="p">{</span><span class="nd">@code</span> <span class="n">system_server</span><span class="p">}</span><span class="o">.</span>
+  <span class="o">*</span> <span class="n">Entry</span> <span class="n">point</span> <span class="n">to</span> <span class="p">{</span><span class="nd">@code</span> <span class="n">system_server</span><span class="p">}</span><span class="o">.</span>
+<span class="o">@@</span> <span class="o">-</span><span class="mi">1578</span><span class="p">,</span><span class="mi">6</span> <span class="o">+</span><span class="mi">1582</span><span class="p">,</span><span class="mi">16</span> <span class="o">@@</span> <span class="n">public</span> <span class="n">final</span> <span class="k">class</span> <span class="nc">SystemServer</span> <span class="n">implements</span> <span class="n">Dumpable</span> <span class="p">{</span>	<span class="o">@@</span> <span class="o">-</span><span class="mi">1578</span><span class="p">,</span><span class="mi">6</span> <span class="o">+</span><span class="mi">1582</span><span class="p">,</span><span class="mi">16</span> <span class="o">@@</span> <span class="n">public</span> <span class="n">final</span> <span class="k">class</span> <span class="nc">SystemServer</span> <span class="n">implements</span> <span class="n">Dumpable</span> <span class="p">{</span>
+
+  	<span class="o">+</span>			<span class="o">//</span><span class="n">ADD</span> <span class="n">BEGIN</span> <span class="n">by</span> <span class="p">(</span><span class="n">wugangnan</span><span class="nd">@paxsz</span><span class="o">.</span><span class="n">com</span><span class="p">),</span> <span class="mi">2022</span><span class="o">/</span><span class="mi">11</span><span class="o">/</span><span class="mi">01</span> <span class="n">add</span> <span class="k">for</span> <span class="n">BMS</span>
+  	<span class="o">+</span>             <span class="n">t</span><span class="o">.</span><span class="n">traceBegin</span><span class="p">(</span><span class="s2">&quot;StartmPaxBMSService&quot;</span><span class="p">);</span>
+  	<span class="o">+</span>            <span class="k">try</span><span class="p">{</span>
+  	<span class="o">+</span>                <span class="n">PaxBmsService</span> <span class="n">mPaxBmsService</span> <span class="o">=</span> <span class="n">new</span> <span class="n">PaxBmsService</span><span class="p">(</span><span class="n">context</span><span class="p">);</span>
+  	<span class="o">+</span>                <span class="n">ServiceManager</span><span class="o">.</span><span class="n">addService</span><span class="p">(</span><span class="s2">&quot;paxbms&quot;</span><span class="p">,</span> <span class="n">mPaxBmsService</span><span class="p">);</span>
+  	<span class="o">+</span>            <span class="p">}</span> <span class="n">catch</span><span class="p">(</span><span class="n">Throwable</span> <span class="n">e</span><span class="p">){</span>
+  	<span class="o">+</span>                <span class="n">reportWtf</span><span class="p">(</span><span class="s2">&quot;starting paxbms Service&quot;</span><span class="p">,</span> <span class="n">e</span><span class="p">);</span>
+  	<span class="o">+</span>            <span class="p">}</span>
+  	<span class="o">+</span>            <span class="n">t</span><span class="o">.</span><span class="n">traceEnd</span><span class="p">();</span>
+  	<span class="o">+</span>		<span class="o">//</span><span class="n">ADD</span> <span class="n">END</span> <span class="n">by</span> <span class="p">(</span><span class="n">wugangnan</span><span class="nd">@paxsz</span><span class="o">.</span><span class="n">com</span><span class="p">),</span> <span class="mi">2022</span><span class="o">/</span><span class="mi">11</span><span class="o">/</span><span class="mi">01</span> <span class="n">add</span> <span class="k">for</span> <span class="n">BMS</span>
+ 
+ 
+         <span class="p">}</span> <span class="n">catch</span> <span class="p">(</span><span class="n">Throwable</span> <span class="n">e</span><span class="p">)</span> <span class="p">{</span>
+         <span class="p">}</span> <span class="n">catch</span> <span class="p">(</span><span class="n">Throwable</span> <span class="n">e</span><span class="p">)</span> <span class="p">{</span>
+             <span class="n">Slog</span><span class="o">.</span><span class="n">e</span><span class="p">(</span><span class="s2">&quot;System&quot;</span><span class="p">,</span> <span class="s2">&quot;******************************************&quot;</span><span class="p">);</span>
+             <span class="n">Slog</span><span class="o">.</span><span class="n">e</span><span class="p">(</span><span class="s2">&quot;System&quot;</span><span class="p">,</span> <span class="s2">&quot;******************************************&quot;</span><span class="p">);</span>
+<span class="o">@@</span> <span class="o">-</span><span class="mi">2704</span><span class="p">,</span><span class="mi">6</span> <span class="o">+</span><span class="mi">2718</span><span class="p">,</span><span class="mi">11</span> <span class="o">@@</span> <span class="n">public</span> <span class="n">final</span> <span class="k">class</span> <span class="nc">SystemServer</span> <span class="n">implements</span> <span class="n">Dumpable</span> <span class="p">{</span>	<span class="o">@@</span> <span class="o">-</span><span class="mi">2704</span><span class="p">,</span><span class="mi">6</span> <span class="o">+</span><span class="mi">2718</span><span class="p">,</span><span class="mi">11</span> <span class="o">@@</span> <span class="n">public</span> <span class="n">final</span> <span class="k">class</span> <span class="nc">SystemServer</span> <span class="n">implements</span> <span class="n">Dumpable</span> <span class="p">{</span>
+         <span class="n">t</span><span class="o">.</span><span class="n">traceBegin</span><span class="p">(</span><span class="s2">&quot;StartMediaCommunicationService&quot;</span><span class="p">);</span>
+         <span class="n">t</span><span class="o">.</span><span class="n">traceBegin</span><span class="p">(</span><span class="s2">&quot;StartMediaCommunicationService&quot;</span><span class="p">);</span>
+         <span class="n">mSystemServiceManager</span><span class="o">.</span><span class="n">startService</span><span class="p">(</span><span class="n">MEDIA_COMMUNICATION_SERVICE_CLASS</span><span class="p">);</span>
+         <span class="n">mSystemServiceManager</span><span class="o">.</span><span class="n">startService</span><span class="p">(</span><span class="n">MEDIA_COMMUNICATION_SERVICE_CLASS</span><span class="p">);</span>
+         <span class="n">t</span><span class="o">.</span><span class="n">traceEnd</span><span class="p">();</span>
+         <span class="n">t</span><span class="o">.</span><span class="n">traceEnd</span><span class="p">();</span>
+  	<span class="o">+</span>		<span class="o">//</span><span class="p">[</span><span class="n">FEATURE</span><span class="p">]</span><span class="o">-</span><span class="n">Add</span><span class="o">-</span><span class="n">BEGIN</span> <span class="n">by</span> <span class="p">(</span><span class="n">wugangnan</span><span class="nd">@paxsz</span><span class="o">.</span><span class="n">com</span><span class="p">),</span> <span class="mi">2022</span><span class="o">/</span><span class="mi">11</span><span class="o">/</span><span class="mi">01</span><span class="p">,</span> <span class="k">for</span> <span class="n">start</span> <span class="n">pax</span> <span class="n">Battery</span> <span class="n">Manager</span> <span class="n">service</span>
+  	<span class="o">+</span>			<span class="n">t</span><span class="o">.</span><span class="n">traceBegin</span><span class="p">(</span><span class="s2">&quot;PaxBatteryManagerService &quot;</span><span class="p">);</span>
+  	<span class="o">+</span>			<span class="n">mSystemServiceManager</span><span class="o">.</span><span class="n">startService</span><span class="p">(</span><span class="n">PaxBatteryManagerService</span><span class="o">.</span><span class="n">class</span><span class="p">);</span>
+  	<span class="o">+</span>			<span class="n">t</span><span class="o">.</span><span class="n">traceEnd</span><span class="p">();</span>
+  	<span class="o">+</span>		<span class="o">//</span><span class="p">[</span><span class="n">FEATURE</span><span class="p">]</span><span class="o">-</span><span class="n">Add</span><span class="o">-</span><span class="n">END</span> <span class="n">by</span> <span class="p">(</span><span class="n">wugangnan</span><span class="nd">@paxsz</span><span class="o">.</span><span class="n">com</span><span class="p">),</span> <span class="mi">2022</span><span class="o">/</span><span class="mi">11</span><span class="o">/</span><span class="mi">01</span><span class="p">,</span> <span class="k">for</span> <span class="n">start</span> <span class="n">pax</span> <span class="n">Battery</span> <span class="n">Manager</span> <span class="n">service</span>
+</pre></div>
+</div>
+</section>
+<section id="paxbmsmanager">
+<h1>编写并注册PaxBmsManager类<a class="headerlink" href="#paxbmsmanager" title="此标题的永久链接"></a></h1>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">QSSI.12/frameworks/base/core/java/android/app/SystemServiceRegistry.java</span></code>:</p></li>
+</ul>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span>+//ADD BEGIN by (wugangnan@paxsz.com), 2022/11/01 add for BMS
+import android.os.IPaxBms;
+import android.app.PaxBmsManager;
+//ADD BEGIN by (wugangnan@paxsz.com), 2022/11/01 add for BMS
+
+ /**
+ /**
+  * Manages all of the system services that can be returned by {@link Context#getSystemService}.
+  * Manages all of the system services that can be returned by {@link Context#getSystemService}.
+  * Used by {@link ContextImpl}.
+  * Used by {@link ContextImpl}.
+@@ -1449,7 +1454,18 @@ public final class SystemServiceRegistry {	@@ -1449,7 +1454,18 @@ public final class SystemServiceRegistry {
+                                 ctx.mMainThread.getHandler());
+                                 ctx.mMainThread.getHandler());
+                     }
+                     }
+                 });
+                 });
+
+		//ADD BEGIN by (wugangnan@paxsz.com), 2022/11/01 add for BMS
+			registerService(Context.PAXBMS_SERVICE, PaxBmsManager.class,
+	                new CachedServiceFetcher&lt;PaxBmsManager&gt;() {
+	                    @Override
+	                    public PaxBmsManager createService(ContextImpl ctx)
+	                            throws ServiceNotFoundException {
+	                        IBinder b = ServiceManager.getService(&quot;paxbms&quot;);
+	                        IPaxBms service = IPaxBms.Stub.asInterface(b);
+	                        return PaxBmsManager.getInstance();
+				}
+  			});
+  			//ADD END by (wugangnan@paxsz.com), 2022/11/02 add for BMS
+</pre></div>
+</div>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">QSSI.12/frameworks/base/core/java/android/app/PaxBmsManager.java</span></code>:</p></li>
+</ul>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="o">+</span><span class="cm">/* * Copyright (C) 2008 The Android Open Source Project</span>
+<span class="cm"> *</span>
+<span class="cm"> * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span class="cm"> * you may not use this file except in compliance with the License.</span>
+<span class="cm"> * You may obtain a copy of the License at</span>
+<span class="cm"> *</span>
+<span class="cm"> *      http://www.apache.org/licenses/LICENSE-2.0</span>
+<span class="cm"> *</span>
+<span class="cm"> * Unless required by applicable law or agreed to in writing, software</span>
+<span class="cm"> * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span class="cm"> * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
+<span class="cm"> * See the License for the specific language governing permissions and</span>
+<span class="cm"> * limitations under the License.</span>
+<span class="cm"> */</span><span class="w"></span>
+
+<span class="kn">package</span><span class="w"> </span><span class="nn">android.app</span><span class="p">;</span><span class="w"></span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">android.content.Context</span><span class="p">;</span><span class="w"></span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">android.util.Log</span><span class="p">;</span><span class="w"></span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">android.annotation.NonNull</span><span class="p">;</span><span class="w"></span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">android.annotation.Nullable</span><span class="p">;</span><span class="w"></span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">android.os.ServiceManager.ServiceNotFoundException</span><span class="p">;</span><span class="w"></span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">android.annotation.SuppressLint</span><span class="p">;</span><span class="w"></span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">android.os.ServiceManager</span><span class="p">;</span><span class="w"></span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">android.os.RemoteException</span><span class="p">;</span><span class="w"></span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">android.annotation.SystemService</span><span class="p">;</span><span class="w"></span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">android.os.Binder</span><span class="p">;</span><span class="w"></span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">android.os.IBinder</span><span class="p">;</span><span class="w"></span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">android.compat.annotation.UnsupportedAppUsage</span><span class="p">;</span><span class="w"></span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">android.os.IPaxBms</span><span class="p">;</span><span class="w"></span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">java.util.Objects</span><span class="p">;</span><span class="w"></span>
+
+<span class="nd">@SystemService</span><span class="p">(</span><span class="n">Context</span><span class="p">.</span><span class="na">PAXBMS_SERVICE</span><span class="p">)</span><span class="w"></span>
+<span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">PaxBmsManager</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="c1">//PaxBMSService mBMS;</span><span class="w"></span>
+<span class="w">	</span><span class="kd">private</span><span class="w"> </span><span class="kd">static</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="n">TAG</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;PaxBMSManager&quot;</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="kd">private</span><span class="w"> </span><span class="kd">static</span><span class="w"> </span><span class="n">PaxBmsManager</span><span class="w"> </span><span class="n">sInstance</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="kd">private</span><span class="w"> </span><span class="n">IPaxBms</span><span class="w"> </span><span class="n">mBMS</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="kd">private</span><span class="w"> </span><span class="n">Context</span><span class="w"> </span><span class="n">mContext</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="kd">private</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="kd">static</span><span class="w"> </span><span class="n">Object</span><span class="w"> </span><span class="n">syncObj</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">Object</span><span class="p">();</span><span class="w"></span>
+
+<span class="w">	</span>
+<span class="w">	</span><span class="cm">/**</span>
+<span class="cm">     * @hide</span>
+<span class="cm">     */</span><span class="w"></span>
+<span class="w">     </span><span class="kd">private</span><span class="w"> </span><span class="nf">PaxBmsManager</span><span class="p">(</span><span class="n">IPaxBms</span><span class="w"> </span><span class="n">iBms</span><span class="p">){</span><span class="w"></span>
+<span class="w">		</span><span class="n">Log</span><span class="p">.</span><span class="na">d</span><span class="p">(</span><span class="n">TAG</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;PaxBmsManager created&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="n">mBMS</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">iBms</span><span class="p">;</span><span class="w"></span>
+<span class="w">		</span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+
+<span class="w">     </span><span class="cm">/**</span>
+<span class="cm">     * Gets an instance of the PaxBmsManager manager.</span>
+<span class="cm">     *</span>
+<span class="cm">     * @return The PaxBmsManager manager instance.</span>
+<span class="cm">     * @hide</span>
+<span class="cm">     */</span><span class="w"></span>
+<span class="w">     </span><span class="nd">@UnsupportedAppUsage</span><span class="w"></span>
+<span class="w">	</span><span class="kd">public</span><span class="w"> </span><span class="kd">static</span><span class="w"> </span><span class="nd">@Nullable</span><span class="w"> </span><span class="n">PaxBmsManager</span><span class="w"> </span><span class="nf">getInstance</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="kd">synchronized</span><span class="w"> </span><span class="p">(</span><span class="n">syncObj</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">sInstance</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="kc">null</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">			</span><span class="k">try</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">				</span><span class="n">IBinder</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ServiceManager</span><span class="p">.</span><span class="na">getServiceOrThrow</span><span class="p">(</span><span class="n">Context</span><span class="p">.</span><span class="na">PAXBMS_SERVICE</span><span class="p">);</span><span class="w"></span>
+<span class="w">				</span><span class="n">sInstance</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">PaxBmsManager</span><span class="p">(</span><span class="n">IPaxBms</span><span class="p">.</span><span class="na">Stub</span><span class="p">.</span><span class="na">asInterface</span><span class="p">(</span><span class="n">b</span><span class="p">));</span><span class="w"></span>
+<span class="w">			</span><span class="p">}</span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="n">ServiceNotFoundException</span><span class="w"> </span><span class="n">e</span><span class="p">){</span><span class="w"></span>
+<span class="w">				</span><span class="n">e</span><span class="p">.</span><span class="na">printStackTrace</span><span class="p">();</span><span class="w"></span>
+<span class="w">			</span><span class="p">}</span><span class="w"></span>
+<span class="w">			</span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">sInstance</span><span class="p">;</span><span class="w"></span>
+<span class="w">      </span><span class="p">}</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+<span class="w">	</span>
+<span class="w">	</span><span class="c1">//@SuppressLint(&quot;NewApi&quot;)</span><span class="w"></span>
+<span class="w">	</span><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">enableCharge</span><span class="p">(){</span><span class="w"></span>
+<span class="w">		</span><span class="n">Log</span><span class="p">.</span><span class="na">d</span><span class="p">(</span><span class="n">TAG</span><span class="p">,</span><span class="s">&quot;enableCharge&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="k">try</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">			</span><span class="n">mBMS</span><span class="p">.</span><span class="na">enableCharge</span><span class="p">();</span><span class="w"></span>
+<span class="w">		</span><span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="n">RemoteException</span><span class="w"> </span><span class="n">e</span><span class="p">){</span><span class="w"></span>
+<span class="w">			</span><span class="n">e</span><span class="p">.</span><span class="na">printStackTrace</span><span class="p">();</span><span class="w"></span>
+<span class="w">		</span><span class="p">}</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+<span class="w">	</span>
+<span class="w">	</span><span class="c1">//@SuppressLint(&quot;NewApi&quot;)</span><span class="w"></span>
+<span class="w">	</span><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">disableCharge</span><span class="p">(){</span><span class="w"></span>
+<span class="w">		</span><span class="n">Log</span><span class="p">.</span><span class="na">d</span><span class="p">(</span><span class="n">TAG</span><span class="p">,</span><span class="s">&quot;disableCharge&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="k">try</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">			</span><span class="n">mBMS</span><span class="p">.</span><span class="na">disableCharge</span><span class="p">();</span><span class="w"></span>
+<span class="w">		</span><span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="n">RemoteException</span><span class="w"> </span><span class="n">e</span><span class="p">){</span><span class="w"></span>
+<span class="w">			</span><span class="n">e</span><span class="p">.</span><span class="na">printStackTrace</span><span class="p">();</span><span class="w"></span>
+<span class="w">		</span><span class="p">}</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+<span class="w">	</span>
+<span class="w">	</span><span class="c1">//@SuppressLint(&quot;NewApi&quot;)</span><span class="w"></span>
+<span class="w">	</span><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">enablePowerPath</span><span class="p">(){</span><span class="w"></span>
+<span class="w">		</span><span class="n">Log</span><span class="p">.</span><span class="na">d</span><span class="p">(</span><span class="n">TAG</span><span class="p">,</span><span class="s">&quot;enablePowerPath&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="k">try</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">			</span><span class="n">mBMS</span><span class="p">.</span><span class="na">enablePowerPath</span><span class="p">();</span><span class="w"></span>
+<span class="w">		</span><span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="n">RemoteException</span><span class="w"> </span><span class="n">e</span><span class="p">){</span><span class="w"></span>
+<span class="w">			</span><span class="n">e</span><span class="p">.</span><span class="na">printStackTrace</span><span class="p">();</span><span class="w"></span>
+<span class="w">		</span><span class="p">}</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+<span class="w">	</span>
+<span class="w">	</span><span class="c1">//@SuppressLint(&quot;NewApi&quot;)</span><span class="w"></span>
+<span class="w">	</span><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">disablePowerPath</span><span class="p">(){</span><span class="w"></span>
+<span class="w">		</span><span class="n">Log</span><span class="p">.</span><span class="na">d</span><span class="p">(</span><span class="n">TAG</span><span class="p">,</span><span class="s">&quot;disablePowerPath&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="k">try</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">			</span><span class="n">mBMS</span><span class="p">.</span><span class="na">disablePowerPath</span><span class="p">();</span><span class="w"></span>
+<span class="w">		</span><span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="n">RemoteException</span><span class="w"> </span><span class="n">e</span><span class="p">){</span><span class="w"></span>
+<span class="w">			</span><span class="n">e</span><span class="p">.</span><span class="na">printStackTrace</span><span class="p">();</span><span class="w"></span>
+<span class="w">		</span><span class="p">}</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+<span class="w">	</span>
+<span class="w">	</span><span class="c1">//@SuppressLint(&quot;NewApi&quot;)</span><span class="w"></span>
+<span class="w">	</span><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">setTemporaryFullCharge</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">fullsoc</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="n">Log</span><span class="p">.</span><span class="na">d</span><span class="p">(</span><span class="n">TAG</span><span class="p">,</span><span class="s">&quot;setFullSoc = &quot;</span><span class="o">+</span><span class="n">fullsoc</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="k">try</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">			</span><span class="n">mBMS</span><span class="p">.</span><span class="na">setTemporaryFullCharge</span><span class="p">(</span><span class="n">fullsoc</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="n">RemoteException</span><span class="w"> </span><span class="n">e</span><span class="p">){</span><span class="w"></span>
+<span class="w">			</span><span class="n">e</span><span class="p">.</span><span class="na">printStackTrace</span><span class="p">();</span><span class="w"></span>
+<span class="w">		</span><span class="p">}</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+</section>
+<section id="paxbmsservice">
+<h1>编写PaxBmsService类<a class="headerlink" href="#paxbmsservice" title="此标题的永久链接"></a></h1>
+<p>PaxBmsService 类主要是充电接口实现类，主要调用JNI。</p>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="cm">/* * Copyright (C) 2008 The Android Open Source Project</span>
+<span class="cm"> *</span>
+<span class="cm"> * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span class="cm"> * you may not use this file except in compliance with the License.</span>
+<span class="cm"> * You may obtain a copy of the License at</span>
+<span class="cm"> *</span>
+<span class="cm"> *      http://www.apache.org/licenses/LICENSE-2.0</span>
+<span class="cm"> *</span>
+<span class="cm"> * Unless required by applicable law or agreed to in writing, software</span>
+<span class="cm"> * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span class="cm"> * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
+<span class="cm"> * See the License for the specific language governing permissions and</span>
+<span class="cm"> * limitations under the License.</span>
+<span class="cm"> */</span><span class="w"></span>
+
+<span class="kn">package</span><span class="w"> </span><span class="nn">com.android.server.paxbms</span><span class="p">;</span><span class="w"></span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">android.app.ActivityManager</span><span class="p">;</span><span class="w"></span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">android.content.Context</span><span class="p">;</span><span class="w"></span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">android.os.Handler</span><span class="p">;</span><span class="w"></span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">android.os.IBinder</span><span class="p">;</span><span class="w"></span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">android.os.Message</span><span class="p">;</span><span class="w"></span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">android.os.PowerManager</span><span class="p">;</span><span class="w"></span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">android.os.Trace</span><span class="p">;</span><span class="w"></span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">android.provider.Settings</span><span class="p">;</span><span class="w"></span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">android.util.Slog</span><span class="p">;</span><span class="w"></span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">android.view.SurfaceControl</span><span class="p">;</span><span class="w"></span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">android.util.Log</span><span class="p">;</span><span class="w"></span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">android.content.Context</span><span class="p">;</span><span class="w"></span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">com.android.server.SystemService</span><span class="p">;</span><span class="w"></span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">android.os.IPaxBms</span><span class="p">;</span><span class="w"></span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">android.os.SystemProperties</span><span class="p">;</span><span class="w"></span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">android.os.RemoteException</span><span class="p">;</span><span class="w"></span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">android.annotation.SuppressLint</span><span class="p">;</span><span class="w"></span>
+
+<span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">PaxBmsService</span><span class="w"> </span><span class="kd">extends</span><span class="w"> </span><span class="n">IPaxBms</span><span class="p">.</span><span class="na">Stub</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="kd">static</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="n">TAG</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;PaxBMSService&quot;</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="kd">static</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="kt">boolean</span><span class="w"> </span><span class="n">DEBUG</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">false</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">Context</span><span class="w"> </span><span class="n">mContext</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="kd">public</span><span class="w"> </span><span class="kd">static</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="n">TemporaryFullCharge</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;sys.bms.temporary_full_charge&quot;</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">   </span><span class="kd">public</span><span class="w"> </span><span class="nf">PaxBmsService</span><span class="p">(</span><span class="n">Context</span><span class="w"> </span><span class="n">context</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">   		</span><span class="kd">super</span><span class="p">();</span><span class="w"></span>
+<span class="w">        </span><span class="n">mContext</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">context</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"> </span>
+<span class="w">	</span>
+
+<span class="w">	</span>
+<span class="w">   </span>
+<span class="w">   </span><span class="c1">// @SuppressLint(&quot;NewApi&quot;)</span><span class="w"></span>
+<span class="w">    </span><span class="nd">@Override</span><span class="w"></span>
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">enableCharge</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="n">Log</span><span class="p">.</span><span class="na">d</span><span class="p">(</span><span class="n">TAG</span><span class="p">,</span><span class="s">&quot;enableCharge&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="k">try</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">           </span><span class="n">enableCharge_native</span><span class="p">();</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="n">Exception</span><span class="w"> </span><span class="n">e</span><span class="p">){</span><span class="w"></span>
+<span class="w">           </span><span class="n">e</span><span class="p">.</span><span class="na">printStackTrace</span><span class="p">();</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">finally</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">           </span><span class="n">Trace</span><span class="p">.</span><span class="na">traceEnd</span><span class="p">(</span><span class="n">Trace</span><span class="p">.</span><span class="na">TRACE_TAG_POWER</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="w">   </span>
+<span class="w">    </span><span class="c1">//@SuppressLint(&quot;NewApi&quot;)</span><span class="w"></span>
+<span class="w">    </span><span class="nd">@Override</span><span class="w"></span>
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">disableCharge</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="n">Log</span><span class="p">.</span><span class="na">d</span><span class="p">(</span><span class="n">TAG</span><span class="p">,</span><span class="s">&quot;disableCharge &quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="k">try</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">           </span><span class="n">disableCharge_native</span><span class="p">();</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="n">Exception</span><span class="w"> </span><span class="n">e</span><span class="p">){</span><span class="w"></span>
+<span class="w">           </span><span class="n">e</span><span class="p">.</span><span class="na">printStackTrace</span><span class="p">();</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="k">finally</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">           </span><span class="n">Trace</span><span class="p">.</span><span class="na">traceEnd</span><span class="p">(</span><span class="n">Trace</span><span class="p">.</span><span class="na">TRACE_TAG_POWER</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span>
+<span class="w">    </span><span class="c1">//@SuppressLint(&quot;NewApi&quot;)</span><span class="w"></span>
+<span class="w">     </span><span class="nd">@Override</span><span class="w"></span>
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">enablePowerPath</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="n">Log</span><span class="p">.</span><span class="na">d</span><span class="p">(</span><span class="n">TAG</span><span class="p">,</span><span class="s">&quot;enablePowerPath &quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="k">try</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">           </span><span class="n">enablePowerPath_native</span><span class="p">();</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="n">Exception</span><span class="w"> </span><span class="n">e</span><span class="p">){</span><span class="w"></span>
+<span class="w">           </span><span class="n">e</span><span class="p">.</span><span class="na">printStackTrace</span><span class="p">();</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="k">finally</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">           </span><span class="n">Trace</span><span class="p">.</span><span class="na">traceEnd</span><span class="p">(</span><span class="n">Trace</span><span class="p">.</span><span class="na">TRACE_TAG_POWER</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span>
+<span class="w">    </span><span class="c1">//@SuppressLint(&quot;NewApi&quot;)</span><span class="w"></span>
+<span class="w">     </span><span class="nd">@Override</span><span class="w"></span>
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">disablePowerPath</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="n">Log</span><span class="p">.</span><span class="na">d</span><span class="p">(</span><span class="n">TAG</span><span class="p">,</span><span class="s">&quot;disablePowerPath&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="k">try</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">           </span><span class="n">disablePowerPath_native</span><span class="p">();</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="n">Exception</span><span class="w"> </span><span class="n">e</span><span class="p">){</span><span class="w"></span>
+<span class="w">           </span><span class="n">e</span><span class="p">.</span><span class="na">printStackTrace</span><span class="p">();</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="k">finally</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">           </span><span class="n">Trace</span><span class="p">.</span><span class="na">traceEnd</span><span class="p">(</span><span class="n">Trace</span><span class="p">.</span><span class="na">TRACE_TAG_POWER</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">	</span>
+<span class="w">	</span><span class="c1">//@SuppressLint(&quot;NewApi&quot;)</span><span class="w"></span>
+<span class="w">	 </span><span class="nd">@Override</span><span class="w"></span>
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">setTemporaryFullCharge</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">charge</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    	</span><span class="n">SystemProperties</span><span class="p">.</span><span class="na">set</span><span class="p">(</span><span class="n">TemporaryFullCharge</span><span class="p">,</span><span class="n">String</span><span class="p">.</span><span class="na">valueOf</span><span class="p">(</span><span class="n">charge</span><span class="p">));</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">onStart</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="n">Slog</span><span class="p">.</span><span class="na">e</span><span class="p">(</span><span class="n">TAG</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;onStart&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="kd">static</span><span class="w"> </span><span class="kd">native</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">enableCharge_native</span><span class="p">();</span><span class="w"></span>
+<span class="w">    </span><span class="kd">static</span><span class="w"> </span><span class="kd">native</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">disableCharge_native</span><span class="p">();</span><span class="w"></span>
+<span class="w">    </span><span class="kd">static</span><span class="w"> </span><span class="kd">native</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">enablePowerPath_native</span><span class="p">();</span><span class="w"></span>
+<span class="w">    </span><span class="kd">static</span><span class="w"> </span><span class="kd">native</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">disablePowerPath_native</span><span class="p">();</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+</section>
+<section id="jni-ioctrl">
+<h1>调用JNI(ioctrl)<a class="headerlink" href="#jni-ioctrl" title="此标题的永久链接"></a></h1>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">QSSI.12/frameworks/base/services/core/jni/onload.cpp</span></code>注册JNI:</p></li>
+</ul>
+<div class="highlight-diff notranslate"><div class="highlight"><pre><span></span><span class="gd">--- a/QSSI.12/frameworks/base/services/core/jni/onload.cpp</span><span class="w"></span>
+<span class="gi">+++ b/QSSI.12/frameworks/base/services/core/jni/onload.cpp</span><span class="w"></span>
+<span class="gu">@@ -64,6 +64,9 @@ int register_android_server_GpuService(JNIEnv* env);</span><span class="w"></span>
+<span class="w"> </span>int register_android_server_stats_pull_StatsPullAtomService(JNIEnv* env);<span class="w"></span>
+<span class="w"> </span>int register_android_server_sensor_SensorService(JavaVM* vm, JNIEnv* env);<span class="w"></span>
+<span class="w"> </span>int register_android_server_ActivityTriggerService(JNIEnv* env);<span class="w"></span>
+<span class="gi">+//ADD BEGIN by wugangnan@paxsz.com add for BMS, 2022/11/02</span><span class="w"></span>
+<span class="gi">+int register_android_server_paxbms_PaxBmsService(JNIEnv* env);</span><span class="w"></span>
+<span class="gi">+//ADD END by wugangnan@paxsz.com add for BMS, 2022/11/02</span><span class="w"></span>
+<span class="w"> </span>};<span class="w"></span>
+
+<span class="w"> </span>using namespace android;<span class="w"></span>
+<span class="gu">@@ -121,5 +124,8 @@ extern &quot;C&quot; jint JNI_OnLoad(JavaVM* vm, void* /* reserved */)</span><span class="w"></span>
+<span class="w"> </span>    register_android_server_stats_pull_StatsPullAtomService(env);<span class="w"></span>
+<span class="w"> </span>    register_android_server_sensor_SensorService(vm, env);<span class="w"></span>
+<span class="w"> </span>    register_android_server_ActivityTriggerService(env);<span class="w"></span>
+<span class="gi">+       //ADD BEGIN by wugangnan@paxsz.com add for BMS, 2022/11/02</span><span class="w"></span>
+<span class="gi">+       register_android_server_paxbms_PaxBmsService(env);</span><span class="w"></span>
+<span class="gi">+       //ADD END by wugangnan@paxsz.com add for BMS, 2022/11/02</span><span class="w"></span>
+<span class="w"> </span>    return JNI_VERSION_1_4;<span class="w"></span>
+<span class="w"> </span>}<span class="w"></span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">QSSI.12/frameworks/base/services/core/jni/com_android_server_paxbms_PaxBmsService.cpp</span></code>JNI如下调用ioctrl直接操作驱动：</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="cm">/*</span>
+<span class="cm"> * Copyright (C) 2009 The Android Open Source Project</span>
+<span class="cm"> *</span>
+<span class="cm"> * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span class="cm"> * you may not use this file except in compliance with the License.</span>
+<span class="cm"> * You may obtain a copy of the License at</span>
+<span class="cm"> *</span>
+<span class="cm"> *      http://www.apache.org/licenses/LICENSE-2.0</span>
+<span class="cm"> *</span>
+<span class="cm"> * Unless required by applicable law or agreed to in writing, software</span>
+<span class="cm"> * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span class="cm"> * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
+<span class="cm"> * See the License for the specific language governing permissions and</span>
+<span class="cm"> * limitations under the License.</span>
+<span class="cm"> */</span><span class="w"></span>
+
+<span class="cp">#define LOG_TAG &quot;PaxBMSService&quot;</span>
+
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&quot;jni.h&quot;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;nativehelper/JNIHelp.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&quot;android_runtime/AndroidRuntime.h&quot;</span><span class="cp"></span>
+
+<span class="c1">//#include &lt;android/hardware/pax_bms/1.0/IPaxBMS.h&gt;</span>
+<span class="c1">//#include &lt;android/hardware/pax_bms/1.0/types.h&gt;</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;android-base/chrono_utils.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;utils/misc.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;utils/Log.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;map&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;stdio.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;stdlib.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;errno.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;unistd.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;linux/ioctl.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;array&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;memory&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;fcntl.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;string.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;sys/epoll.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;sys/types.h&gt;</span><span class="cp"></span>
+
+
+<span class="cp">#define PAX_BMS_DEV                &quot;/dev/pax_bms&quot;</span>
+<span class="cp">#define SET_CHG_EN				_IOW(&#39;b&#39;, 1, int)</span>
+<span class="cp">#define SET_POWER_PATH			_IOW(&#39;b&#39;, 2, int)</span>
+
+<span class="k">namespace</span><span class="w"> </span><span class="nn">android</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">enableCharge_native</span><span class="w"> </span><span class="p">(</span><span class="w"></span>
+<span class="w">        </span><span class="n">JNIEnv</span><span class="o">*</span><span class="w"> </span><span class="cm">/* env */</span><span class="p">,</span><span class="w"></span>
+<span class="w">        </span><span class="n">jobject</span><span class="w"> </span><span class="cm">/* clazz */</span><span class="p">,</span><span class="w"></span>
+<span class="w">        </span><span class="n">jint</span><span class="w"> </span><span class="n">mode</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+
+<span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">fd</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">res</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="kt">int</span><span class="w"> </span><span class="n">en</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">    </span><span class="n">fd</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">open</span><span class="p">(</span><span class="n">PAX_BMS_DEV</span><span class="p">,</span><span class="w"> </span><span class="n">O_RDWR</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">fd</span><span class="w"> </span><span class="o">&lt;</span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="n">ALOGE</span><span class="p">(</span><span class="s">&quot;Unable to open /dev/pax_bms&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="w"> 	 </span>
+<span class="w">    </span><span class="n">res</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ioctl</span><span class="p">(</span><span class="n">fd</span><span class="p">,</span><span class="w"> </span><span class="n">SET_CHG_EN</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">en</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">res</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">         </span><span class="n">ALOGE</span><span class="p">(</span><span class="s">&quot;ioctl-&gt;SET_CHG_EN failed:%d&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">res</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="n">ALOGD</span><span class="p">(</span><span class="s">&quot;ioctl-&gt;SET_CHG_EN open success&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="n">close</span><span class="p">(</span><span class="n">fd</span><span class="p">);</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">disableCharge_native</span><span class="p">(</span><span class="w"></span>
+<span class="w">        </span><span class="n">JNIEnv</span><span class="o">*</span><span class="w"> </span><span class="cm">/* env */</span><span class="p">,</span><span class="w"></span>
+<span class="w">        </span><span class="n">jobject</span><span class="w"> </span><span class="cm">/* clazz */</span><span class="w"></span>
+<span class="w">        </span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w"> </span>
+<span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">fd</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">res</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="kt">int</span><span class="w"> </span><span class="n">en</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">    </span><span class="n">fd</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">open</span><span class="p">(</span><span class="n">PAX_BMS_DEV</span><span class="p">,</span><span class="w"> </span><span class="n">O_RDWR</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">fd</span><span class="w"> </span><span class="o">&lt;</span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="n">ALOGE</span><span class="p">(</span><span class="s">&quot;Unable to open /dev/pax_bms&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="w"> 	 </span>
+<span class="w">    </span><span class="n">res</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ioctl</span><span class="p">(</span><span class="n">fd</span><span class="p">,</span><span class="w"> </span><span class="n">SET_CHG_EN</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">en</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">res</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">         </span><span class="n">ALOGE</span><span class="p">(</span><span class="s">&quot;ioctl-&gt;SET_CHG_EN failed:%d&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">res</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="n">ALOGD</span><span class="p">(</span><span class="s">&quot;ioctl-&gt;SET_CHG_EN open success&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="n">close</span><span class="p">(</span><span class="n">fd</span><span class="p">);</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+<span class="k">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">enablePowerPath_native</span><span class="p">(</span><span class="w"></span>
+<span class="w">        </span><span class="n">JNIEnv</span><span class="o">*</span><span class="w"> </span><span class="cm">/* env */</span><span class="p">,</span><span class="w"></span>
+<span class="w">        </span><span class="n">jobject</span><span class="w"> </span><span class="cm">/* clazz */</span><span class="w"></span>
+<span class="w">        </span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+
+<span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">fd</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">res</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="kt">int</span><span class="w"> </span><span class="n">en</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">    </span><span class="n">fd</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">open</span><span class="p">(</span><span class="n">PAX_BMS_DEV</span><span class="p">,</span><span class="w"> </span><span class="n">O_RDWR</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">fd</span><span class="w"> </span><span class="o">&lt;</span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="n">ALOGE</span><span class="p">(</span><span class="s">&quot;Unable to open /dev/pax_bms&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="w"> 	 </span>
+<span class="w">    </span><span class="n">res</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ioctl</span><span class="p">(</span><span class="n">fd</span><span class="p">,</span><span class="w"> </span><span class="n">SET_POWER_PATH</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">en</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">res</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">         </span><span class="n">ALOGE</span><span class="p">(</span><span class="s">&quot;ioctl-&gt;SET_CHG_EN failed:%d&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">res</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="n">ALOGD</span><span class="p">(</span><span class="s">&quot;ioctl-&gt;SET_CHG_EN open success&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="n">close</span><span class="p">(</span><span class="n">fd</span><span class="p">);</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">disablePowerPath_native</span><span class="p">(</span><span class="w"></span>
+<span class="w">        </span><span class="n">JNIEnv</span><span class="o">*</span><span class="w"> </span><span class="cm">/* env */</span><span class="p">,</span><span class="w"></span>
+<span class="w">        </span><span class="n">jobject</span><span class="w"> </span><span class="cm">/* clazz */</span><span class="w"></span>
+<span class="w">        </span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+
+<span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">fd</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">res</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="kt">int</span><span class="w"> </span><span class="n">en</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">    </span><span class="n">fd</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">open</span><span class="p">(</span><span class="n">PAX_BMS_DEV</span><span class="p">,</span><span class="w"> </span><span class="n">O_RDWR</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">fd</span><span class="w"> </span><span class="o">&lt;</span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="n">ALOGE</span><span class="p">(</span><span class="s">&quot;Unable to open /dev/pax_bms&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="w"> 	 </span>
+<span class="w">    </span><span class="n">res</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ioctl</span><span class="p">(</span><span class="n">fd</span><span class="p">,</span><span class="w"> </span><span class="n">SET_POWER_PATH</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">en</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">res</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">         </span><span class="n">ALOGE</span><span class="p">(</span><span class="s">&quot;ioctl-&gt;SET_CHG_EN failed:%d&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">res</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="n">ALOGD</span><span class="p">(</span><span class="s">&quot;ioctl-&gt;SET_CHG_EN open success&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="n">close</span><span class="p">(</span><span class="n">fd</span><span class="p">);</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="k">static</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">JNINativeMethod</span><span class="w"> </span><span class="n">method_table</span><span class="p">[]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="p">{</span><span class="w"> </span><span class="s">&quot;enableCharge_native&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;()V&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="kt">void</span><span class="o">*</span><span class="p">)</span><span class="n">enableCharge_native</span><span class="w"> </span><span class="p">},</span><span class="w"></span>
+<span class="w">    </span><span class="p">{</span><span class="w"> </span><span class="s">&quot;disableCharge_native&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;()V&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="kt">void</span><span class="o">*</span><span class="p">)</span><span class="n">disableCharge_native</span><span class="w"> </span><span class="p">},</span><span class="w"></span>
+<span class="w">    </span><span class="p">{</span><span class="w"> </span><span class="s">&quot;enablePowerPath_native&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;()V&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="kt">void</span><span class="o">*</span><span class="p">)</span><span class="n">enablePowerPath_native</span><span class="w"> </span><span class="p">},</span><span class="w"></span>
+<span class="w">    </span><span class="p">{</span><span class="w"> </span><span class="s">&quot;disablePowerPath_native&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;()V&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="kt">void</span><span class="o">*</span><span class="p">)</span><span class="n">disablePowerPath_native</span><span class="w"> </span><span class="p">},</span><span class="w"></span>
+<span class="p">};</span><span class="w"></span>
+
+<span class="kt">int</span><span class="w"> </span><span class="nf">register_android_server_paxbms_PaxBmsService</span><span class="p">(</span><span class="n">JNIEnv</span><span class="w"> </span><span class="o">*</span><span class="n">env</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="n">ALOGE</span><span class="p">(</span><span class="s">&quot;register_android_server_paxbms_PaxBmsService</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">jniRegisterNativeMethods</span><span class="p">(</span><span class="n">env</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;com/android/server/paxbms/PaxBmsService&quot;</span><span class="p">,</span><span class="w"></span>
+<span class="w">            </span><span class="n">method_table</span><span class="p">,</span><span class="w"> </span><span class="n">NELEM</span><span class="p">(</span><span class="n">method_table</span><span class="p">));</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="p">};</span><span class="w"></span>
+</pre></div>
+</div>
+</section>
+<section id="id3">
+<h1>调用 PaxBmsService类<a class="headerlink" href="#id3" title="此标题的永久链接"></a></h1>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">QSSI.12/frameworks/base/services/core/java/com/pax/server/PaxBatteryManagerService.java</span></code>PaxBmsService类被PaxBatteryManagerService调用方法如下:</p></li>
+</ul>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="n">paxBmsManager</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">PaxBmsManager</span><span class="p">)</span><span class="n">mContext</span><span class="p">.</span><span class="na">getSystemService</span><span class="p">(</span><span class="n">Context</span><span class="p">.</span><span class="na">PAXBMS_SERVICE</span><span class="p">);</span><span class="w"></span>
+
+<span class="kd">public</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">setChargeState</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">state</span><span class="p">){</span><span class="w"></span>
+<span class="k">try</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="n">Log</span><span class="p">.</span><span class="na">d</span><span class="p">(</span><span class="n">TAG</span><span class="p">,</span><span class="s">&quot;setChargeState: &quot;</span><span class="o">+</span><span class="n">state</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="k">if</span><span class="p">(</span><span class="n">state</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">CHARGEING</span><span class="p">){</span><span class="w"></span>
+<span class="w">			</span><span class="n">paxBmsManager</span><span class="p">.</span><span class="na">enableCharge</span><span class="p">();</span><span class="w"></span>
+<span class="w">		</span><span class="p">}</span><span class="k">else</span><span class="p">{</span><span class="w"></span>
+<span class="w">			</span><span class="n">paxBmsManager</span><span class="p">.</span><span class="na">disableCharge</span><span class="p">();</span><span class="w"></span>
+<span class="w">		</span><span class="p">}</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+</section>
+<section id="make-update-api">
+<h1>make update-api更新接口<a class="headerlink" href="#make-update-api" title="此标题的永久链接"></a></h1>
+<p>须要执行 <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">update-api</span></code>，更新接口，会将<code class="docutils literal notranslate"><span class="pre">PaxBmsManager</span></code>新增的接口和新增<code class="docutils literal notranslate"><span class="pre">Context</span></code>变量加进去：</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">QSSI.12/frameworks/base/core/api/current.txt</span></code></p></li>
+</ul>
+<div class="highlight-diff notranslate"><div class="highlight"><pre><span></span><span class="gd">--- a/QSSI.12/frameworks/base/core/api/current.txt</span><span class="w"></span>
+<span class="gi">+++ b/QSSI.12/frameworks/base/core/api/current.txt</span><span class="w"></span>
+<span class="gu">@@ -6334,6 +6334,14 @@ package android.app {</span><span class="w"></span>
+<span class="w"> </span>    field public final int suppressedVisualEffects;<span class="w"></span>
+<span class="w"> </span>  }<span class="w"></span>
+
+<span class="gi">+  public class PaxBmsManager {</span><span class="w"></span>
+<span class="gi">+    method public void disableCharge();</span><span class="w"></span>
+<span class="gi">+    method public void disablePowerPath();</span><span class="w"></span>
+<span class="gi">+    method public void enableCharge();</span><span class="w"></span>
+<span class="gi">+    method public void enablePowerPath();</span><span class="w"></span>
+<span class="gi">+    method public void setTemporaryFullCharge(int);</span><span class="w"></span>
+<span class="gi">+  }</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="w"> </span>  public final class PendingIntent implements android.os.Parcelable {<span class="w"></span>
+<span class="w"> </span>    method public void cancel();<span class="w"></span>
+<span class="w"> </span>    method public int describeContents();<span class="w"></span>
+<span class="gu">@@ -10669,6 +10677,7 @@ package android.content {</span><span class="w"></span>
+<span class="w"> </span>    field public static final String NFC_SERVICE = &quot;nfc&quot;;<span class="w"></span>
+<span class="w"> </span>    field public static final String NOTIFICATION_SERVICE = &quot;notification&quot;;<span class="w"></span>
+<span class="w"> </span>    field public static final String NSD_SERVICE = &quot;servicediscovery&quot;;<span class="w"></span>
+<span class="gi">+    field public static final String PAXBMS_SERVICE = &quot;paxbms&quot;;</span><span class="w"></span>
+<span class="w"> </span>    field public static final String PEOPLE_SERVICE = &quot;people&quot;;<span class="w"></span>
+<span class="w"> </span>    field public static final String PERFORMANCE_HINT_SERVICE = &quot;performance_hint&quot;;<span class="w"></span>
+<span class="w"> </span>    field public static final String POWER_SERVICE = &quot;power&quot;;<span class="w"></span>
+</pre></div>
+</div>
+</section>
+<section id="selinux">
+<h1>增加SELINUX权限<a class="headerlink" href="#selinux" title="此标题的永久链接"></a></h1>
+<div class="highlight-diff notranslate"><div class="highlight"><pre><span></span><span class="gd">--- a/QSSI.12/system/sepolicy/prebuilts/api/31.0/private/file.te</span><span class="w"></span>
+<span class="gi">+++ b/QSSI.12/system/sepolicy/prebuilts/api/31.0/private/file.te</span><span class="w"></span>
+<span class="gu">@@ -66,4 +66,5 @@ type kvm_device, dev_type;</span><span class="w"></span>
+<span class="w"> </span>#PAX BMS<span class="w"></span>
+<span class="w"> </span>type sysfs_battery_warning, fs_type, sysfs_type;<span class="w"></span>
+<span class="w"> </span>type vendor_sysfs_battery_supply, sysfs_type, fs_type;<span class="w"></span>
+<span class="gd">-type vendor_sysfs_usb_supply, sysfs_type, fs_type;</span><span class="w"></span>
+<span class="w">\ No newline at end of file</span>
+<span class="gi">+type vendor_sysfs_usb_supply, sysfs_type, fs_type;</span><span class="w"></span>
+<span class="gi">+type pax_bms_device, dev_type, mlstrustedobject;</span><span class="w"></span>
+<span class="w">\ No newline at end of file</span>
+<span class="gh">diff --git a/QSSI.12/system/sepolicy/prebuilts/api/31.0/private/file_contexts b/QSSI.12/system/sepolicy/prebuilts/api/31.0/private/file_contexts</span><span class="w"></span>
+<span class="gh">index d711c80db20..67eca16d06e 100755</span><span class="w"></span>
+<span class="gd">--- a/QSSI.12/system/sepolicy/prebuilts/api/31.0/private/file_contexts</span><span class="w"></span>
+<span class="gi">+++ b/QSSI.12/system/sepolicy/prebuilts/api/31.0/private/file_contexts</span><span class="w"></span>
+<span class="gu">@@ -843,3 +843,6 @@</span><span class="w"></span>
+<span class="w"> </span>#[FEATURE]-Add-BEGIN by tangyunhua@paxsz.com, 2022/11/02, for mac address<span class="w"></span>
+<span class="w"> </span>/system/bin/macaddress   u:object_r:macaddress_exec:s0<span class="w"></span>
+<span class="w"> </span>#[FEATURE]-Add-END by tangyunhua@paxsz.com, 2022/11/02, for mac address<span class="w"></span>
+<span class="gi">+#[FEATURE]-Add-BEGIN by wugangnan@paxsz.com, 2022/11/04, for BMS</span><span class="w"></span>
+<span class="gi">+/dev/pax_bms            u:object_r:pax_bms_device:s0</span><span class="w"></span>
+<span class="gi">+#[FEATURE]-Add-END by wugangnan@paxsz.com, 2022/11/04, for BMS</span><span class="w"></span>
+<span class="gh">diff --git a/QSSI.12/system/sepolicy/prebuilts/api/31.0/private/pax_bms_service.te b/QSSI.12/system/sepolicy/prebuilts/api/31.0/private/pax_bms_service.te</span><span class="w"></span>
+<span class="w">new file mode 100755</span>
+<span class="gh">index 00000000000..67efced1679</span><span class="w"></span>
+<span class="gd">--- /dev/null</span><span class="w"></span>
+<span class="gi">+++ b/QSSI.12/system/sepolicy/prebuilts/api/31.0/private/pax_bms_service.te</span><span class="w"></span>
+<span class="gu">@@ -0,0 +1 @@</span><span class="w"></span>
+<span class="gi">+type pax_bms_service,     app_api_service, system_server_service, service_manager_type;</span><span class="w"></span>
+<span class="w">\ No newline at end of file</span>
+<span class="gh">diff --git a/QSSI.12/system/sepolicy/prebuilts/api/31.0/private/system_server.te b/QSSI.12/system/sepolicy/prebuilts/api/31.0/private/system_server.te</span><span class="w"></span>
+<span class="gh">index 3b510c73ad7..e23007a691c 100755</span><span class="w"></span>
+<span class="gd">--- a/QSSI.12/system/sepolicy/prebuilts/api/31.0/private/system_server.te</span><span class="w"></span>
+<span class="gi">+++ b/QSSI.12/system/sepolicy/prebuilts/api/31.0/private/system_server.te</span><span class="w"></span>
+<span class="gu">@@ -1335,6 +1335,10 @@ allow system_server surfaceflinger_exec:file r_file_perms;</span><span class="w"></span>
+
+<span class="w"> </span>allow system_server logkit-init:binder call;<span class="w"></span>
+
+<span class="gi">+#BMS</span><span class="w"></span>
+<span class="gi">+allow system_server pax_bms_service:service_manager { find add };</span><span class="w"></span>
+<span class="gi">+allow system_server pax_bms_device:chr_file { ioctl read open write };</span><span class="w"></span>
+</pre></div>
+</div>
+</section>
+<section id="dev">
+<h1>增加dev节点权限<a class="headerlink" href="#dev" title="此标题的永久链接"></a></h1>
+<div class="highlight-diff notranslate"><div class="highlight"><pre><span></span><span class="gd">--- a/QSSI.12/vendor/paxsz/initrc/init.A6650.common.rc</span><span class="w"></span>
+<span class="gi">+++ b/QSSI.12/vendor/paxsz/initrc/init.A6650.common.rc</span><span class="w"></span>
+<span class="gu">@@ -7,6 +7,11 @@ on boot</span><span class="w"></span>
+<span class="w"> </span>#[feature]-add-begin xielianxiong@paxsz.com,20221026,for rpc  uart suspend<span class="w"></span>
+<span class="w"> </span>    chmod 0777 /sys/devices/platform/soc/4a84000.qcom,qup_uart/power/control<span class="w"></span>
+<span class="w"> </span>#[feature]-add-end xielianxiong@paxsz.com,20221026,for rpc  uart suspend<span class="w"></span>
+<span class="gi">+    #[FEATURE]-Add-BEGIN by wugangnan@paxsz.com, 2022/11/04, for BMS</span><span class="w"></span>
+<span class="gi">+    chmod 0777 /dev/pax_bms</span><span class="w"></span>
+<span class="gi">+    chown system system /dev/pax_bms</span><span class="w"></span>
+<span class="gi">+       #[FEATURE]-Add-END by wugangnan@paxsz.com, 2022/11/04, for BMS</span><span class="w"></span>
+</pre></div>
+</div>
+</section>
+<section id="id4">
+<h1>问题点<a class="headerlink" href="#id4" title="此标题的永久链接"></a></h1>
+<section id="id5">
+<h2>1.开机后不断重启<a class="headerlink" href="#id5" title="此标题的永久链接"></a></h2>
+<ul class="simple">
+<li><p>首先看打印如下：</p></li>
+</ul>
+<div class="highlight-log notranslate"><div class="highlight"><pre><span></span>--------- beginning of crash
+10-20 10:13:11.271  1662  2551 E AndroidRuntime: *** FATAL EXCEPTION IN SYSTEM PROCESS: Thread-18
+10-20 10:13:11.271  1662  2551 E AndroidRuntime: java.lang.IllegalArgumentException: android: Targeting S+ (version 31 and above) requires that one of FLAG_IMMUTABLE or FLAG_MUTABLE be specified when creatin
+g a PendingIntent.
+10-20 10:13:11.271  1662  2551 E AndroidRuntime: Strongly consider using FLAG_IMMUTABLE, only use FLAG_MUTABLE if some functionality depends on the PendingIntent being mutable, e.g. if it needs to be used wi
+th inline replies or bubbles.
+10-20 10:13:11.271  1662  2551 E AndroidRuntime:        at android.app.PendingIntent.checkFlags(PendingIntent.java:378)
+10-20 10:13:11.271  1662  2551 E AndroidRuntime:        at android.app.PendingIntent.getBroadcastAsUser(PendingIntent.java:648)
+10-20 10:13:11.271  1662  2551 E AndroidRuntime:        at android.app.PendingIntent.getBroadcast(PendingIntent.java:635)
+10-20 10:13:11.271  1662  2551 E AndroidRuntime:        at com.pax.server.PaxBatteryManagerService.setAlarm(PaxBatteryManagerService.java:537)
+10-20 10:13:11.271  1662  2551 E AndroidRuntime:        at com.pax.server.PaxBatteryManagerService$PaxBatteryThread.run(PaxBatteryManagerService.java:222)
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>出错在<code class="docutils literal notranslate"><span class="pre">setAlarm</span></code>函数，跟进代码如下：</p></li>
+</ul>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span>	class PaxBatteryThread extends Thread {
+			@Override
+			public void run() {
+					   setAlarm(TIMEOUT_X_HOUR);//开机后设置一次 222行
+                       }
+···省略···
+
+	public void setAlarm(long period){
+		PendingIntent pi = PendingIntent.getBroadcast(mContext,rc,intent,PendingIntent.FLAG_UPDATE_CURRENT);
+		am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP,System.currentTimeMillis()+period,pi);
+	}
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>解决方案：
+是Android12版本问题。</p></li>
+<li><p><a class="reference external" href="https://blog.csdn.net/qq_39457683/article/details/124214845">Android项目升级到Android12报错集合</a></p></li>
+</ul>
+<p><img alt="0028_0000.png" src="../../../_images/0028_0000.png" /></p>
+<p>官方推荐添加：FLAG_IMMUTABLE，看个人需求：</p>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="n">PendingIntent</span><span class="w"> </span><span class="n">pi</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">PendingIntent</span><span class="p">.</span><span class="na">getBroadcast</span><span class="p">(</span><span class="n">mContext</span><span class="p">,</span><span class="n">rc</span><span class="p">,</span><span class="n">intent</span><span class="p">,</span><span class="n">PendingIntent</span><span class="p">.</span><span class="na">FLAG_UPDATE_CURRENT</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">PendingIntent</span><span class="p">.</span><span class="na">FLAG_IMMUTABLE</span><span class="p">);</span><span class="w"></span>
+</pre></div>
+</div>
+</section>
+</section>
+
+
+           </div>
+             <div class="articleComments">
+                <comments>
+  <script src="https://utteranc.es/client.js"
+    repo="iswbm/magic-python"
+    issue-term="pathname"
+    theme="github-light"
+    crossorigin="anonymous"
+    async>
+  </script>
+</comments>
+             </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; 版权所有 2022, wugn.</p>
+  </div>
+
+  利用 <a href="https://www.sphinx-doc.org/">Sphinx</a> 构建，使用了 
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">主题</a>
+    由 <a href="https://readthedocs.org">Read the Docs</a>开发.
+  
+
+<script charset="UTF-8" id="LA_COLLECT" src="//sdk.51.la/js-sdk-pro.min.js"></script>
+<script>LA.init({id: "JoV5csIHTGhHiGQ4",ck: "JoV5csIHTGhHiGQ4"})</script>
+
+<br/>
+<script id="LA-DATA-WIDGET" crossorigin="anonymous" charset="UTF-8" src="https://v6-widget.51.la/v6/JoV5csIHTGhHiGQ4/quote.js?theme=#4C8AC2,#BB2626,#040000,#333333,#AE3535,#1690FF,14&f=14"></script>
+
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

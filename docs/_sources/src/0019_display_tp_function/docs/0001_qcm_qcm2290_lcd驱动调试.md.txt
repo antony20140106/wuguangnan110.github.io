@@ -9,6 +9,7 @@
 * [供应商提供初始化代码及porch](refers/供应商提供初始化代码及porch)
 * [高通Android UEFI中的LCD分析（2）：关键的函数](https://www.cnblogs.com/schips/p/qualcomm_uefi_display_important_functions.html)
 * [SM7250(高通5G)平台LCD bringup](https://blog.csdn.net/melody157398/article/details/115986401)
+* [高通LCD开发常见问题&分析 经典](https://www.cnblogs.com/schips/p/qualcomm_lcd_develop_faq.html)
 
 # kernel移植流程
 
@@ -991,4 +992,96 @@ scuba-iot-idp.dtsi
 +               };
 +       };
  };
+```
+
+## 3.ESD检测功能
+
+下面以 reg_read 方式对 esd 功能配置和代码实现流程进行分析Esd 配置在不同平台，配置会有些许差异在 Android9 平台配置需要配置如下参数：
+qcom,esd-check-enabled;
+* -->打开 esd 检测开关
+qcom,mdss-dsi-panel-status-check-mode = "reg_read";
+* -->选择 esd 控制方式
+qcom,mdss-dsi-panel-status-command = [06 01 00 01 00 00 01 0a];
+```
+其中第一个参数 表示这行帧命令的类型
+第七个参数 表示读取几个寄存器，有时一个参数判断域 导致 esd 机制不生效，这是需要多加几个寄存器，实现更严格的 esd 检测
+第八个参数 表示读取的寄存器的地址
+```
+qcom,mdss-dsi-panel-status-command-state = "dsi_hs_mode";
+* esd 状态检测模式
+  * D-PHY 的物理层支持 HS(High Speed)和 LP(Low Power)两种工作模式
+  * HS 模式：低压查分信号 功耗大 高速率（80M -1Gbps） 信号幅值（100mv-300mv）
+  * LP 模式：单端信号 功耗小，速率低（< 10Mbps) 信号幅值（0-1.2V）
+* qcom,mdss-dsi-panel-status-value = <0x9c>;
+预设的值，用来和寄存器读取的值进行比较， 判断当前 LCD 状态是否正常
+* qcom,mdss-dsi-panel-status-read-length = <1>;
+读取长度
+* Android10 平台区别于 Android9 需要修改如下参数
+```
+qcom,mdss-dsi-panel-status-command = [06 01 00 01 05 00 01 0a];
+qcom,mdss-dsi-panel-status-command-state = "dsi_lp_mode"
+```
+
+### 代码流程
+
+* 在 dtsi 中配置 qcom,mdss-dsi-panel-status-check-mode = "reg_read";
+  * mdss_check_dsi_ctrl_status() ------>>>>中断函数，通过设置中断，几秒检测一次 esd的状态， ESD 检测线程唤醒时间不建议修改，过于频繁的唤醒 ESD 线程，会增加系统负荷，2s-5s 是内部考量后较为合理的时间选择，建议保持
+  * mdss_dsi_reg_status_check -->>>>
+  mdss_dsi_read_status 读取 esd 的寄存器状态，判断是否能通过 mdss-dsi-panel-statuscommand 命令读到寄存器的值------>>>>
+  * rc=mdss_dsi_cmdlist_put(ctrl,&cmdreq);--判断当前寄存器状态，如果不对，再判断是否触发同步等待原因
+  * ret= ctrl->cmdlist_commit(ctrl,0);
+  * mdss_dsi_cmdlist_commit(ctrl_pdata,1);
+  * --->>>> ret = mdss_dsi_cmdlist_rx(ctrl, req);判断当前函数命令的帧类型是否正确（目前常用的帧类型有 04 06 14 24）
+  * --->>>>len = mdss_dsi_cmds_rx(ctrl, req->cmds, req->rlen,(req->flags & CMD_REQ_DMA_TPG));
+  * --->>>>mdss_dsi_gen_read_status 比较寄存器状态，可以在该函数中添加以下打印来读取屏参寄存器
+  * pr_info(“%s:LCD esd check status vaule = %x\n”,__func__,ctrl_pdata->status_buf.data[0]);
+
+调试代码时可以添加如下更加详细的 patch 进行分析代码流程逻辑，看 esd 状态是卡在哪个流程函数中。
+
+## 4.xbl阶段增加寄存器
+
+供应商提供如下寄存器：
+```log
+//Stop reload
+        SSD_SEND(0x41,0x5A);
+ 
+//SPI Not LoadFinish
+        SSD_SEND(0x41,0x5A,0x24);
+        SSD_SEND(0x90,0x5A);
+//VCOM
+        SSD_SEND(0x41,0x5A,0x03);
+        SSD_SEND(0x80,0xd0,0x00);
+//SPI FINISH
+        SSD_SEND(0x42,0x24);
+        SSD_SEND(0x90,0x00);
+//Blank select 2F 
+        SSD_SEND(0x41,0x5A,0x2F);
+        SSD_SEND(0x19,0x01);
+//INT CANCEL
+        SSD_SEND(0x4C,0x03);
+DCS_Short_Write_NP(0x11);
+Delay (120);
+DCS_Short_Write_NP(0x29);
+Delay(50);
+```
+
+* 修改：
+```log
+<DSIInitSequence>
+39 41 5A
+39 41 5A 24
+39 90 5A
+39 41 5A 03
+39 80 D0 00
+39 42 24
+39 90 00
+39 41 5A 2F
+39 19 01
+39 4C 03
+05 11 00
+ff 78
+05 29 00
+ff 05
+
+</DSIInitSequence>
 ```

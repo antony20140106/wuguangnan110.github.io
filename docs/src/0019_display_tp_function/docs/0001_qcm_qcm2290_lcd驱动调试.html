@@ -70,6 +70,11 @@
 <li><a class="reference internal" href="#id9">调试</a><ul>
 <li><a class="reference internal" href="#id10">1.无法获取xml文件</a></li>
 <li><a class="reference internal" href="#id11">2.kernel调试</a></li>
+<li><a class="reference internal" href="#esd">3.ESD检测功能</a><ul>
+<li><a class="reference internal" href="#id12">代码流程</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id13">4.xbl阶段增加寄存器</a></li>
 </ul>
 </li>
 </ul>
@@ -113,6 +118,7 @@
 <li><p><span class="xref myst">供应商提供初始化代码及porch</span></p></li>
 <li><p><a class="reference external" href="https://www.cnblogs.com/schips/p/qualcomm_uefi_display_important_functions.html">高通Android UEFI中的LCD分析（2）：关键的函数</a></p></li>
 <li><p><a class="reference external" href="https://blog.csdn.net/melody157398/article/details/115986401">SM7250(高通5G)平台LCD bringup</a></p></li>
+<li><p><a class="reference external" href="https://www.cnblogs.com/schips/p/qualcomm_lcd_develop_faq.html">高通LCD开发常见问题&amp;分析 经典</a></p></li>
 </ul>
 </section>
 <section id="kernel">
@@ -1088,6 +1094,110 @@ scuba-iot-idp.dtsi
 <span class="gi">+               };</span><span class="w"></span>
 <span class="gi">+       };</span><span class="w"></span>
 <span class="w"> </span>};<span class="w"></span>
+</pre></div>
+</div>
+</section>
+<section id="esd">
+<h2>3.ESD检测功能<a class="headerlink" href="#esd" title="此标题的永久链接"></a></h2>
+<p>下面以 reg_read 方式对 esd 功能配置和代码实现流程进行分析Esd 配置在不同平台，配置会有些许差异在 Android9 平台配置需要配置如下参数：
+qcom,esd-check-enabled;</p>
+<ul class="simple">
+<li><p>–&gt;打开 esd 检测开关
+qcom,mdss-dsi-panel-status-check-mode = “reg_read”;</p></li>
+<li><p>–&gt;选择 esd 控制方式
+qcom,mdss-dsi-panel-status-command = [06 01 00 01 00 00 01 0a];</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>其中第一个参数 表示这行帧命令的类型
+第七个参数 表示读取几个寄存器，有时一个参数判断域 导致 esd 机制不生效，这是需要多加几个寄存器，实现更严格的 esd 检测
+第八个参数 表示读取的寄存器的地址
+</pre></div>
+</div>
+<p>qcom,mdss-dsi-panel-status-command-state = “dsi_hs_mode”;</p>
+<ul class="simple">
+<li><p>esd 状态检测模式</p>
+<ul>
+<li><p>D-PHY 的物理层支持 HS(High Speed)和 LP(Low Power)两种工作模式</p></li>
+<li><p>HS 模式：低压查分信号 功耗大 高速率（80M -1Gbps） 信号幅值（100mv-300mv）</p></li>
+<li><p>LP 模式：单端信号 功耗小，速率低（&lt; 10Mbps) 信号幅值（0-1.2V）</p></li>
+</ul>
+</li>
+<li><p>qcom,mdss-dsi-panel-status-value = &lt;0x9c&gt;;
+预设的值，用来和寄存器读取的值进行比较， 判断当前 LCD 状态是否正常</p></li>
+<li><p>qcom,mdss-dsi-panel-status-read-length = &lt;1&gt;;
+读取长度</p></li>
+<li><p>Android10 平台区别于 Android9 需要修改如下参数</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">qcom</span><span class="p">,</span><span class="n">mdss</span><span class="o">-</span><span class="n">dsi</span><span class="o">-</span><span class="n">panel</span><span class="o">-</span><span class="n">status</span><span class="o">-</span><span class="n">command</span> <span class="o">=</span> <span class="p">[</span><span class="mi">06</span> <span class="mi">01</span> <span class="mi">00</span> <span class="mi">01</span> <span class="mi">05</span> <span class="mi">00</span> <span class="mi">01</span> <span class="mi">0</span><span class="n">a</span><span class="p">];</span>
+<span class="n">qcom</span><span class="p">,</span><span class="n">mdss</span><span class="o">-</span><span class="n">dsi</span><span class="o">-</span><span class="n">panel</span><span class="o">-</span><span class="n">status</span><span class="o">-</span><span class="n">command</span><span class="o">-</span><span class="n">state</span> <span class="o">=</span> <span class="s2">&quot;dsi_lp_mode&quot;</span>
+</pre></div>
+</div>
+<section id="id12">
+<h3>代码流程<a class="headerlink" href="#id12" title="此标题的永久链接"></a></h3>
+<ul class="simple">
+<li><p>在 dtsi 中配置 qcom,mdss-dsi-panel-status-check-mode = “reg_read”;</p>
+<ul>
+<li><p>mdss_check_dsi_ctrl_status() ——&gt;&gt;&gt;&gt;中断函数，通过设置中断，几秒检测一次 esd的状态， ESD 检测线程唤醒时间不建议修改，过于频繁的唤醒 ESD 线程，会增加系统负荷，2s-5s 是内部考量后较为合理的时间选择，建议保持</p></li>
+<li><p>mdss_dsi_reg_status_check –&gt;&gt;&gt;&gt;
+mdss_dsi_read_status 读取 esd 的寄存器状态，判断是否能通过 mdss-dsi-panel-statuscommand 命令读到寄存器的值——&gt;&gt;&gt;&gt;</p></li>
+<li><p>rc=mdss_dsi_cmdlist_put(ctrl,&amp;cmdreq);–判断当前寄存器状态，如果不对，再判断是否触发同步等待原因</p></li>
+<li><p>ret= ctrl-&gt;cmdlist_commit(ctrl,0);</p></li>
+<li><p>mdss_dsi_cmdlist_commit(ctrl_pdata,1);</p></li>
+<li><p>—&gt;&gt;&gt;&gt; ret = mdss_dsi_cmdlist_rx(ctrl, req);判断当前函数命令的帧类型是否正确（目前常用的帧类型有 04 06 14 24）</p></li>
+<li><p>—&gt;&gt;&gt;&gt;len = mdss_dsi_cmds_rx(ctrl, req-&gt;cmds, req-&gt;rlen,(req-&gt;flags &amp; CMD_REQ_DMA_TPG));</p></li>
+<li><p>—&gt;&gt;&gt;&gt;mdss_dsi_gen_read_status 比较寄存器状态，可以在该函数中添加以下打印来读取屏参寄存器</p></li>
+<li><p>pr_info(“%s:LCD esd check status vaule = %x\n”,<strong>func</strong>,ctrl_pdata-&gt;status_buf.data[0]);</p></li>
+</ul>
+</li>
+</ul>
+<p>调试代码时可以添加如下更加详细的 patch 进行分析代码流程逻辑，看 esd 状态是卡在哪个流程函数中。</p>
+</section>
+</section>
+<section id="id13">
+<h2>4.xbl阶段增加寄存器<a class="headerlink" href="#id13" title="此标题的永久链接"></a></h2>
+<p>供应商提供如下寄存器：</p>
+<div class="highlight-log notranslate"><div class="highlight"><pre><span></span>//Stop reload
+        SSD_SEND(0x41,0x5A);
+ 
+//SPI Not LoadFinish
+        SSD_SEND(0x41,0x5A,0x24);
+        SSD_SEND(0x90,0x5A);
+//VCOM
+        SSD_SEND(0x41,0x5A,0x03);
+        SSD_SEND(0x80,0xd0,0x00);
+//SPI FINISH
+        SSD_SEND(0x42,0x24);
+        SSD_SEND(0x90,0x00);
+//Blank select 2F 
+        SSD_SEND(0x41,0x5A,0x2F);
+        SSD_SEND(0x19,0x01);
+//INT CANCEL
+        SSD_SEND(0x4C,0x03);
+DCS_Short_Write_NP(0x11);
+Delay (120);
+DCS_Short_Write_NP(0x29);
+Delay(50);
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>修改：</p></li>
+</ul>
+<div class="highlight-log notranslate"><div class="highlight"><pre><span></span>&lt;DSIInitSequence&gt;
+39 41 5A
+39 41 5A 24
+39 90 5A
+39 41 5A 03
+39 80 D0 00
+39 42 24
+39 90 00
+39 41 5A 2F
+39 19 01
+39 4C 03
+05 11 00
+ff 78
+05 29 00
+ff 05
+
+&lt;/DSIInitSequence&gt;
 </pre></div>
 </div>
 </section>

@@ -1,0 +1,45 @@
+# M9200前期调试问题汇总
+
+前期和广和通同事联调，杂碎问题汇总一下。
+
+# abl找不打dtb起不来
+
+打印如下：
+
+![0005_0000.png](images/0005_0000.png)
+
+我们dtb是从sp中读取三个变量，去匹配相应的dtb：
+* `m9200-scuba-iot.dts`:
+```shell
+/dts-v1/;
+
+#include "scuba-iot.dtsi"
+
+/ {
+	model = "Qualcomm Technologies, Inc. Scuba IOT SoC";
+	compatible = "qcom,scuba-iot";
+	qcom,board-id = <34 2>;
+
+	soc {
+		pax_board_info {
+			compatible = "pax,board_info";
+			pax,main_board = "V01";
+			pax,port_board = "V01";
+			pax,terminal_name = "M9200";
+		};
+	};
+};
+```
+
+* log打印如下：
+```log
+[12:02:19:114]No match found for Soc Dtb type
+[12:02:19:204]Error: Appended Soc Device Tree blob not found
+
+//正常：
+Get Pax Board info success[V01:V01:A6650].
+Cmp Pax Terminal Name Failed[A6650:M9200].
+Get Pax Board info success[V01:V01:A6650].
+Cmp Pax Terminal Name Failed[A6650:M9200].
+Override DTB: GetBlkIOHandles failed loading user_dtbo!
+```

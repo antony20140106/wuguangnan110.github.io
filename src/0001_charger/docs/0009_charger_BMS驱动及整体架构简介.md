@@ -19,7 +19,7 @@ BMS功能介绍
 ![0009_0014.png](images/0009_0014.png)
 
 * 上面架构图有两个改进点：
-  * `PaxBmsService.java`和`PaxBatteryManagerService.java`都是系统服务，都是在`system_server`里面，所以不需要binder通信，最好的做法是在`PaxBatteryManagerService.java`直接调用JNI方法。
+  * `PaxBmsService.java`和`PaxBatteryManagerService.java`都是系统服务，都是在`system_server`里面，所以不需要binder通信，最好的做法是在`PaxBatteryManagerService.java`直接调用JNI方法，这里主要是通过manager管理接口，比较合理。
   * HIDL中还是采用传统HAL方式，即module/device模型，这种需要将HAL编译成so库，其实是可以在HIDL中直接ioctrl驱动的，更加方便。
 
 上图是BMS新的架构图，注意以下几点：
@@ -196,7 +196,6 @@ Healthd是对接power supply 驱动的hal层实现，主要是监听power supply
 最大输入电流|	current_max| 	str| 	uA
 
 
-
 # 二、充放电控制BMS服务
 
 PaxBmsService.java和PaxBatteryManagerService.java都是系统服务，都是在`system_server`里面，区别就是PaxBatteryManagerService.java跑了onstart方法。
@@ -237,7 +236,7 @@ PaxBatteryService提供相关接口给测试程序，
 桌面模式|	80 |	65
 
 在表格中，满充电量表示电池充电到某个电量后停止充电，由于存在适配器供电不足以满足系统供电场景和有些模块由电池直接供电，因此电量会缓慢下降，当电量下降至回充电量时，重新使能充电。
-
+f
 ## 电池模式切换
 
 * 主动切换模式
@@ -1571,7 +1570,7 @@ PAYTABLETM8:/ # ps -A | grep bms
 system          479      1 10776264  5036 binder_ioctl_write_read 0 S android.hardware.pax_bms@1.0-service
 ```
 
-# A6650项目BMS测试结果
+# A6650项目kernel BMS测试结果
 
 * 根据notify APP中得知：
 * `BatteryWarningReceiver.java`当收到`pax.intent.action.BATTERY_ABNORMAL`广播时，只处理广播type值为`PAX_BAT_NC_UV`低压事件，处理方式是关机。也就是其他异常没处理，但是都上报上来了:
