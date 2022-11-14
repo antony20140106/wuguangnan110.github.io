@@ -1,0 +1,870 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="zh-CN" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>wugn</title>
+
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script src="../../../_static/translations.js"></script>
+        <script src="../../../_static/js/baidutongji.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="索引" href="../../../genindex.html" />
+    <link rel="search" title="搜索" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../index.html" class="icon icon-home"> wugn_note
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="在文档中搜索" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">概述</a></li>
+<li><a class="reference internal" href="#sp-init-abl">sp_init ABL流程</a></li>
+<li><a class="reference internal" href="#cfg-authorinfo">cfg/authorinfo获取</a><ul>
+<li><a class="reference internal" href="#ap-sp">AP/SP握手流程</a></li>
+<li><a class="reference internal" href="#id2">AP/SP通信协议</a></li>
+<li><a class="reference internal" href="#apsp">AP获取SP打印信息</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#fastboot-flash">fastboot flash命令定制</a></li>
+<li><a class="reference internal" href="#spcmdlinekernel">SP属性通过cmdline到kernel</a></li>
+<li><a class="reference internal" href="#cmdlinepax-ro-pax-product-id">根据cmdline设置pax属性流程(ro.pax.product.id等)</a></li>
+<li><a class="reference internal" href="#id3">调试问题点</a><ul>
+<li><a class="reference internal" href="#gmsabldtb">gms分支abl找不打dtb起不来</a></li>
+</ul>
+</li>
+</ul>
+</div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">wugn_note</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs"> 
+<li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+<li>概述</li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.forward()">Forward</a></li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.back()">Go Back</a> | </li>
+<li style="float: right;margin-left: 10px;"><a href="/index.html">Home</a> | </li>
+
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="id1">
+<h1>概述<a class="headerlink" href="#id1" title="此标题的永久链接"></a></h1>
+<p>AP/SP在ABL和init阶段。</p>
+</section>
+<section id="sp-init-abl">
+<h1>sp_init ABL流程<a class="headerlink" href="#sp-init-abl" title="此标题的永久链接"></a></h1>
+<p>sp_init通过串口操作sp是在ABL阶段，主要有以下几个功能：</p>
+<ul class="simple">
+<li><p>fastboot write pax nv</p></li>
+<li><p>fastboot flash</p></li>
+<li><p>init uart get cfg/authorinfo获取</p></li>
+</ul>
+</section>
+<section id="cfg-authorinfo">
+<h1>cfg/authorinfo获取<a class="headerlink" href="#cfg-authorinfo" title="此标题的永久链接"></a></h1>
+<p>下面先看ap串口如何读取sp中的cfg和authinfo信息，分为以下几个步骤：</p>
+<ul class="simple">
+<li><ol class="arabic simple">
+<li><p>从cfg分区读取cfg信息。</p></li>
+</ol>
+</li>
+<li><ol class="arabic simple" start="2">
+<li><p>从pax_nvram分区获取paxsp spsn spexsn ethmac wifimac。</p></li>
+</ol>
+</li>
+<li><ol class="arabic simple" start="3">
+<li><p>如果支持sp则从sp再读一遍上面两个信息。</p></li>
+</ol>
+</li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span>* LinuxLoaderEntry //ABL入口
+  └── sp_init();
+      ├── pax_sp_cfg_init()
+      │   ├── processGetAuthinfo();
+      │   │   ├── 从pax_nvram分区获取authinfo
+      │   │   └── authinfo_setup();
+      │   │       ├── StrnCpyS (Pname, ARRAY_SIZE (Pname),(CHAR16 *)LPAX_NVRAM_NAME, StrLen ((CHAR16 *)LPAX_NVRAM_NAME));
+      │   │       ├── pax_nvram_ptr =  AllocatePages (ALIGN_PAGES (PAX_PARTITION_SIZE, ALIGNMENT_MASK_4KB));
+      │   │       ├── LoadImageFromPartition (pax_nvram_ptr, &amp;ImageSize,Pname);
+      │   │       ├── OtpReadSecMode(buff,pax_nvram_ptr);//从nvram分区里读取SecMode状态
+      │   │       ├── memcpy(&amp;g_authinfo.AppDebugStatus,pax_nvram_ptr+BBL_APP_STATUS_OFFSET,BBL_APP_STATUS_SIZE); //应用调试态信息
+      │   │       └── memcpy(&amp;g_authinfo.FirmDebugStatus,pax_nvram_ptr+BBL_FIRM_STATUS_OFFSET,BBL_FIRM_STATUS_SIZE); //固件调试态信息
+      │   ├── 从cfg分区读取cfg信息
+      │   ├── processGetCfginfo();
+      │   │   ├── #define LPAX_CFG_PARTITION_NAME     L&quot;pax_cfg&quot;
+      │   │   ├── StrnCpyS (Pname, ARRAY_SIZE (Pname),(CHAR16 *)LPAX_CFG_PARTITION_NAME, StrLen ((CHAR16 *)LPAX_CFG_PARTITION_NAME));
+      │   │   ├── LoadImageFromPartition (ImageBuffer, &amp;ImageSize,Pname);
+      │   │   ├── #define SIGN_FLAG       &quot;SIGNED_VER:00001&quot;
+      │   │   └── for(ImageSize = 0,p = ImageBuffer;ImageSize &lt; MAX_PARAM_DATA - SIGN_FLAG_LENGTH + 1 ;ImageSize++,p++){
+      │   │       ├── find = 1; //从cfg分区找字符串SIGNED_VER:00001，有则表示已签名
+      │   │       └── if(find)
+      │   │           └── find = parseAndSaveSpCfgFileInfo(ImageBuffer, ImageSize);
+      │   │               ├── #define MAX_PARAM_DATA 2048
+      │   │               └── memcpy(&amp;cfginfo, pCfgDataBuf, cfgDataLen &gt; MAX_PARAM_DATA ? MAX_PARAM_DATA : cfgDataLen); //直接拷贝2048 bit过来
+      │   ├── 从pax_nvram分区获取paxsp spsn spexsn ethmac wifimac
+      │   └── initOtherCfg(); 
+      │       ├── #define LPAX_NVRAM_NAME             L&quot;pax_nvram&quot;
+      │       ├── StrnCpyS (Pname, ARRAY_SIZE (Pname),(CHAR16 *)LPAX_NVRAM_NAME, StrLen ((CHAR16 *)LPAX_NVRAM_NAME)); 
+      │       ├── ImageBuffer =  AllocatePages (ALIGN_PAGES (PAX_PARTITION_SIZE, ALIGNMENT_MASK_4KB));
+      │       ├── LoadImageFromPartition (ImageBuffer, &amp;ImageSize,Pname); //指针指向pax_nvram分区
+      │       ├── memcpy(char_len,ImageBuffer+UBOOT_EXSN_OFFSET,2); //获取paxsp exsn数据长度的buffer
+      │       ├── memset(g_other_cfg.paxspexsn, 0, sizeof(g_other_cfg.paxspexsn)); //赋值给g_other_cfg结构体
+      │       └── memcpy(g_other_cfg.paxspexsn,ImageBuffer+UBOOT_EXSN_OFFSET+2,g_other_cfg.paxspexsn_len);//获取paxsp exsn数据buffer
+      └── if (is_sp_support()) //如果支持sp则从sp再读一遍
+          ├── sp_info_reset();
+          └── ret = pax_sp_uart_init();
+              ├── sp_uart_init();
+              │   └── uart5_initialize(); //硬件初始化
+              ├── pax_serial_flush();
+              ├── sp_get_info();//重要，串口读取sp cfg信息
+              │   ├── shakeHandSP(); //AP/SP握手
+              │   └── ret = processGetCfgInfo()
+              │       └── processCmd(CMD_GET_COMMON_INFO, buf, sizeof(buf)); //向sp发送0xE9命令
+              │           ├── makePackage(g_tx_buf, cmd, param, param_len); //做包
+              │           ├── puts_sp(g_tx_buf, len); //发送指令
+              │           │   └── pax_serial_putc(tx_buff, len); //写一个byte函数
+              │           │       └── uart5_write((UINT8*)buf+count*TXFIFO_SIZE,bytes_to_tx % TXFIFO_SIZE);
+              │           └── ret = receivePackage(cmd, g_rx_buf, &amp;g_rx_index, &amp;g_rx_size);
+              │               └── receiveMsg(cmd_ref, recvmsg, pos, size, true);
+              │                   └── gets_sp(tmp_buf, 1, 8000); //接收string
+              │                       └── ret = getc_sp(&amp;ch); /
+              │                           ├── while ((len &gt; 0) &amp;&amp; (timeout &gt; 0))
+              │                           └── pax_serial_getc(&amp;buf, 1); //接收byte
+              │                               └── uart5_read((UINT8 *)buf, bytes_to_rx);
+              ├── debugAuthInfo(); //输出打印
+              └── ShowCfginfo();
+</pre></div>
+</div>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">pax_cfg_sp.c</span></code>看一下<code class="docutils literal notranslate"><span class="pre">g_other_cfg</span></code>/<code class="docutils literal notranslate"><span class="pre">g_authinfo</span></code>/<code class="docutils literal notranslate"><span class="pre">g_cfg_info</span></code>结构体，g_cfg_info还要分解:</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="k">typedef</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">_cfg_info</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="cp">#if 1</span>
+<span class="w">        </span><span class="kt">char</span><span class="w"> </span><span class="n">cfgContent</span><span class="p">[</span><span class="mi">2048</span><span class="p">];</span><span class="w"></span>
+<span class="cp">#else</span>
+<span class="w">        </span><span class="kt">char</span><span class="w"> </span><span class="n">IC_CARD</span><span class="p">[</span><span class="mi">10</span><span class="p">];</span><span class="w">	 </span><span class="c1">//&quot;06&quot;</span>
+<span class="w">        </span><span class="kt">char</span><span class="w"> </span><span class="n">RF_1356M</span><span class="p">[</span><span class="mi">10</span><span class="p">];</span><span class="w">	 </span><span class="c1">//=&quot;02&quot;</span>
+<span class="w">        </span><span class="kt">char</span><span class="w"> </span><span class="n">MAIN_BOARD</span><span class="p">[</span><span class="mi">10</span><span class="p">];</span><span class="w">	</span><span class="c1">//=&quot;V01&quot;</span>
+<span class="w">        </span><span class="kt">char</span><span class="w"> </span><span class="n">PORT_BOARD</span><span class="p">[</span><span class="mi">10</span><span class="p">];</span><span class="w">	</span><span class="c1">//=&quot;Vff&quot;</span>
+<span class="w">        </span><span class="kt">char</span><span class="w"> </span><span class="n">SAM_BOARD</span><span class="p">[</span><span class="mi">10</span><span class="p">];</span><span class="w">	 </span><span class="c1">//=&quot;V01&quot;</span>
+<span class="w">        </span><span class="kt">char</span><span class="w"> </span><span class="n">ANT_BOARD</span><span class="p">[</span><span class="mi">10</span><span class="p">];</span><span class="w">	 </span><span class="c1">//=&quot;V03&quot;</span>
+<span class="w">        </span><span class="kt">char</span><span class="w"> </span><span class="n">PN</span><span class="p">[</span><span class="mi">20</span><span class="p">];</span><span class="w">	 </span><span class="c1">//=&quot;PX7-0BF-RD5-01AA&quot;</span>
+<span class="w">        </span><span class="kt">char</span><span class="w"> </span><span class="n">TERMINAL_NAME</span><span class="p">[</span><span class="mi">10</span><span class="p">];</span><span class="w">	</span><span class="c1">//=&quot;PX7&quot;</span>
+<span class="w">        </span><span class="kt">char</span><span class="w"> </span><span class="n">CAMERA_NUMBER</span><span class="p">[</span><span class="mi">10</span><span class="p">];</span><span class="w">	</span><span class="c1">//=&quot;01&quot;</span>
+<span class="w">        </span><span class="kt">char</span><span class="w"> </span><span class="n">SAM_NUM</span><span class="p">[</span><span class="mi">10</span><span class="p">];</span><span class="w">	 </span><span class="c1">//=&quot;02&quot;</span>
+<span class="w">        </span><span class="kt">char</span><span class="w"> </span><span class="n">CONFIG_FILE_VER</span><span class="p">[</span><span class="mi">20</span><span class="p">];</span><span class="c1">//=&quot;000000_V1.0&quot;</span>
+<span class="w">        </span><span class="kt">char</span><span class="w"> </span><span class="n">MESH_BOARD</span><span class="p">[</span><span class="mi">10</span><span class="p">];</span><span class="w">	</span><span class="c1">//=&quot;V34&quot;</span>
+<span class="w">        </span><span class="kt">char</span><span class="w"> </span><span class="n">MAG_CARD</span><span class="p">[</span><span class="mi">10</span><span class="p">];</span><span class="w">	 </span><span class="c1">//=&quot;MH1601-V01&quot; //锟斤拷讯锟斤拷一锟斤拷锟斤拷艽锟酵?</span>
+<span class="w">        </span><span class="kt">char</span><span class="w"> </span><span class="n">RF_PARA_1</span><span class="p">[</span><span class="mi">30</span><span class="p">];</span><span class="w">	 </span><span class="c1">//=&quot;00000FFF04040F7F1000&quot;</span>
+<span class="w">        </span><span class="kt">char</span><span class="w"> </span><span class="n">RF_PARA_2</span><span class="p">[</span><span class="mi">30</span><span class="p">];</span><span class="w">	 </span><span class="c1">//=&quot;9F6C0B0B020300000000&quot;</span>
+<span class="w">        </span><span class="kt">char</span><span class="w"> </span><span class="n">RF_PARA_3</span><span class="p">[</span><span class="mi">30</span><span class="p">];</span><span class="w">	 </span><span class="c1">//=&quot;00000000000000000000&quot;</span>
+<span class="w">        </span><span class="kt">char</span><span class="w"> </span><span class="n">rev</span><span class="p">[</span><span class="mi">50</span><span class="p">];</span><span class="w"></span>
+<span class="cp">#endif</span>
+<span class="p">}</span><span class="n">t_cfg_info</span><span class="p">;</span><span class="w"></span>
+
+<span class="k">typedef</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">_POS_AUTH_INFO</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="n">uint</span><span class="w"> </span><span class="n">len</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="n">uint</span><span class="w"> </span><span class="n">TamperClear</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="n">uint</span><span class="w"> </span><span class="n">LastBblStatus</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="n">ushort</span><span class="w"> </span><span class="n">SecMode</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="n">ushort</span><span class="w"> </span><span class="n">security_level</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="n">uchar</span><span class="w"> </span><span class="n">SnDownLoadSum</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="n">uchar</span><span class="w"> </span><span class="n">AppDebugStatus</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="n">uchar</span><span class="w"> </span><span class="n">FirmDebugStatus</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="n">uchar</span><span class="w"> </span><span class="n">UsPukLevel</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="n">uchar</span><span class="w"> </span><span class="n">AuthDownSn</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="n">uchar</span><span class="w"> </span><span class="n">MachineType</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="n">uchar</span><span class="w"> </span><span class="n">AesKey</span><span class="p">[</span><span class="mi">8</span><span class="p">];</span><span class="w"></span>
+<span class="w">        </span><span class="n">ushort</span><span class="w"> </span><span class="n">Customer</span><span class="p">;</span><span class="c1">//pax ==0 &amp;&amp;255</span>
+<span class="w">        </span><span class="n">ushort</span><span class="w"> </span><span class="n">NowPukLevel</span><span class="p">;</span><span class="cm">/*now puk level*/</span><span class="w"></span>
+<span class="cp">#define AUTH_RES_NUM 0x0E</span>
+<span class="w">        </span><span class="n">ushort</span><span class="w"> </span><span class="n">reserve</span><span class="p">[</span><span class="n">AUTH_RES_NUM</span><span class="p">];</span><span class="w"></span>
+
+<span class="p">}</span><span class="w"> </span><span class="n">__attribute__</span><span class="p">((</span><span class="n">packed</span><span class="p">))</span><span class="w"> </span><span class="n">POS_AUTH_INFO</span><span class="p">;</span><span class="w"></span>
+
+<span class="k">typedef</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">_other_cfg_info</span><span class="w"> </span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="kt">char</span><span class="w"> </span><span class="n">paxspexsn</span><span class="p">[</span><span class="n">MAX_OTHER_CFG_LENGTH</span><span class="p">];</span><span class="w"></span>
+<span class="w">    </span><span class="kt">char</span><span class="w"> </span><span class="n">paxspexsn_len</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="kt">char</span><span class="w"> </span><span class="n">paxspsn</span><span class="p">[</span><span class="n">MAX_OTHER_CFG_LENGTH</span><span class="p">];</span><span class="w"></span>
+<span class="w">    </span><span class="kt">char</span><span class="w"> </span><span class="n">paxspsn_len</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="kt">char</span><span class="w"> </span><span class="n">paxspmac</span><span class="p">[</span><span class="n">MAC_NV_LENGTH</span><span class="o">*</span><span class="mi">2</span><span class="o">+</span><span class="mi">5</span><span class="p">];</span><span class="c1">//ethmac</span>
+<span class="w">    </span><span class="kt">char</span><span class="w"> </span><span class="n">paxspmac_len</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="kt">char</span><span class="w"> </span><span class="n">paxbtmac</span><span class="p">[</span><span class="n">MAC_NV_LENGTH</span><span class="o">*</span><span class="mi">2</span><span class="o">+</span><span class="mi">5</span><span class="p">];</span><span class="w"></span>
+<span class="w">    </span><span class="kt">char</span><span class="w"> </span><span class="n">paxbtmac_len</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="kt">char</span><span class="w"> </span><span class="n">paxwifimac</span><span class="p">[</span><span class="n">MAC_NV_LENGTH</span><span class="o">*</span><span class="mi">2</span><span class="o">+</span><span class="mi">5</span><span class="p">];</span><span class="w"></span>
+<span class="w">    </span><span class="kt">char</span><span class="w"> </span><span class="n">paxwifimac_len</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="n">t_other_cfg_info</span><span class="p">;</span><span class="w"></span>
+</pre></div>
+</div>
+<section id="ap-sp">
+<h2>AP/SP握手流程<a class="headerlink" href="#ap-sp" title="此标题的永久链接"></a></h2>
+<ul class="simple">
+<li><p>ap/sp开机先做一次握手，然后再通信，就是AP发送D字符给SP，SP回字符X：</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="cp">#define	SHAKE_REQUEST  &#39;D&#39;</span>
+<span class="cp">#define	SHAKE_REPLY    &#39;X&#39;</span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">shakeHandSP</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="n">ch</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="n">retry</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="n">ret</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="n">count</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+
+<span class="cp">#define SHAKEHAND_TRY_TIMES 50</span>
+
+<span class="w">        </span><span class="k">while</span><span class="w"> </span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="n">putc_sp</span><span class="p">(</span><span class="n">SHAKE_REQUEST</span><span class="p">);</span><span class="w"></span>
+<span class="w">                </span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">gets_sp</span><span class="p">(</span><span class="o">&amp;</span><span class="n">ch</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">2000</span><span class="p">);</span><span class="w"></span>
+<span class="w">                </span><span class="c1">//dprintf(ALWAYS, &quot;[%d]shake reply: %d, %c\n&quot;, retry, ret, ch);</span>
+<span class="w">                </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ret</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ch</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">SHAKE_REPLY</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                                </span><span class="n">count</span><span class="o">++</span><span class="p">;</span><span class="w"></span>
+<span class="w">                                </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">count</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span><span class="w"></span>
+<span class="w">                                        </span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+<span class="w">                        </span><span class="p">}</span><span class="w"></span>
+<span class="w">                </span><span class="p">}</span><span class="w"></span>
+<span class="w">                </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                        </span><span class="n">MicroSecondDelay</span><span class="p">(</span><span class="mi">10000</span><span class="p">);</span><span class="w"> </span><span class="c1">//10ms</span>
+<span class="w">                </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">                </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">++</span><span class="n">retry</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="n">SHAKEHAND_TRY_TIMES</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                        </span><span class="n">dprintf</span><span class="p">(</span><span class="n">ALWAYS</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;sp handshake timeout, retry: %d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">retry</span><span class="p">);</span><span class="w"></span>
+<span class="w">                        </span><span class="k">return</span><span class="w"> </span><span class="mi">-1</span><span class="p">;</span><span class="w"></span>
+<span class="w">                </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">        </span><span class="n">dprintf</span><span class="p">(</span><span class="n">ALWAYS</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;sp handshake ok, retry: %d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">retry</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+</section>
+<section id="id2">
+<h2>AP/SP通信协议<a class="headerlink" href="#id2" title="此标题的永久链接"></a></h2>
+<p>AP向SP发包格式如下，注意双方在接收前都会先等待ACK，等到了再去读取，读取完再发送ACK：</p>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="cp">#define PACK_STX  0x02</span>
+<span class="cp">#define	ACK	 0x06</span>
+
+<span class="n">pack_buf</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">PACK_STX</span><span class="p">;</span><span class="w"></span>
+<span class="n">pack_buf</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cmd</span><span class="p">;</span><span class="w"></span>
+<span class="n">pack_buf</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">char</span><span class="p">)(</span><span class="n">data_len</span><span class="w"> </span><span class="o">&gt;&gt;</span><span class="w"> </span><span class="mi">24</span><span class="p">);</span><span class="w"></span>
+<span class="n">pack_buf</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">char</span><span class="p">)(</span><span class="n">data_len</span><span class="w"> </span><span class="o">&gt;&gt;</span><span class="w"> </span><span class="mi">16</span><span class="p">);</span><span class="w"></span>
+<span class="n">pack_buf</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">char</span><span class="p">)(</span><span class="n">data_len</span><span class="w"> </span><span class="o">&gt;&gt;</span><span class="w"> </span><span class="mi">8</span><span class="p">);</span><span class="w"></span>
+<span class="n">pack_buf</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">char</span><span class="p">)(</span><span class="n">data_len</span><span class="w"> </span><span class="o">&gt;&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span><span class="w"></span>
+<span class="n">pack_buf</span><span class="p">[</span><span class="mi">6</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ucLRC</span><span class="p">;</span><span class="w"> </span><span class="c1">//冗余校验</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>发送函数<code class="docutils literal notranslate"><span class="pre">processCmd</span></code>:</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="c1">//指令：</span>
+<span class="k">enum</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="n">CMD_GET_BOOT_INFO</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0xE1</span><span class="p">,</span><span class="w"></span>
+
+<span class="w">        </span><span class="n">CMD_DOWNLOAD_REQUEST</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0xE2</span><span class="p">,</span><span class="w"></span>
+<span class="w">        </span><span class="n">CMD_ERASE_FLASH</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0xE3</span><span class="p">,</span><span class="w"></span>
+<span class="w">        </span><span class="n">CMD_TRANSE_FILE</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0xE4</span><span class="p">,</span><span class="w"></span>
+<span class="w">        </span><span class="n">CMD_CHECK_TRANSE_OVER</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0xE5</span><span class="p">,</span><span class="w"></span>
+<span class="w">        </span><span class="n">CMD_WRITE_FILE_TO_FLASH</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0xE6</span><span class="p">,</span><span class="w"></span>
+
+<span class="w">        </span><span class="n">CMD_ERASE_FILE_SYSTEM</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0xE7</span><span class="p">,</span><span class="w"></span>
+
+<span class="w">        </span><span class="n">CMD_DOWNLOAD_COMMON_INFO</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0xE8</span><span class="p">,</span><span class="w"></span>
+<span class="w">        </span><span class="n">CMD_GET_COMMON_INFO</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0xE9</span><span class="p">,</span><span class="w"></span>
+
+<span class="w">        </span><span class="n">CMD_QUIT</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0xFF</span><span class="p">,</span><span class="w"></span>
+<span class="p">};</span><span class="w"></span>
+
+<span class="cp">#define	ACK	 0x06</span>
+<span class="cp">#define PACK_STX  0x02</span>
+<span class="cp">#define MAX_PACK_SIZE  (4096+64)</span>
+
+<span class="c1">//校验位计算</span>
+<span class="k">static</span><span class="w"> </span><span class="n">uchar</span><span class="w"> </span><span class="nf">getLRC</span><span class="p">(</span><span class="n">uchar</span><span class="w"> </span><span class="o">*</span><span class="n">pszBuf</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">iLen</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="n">uchar</span><span class="w"> </span><span class="n">ucTmp</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="n">iLoop</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">        </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="n">iLoop</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="n">ucTmp</span><span class="o">=</span><span class="n">pszBuf</span><span class="p">[</span><span class="mi">0</span><span class="p">];</span><span class="w"> </span><span class="n">iLoop</span><span class="o">&lt;</span><span class="n">iLen</span><span class="p">;</span><span class="w"> </span><span class="n">iLoop</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="n">ucTmp</span><span class="w"> </span><span class="o">^=</span><span class="w"> </span><span class="n">pszBuf</span><span class="p">[</span><span class="n">iLoop</span><span class="p">];</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">ucTmp</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">makePackage</span><span class="p">(</span><span class="n">uchar</span><span class="w"> </span><span class="o">*</span><span class="n">pack_buf</span><span class="p">,</span><span class="w"> </span><span class="n">uchar</span><span class="w"> </span><span class="n">cmd</span><span class="p">,</span><span class="w"> </span><span class="n">uchar</span><span class="w"> </span><span class="o">*</span><span class="n">data</span><span class="p">,</span><span class="w"> </span><span class="n">uint</span><span class="w"> </span><span class="n">data_len</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="n">ucLRC</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">pack_size</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">        </span><span class="n">pack_size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">        </span><span class="n">pack_buf</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">PACK_STX</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="n">pack_buf</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cmd</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="n">pack_buf</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">char</span><span class="p">)(</span><span class="n">data_len</span><span class="w"> </span><span class="o">&gt;&gt;</span><span class="w"> </span><span class="mi">24</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="n">pack_buf</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">char</span><span class="p">)(</span><span class="n">data_len</span><span class="w"> </span><span class="o">&gt;&gt;</span><span class="w"> </span><span class="mi">16</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="n">pack_buf</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">char</span><span class="p">)(</span><span class="n">data_len</span><span class="w"> </span><span class="o">&gt;&gt;</span><span class="w"> </span><span class="mi">8</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="n">pack_buf</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">char</span><span class="p">)(</span><span class="n">data_len</span><span class="w"> </span><span class="o">&gt;&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">        </span><span class="n">pack_size</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="mi">6</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">        </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="n">i</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">data_len</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="n">pack_buf</span><span class="p">[</span><span class="n">pack_size</span><span class="o">+</span><span class="n">i</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="p">];</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="n">pack_size</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="n">data_len</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">        </span><span class="n">ucLRC</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">getLRC</span><span class="p">(</span><span class="o">&amp;</span><span class="n">pack_buf</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="w"> </span><span class="n">pack_size</span><span class="mi">-1</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="n">pack_buf</span><span class="p">[</span><span class="n">pack_size</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ucLRC</span><span class="p">;</span><span class="w"> </span><span class="c1">//冗余校验</span>
+<span class="w">        </span><span class="n">pack_size</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">pack_size</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">processCmd</span><span class="p">(</span><span class="n">uchar</span><span class="w"> </span><span class="n">cmd</span><span class="p">,</span><span class="w"> </span><span class="n">uchar</span><span class="w"> </span><span class="o">*</span><span class="n">param</span><span class="p">,</span><span class="w"> </span><span class="n">uint</span><span class="w"> </span><span class="n">param_len</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">-1</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="n">len</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="n">try_send</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+
+<span class="cp">#define PROCESS_TRY_CNT 3</span>
+
+<span class="w">        </span><span class="cm">/* flush */</span><span class="w"></span>
+<span class="w">        </span><span class="c1">//pax_serial_flush();</span>
+
+<span class="w">        </span><span class="n">len</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">makePackage</span><span class="p">(</span><span class="n">g_tx_buf</span><span class="p">,</span><span class="w"> </span><span class="n">cmd</span><span class="p">,</span><span class="w"> </span><span class="n">param</span><span class="p">,</span><span class="w"> </span><span class="n">param_len</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">len</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="k">while</span><span class="w"> </span><span class="p">(</span><span class="n">try_send</span><span class="o">++</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">PROCESS_TRY_CNT</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                        </span><span class="n">memset</span><span class="p">(</span><span class="n">g_rx_buf</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="k">sizeof</span><span class="p">(</span><span class="n">g_rx_buf</span><span class="p">));</span><span class="w"></span>
+
+<span class="w">                        </span><span class="c1">//dumpBuff(g_tx_buf, len);</span>
+<span class="w">                        </span><span class="n">puts_sp</span><span class="p">(</span><span class="n">g_tx_buf</span><span class="p">,</span><span class="w"> </span><span class="n">len</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">                        </span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">receivePackage</span><span class="p">(</span><span class="n">cmd</span><span class="p">,</span><span class="w"> </span><span class="n">g_rx_buf</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">g_rx_index</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">g_rx_size</span><span class="p">);</span><span class="w"></span>
+<span class="w">                        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ret</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"></span>
+<span class="w">                                </span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+<span class="w">                </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">ret</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+</section>
+<section id="apsp">
+<h2>AP获取SP打印信息<a class="headerlink" href="#apsp" title="此标题的永久链接"></a></h2>
+<div class="highlight-log notranslate"><div class="highlight"><pre><span></span> ---ShowAuthinfo---
+authinfo.SecMode = 3
+authinfo.security_level = 3
+authinfo.TamperClear = 0
+authinfo.LastBblStatus = 0
+authinfo.AppDebugStatus = 1
+authinfo.FirmDebugStatus = 1
+authinfo.SnDownLoadSum = 0
+authinfo.UsPukLevel = 3
+authinfo.Customer = 255
+ShowCfginfo
+g_cfg_info.cfgContent :TOUCH_SCREEN=257 LCD=257 FPM=11 WIFI=36 WIFI_PA=04 CAMERA_NUMBER=01 CAMERA_FRONT=80 MAIN_BOARD=V01 PORT_BOARD=V01 PN=A6650-AA200-260A-2N0-EA CONFIG_FILE_VER=2570000_V1.0 TERMINAL_NAME=A6650
+</pre></div>
+</div>
+</section>
+</section>
+<section id="fastboot-flash">
+<h1>fastboot flash命令定制<a class="headerlink" href="#fastboot-flash" title="此标题的永久链接"></a></h1>
+<p>看一下fastboot flash命令定制烧录spexsn/sp_reboot命令，pax_cfg/cfg分区、sp_monitor/sp_boot镜像流程：</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">UM.9.15/bootable/bootloader/edk2/QcomModulePkg/Library/FastbootLib/FastbootCmds.c</span></code>:</p></li>
+<li><ol class="arabic simple">
+<li><p>判断modem镜像和关键字是否匹配。</p></li>
+</ol>
+</li>
+<li><ol class="arabic simple" start="2">
+<li><p>目前只做了cfg和pax_cfg分区烧录，sp exsn烧录，sp_reboot命令。</p></li>
+</ol>
+</li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span>* FastbootCommandSetup (IN VOID *Base, IN UINT64 Size)
+  └── {&quot;flash:&quot;, CmdFlash},
+      ├── Ret = is_overlay_partition(PartitionName); //判断烧录命令是否带_pax_，比如 paydroidboot flash modem_a_pax_A6650_EM NON-HLOS_EM.bin
+      │   └── Token = StrStr(partitionName,L&quot;_pax_&quot;);
+      └── if(StrnCmp(PartitionName+Ret+5, Buff16, StrLen(Buff16)) == 0){// only flash match Terminal name,else return; +5 means _pax_
+          └── if(StrLen(PartitionName) &gt; (Ret+5+StrLen(Buff16))){//partition_name + _pax_ + TermialName. something more after  terminalname,like modem_a_pax_A6650_EM
+              ├── if(getCfgBaseBand(Buff) &lt; 0 ) 
+              │   ├── getCfgItemValStr(&quot;BASEBAND&quot;, buf); //获取BASEBAND关键字 例如BASEBAND=&quot;77&quot;
+              │   ├── #define BASEBAND_A6650_EM_CFG  &quot;77&quot;
+              │   └── if((0 == AsciiStrCmp(Buff, BASEBAND_A6650_EM_CFG) &amp;&amp; NULL != StrStr(PartitionName, L&quot;A6650_EM&quot;))||(0 == AsciiStrCmp(Buff, BASEBAND_A6650_NA_CFG) &amp;&amp; NULL != StrStr(PartitionName, L&quot;A6650_NA&quot;))) //如果BASEBAND=&quot;77&quot; 且命令带有A6650_EM字符，满足条件
+              │       └── SetMem(PartitionName+Ret, MAX_GPT_NAME_SIZE-Ret, 0); //烧录
+              └── if(is_sp_partition(PartitionName)) //是否支持SP
+                  ├── if ( (StrnCmp(PartitionName, LPAX_CFG_PARTITION_NAME, StrLen(LPAX_CFG_PARTITION_NAME)) == 0)|| (StrnCmp(PartitionName, LCFG_PARTITION_NAME, StrLen(LCFG_PARTITION_NAME)) == 0) ) //cfg和pax_cfg分区烧录
+                  │   └── HandleRawImgFlash (LPAX_CFG_PARTITION_NAME,ARRAY_SIZE (LPAX_CFG_PARTITION_NAME),mFlashDataBuffer, mFlashNumDataBytes);
+                  ├── else if (paxnv_download_all(PartitionName, mFlashDataBuffer, mFlashNumDataBytes)) //sp exsn烧录
+                  │   └── if(StrnCmp(DownloadName, L&quot;exsn&quot;, StrLen(L&quot;exsn&quot;)) ==  0 )
+                  │       └── writeToPartitionPax(aucTempbuf,len+2,UBOOT_EXSN_OFFSET);
+                  └── if (EFI_SUCCESS == Status || (StrnCmp(PartitionName, L&quot;sp_reboot&quot;, StrLen(L&quot;sp_reboot&quot;)) == 0)) //sp重启命令
+                      └── sp_download_all(PartitionName, mFlashDataBuffer, mFlashNumDataBytes)
+                          └── else if(StrnCmp(DownloadName, L&quot;sp_reboot&quot;, StrLen(L&quot;sp_reboot&quot;)) ==0 )
+                              └── pax_sp_reset();
+</pre></div>
+</div>
+</section>
+<section id="spcmdlinekernel">
+<h1>SP属性通过cmdline到kernel<a class="headerlink" href="#spcmdlinekernel" title="此标题的永久链接"></a></h1>
+<p>SP属性通过cmdline到kernel具体实现方式和哪些cmdline请参考：</p>
+<ul class="simple">
+<li><p><span class="xref myst">0024_mtk_qcom_添加cmdline实现方案.md</span></p></li>
+</ul>
+</section>
+<section id="cmdlinepax-ro-pax-product-id">
+<h1>根据cmdline设置pax属性流程(ro.pax.product.id等)<a class="headerlink" href="#cmdlinepax-ro-pax-product-id" title="此标题的永久链接"></a></h1>
+<ul class="simple">
+<li><p>首先了解一下<code class="docutils literal notranslate"><span class="pre">ro.pax.product.id</span></code>设置流程：</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">system/core/init/init.cpp</span></code>:</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span>* SecondStageMain(int argc, char** argv)
+  └── PropertyInit();
+      └── ProcessKernelCmdline();
+          └── if (StartsWith(key, ANDROIDBOOT_PREFIX)) //constexpr auto ANDROIDBOOT_PREFIX = &quot;androidboot.&quot;sv;
+              └── pax_import_kernel_nv(key,value);
+                  └── if (!strcmp(name, &quot;TERMINAL_NAME&quot;)) //system/core/init/pax_init.cpp
+                      ├── InitPropertySet(&quot;ro.boot.paxproduct&quot;, value.c_str());
+                      └── InitPropertySet(&quot;ro.fac.cfg.TERMINAL_NAME&quot;, value.c_str());
+</pre></div>
+</div>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">core/init/pax_init.cpp</span></code>具体内容如下：</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;string.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;stdio.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;unistd.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;stdlib.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;android-base/properties.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;android-base/logging.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&quot;property_service.h&quot;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&quot;pax_init.h&quot;</span><span class="cp"></span>
+
+<span class="k">namespace</span><span class="w"> </span><span class="nn">android</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="k">namespace</span><span class="w"> </span><span class="nn">init</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+
+<span class="kt">void</span><span class="w"> </span><span class="nf">pax_import_kernel_nv</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="o">&amp;</span><span class="n">key</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span><span class="w"> </span><span class="n">value</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">key</span><span class="p">.</span><span class="n">c_str</span><span class="p">();</span><span class="w"></span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">strcmp</span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;TERMINAL_NAME&quot;</span><span class="p">))</span><span class="w"></span>
+<span class="w">        </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="n">InitPropertySet</span><span class="p">(</span><span class="s">&quot;ro.boot.boardname&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span><span class="w"></span>
+<span class="w">                </span><span class="n">InitPropertySet</span><span class="p">(</span><span class="s">&quot;ro.fac.cfg.TERMINAL_NAME&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span><span class="w"></span>
+<span class="w">        </span><span class="n">InitPropertySet</span><span class="p">(</span><span class="s">&quot;ro.boot.paxproduct&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">strcmp</span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;paxboot_mode&quot;</span><span class="p">))</span><span class="w"></span>
+<span class="w">        </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="n">InitPropertySet</span><span class="p">(</span><span class="s">&quot;ro.paxboot.mode&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">strcmp</span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;TOUCH_SCREEN&quot;</span><span class="p">))</span><span class="w"></span>
+<span class="w">    </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="n">InitPropertySet</span><span class="p">(</span><span class="s">&quot;ro.touch.screen&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span><span class="w"></span>
+<span class="w">        </span><span class="n">InitPropertySet</span><span class="p">(</span><span class="s">&quot;ro.fac.cfg.TOUCH_SCREEN&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="n">strcmp</span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;paxspsn&quot;</span><span class="p">))</span><span class="w"></span>
+<span class="w">        </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="n">InitPropertySet</span><span class="p">(</span><span class="s">&quot;pax.sp.SN&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span><span class="w"> </span><span class="c1">//sn number</span>
+<span class="w">                </span><span class="k">if</span><span class="p">(</span><span class="n">value</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="s">&quot;&quot;</span><span class="p">){</span><span class="w"></span>
+<span class="w">                        </span><span class="n">InitPropertySet</span><span class="p">(</span><span class="s">&quot;ro.fac.sn&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span><span class="w"></span>
+<span class="w">                        </span><span class="n">InitPropertySet</span><span class="p">(</span><span class="s">&quot;ro.serialno&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span><span class="c1">//new</span>
+<span class="w">                </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="c1">//ro.fac.exsn</span>
+<span class="w">        </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="n">strcmp</span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;paxspexsn&quot;</span><span class="p">))</span><span class="w"></span>
+<span class="w">        </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="n">InitPropertySet</span><span class="p">(</span><span class="s">&quot;ro.fac.exsn&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span><span class="c1">//new</span>
+<span class="w">                </span><span class="n">InitPropertySet</span><span class="p">(</span><span class="s">&quot;pax.sp.exsn&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="n">strcmp</span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;MAIN_BOARD&quot;</span><span class="p">))</span><span class="w"></span>
+<span class="w">        </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="n">InitPropertySet</span><span class="p">(</span><span class="s">&quot;ro.fac.cfg.MAIN_BOARD&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="n">strcmp</span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;PORT_BOARD&quot;</span><span class="p">))</span><span class="w"></span>
+<span class="w">        </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="n">InitPropertySet</span><span class="p">(</span><span class="s">&quot;ro.fac.cfg.PORT_BOARD&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="n">strcmp</span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;SAM_BOARD&quot;</span><span class="p">))</span><span class="w"></span>
+<span class="w">        </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="n">InitPropertySet</span><span class="p">(</span><span class="s">&quot;ro.fac.cfg.SAM_BOARD&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="n">strcmp</span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;ANT_BOARD&quot;</span><span class="p">))</span><span class="w"></span>
+<span class="w">        </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="n">InitPropertySet</span><span class="p">(</span><span class="s">&quot;ro.fac.cfg.ANT_BOARD&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="n">strcmp</span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;PRINTER&quot;</span><span class="p">))</span><span class="w"></span>
+<span class="w">        </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="n">InitPropertySet</span><span class="p">(</span><span class="s">&quot;ro.fac.cfg.PRINTER&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="n">strcmp</span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;MAG_CARD&quot;</span><span class="p">))</span><span class="w"></span>
+<span class="w">        </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="n">InitPropertySet</span><span class="p">(</span><span class="s">&quot;ro.fac.cfg.MAG_CARD&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="n">strcmp</span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;IC_CARD&quot;</span><span class="p">))</span><span class="w"></span>
+<span class="w">        </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="n">InitPropertySet</span><span class="p">(</span><span class="s">&quot;ro.fac.cfg.IC_CARD&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="n">strcmp</span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;RF_1356M&quot;</span><span class="p">))</span><span class="w"></span>
+<span class="w">        </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="n">InitPropertySet</span><span class="p">(</span><span class="s">&quot;ro.fac.cfg.RF_1356M&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="n">strcmp</span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;ETHERNET&quot;</span><span class="p">))</span><span class="w"></span>
+<span class="w">        </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="n">InitPropertySet</span><span class="p">(</span><span class="s">&quot;ro.fac.cfg.ETHERNET&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="n">strcmp</span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;MODEM&quot;</span><span class="p">))</span><span class="w"></span>
+<span class="w">        </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="n">InitPropertySet</span><span class="p">(</span><span class="s">&quot;ro.fac.cfg.MODEM&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="n">strcmp</span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;CDMA&quot;</span><span class="p">))</span><span class="w"></span>
+<span class="w">        </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="n">InitPropertySet</span><span class="p">(</span><span class="s">&quot;ro.fac.cfg.CDMA&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="n">strcmp</span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;BASEBAND&quot;</span><span class="p">))</span><span class="w"></span>
+<span class="w">        </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="n">InitPropertySet</span><span class="p">(</span><span class="s">&quot;ro.fac.cfg.BASEBAND&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="n">strcmp</span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;WCDMA&quot;</span><span class="p">))</span><span class="w"></span>
+<span class="w">        </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="n">InitPropertySet</span><span class="p">(</span><span class="s">&quot;ro.fac.cfg.WCDMA&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="n">strcmp</span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;4G&quot;</span><span class="p">))</span><span class="w"></span>
+<span class="w">        </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="n">InitPropertySet</span><span class="p">(</span><span class="s">&quot;ro.fac.cfg.4G&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="n">strcmp</span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;WIFI_NET&quot;</span><span class="p">))</span><span class="w"></span>
+<span class="w">        </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="n">InitPropertySet</span><span class="p">(</span><span class="s">&quot;ro.fac.cfg.WIFI_NET&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="n">strcmp</span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;WIFI&quot;</span><span class="p">))</span><span class="w"></span>
+<span class="w">        </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="n">InitPropertySet</span><span class="p">(</span><span class="s">&quot;ro.fac.cfg.WIFI&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="n">strcmp</span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;FPM&quot;</span><span class="p">))</span><span class="w"></span>
+<span class="w">        </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="n">InitPropertySet</span><span class="p">(</span><span class="s">&quot;ro.fac.cfg.FPM&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="n">strcmp</span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;BLUE_TOOTH&quot;</span><span class="p">))</span><span class="w"></span>
+<span class="w">        </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="n">InitPropertySet</span><span class="p">(</span><span class="s">&quot;ro.fac.cfg.BLUE_TOOTH&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="n">strcmp</span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;DUAL_SIM&quot;</span><span class="p">))</span><span class="w"></span>
+<span class="w">        </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="n">InitPropertySet</span><span class="p">(</span><span class="s">&quot;ro.fac.cfg.DUAL_SIM&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="n">strcmp</span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;LCD&quot;</span><span class="p">))</span><span class="w"></span>
+<span class="w">        </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="n">InitPropertySet</span><span class="p">(</span><span class="s">&quot;ro.fac.cfg.LCD&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="n">strcmp</span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;BAT_DECT&quot;</span><span class="p">))</span><span class="w"></span>
+<span class="w">        </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="n">InitPropertySet</span><span class="p">(</span><span class="s">&quot;ro.fac.cfg.BAT_DECT&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="n">strcmp</span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;SAM_NUM&quot;</span><span class="p">))</span><span class="w"></span>
+<span class="w">        </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="n">InitPropertySet</span><span class="p">(</span><span class="s">&quot;ro.fac.cfg.SAM_NUM&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="n">strcmp</span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;CIPHER_CHIP&quot;</span><span class="p">))</span><span class="w"></span>
+<span class="w">        </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="n">InitPropertySet</span><span class="p">(</span><span class="s">&quot;ro.fac.cfg.CIPHER_CHIP&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="n">strcmp</span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;CAMERA_FRONT&quot;</span><span class="p">))</span><span class="w"></span>
+<span class="w">        </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="n">InitPropertySet</span><span class="p">(</span><span class="s">&quot;ro.fac.cfg.CAMERA_FRONT&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="n">strcmp</span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;CAMERA_BACK&quot;</span><span class="p">))</span><span class="w"></span>
+<span class="w">        </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="n">InitPropertySet</span><span class="p">(</span><span class="s">&quot;ro.fac.cfg.CAMERA_BACK&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="n">strcmp</span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;PN&quot;</span><span class="p">))</span><span class="c1">//PN</span>
+<span class="w">        </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="n">InitPropertySet</span><span class="p">(</span><span class="s">&quot;ro.fac.cfg.PN&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span><span class="c1">//new</span>
+<span class="w">                </span><span class="n">InitPropertySet</span><span class="p">(</span><span class="s">&quot;ro.pci.hardware&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span><span class="w">      </span><span class="c1">//PCI hardware</span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="n">strcmp</span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;CAMERA_NUMBER&quot;</span><span class="p">))</span><span class="w"></span>
+<span class="w">        </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="n">InitPropertySet</span><span class="p">(</span><span class="s">&quot;ro.fac.cfg.CAMERA_NUMBER&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="n">strcmp</span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;SAM_NUM&quot;</span><span class="p">))</span><span class="w"></span>
+<span class="w">        </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="n">InitPropertySet</span><span class="p">(</span><span class="s">&quot;ro.fac.cfg.SAM_NUM&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="n">strcmp</span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;CONFIG_FILE_VER&quot;</span><span class="p">))</span><span class="w"></span>
+<span class="w">        </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="n">InitPropertySet</span><span class="p">(</span><span class="s">&quot;ro.fac.cfg.CONFIG_FILE_VER&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="n">strcmp</span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;MESH_BOARD&quot;</span><span class="p">))</span><span class="w"></span>
+<span class="w">        </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="n">InitPropertySet</span><span class="p">(</span><span class="s">&quot;ro.fac.cfg.MESH_BOARD&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="n">strcmp</span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;RF_PARA_1&quot;</span><span class="p">))</span><span class="w"></span>
+<span class="w">        </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="n">InitPropertySet</span><span class="p">(</span><span class="s">&quot;ro.fac.cfg.RF_PARA_1&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="n">strcmp</span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;RF_PARA_2&quot;</span><span class="p">))</span><span class="w"></span>
+<span class="w">        </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="n">InitPropertySet</span><span class="p">(</span><span class="s">&quot;ro.fac.cfg.RF_PARA_2&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="n">strcmp</span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;RF_PARA_3&quot;</span><span class="p">))</span><span class="w"></span>
+<span class="w">        </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="n">InitPropertySet</span><span class="p">(</span><span class="s">&quot;ro.fac.cfg.RF_PARA_3&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="n">strcmp</span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;RF_PARA_4&quot;</span><span class="p">))</span><span class="w"></span>
+<span class="w">        </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="n">InitPropertySet</span><span class="p">(</span><span class="s">&quot;ro.fac.cfg.RF_PARA_4&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="n">strcmp</span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;RF_PARA_5&quot;</span><span class="p">))</span><span class="w"></span>
+<span class="w">        </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="n">InitPropertySet</span><span class="p">(</span><span class="s">&quot;ro.fac.cfg.RF_PARA_5&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="n">strcmp</span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;RF_PARA_6&quot;</span><span class="p">))</span><span class="w"></span>
+<span class="w">        </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="n">InitPropertySet</span><span class="p">(</span><span class="s">&quot;ro.fac.cfg.RF_PARA_6&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="n">strcmp</span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;RF_PARA_7&quot;</span><span class="p">))</span><span class="w"></span>
+<span class="w">        </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="n">InitPropertySet</span><span class="p">(</span><span class="s">&quot;ro.fac.cfg.RF_PARA_7&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="n">strcmp</span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;RF_PARA_8&quot;</span><span class="p">))</span><span class="w"></span>
+<span class="w">        </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="n">InitPropertySet</span><span class="p">(</span><span class="s">&quot;ro.fac.cfg.RF_PARA_8&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="n">strcmp</span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;RF_PARA_9&quot;</span><span class="p">))</span><span class="w"></span>
+<span class="w">        </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="n">InitPropertySet</span><span class="p">(</span><span class="s">&quot;ro.fac.cfg.RF_PARA_9&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="n">strcmp</span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;RF_PARA_10&quot;</span><span class="p">))</span><span class="w"></span>
+<span class="w">        </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="n">InitPropertySet</span><span class="p">(</span><span class="s">&quot;ro.fac.cfg.RF_PARA_10&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="n">strcmp</span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;paxspmac&quot;</span><span class="p">))</span><span class="w"></span>
+<span class="w">        </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="n">InitPropertySet</span><span class="p">(</span><span class="s">&quot;ro.fac.mac&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span><span class="w"></span>
+<span class="w">        </span><span class="n">InitPropertySet</span><span class="p">(</span><span class="s">&quot;pax.sp.mac&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="n">strcmp</span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;MSR_VER&quot;</span><span class="p">))</span><span class="w"></span>
+<span class="w">        </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="n">InitPropertySet</span><span class="p">(</span><span class="s">&quot;pax.ctrl.magchipver&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="n">strcmp</span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;BIOS&quot;</span><span class="p">))</span><span class="w"></span>
+<span class="w">        </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="n">InitPropertySet</span><span class="p">(</span><span class="s">&quot;pax.ctrl.spbootver&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span><span class="w"></span>
+<span class="w">                </span><span class="n">InitPropertySet</span><span class="p">(</span><span class="s">&quot;pax.sp.BIOS&quot;</span><span class="p">,</span><span class="n">value</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="n">strcmp</span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;MONITOR&quot;</span><span class="p">))</span><span class="w"></span>
+<span class="w">        </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="n">InitPropertySet</span><span class="p">(</span><span class="s">&quot;pax.ctrl.spver&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span><span class="c1">//Ftest need</span>
+<span class="w">                </span><span class="n">InitPropertySet</span><span class="p">(</span><span class="s">&quot;pax.sp.MONITOR&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span><span class="c1">//Ftest need</span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="n">strcmp</span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;BATTERY&quot;</span><span class="p">))</span><span class="w"></span>
+<span class="w">        </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="n">InitPropertySet</span><span class="p">(</span><span class="s">&quot;ro.fac.cfg.BATTERY&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="n">strcmp</span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;AppDebugStatus&quot;</span><span class="p">))</span><span class="w"></span>
+<span class="w">        </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="n">strcmp</span><span class="p">(</span><span class="n">value</span><span class="p">.</span><span class="n">c_str</span><span class="p">(),</span><span class="w"> </span><span class="s">&quot;1&quot;</span><span class="p">)){</span><span class="w"></span>
+<span class="w">                        </span><span class="n">InitPropertySet</span><span class="p">(</span><span class="s">&quot;pax.config.apkruntime&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;false&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">                        </span><span class="n">InitPropertySet</span><span class="p">(</span><span class="s">&quot;ro.pax.disable.app_rt.verify&quot;</span><span class="p">,</span><span class="s">&quot;true&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">                </span><span class="p">}</span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                        </span><span class="n">InitPropertySet</span><span class="p">(</span><span class="s">&quot;pax.config.apkruntime&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;true&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">                        </span><span class="n">InitPropertySet</span><span class="p">(</span><span class="s">&quot;ro.pax.disable.app_rt.verify&quot;</span><span class="p">,</span><span class="s">&quot;false&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">                </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">        </span><span class="p">}</span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="n">strcmp</span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;has_battery_removed&quot;</span><span class="p">))</span><span class="w"></span>
+<span class="w">        </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="n">strcmp</span><span class="p">(</span><span class="n">value</span><span class="p">.</span><span class="n">c_str</span><span class="p">(),</span><span class="w"> </span><span class="s">&quot;1&quot;</span><span class="p">)){</span><span class="w"></span>
+<span class="w">                        </span><span class="n">InitPropertySet</span><span class="p">(</span><span class="s">&quot;pax.config.nobattery&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;true&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">                </span><span class="p">}</span><span class="k">else</span><span class="p">{</span><span class="w"></span>
+<span class="w">                        </span><span class="n">InitPropertySet</span><span class="p">(</span><span class="s">&quot;pax.config.nobattery&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;false&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">                </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="n">strcmp</span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;paxbtmac&quot;</span><span class="p">))</span><span class="c1">//btmac</span>
+<span class="w">        </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="n">InitPropertySet</span><span class="p">(</span><span class="s">&quot;ro.fac.btmac&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span><span class="w"></span>
+<span class="w">        </span><span class="n">InitPropertySet</span><span class="p">(</span><span class="s">&quot;pax.bt.mac&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="n">strcmp</span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;paxwifimac&quot;</span><span class="p">))</span><span class="c1">//wifimac</span>
+<span class="w">        </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="n">InitPropertySet</span><span class="p">(</span><span class="s">&quot;ro.fac.wifimac&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span><span class="w"></span>
+<span class="w">        </span><span class="n">InitPropertySet</span><span class="p">(</span><span class="s">&quot;pax.wifi.mac&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="n">strcmp</span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;msm_drm.dsi_display0&quot;</span><span class="p">))</span><span class="c1">//dpi</span>
+<span class="w">    </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="n">InitPropertySet</span><span class="p">(</span><span class="s">&quot;ro.sf.lcd_density&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">.</span><span class="n">substr</span><span class="p">(</span><span class="n">value</span><span class="p">.</span><span class="n">size</span><span class="p">()</span><span class="mi">-4</span><span class="p">,</span><span class="mi">3</span><span class="p">));</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="n">strcmp</span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;paxctrllog&quot;</span><span class="p">))</span><span class="c1">//paxctrllog</span>
+<span class="w">    </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="n">InitPropertySet</span><span class="p">(</span><span class="s">&quot;pax.ctrl.log&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+
+<span class="c1">//[FEATURE]-Add-BEGIN by (xielianxiong@paxsz.com), 2021/12/29 for apk verify pax signature</span>
+<span class="cp">#ifdef PAXDROID_PCI</span>
+<span class="w">    </span><span class="n">InitPropertySet</span><span class="p">(</span><span class="s">&quot;sys.paxdroid.debug&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;no&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="cp">#elif PAXDROID_RELEASE</span>
+<span class="w">    </span><span class="n">InitPropertySet</span><span class="p">(</span><span class="s">&quot;sys.paxdroid.debug&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;no&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="cp">#else</span>
+<span class="w">    </span><span class="n">InitPropertySet</span><span class="p">(</span><span class="s">&quot;sys.paxdroid.debug&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;no&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="cp">#endif</span>
+<span class="c1">//[FEATURE]-Add-end by (xielianxiong@paxsz.com), 2021/12/29 for apk verify pax signature</span>
+
+<span class="p">}</span><span class="w"></span>
+
+<span class="p">}</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+</section>
+<section id="id3">
+<h1>调试问题点<a class="headerlink" href="#id3" title="此标题的永久链接"></a></h1>
+<section id="gmsabldtb">
+<h2>gms分支abl找不打dtb起不来<a class="headerlink" href="#gmsabldtb" title="此标题的永久链接"></a></h2>
+<p>打印如下：</p>
+<p><img alt="0005_0000.png" src="../../../_images/0005_00005.png" /></p>
+<p>我们dtb是从sp中读取三个变量，去匹配相应的dtb：</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">m9200-scuba-iot.dts</span></code>:</p></li>
+</ul>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>/dts-v1/<span class="p">;</span>
+
+<span class="c1">#include &quot;scuba-iot.dtsi&quot;</span>
+
+/ <span class="o">{</span>
+        <span class="nv">model</span> <span class="o">=</span> <span class="s2">&quot;Qualcomm Technologies, Inc. Scuba IOT SoC&quot;</span><span class="p">;</span>
+        <span class="nv">compatible</span> <span class="o">=</span> <span class="s2">&quot;qcom,scuba-iot&quot;</span><span class="p">;</span>
+        qcom,board-id <span class="o">=</span> &lt;<span class="m">34</span> <span class="m">2</span>&gt;<span class="p">;</span>
+
+        soc <span class="o">{</span>
+                pax_board_info <span class="o">{</span>
+                        <span class="nv">compatible</span> <span class="o">=</span> <span class="s2">&quot;pax,board_info&quot;</span><span class="p">;</span>
+                        pax,main_board <span class="o">=</span> <span class="s2">&quot;V01&quot;</span><span class="p">;</span>
+                        pax,port_board <span class="o">=</span> <span class="s2">&quot;V01&quot;</span><span class="p">;</span>
+                        pax,terminal_name <span class="o">=</span> <span class="s2">&quot;M9200&quot;</span><span class="p">;</span>
+                <span class="o">}</span><span class="p">;</span>
+        <span class="o">}</span><span class="p">;</span>
+<span class="o">}</span><span class="p">;</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>log打印如下：</p></li>
+</ul>
+<div class="highlight-log notranslate"><div class="highlight"><pre><span></span>[12:02:19:114]No match found for Soc Dtb type
+[12:02:19:204]Error: Appended Soc Device Tree blob not found
+
+//正常：
+Get Pax Board info success[V01:V01:A6650].
+Cmp Pax Terminal Name Failed[A6650:M9200].
+Get Pax Board info success[V01:V01:A6650].
+Cmp Pax Terminal Name Failed[A6650:M9200].
+Override DTB: GetBlkIOHandles failed loading user_dtbo!
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>解决方案：
+gms分支里面匹配dts都是写死的，改成9200的就行了：</p></li>
+</ul>
+<div class="highlight-diff notranslate"><div class="highlight"><pre><span></span><span class="gd">--- a/UM.9.15/bootable/bootloader/edk2/QcomModulePkg/Library/BootLib/LocateDeviceTree.c</span><span class="w"></span>
+<span class="gi">+++ b/UM.9.15/bootable/bootloader/edk2/QcomModulePkg/Library/BootLib/LocateDeviceTree.c</span><span class="w"></span>
+<span class="gu">@@ -776,7 +776,7 @@ STATIC EFI_STATUS GetPaxBoardInfoMatchDtb(DtInfo * CurDtbInfo)</span><span class="w"></span>
+<span class="w"> </span>  CHAR8 MainBoard[MAX_BOARDINFO_SIZE] = {0};<span class="w"></span>
+<span class="w"> </span>  CHAR8 PortBoard[MAX_BOARDINFO_SIZE] = {0};;<span class="w"></span>
+<span class="w"> </span>  CHAR8 TerminalName[MAX_BOARDINFO_SIZE] = {0};;<span class="w"></span>
+<span class="gd">-  CHAR8 Buff[MAX_BOARDINFO_SIZE] = {&quot;A6650&quot;};</span><span class="w"></span>
+<span class="gi">+  CHAR8 Buff[MAX_BOARDINFO_SIZE] = {&quot;M9200&quot;};</span><span class="w"></span>
+</pre></div>
+</div>
+</section>
+</section>
+
+
+           </div>
+             <div class="articleComments">
+                <comments>
+  <script src="https://utteranc.es/client.js"
+    repo="iswbm/magic-python"
+    issue-term="pathname"
+    theme="github-light"
+    crossorigin="anonymous"
+    async>
+  </script>
+</comments>
+             </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; 版权所有 2022, wugn.</p>
+  </div>
+
+  利用 <a href="https://www.sphinx-doc.org/">Sphinx</a> 构建，使用了 
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">主题</a>
+    由 <a href="https://readthedocs.org">Read the Docs</a>开发.
+  
+
+<script charset="UTF-8" id="LA_COLLECT" src="//sdk.51.la/js-sdk-pro.min.js"></script>
+<script>LA.init({id: "JoV5csIHTGhHiGQ4",ck: "JoV5csIHTGhHiGQ4"})</script>
+
+<br/>
+<script id="LA-DATA-WIDGET" crossorigin="anonymous" charset="UTF-8" src="https://v6-widget.51.la/v6/JoV5csIHTGhHiGQ4/quote.js?theme=#4C8AC2,#BB2626,#040000,#333333,#AE3535,#1690FF,14&f=14"></script>
+
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

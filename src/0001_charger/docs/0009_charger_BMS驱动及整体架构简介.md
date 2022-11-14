@@ -4,8 +4,6 @@ BMS功能介绍
 
 # 参考
 
-* [0009_patch](refers/0009_patch)
-* [bms_driver](H:/wugn/md/pax_kearning_doc/docs/0001_charger/docs/refers/BMS_driver/power)
 * [epoll使用详解：epoll_create、epoll_ctl、epoll_wait、close](https://www.cnblogs.com/xuewangkai/p/11158576.html)
 * [Android JNI 使用方法总结及原理分析](https://www.jianshu.com/p/9236ad3b9d40)
 * [Android Service详解](https://www.jianshu.com/p/6bf03e3cb097)
@@ -13,8 +11,6 @@ BMS功能介绍
 * [Android C++语言 通过Binder通信调用activity: [android.app.IActivityManager] 服务发广播](https://blog.csdn.net/qq_37858386/article/details/121501400)
 
 # 架构图
-
-![0009_0000.png](images/0009_0000.png)
 
 ![0009_0014.png](images/0009_0014.png)
 

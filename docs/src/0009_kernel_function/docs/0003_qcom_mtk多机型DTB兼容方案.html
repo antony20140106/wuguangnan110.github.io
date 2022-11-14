@@ -49,6 +49,8 @@
 <li><a class="reference internal" href="#id5">设备树解耦目标</a></li>
 <li><a class="reference internal" href="#id6">设备树解耦框架设计</a></li>
 <li><a class="reference internal" href="#qcm2290">QCM2290</a><ul>
+<li><a class="reference internal" href="#abldtbo">ABL加载dtbo</a></li>
+<li><a class="reference internal" href="#header-versiondtbo">header_version版本决定dtbo存储位置</a></li>
 <li><a class="reference internal" href="#dt">分割DT</a></li>
 </ul>
 </li>
@@ -151,7 +153,236 @@
 </section>
 <section id="qcm2290">
 <h1>QCM2290<a class="headerlink" href="#qcm2290" title="此标题的永久链接"></a></h1>
-<p>在做Android8时，发现在dts中引入了dto。设备树叠加层（DTO）可让主要的设备树（DTB）叠加到设备树上。使用DTO的引导程序可以维护系统芯片（SOC）DT,并动态叠加针对特定设备的DT，从而向树中添加节点并对先用树中的属性进行更改。也就是SOC的设备节点作为DTB，其他设备作为DTO，DTO可以对DTB中的节点进行引用和修改。实现DTO包括分割设备树，编译，分区和运行。</p>
+<p>在做Android 8时，发现在dts中引入了dto。设备树叠加层（DTO）可让主要的设备树（DTB）叠加到设备树上。使用DTO的引导程序可以维护系统芯片（SOC）DT,并动态叠加针对特定设备的DT，从而向树中添加节点并对先用树中的属性进行更改。也就是SOC的设备节点作为DTB，其他设备作为DTO，DTO可以对DTB中的节点进行引用和修改。实现DTO包括分割设备树，编译，分区和运行。</p>
+<section id="abldtbo">
+<h2>ABL加载dtbo<a class="headerlink" href="#abldtbo" title="此标题的永久链接"></a></h2>
+<p>首先看一下dtb和dtbo里面的内容：</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>dtbo:
+m9200-scuba-iot-idp-overlay.dts
+/dts-v1/<span class="p">;</span>
+/plugin/<span class="p">;</span>
+
+<span class="c1">#include &lt;dt-bindings/interrupt-controller/arm-gic.h&gt;</span>
+<span class="c1">#include &quot;scuba-iot-idp.dtsi&quot;</span>
+<span class="c1">#include &quot;fibo-lcd.dtsi&quot;  //modified by tfl for tfl for LCD bringup  20221108 </span>
+<span class="c1">#include &quot;fibo-touchscreen.dtsi&quot; // modified by tfl for tfl for TP  20221108 </span>
+
+/ <span class="o">{</span>
+	<span class="nv">model</span> <span class="o">=</span> <span class="s2">&quot;Qualcomm Technologies, Inc. Scuba IOT IDP&quot;</span><span class="p">;</span>
+	<span class="nv">compatible</span> <span class="o">=</span> <span class="s2">&quot;qcom,scuba-idp&quot;</span>, <span class="s2">&quot;qcom,scuba-iot&quot;</span>, <span class="s2">&quot;qcom,idp&quot;</span><span class="p">;</span>
+	qcom,msm-id <span class="o">=</span> &lt;<span class="m">473</span> 0x10000&gt;, &lt;<span class="m">474</span> 0x10000&gt;<span class="p">;</span>
+	qcom,board-id <span class="o">=</span> &lt;<span class="m">34</span> <span class="m">0</span>&gt;<span class="p">;</span>
+
+	soc <span class="o">{</span>
+		pax_board_info <span class="o">{</span>
+			<span class="nv">compatible</span> <span class="o">=</span> <span class="s2">&quot;pax,board_info&quot;</span><span class="p">;</span>
+			pax,main_board <span class="o">=</span> <span class="s2">&quot;V01&quot;</span><span class="p">;</span>
+			pax,port_board <span class="o">=</span> <span class="s2">&quot;V01&quot;</span><span class="p">;</span>
+			pax,terminal_name <span class="o">=</span> <span class="s2">&quot;M9200&quot;</span><span class="p">;</span>
+		<span class="o">}</span><span class="p">;</span>
+	<span class="o">}</span><span class="p">;</span>
+
+<span class="o">}</span><span class="p">;</span>
+
+dtb:
+m9200-scuba-iot-idp.dts
+/dts-v1/<span class="p">;</span>
+
+<span class="c1">#include &quot;scuba-iot.dtsi&quot;</span>
+
+/ <span class="o">{</span>
+	<span class="nv">model</span> <span class="o">=</span> <span class="s2">&quot;Qualcomm Technologies, Inc. Scuba IOT SoC&quot;</span><span class="p">;</span>
+	<span class="nv">compatible</span> <span class="o">=</span> <span class="s2">&quot;qcom,scuba-iot&quot;</span><span class="p">;</span>
+	qcom,board-id <span class="o">=</span> &lt;<span class="m">34</span> <span class="m">0</span>&gt;<span class="p">;</span>
+
+	soc <span class="o">{</span>
+		pax_board_info <span class="o">{</span>
+			<span class="nv">compatible</span> <span class="o">=</span> <span class="s2">&quot;pax,board_info&quot;</span><span class="p">;</span>
+			pax,main_board <span class="o">=</span> <span class="s2">&quot;V01&quot;</span><span class="p">;</span>
+			pax,port_board <span class="o">=</span> <span class="s2">&quot;V01&quot;</span><span class="p">;</span>
+			pax,terminal_name <span class="o">=</span> <span class="s2">&quot;M9200&quot;</span><span class="p">;</span>
+		<span class="o">}</span><span class="p">;</span>
+	<span class="o">}</span><span class="p">;</span>
+<span class="o">}</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>流程如下：</p>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="o">*</span><span class="w"> </span><span class="n">LinuxLoaderEntry</span><span class="w"> </span><span class="c1">//ABL入口函数</span>
+<span class="w">  </span><span class="o">*</span><span class="w"> </span><span class="n">BootLinux</span><span class="w"> </span><span class="p">(</span><span class="o">&amp;</span><span class="n">Info</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="o">*</span><span class="w"> </span><span class="n">Status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">DTBImgCheckAndAppendDT</span><span class="w"> </span><span class="p">(</span><span class="n">Info</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">BootParamlistPtr</span><span class="p">);</span><span class="w"></span>
+<span class="w">      </span><span class="o">*</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">HeaderVersion</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">BOOT_HEADER_VERSION_ONE</span><span class="p">)</span><span class="w"></span>
+<span class="w">        </span><span class="o">*</span><span class="w"> </span><span class="n">NumKernelPages</span><span class="w"> </span><span class="o">=</span><span class="n">GetNumberOfPages</span><span class="w"> </span><span class="p">(</span><span class="n">BootParamlistPtr</span><span class="o">-&gt;</span><span class="n">KernelSize</span><span class="p">,</span><span class="n">BootParamlistPtr</span><span class="o">-&gt;</span><span class="n">PageSize</span><span class="p">);</span><span class="w"> </span><span class="c1">//从boot.img中获取</span>
+<span class="w">          </span><span class="o">*</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">HeaderVersion</span><span class="w">  </span><span class="o">==</span><span class="w"> </span><span class="n">BOOT_HEADER_VERSION_TWO</span><span class="p">)</span><span class="w"></span>
+<span class="w">            </span><span class="o">*</span><span class="w"> </span><span class="n">ImageBuffer</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">BootParamlistPtr</span><span class="o">-&gt;</span><span class="n">ImageBuffer</span><span class="p">;</span><span class="w"></span>
+<span class="w">          </span><span class="o">*</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">HeaderVersion</span><span class="w">  </span><span class="o">==</span><span class="w"> </span><span class="n">BOOT_HEADER_VERSION_THREE</span><span class="p">)</span><span class="w"></span>
+<span class="w">            </span><span class="o">*</span><span class="w"> </span><span class="n">ImageBuffer</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">BootParamlistPtr</span><span class="o">-&gt;</span><span class="n">VendorImageBuffer</span><span class="p">;</span><span class="w"> </span><span class="c1">//从vendor_boot.img中获取</span>
+<span class="w">      </span><span class="o">*</span><span class="w"> </span><span class="n">SocDtb</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">GetSocDtb</span><span class="w"> </span><span class="p">(</span><span class="n">ImageBuffer</span><span class="p">,</span><span class="n">ImageSize</span><span class="p">,</span><span class="n">BootParamlistPtr</span><span class="o">-&gt;</span><span class="n">DtbOffset</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">VOID</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="n">BootParamlistPtr</span><span class="o">-&gt;</span><span class="n">DeviceTreeLoadAddr</span><span class="p">);</span><span class="w"> </span><span class="c1">//获取dtb</span>
+<span class="w">        </span><span class="o">*</span><span class="w"> </span><span class="n">ReadDtbFindMatch</span><span class="w"> </span><span class="p">(</span><span class="o">&amp;</span><span class="n">CurDtbInfo</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">BestDtbInfo</span><span class="p">,</span><span class="w"> </span><span class="n">BIT</span><span class="p">(</span><span class="n">SOC_MATCH</span><span class="p">)</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">BIT</span><span class="p">(</span><span class="n">PAX_BOARD_INFO_MATCH</span><span class="p">)</span><span class="w"> </span><span class="c1">//匹配dtb</span>
+<span class="w">          </span><span class="o">*</span><span class="w"> </span><span class="n">PlatProp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">CONST</span><span class="w"> </span><span class="n">CHAR8</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="n">fdt_getprop</span><span class="w"> </span><span class="p">(</span><span class="n">Dtb</span><span class="p">,</span><span class="w"> </span><span class="n">RootOffset</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;qcom,msm-id&quot;</span><span class="p">,</span><span class="o">&amp;</span><span class="n">LenPlatId</span><span class="p">);</span><span class="w"> </span><span class="c1">//读取dtb中的qcom,msm-id</span>
+<span class="w">          </span><span class="o">*</span><span class="w"> </span><span class="n">BoardProp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">CONST</span><span class="w"> </span><span class="n">CHAR8</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="n">fdt_getprop</span><span class="w"> </span><span class="p">(</span><span class="n">Dtb</span><span class="p">,</span><span class="w"> </span><span class="n">RootOffset</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;qcom,board-id&quot;</span><span class="p">,</span><span class="o">&amp;</span><span class="n">LenBoardId</span><span class="p">);</span><span class="c1">//读取dtb中的qcom,board-id</span>
+<span class="w">          </span><span class="o">*</span><span class="w"> </span><span class="n">GetBoardMatchDtb</span><span class="w"> </span><span class="p">(</span><span class="n">CurDtbInfo</span><span class="p">,</span><span class="w"> </span><span class="n">BoardProp</span><span class="p">,</span><span class="w"> </span><span class="n">LenBoardId</span><span class="p">);</span><span class="w"> </span><span class="c1">//和xbl中读出来的对比，Get the properties like variant id, subtype from Dtb then compare the dtb vs Board</span>
+<span class="w">          </span><span class="o">*</span><span class="w"> </span><span class="p">(</span><span class="n">CONST</span><span class="w"> </span><span class="n">CHAR8</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="n">fdt_getprop</span><span class="w"> </span><span class="p">(</span><span class="n">Dtb</span><span class="p">,</span><span class="w"> </span><span class="n">RootOffset</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;qcom,pmic-id&quot;</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">LenPmicId</span><span class="p">);</span><span class="w"></span>
+<span class="w">          </span><span class="o">*</span><span class="w"> </span><span class="n">ReadBestPmicMatch</span><span class="w"> </span><span class="p">(</span><span class="n">PmicProp</span><span class="p">,</span><span class="w"> </span><span class="n">PmicMaxIdx</span><span class="p">,</span><span class="w"> </span><span class="n">PmicEntCount</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">BestPmicInfo</span><span class="p">);</span><span class="c1">// 对比qcom,pmic-id，dts中没这个</span>
+<span class="w">          </span><span class="o">*</span><span class="w"> </span><span class="n">GetPaxBoardInfoMatchDtb</span><span class="p">(</span><span class="n">CurDtbInfo</span><span class="p">);</span><span class="w"> </span><span class="c1">//pax加的</span>
+<span class="w">            </span><span class="o">*</span><span class="w"> </span><span class="n">RootOffset</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fdt_path_offset</span><span class="p">(</span><span class="n">Dtb</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/soc/pax_board_info&quot;</span><span class="p">);</span><span class="w"> </span><span class="c1">//找到soc=pax_board_info的dtb</span>
+<span class="w">            </span><span class="o">*</span><span class="w"> </span><span class="n">MainBoardProp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">CONST</span><span class="w"> </span><span class="n">CHAR8</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="n">fdt_getprop</span><span class="p">(</span><span class="n">Dtb</span><span class="p">,</span><span class="w"> </span><span class="n">RootOffset</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;pax,main_board&quot;</span><span class="p">,</span><span class="w"></span>
+<span class="w">            </span><span class="o">*</span><span class="w"> </span><span class="n">PortBoardProp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">CONST</span><span class="w"> </span><span class="n">CHAR8</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="n">fdt_getprop</span><span class="p">(</span><span class="n">Dtb</span><span class="p">,</span><span class="w"> </span><span class="n">RootOffset</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;pax,port_board&quot;</span><span class="p">,</span><span class="w"></span>
+<span class="w">            </span><span class="o">*</span><span class="w"> </span><span class="n">TerminalNameProp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">CONST</span><span class="w"> </span><span class="n">CHAR8</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="n">fdt_getprop</span><span class="p">(</span><span class="n">Dtb</span><span class="p">,</span><span class="w"> </span><span class="n">RootOffset</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;pax,terminal_name&quot;</span><span class="p">,</span><span class="w"> </span><span class="c1">//读取三个dtb属性</span>
+<span class="w">            </span><span class="o">*</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">getCfgTermialName</span><span class="p">(</span><span class="n">Buff</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"></span>
+<span class="w">              </span><span class="o">*</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="n">getCfgItemValStr</span><span class="p">(</span><span class="s">&quot;TERMINAL_NAME&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">buf</span><span class="p">);</span><span class="w"> </span><span class="c1">//pax_lib.c 我们terminal_name、port_board、main_board都是从sp配置文件中获取的</span>
+<span class="w">              </span><span class="o">*</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">AsciiStrnCmp</span><span class="p">(</span><span class="n">Buff</span><span class="p">,</span><span class="w"> </span><span class="n">TerminalName</span><span class="p">,</span><span class="w"> </span><span class="n">TerminalNamePropLen</span><span class="p">))</span><span class="w"></span>
+<span class="w">        </span><span class="o">*</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="n">BestDtbInfo</span><span class="p">.</span><span class="n">Dtb</span><span class="p">;</span><span class="w"> </span><span class="c1">//</span>
+</pre></div>
+</div>
+</section>
+<section id="header-versiondtbo">
+<h2>header_version版本决定dtbo存储位置<a class="headerlink" href="#header-versiondtbo" title="此标题的永久链接"></a></h2>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">BootImage.h</span></code>解释：</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="cp">#define BOOT_HEADER_VERSION_ONE 1</span>
+
+<span class="k">struct</span><span class="w"> </span><span class="nc">boot_img_hdr_v1</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="n">UINT32</span><span class="w"> </span><span class="n">recovery_dtbo_size</span><span class="p">;</span><span class="w">   </span><span class="cm">/* size in bytes for recovery DTBO image */</span><span class="w"></span>
+<span class="w">  </span><span class="n">UINT64</span><span class="w"> </span><span class="n">recovery_dtbo_offset</span><span class="p">;</span><span class="w"> </span><span class="cm">/* physical load addr */</span><span class="w"></span>
+<span class="w">  </span><span class="n">UINT32</span><span class="w"> </span><span class="n">header_size</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"> </span><span class="n">__attribute__</span><span class="p">((</span><span class="n">packed</span><span class="p">));</span><span class="w"></span>
+
+<span class="cm">/* When the boot image header has a version of BOOT_HEADER_VERSION_ONE,</span>
+<span class="cm"> * the structure of the boot image is as follows:</span>
+<span class="cm"> *</span>
+<span class="cm"> * +-----------------+</span>
+<span class="cm"> * | boot header     | 1 page</span>
+<span class="cm"> * +-----------------+</span>
+<span class="cm"> * | kernel          | n pages</span>
+<span class="cm"> * +-----------------+</span>
+<span class="cm"> * | ramdisk         | m pages</span>
+<span class="cm"> * +-----------------+</span>
+<span class="cm"> * | second stage    | o pages</span>
+<span class="cm"> * +-----------------+</span>
+<span class="cm"> * | recovery dtbo   | p pages</span>
+<span class="cm"> * +-----------------+</span>
+<span class="cm"> * n = (kernel_size + page_size - 1) / page_size</span>
+<span class="cm"> * m = (ramdisk_size + page_size - 1) / page_size</span>
+<span class="cm"> * o = (second_size + page_size - 1) / page_size</span>
+<span class="cm"> * p = (recovery_dtbo_size + page_size - 1) / page_size</span>
+<span class="cm"> *</span>
+<span class="cm"> * 0. all entities are page_size aligned in flash</span>
+<span class="cm"> * 1. kernel and ramdisk are required (size != 0)</span>
+<span class="cm"> * 2. recovery_dtbo is required for recovery.img</span>
+<span class="cm"> *    in non-A/B devices(recovery_dtbo_size != 0)</span>
+<span class="cm"> * 3. second is optional (second_size == 0 -&gt; no second)</span>
+<span class="cm"> * 4. load each element (kernel, ramdisk, second, recovery_dtbo) at</span>
+<span class="cm"> *    the specified physical address (kernel_addr, etc)</span>
+<span class="cm"> * 5. prepare tags at tag_addr.  kernel_args[] is</span>
+<span class="cm"> *    appended to the kernel commandline in the tags.</span>
+<span class="cm"> * 6. r0 = 0, r1 = MACHINE_TYPE, r2 = tags_addr</span>
+<span class="cm"> * 7. if second_size != 0: jump to second_addr</span>
+<span class="cm"> *    else: jump to kernel_addr</span>
+<span class="cm"> */</span><span class="w"></span>
+
+<span class="cp">#define BOOT_IMAGE_HEADER_V2_OFFSET sizeof (struct boot_img_hdr_v1)</span>
+<span class="cp">#define BOOT_HEADER_VERSION_TWO 2</span>
+
+<span class="k">struct</span><span class="w"> </span><span class="nc">boot_img_hdr_v2</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="n">UINT32</span><span class="w"> </span><span class="n">dtb_size</span><span class="p">;</span><span class="w"> </span><span class="cm">/* size in bytes for DTB image */</span><span class="w"></span>
+<span class="w">  </span><span class="n">UINT64</span><span class="w"> </span><span class="n">dtb_addr</span><span class="p">;</span><span class="w"> </span><span class="cm">/* physical load address for DTB image */</span><span class="w"></span>
+<span class="p">}</span><span class="w"> </span><span class="n">__attribute__</span><span class="p">((</span><span class="n">packed</span><span class="p">));</span><span class="w"></span>
+
+<span class="cm">/* When the boot image header has a version of BOOT_HEADER_VERSION_TWO,</span>
+<span class="cm"> * the structure of the boot image is as follows:</span>
+<span class="cm"> *</span>
+<span class="cm"> * +-----------------+</span>
+<span class="cm"> * | boot header     | 1 page</span>
+<span class="cm"> * +-----------------+</span>
+<span class="cm"> * | kernel          | n pages</span>
+<span class="cm"> * +-----------------+</span>
+<span class="cm"> * | ramdisk         | m pages</span>
+<span class="cm"> * +-----------------+</span>
+<span class="cm"> * | second stage    | o pages</span>
+<span class="cm"> * +-----------------+</span>
+<span class="cm"> * | recovery dtbo   | p pages</span>
+<span class="cm"> * +-----------------+</span>
+<span class="cm"> * | dtb.img         | q pages</span>
+<span class="cm"> * +-----------------+</span>
+<span class="cm"> *</span>
+<span class="cm"> * n = (kernel_size + page_size - 1) / page_size</span>
+<span class="cm"> * m = (ramdisk_size + page_size - 1) / page_size</span>
+<span class="cm"> * o = (second_size + page_size - 1) / page_size</span>
+<span class="cm"> * p = (recovery_dtbo_size + page_size - 1) / page_size</span>
+<span class="cm"> * q = (dtb_size + page_size - 1) / page_size</span>
+<span class="cm"> *</span>
+<span class="cm"> * 0. all entities are page_size aligned in flash</span>
+<span class="cm"> * 1. kernel and ramdisk are required (size != 0)</span>
+<span class="cm"> * 2. recovery_dtbo is required for recovery.img (recovery_dtbo_size != 0)</span>
+<span class="cm"> * 3. second is optional (second_size == 0 -&gt; no second)</span>
+<span class="cm"> * 4. dtb.img has all the dtbs catted one after the other</span>
+<span class="cm"> * 5. load each element (kernel, ramdisk, second, recovery_dtbo) at</span>
+<span class="cm"> *    the specified physical address (kernel_addr, etc)</span>
+<span class="cm"> * 6. prepare tags at tag_addr.  kernel_args[] is</span>
+<span class="cm"> *    appended to the kernel commandline in the tags.</span>
+<span class="cm"> * 7. r0 = 0, r1 = MACHINE_TYPE, r2 = tags_addr</span>
+<span class="cm"> * 8. if second_size != 0: jump to second_addr</span>
+<span class="cm"> *    else: jump to kernel_addr</span>
+<span class="cm"> */</span><span class="w"></span>
+
+<span class="cp">#define BOOT_HEADER_VERSION_THREE 3</span>
+
+<span class="cm">/* When the boot image header has a version of 3, the structure of the boot</span>
+<span class="cm"> * image is as follows:</span>
+<span class="cm"> *</span>
+<span class="cm"> * +---------------------+</span>
+<span class="cm"> * | boot header         | 1 page</span>
+<span class="cm"> * +---------------------+</span>
+<span class="cm"> * | kernel              | m pages</span>
+<span class="cm"> * +---------------------+</span>
+<span class="cm"> * | ramdisk             | n pages</span>
+<span class="cm"> * +---------------------+</span>
+<span class="cm"> * m = (kernel_size + page_size - 1) / page_size</span>
+<span class="cm"> * n = (ramdisk_size + page_size - 1) / page_size</span>
+<span class="cm"> *</span>
+<span class="cm"> * and the structure of the vendor boot image (introduced with version 3) is as</span>
+<span class="cm"> * follows:</span>
+<span class="cm"> *</span>
+<span class="cm"> * +---------------------+</span>
+<span class="cm"> * | vendor boot header  | 1 page</span>
+<span class="cm"> * +---------------------+</span>
+<span class="cm"> * | vendor ramdisk      | o pages</span>
+<span class="cm"> * +---------------------+</span>
+<span class="cm"> * | dtb                 | p pages</span>
+<span class="cm"> * +---------------------+</span>
+<span class="cm"> * o = (vendor_ramdisk_size + page_size - 1) / page_size</span>
+<span class="cm"> * p = (dtb_size + page_size - 1) / page_size</span>
+<span class="cm"> *</span>
+<span class="cm"> * 0. all entities are page_size aligned in flash</span>
+<span class="cm"> * 1. kernel, ramdisk, vendor ramdisk, and DTB are required (size != 0)</span>
+<span class="cm"> * 2. load the kernel and DTB at the specified physical address (kernel_addr,</span>
+<span class="cm"> *    dtb_addr)</span>
+<span class="cm"> * 3. load the vendor ramdisk at ramdisk_addr</span>
+<span class="cm"> * 4. load the generic ramdisk immediately following the vendor ramdisk in</span>
+<span class="cm"> *    memory</span>
+<span class="cm"> * 5. prepare tags at tag_addr.  kernel_args[] is appended to the kernel</span>
+<span class="cm"> *    commandline in the tags.</span>
+<span class="cm"> * 6. r0 = 0, r1 = MACHINE_TYPE, r2 = tags_addr</span>
+<span class="cm"> * 7. if the platform has a second stage bootloader jump to it (must be</span>
+<span class="cm"> *    contained outside boot and vendor boot partitions), otherwise</span>
+<span class="cm"> *    jump to kernel_addr</span>
+<span class="cm"> */</span><span class="w"></span>
+</pre></div>
+</div>
+<p>可以看到当<code class="docutils literal notranslate"><span class="pre">BOOT_HEADER_VERSION_THREE</span> <span class="pre">3</span></code>时，dtb.img不再打包到boot.img，而是放入vendor_boot.img，加入vendor_boot分区，bootloader加载也会使用到这个值。</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">HEADER_VERSION</span></code>获取方式：</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="n">EFI_STATUS</span><span class="w"></span>
+<span class="nf">BootLinux</span><span class="w"> </span><span class="p">(</span><span class="n">BootInfo</span><span class="w"> </span><span class="o">*</span><span class="n">Info</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="n">Info</span><span class="o">-&gt;</span><span class="n">HeaderVersion</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">((</span><span class="n">boot_img_hdr</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"></span>
+<span class="w">                         </span><span class="p">(</span><span class="n">BootParamlistPtr</span><span class="p">.</span><span class="n">ImageBuffer</span><span class="p">))</span><span class="o">-&gt;</span><span class="n">header_version</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+</section>
 <section id="dt">
 <h2>分割DT<a class="headerlink" href="#dt" title="此标题的永久链接"></a></h2>
 <p>首先将设备树分割成两部分：</p>

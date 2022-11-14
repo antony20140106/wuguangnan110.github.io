@@ -52,7 +52,237 @@ Linux使用设备树的主要原因如下
 
 # QCM2290
 
-在做Android8时，发现在dts中引入了dto。设备树叠加层（DTO）可让主要的设备树（DTB）叠加到设备树上。使用DTO的引导程序可以维护系统芯片（SOC）DT,并动态叠加针对特定设备的DT，从而向树中添加节点并对先用树中的属性进行更改。也就是SOC的设备节点作为DTB，其他设备作为DTO，DTO可以对DTB中的节点进行引用和修改。实现DTO包括分割设备树，编译，分区和运行。
+在做Android 8时，发现在dts中引入了dto。设备树叠加层（DTO）可让主要的设备树（DTB）叠加到设备树上。使用DTO的引导程序可以维护系统芯片（SOC）DT,并动态叠加针对特定设备的DT，从而向树中添加节点并对先用树中的属性进行更改。也就是SOC的设备节点作为DTB，其他设备作为DTO，DTO可以对DTB中的节点进行引用和修改。实现DTO包括分割设备树，编译，分区和运行。
+
+## ABL加载dtbo
+
+首先看一下dtb和dtbo里面的内容：
+```shell
+dtbo:
+m9200-scuba-iot-idp-overlay.dts
+/dts-v1/;
+/plugin/;
+
+#include <dt-bindings/interrupt-controller/arm-gic.h>
+#include "scuba-iot-idp.dtsi"
+#include "fibo-lcd.dtsi"  //modified by tfl for tfl for LCD bringup  20221108 
+#include "fibo-touchscreen.dtsi" // modified by tfl for tfl for TP  20221108 
+
+/ {
+	model = "Qualcomm Technologies, Inc. Scuba IOT IDP";
+	compatible = "qcom,scuba-idp", "qcom,scuba-iot", "qcom,idp";
+	qcom,msm-id = <473 0x10000>, <474 0x10000>;
+	qcom,board-id = <34 0>;
+
+	soc {
+		pax_board_info {
+			compatible = "pax,board_info";
+			pax,main_board = "V01";
+			pax,port_board = "V01";
+			pax,terminal_name = "M9200";
+		};
+	};
+
+};
+
+dtb:
+m9200-scuba-iot-idp.dts
+/dts-v1/;
+
+#include "scuba-iot.dtsi"
+
+/ {
+	model = "Qualcomm Technologies, Inc. Scuba IOT SoC";
+	compatible = "qcom,scuba-iot";
+	qcom,board-id = <34 0>;
+
+	soc {
+		pax_board_info {
+			compatible = "pax,board_info";
+			pax,main_board = "V01";
+			pax,port_board = "V01";
+			pax,terminal_name = "M9200";
+		};
+	};
+};
+```
+
+
+流程如下：
+```C++
+* LinuxLoaderEntry //ABL入口函数
+  * BootLinux (&Info);
+    * Status = DTBImgCheckAndAppendDT (Info, &BootParamlistPtr);
+      * if (HeaderVersion > BOOT_HEADER_VERSION_ONE)
+        * NumKernelPages =GetNumberOfPages (BootParamlistPtr->KernelSize,BootParamlistPtr->PageSize); //从boot.img中获取
+          * if (HeaderVersion  == BOOT_HEADER_VERSION_TWO)
+            * ImageBuffer = BootParamlistPtr->ImageBuffer;
+          * if (HeaderVersion  == BOOT_HEADER_VERSION_THREE)
+            * ImageBuffer = BootParamlistPtr->VendorImageBuffer; //从vendor_boot.img中获取
+      * SocDtb = GetSocDtb (ImageBuffer,ImageSize,BootParamlistPtr->DtbOffset, (VOID *)BootParamlistPtr->DeviceTreeLoadAddr); //获取dtb
+        * ReadDtbFindMatch (&CurDtbInfo, &BestDtbInfo, BIT(SOC_MATCH) | BIT(PAX_BOARD_INFO_MATCH) //匹配dtb
+          * PlatProp = (CONST CHAR8 *)fdt_getprop (Dtb, RootOffset, "qcom,msm-id",&LenPlatId); //读取dtb中的qcom,msm-id
+          * BoardProp = (CONST CHAR8 *)fdt_getprop (Dtb, RootOffset, "qcom,board-id",&LenBoardId);//读取dtb中的qcom,board-id
+          * GetBoardMatchDtb (CurDtbInfo, BoardProp, LenBoardId); //和xbl中读出来的对比，Get the properties like variant id, subtype from Dtb then compare the dtb vs Board
+          * (CONST CHAR8 *)fdt_getprop (Dtb, RootOffset, "qcom,pmic-id", &LenPmicId);
+          * ReadBestPmicMatch (PmicProp, PmicMaxIdx, PmicEntCount, &BestPmicInfo);// 对比qcom,pmic-id，dts中没这个
+          * GetPaxBoardInfoMatchDtb(CurDtbInfo); //pax加的
+            * RootOffset = fdt_path_offset(Dtb, "/soc/pax_board_info"); //找到soc=pax_board_info的dtb
+            * MainBoardProp = (CONST CHAR8 *)fdt_getprop(Dtb, RootOffset, "pax,main_board",
+            * PortBoardProp = (CONST CHAR8 *)fdt_getprop(Dtb, RootOffset, "pax,port_board",
+            * TerminalNameProp = (CONST CHAR8 *)fdt_getprop(Dtb, RootOffset, "pax,terminal_name", //读取三个dtb属性
+            * if (getCfgTermialName(Buff) < 0)
+              * return getCfgItemValStr("TERMINAL_NAME", buf); //pax_lib.c 我们terminal_name、port_board、main_board都是从sp配置文件中获取的
+              * if (AsciiStrnCmp(Buff, TerminalName, TerminalNamePropLen))
+        * return BestDtbInfo.Dtb; //
+
+```
+
+## header_version版本决定dtbo存储位置
+
+* `BootImage.h`解释：
+```C++
+#define BOOT_HEADER_VERSION_ONE 1
+
+struct boot_img_hdr_v1 {
+  UINT32 recovery_dtbo_size;   /* size in bytes for recovery DTBO image */
+  UINT64 recovery_dtbo_offset; /* physical load addr */
+  UINT32 header_size;
+} __attribute__((packed));
+
+/* When the boot image header has a version of BOOT_HEADER_VERSION_ONE,
+ * the structure of the boot image is as follows:
+ *
+ * +-----------------+
+ * | boot header     | 1 page
+ * +-----------------+
+ * | kernel          | n pages
+ * +-----------------+
+ * | ramdisk         | m pages
+ * +-----------------+
+ * | second stage    | o pages
+ * +-----------------+
+ * | recovery dtbo   | p pages
+ * +-----------------+
+ * n = (kernel_size + page_size - 1) / page_size
+ * m = (ramdisk_size + page_size - 1) / page_size
+ * o = (second_size + page_size - 1) / page_size
+ * p = (recovery_dtbo_size + page_size - 1) / page_size
+ *
+ * 0. all entities are page_size aligned in flash
+ * 1. kernel and ramdisk are required (size != 0)
+ * 2. recovery_dtbo is required for recovery.img
+ *    in non-A/B devices(recovery_dtbo_size != 0)
+ * 3. second is optional (second_size == 0 -> no second)
+ * 4. load each element (kernel, ramdisk, second, recovery_dtbo) at
+ *    the specified physical address (kernel_addr, etc)
+ * 5. prepare tags at tag_addr.  kernel_args[] is
+ *    appended to the kernel commandline in the tags.
+ * 6. r0 = 0, r1 = MACHINE_TYPE, r2 = tags_addr
+ * 7. if second_size != 0: jump to second_addr
+ *    else: jump to kernel_addr
+ */
+
+#define BOOT_IMAGE_HEADER_V2_OFFSET sizeof (struct boot_img_hdr_v1)
+#define BOOT_HEADER_VERSION_TWO 2
+
+struct boot_img_hdr_v2 {
+  UINT32 dtb_size; /* size in bytes for DTB image */
+  UINT64 dtb_addr; /* physical load address for DTB image */
+} __attribute__((packed));
+
+/* When the boot image header has a version of BOOT_HEADER_VERSION_TWO,
+ * the structure of the boot image is as follows:
+ *
+ * +-----------------+
+ * | boot header     | 1 page
+ * +-----------------+
+ * | kernel          | n pages
+ * +-----------------+
+ * | ramdisk         | m pages
+ * +-----------------+
+ * | second stage    | o pages
+ * +-----------------+
+ * | recovery dtbo   | p pages
+ * +-----------------+
+ * | dtb.img         | q pages
+ * +-----------------+
+ *
+ * n = (kernel_size + page_size - 1) / page_size
+ * m = (ramdisk_size + page_size - 1) / page_size
+ * o = (second_size + page_size - 1) / page_size
+ * p = (recovery_dtbo_size + page_size - 1) / page_size
+ * q = (dtb_size + page_size - 1) / page_size
+ *
+ * 0. all entities are page_size aligned in flash
+ * 1. kernel and ramdisk are required (size != 0)
+ * 2. recovery_dtbo is required for recovery.img (recovery_dtbo_size != 0)
+ * 3. second is optional (second_size == 0 -> no second)
+ * 4. dtb.img has all the dtbs catted one after the other
+ * 5. load each element (kernel, ramdisk, second, recovery_dtbo) at
+ *    the specified physical address (kernel_addr, etc)
+ * 6. prepare tags at tag_addr.  kernel_args[] is
+ *    appended to the kernel commandline in the tags.
+ * 7. r0 = 0, r1 = MACHINE_TYPE, r2 = tags_addr
+ * 8. if second_size != 0: jump to second_addr
+ *    else: jump to kernel_addr
+ */
+
+#define BOOT_HEADER_VERSION_THREE 3
+
+/* When the boot image header has a version of 3, the structure of the boot
+ * image is as follows:
+ *
+ * +---------------------+
+ * | boot header         | 1 page
+ * +---------------------+
+ * | kernel              | m pages
+ * +---------------------+
+ * | ramdisk             | n pages
+ * +---------------------+
+ * m = (kernel_size + page_size - 1) / page_size
+ * n = (ramdisk_size + page_size - 1) / page_size
+ *
+ * and the structure of the vendor boot image (introduced with version 3) is as
+ * follows:
+ *
+ * +---------------------+
+ * | vendor boot header  | 1 page
+ * +---------------------+
+ * | vendor ramdisk      | o pages
+ * +---------------------+
+ * | dtb                 | p pages
+ * +---------------------+
+ * o = (vendor_ramdisk_size + page_size - 1) / page_size
+ * p = (dtb_size + page_size - 1) / page_size
+ *
+ * 0. all entities are page_size aligned in flash
+ * 1. kernel, ramdisk, vendor ramdisk, and DTB are required (size != 0)
+ * 2. load the kernel and DTB at the specified physical address (kernel_addr,
+ *    dtb_addr)
+ * 3. load the vendor ramdisk at ramdisk_addr
+ * 4. load the generic ramdisk immediately following the vendor ramdisk in
+ *    memory
+ * 5. prepare tags at tag_addr.  kernel_args[] is appended to the kernel
+ *    commandline in the tags.
+ * 6. r0 = 0, r1 = MACHINE_TYPE, r2 = tags_addr
+ * 7. if the platform has a second stage bootloader jump to it (must be
+ *    contained outside boot and vendor boot partitions), otherwise
+ *    jump to kernel_addr
+ */
+```
+可以看到当`BOOT_HEADER_VERSION_THREE 3`时，dtb.img不再打包到boot.img，而是放入vendor_boot.img，加入vendor_boot分区，bootloader加载也会使用到这个值。
+
+* `HEADER_VERSION`获取方式：
+```C++
+EFI_STATUS
+BootLinux (BootInfo *Info)
+{
+  Info->HeaderVersion = ((boot_img_hdr *)
+                         (BootParamlistPtr.ImageBuffer))->header_version;
+}
+```
+
 
 ## 分割DT
 

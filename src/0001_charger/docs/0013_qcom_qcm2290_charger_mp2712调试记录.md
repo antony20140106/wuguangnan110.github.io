@@ -2089,3 +2089,32 @@ VIN_UV和VIN_OV对应关系如下：
 ```
 
 ![0013_0049.png](images/0013_0049.png)
+
+经测试还是会偶发性掉线，就突然online变成0，打印如下：
+```log
+11-02 11:56:33.103 E/PAX_CHG (    0): CHG [online: 0, type: SDP, status: Not charging, fault: 0x14060, ICHG = 480mA, AICR = 2000mA, MIVR = 4360mV, IEOC = 240mA, CV = 4375mV]
+11-02 11:56:33.104 E/PAX_BMS (    0): CHG [online: 0, type: 4, vol: 5000000, cur: 16800000, time: 0], BAT [present: 1, status: 3, vol: 4044000, cur: -63000, resistance: 0, temp: 310, soc: 78], OTHER [skin_temp: 0, chg_vote: 0x0, notify_code: 0x0],
+11-02 11:56:38.093 E/PAX_CHG (    0): pax_is_charger_on chr_type = [SDP] last_chr_type = [SDP]
+11-02 11:56:38.095 E/PAX_CHG (    0): [SW_JEITA] Battery Normal Temperature between 15 and 45 !!
+11-02 11:56:38.095 E/PAX_CHG (    0): [SW_JEITA]preState:3 newState:3 tmp:31 cv:0
+11-02 11:56:38.095 E/PAX_CHG (    0): tmp:31 (jeita:1 sm:3 cv:0 en:1) thm_sm:1 en:1 can_en:1
+11-02 11:56:38.096 E/PAX_CHG (    0): chg:-1,-1,2000,500 type:4:1 aicl:-1 bootmode:0 pd:0
+11-02 11:56:38.096 E/PAX_CHG (    0): do_algorithm input_current_limit:2000 charging_current_limit:500
+11-02 11:56:38.101 E/PAX_CHG (    0): CHG [online: 1, type: SDP, status: Not charging, fault: 0x0, ICHG = 480mA, AICR = 2000mA, MIVR = 4360mV, IEOC = 240mA, CV = 4375mV]
+11-02 11:56:38.224 E/PAX_BMS (    0): CHG [online: 1, type: 4, vol: 5000000, cur: 2000000, time: 0], BAT [present: 1, status: 3, vol: 4044000, cur: -63000, resistance: 0, temp: 310, soc: 78], OTHER [skin_temp: 0, chg_vote: 0x0, notify_code: 0x0],
+11-02 11:56:38.502 E/PAX_BAT (    0): [status:Not charging, health:Good, present:1, tech:Li-ion, capcity:78,cap_rm:3545 mah, vol:4044 mv, temp:32, curr:-63 ma, ui_soc:78]
+11-02 11:56:38.509 W/audit   (    0): audit_lost=3786 audit_rate_limit=5 audit_backlog_limit=64
+```
+
+修改成加入typec attach进行判断：
+```diff
+--- a/UM.9.15/kernel/msm-4.19/drivers/misc/pax/power/paxpd-charger-manager.c
++++ b/UM.9.15/kernel/msm-4.19/drivers/misc/pax/power/paxpd-charger-manager.c
+@@ -1382,7 +1382,7 @@ static int psy_charger_get_property(struct power_supply *psy,
+
+        switch (psp) {
+        case POWER_SUPPLY_PROP_ONLINE:
+-               val->intval = pax_charger_dev_is_online(info->chg1_dev);
++               val->intval = pax_charger_dev_is_online(info->chg1_dev) | (info->attach ? 1 : 0);
+                break;
+```
