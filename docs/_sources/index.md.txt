@@ -21,6 +21,8 @@
 
 NO.|文件名称|摘要
 :--:|:--|:--
+0024| [NFC_function](src/0024_NFC_function/README.md) | Android系统NFC系统学习
+0023| [hardware_function](src/0023_hardware_function/README.md) | 驱动工程师必备的硬件知识，储备起来
 0022| [Android](src/0022_Android/README.md) | 记录一些零散的Android方面的学习知识。
 0021| [Linux](src/0021_Linux/README.md) | 记录一些零散的Linux方面的使用文档
 0020| [battery_gauge](src/0020_battery_gauge/README.md) | 记录一下android平台电量计驱动软件架构和调试过程。

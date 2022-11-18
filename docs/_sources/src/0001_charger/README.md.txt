@@ -6,6 +6,7 @@ Android平台charger、BMS相关知识及调试整理。
 
 NO.|文件名称|摘要
 :--:|:--|:--
+0029| [qcom_qcm2290_charger_SGM41528调试记录](docs/0029_qcom_qcm2290_charger_SGM41528调试记录.md) | 记录一下M9200项目双节升压充电charger驱动调试。
 0028| [qcom_qcm2290_bms移植过程](docs/0028_qcom_qcm2290_bms移植过程.md) | 记录一下移植过程。
 0027| [charger_jeita限流功能介绍](docs/0027_charger_jeita限流功能介绍.md) | JEITA（Japan Electronics and Information Technology Industries Association）
 0026| [Android充电相关代码简单总结](docs/0026_Android充电相关代码简单总结.md) | charger/gauge相关，从上层到底层软件简单做个总结。

@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="zh-CN" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>wugn</title>
+
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script src="../../../_static/translations.js"></script>
+        <script src="../../../_static/js/baidutongji.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="索引" href="../../../genindex.html" />
+    <link rel="search" title="搜索" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../index.html" class="icon icon-home"> wugn_note
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="在文档中搜索" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">概述</a></li>
+<li><a class="reference internal" href="#driver-probe-defer">driver probe defer延迟机制</a></li>
+<li><a class="reference internal" href="#id2">参考</a></li>
+<li><a class="reference internal" href="#id3">流程</a></li>
+</ul>
+</div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">wugn_note</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs"> 
+<li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+<li>概述</li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.forward()">Forward</a></li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.back()">Go Back</a> | </li>
+<li style="float: right;margin-left: 10px;"><a href="/index.html">Home</a> | </li>
+
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="id1">
+<h1>概述<a class="headerlink" href="#id1" title="此标题的永久链接"></a></h1>
+<p>probe defer延迟机制，让probe轮询起来。</p>
+</section>
+<section id="driver-probe-defer">
+<h1>driver probe defer延迟机制<a class="headerlink" href="#driver-probe-defer" title="此标题的永久链接"></a></h1>
+<p>kernel 下有多个独立的驱动，每个驱动或多或少地会引用到其他驱动提供的资源，比如某个外设驱动需要使用 gpio 资源，就会通过 gpio 驱动提供的函数接口去申请 gpio；但是当A驱动引用B驱动提供的资源时，B驱动可能还没有工作起来，为了解决驱动之间的这种依赖关系，kernel 设计了 driver-deferred-probe 机制：某个驱动在 probe 过程中，如果遇到依赖的资源还没有准备好，那么就返回 -EPRBOE_DEFER，kernel 检测到该驱动返回的是  -EPRBOE_DEFER，就会在过一段时间后让该驱动再次 probe。</p>
+<p><img alt="0029_0000.png" src="../../../_images/0029_00001.png" /></p>
+<p>如上图代码，可以根据打印得知，probe跑了两次才获取到对应的typec设备，两次probe的间隔大概是3s。</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="o">[</span>    <span class="m">2</span>.663660<span class="o">]</span> PAX_CHG: pax_charger_probe: starts
+<span class="o">[</span>    <span class="m">2</span>.668256<span class="o">]</span> charger soc:charger: pax_charger_probe <span class="o">(</span><span class="m">0</span>.0.1<span class="o">)</span> <span class="nv">probe_cnt</span> <span class="o">=</span> <span class="m">1</span>
+<span class="o">[</span>    <span class="m">2</span>.675194<span class="o">]</span> charger soc:charger: pax_charger_probe get tcpc dev fail
+
+<span class="o">[</span>    <span class="m">5</span>.583672<span class="o">]</span> PAX_CHG: pax_charger_probe: starts
+<span class="o">[</span>    <span class="m">5</span>.588213<span class="o">]</span> charger soc:charger: pax_charger_probe <span class="o">(</span><span class="m">0</span>.0.1<span class="o">)</span> <span class="nv">probe_cnt</span> <span class="o">=</span> <span class="m">2</span>
+<span class="o">[</span>    <span class="m">5</span>.595207<span class="o">]</span> PAX_CHG: found Basic
+<span class="o">[</span>    <span class="m">5</span>.598723<span class="o">]</span> bms_notify_register_client
+<span class="o">[</span>    <span class="m">5</span>.602512<span class="o">]</span> charger soc:charger: pax_charger_probe OK!!
+</pre></div>
+</div>
+</section>
+<section id="id2">
+<h1>参考<a class="headerlink" href="#id2" title="此标题的永久链接"></a></h1>
+<ul class="simple">
+<li><p><a class="reference external" href="https://blog.csdn.net/u010443710/article/details/120023298">kernel driver probe defer机制</a></p></li>
+</ul>
+</section>
+<section id="id3">
+<h1>流程<a class="headerlink" href="#id3" title="此标题的永久链接"></a></h1>
+<ul class="simple">
+<li><p>driver-deferred-probe 流程如下图所示，有三条可能的路径：</p>
+<ul>
+<li><p>生成新的 device 时</p></li>
+<li><p>注册新的 driver 时</p></li>
+<li><p>later_initcall 主动再次触发</p></li>
+</ul>
+</li>
+</ul>
+<p><img alt="0029_0001.png" src="../../../_images/0029_00011.png" /></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">drivers/i2c/i2c-core-base.c</span></code>:</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span>* i2c_add_driver(driver)
+  └── i2c_register_driver(THIS_MODULE, driver)
+      └── driver_register(&amp;driver-&gt;driver);
+          └── ret = bus_add_driver(drv);
+              └── driver_attach(drv);
+                  └── bus_for_each_dev(drv-&gt;bus, NULL, drv, __driver_attach);//就是对已经添加到drv-&gt;bus上面的每个设备操作
+                      └── while (!error &amp;&amp; (dev = next_device(&amp;i))) error = fn(dev, data); //形参fn表示__driver_attach，也就是对每个设备执行__driver_attach
+                          ├── ret = driver_match_device(drv, dev);
+                          ├── if (ret == 0) return 0; //未匹配
+                          ├── else if (ret == -EPROBE_DEFER) 
+                          │   └── driver_deferred_probe_add(dev);
+                          │       └── list_add_tail(&amp;dev-&gt;p-&gt;deferred_probe, &amp;deferred_probe_pending_list); //用来记录哪些驱动被 deferred probe
+                          └── if (!dev-&gt;p-&gt;dead &amp;&amp; !dev-&gt;driver)
+                              └── driver_probe_device(drv, dev);
+                                  └── ret = really_probe(dev, drv); //drivers/base/dd.c
+                                      ├── ret = device_links_check_suppliers(dev); //
+                                      ├── if (ret == -EPROBE_DEFER)
+                                      │   └── driver_deferred_probe_add_trigger(dev, local_trigger_count);
+                                      │       └── driver_deferred_probe_trigger();
+                                      │           └── schedule_work(&amp;deferred_probe_work);// 用来调度相应的 work func 来执行 deferred probe 动作
+                                      │               └── deferred_probe_work_func(struct work_struct *work)//Retry probing devices in the active list.
+                                      │                   └── bus_probe_device(dev); //重新调度probe函数
+                                      └── driver_bound(dev);
+                                          └── driver_deferred_probe_trigger();
+</pre></div>
+</div>
+<p>有了 driver-deferred-probe 机制后，编写驱动程序时，除了某些驱动有严格的执行次序，需要特意去定义 initcall 等级之外，一般的驱动则无需太过关心驱动间的依赖，从而在一定程度上简化了驱动开发。</p>
+<p>以上就是对 EPRBOE_DEFER 的简要介绍。</p>
+</section>
+
+
+           </div>
+             <div class="articleComments">
+                <comments>
+  <script src="https://utteranc.es/client.js"
+    repo="iswbm/magic-python"
+    issue-term="pathname"
+    theme="github-light"
+    crossorigin="anonymous"
+    async>
+  </script>
+</comments>
+             </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; 版权所有 2022, wugn.</p>
+  </div>
+
+  利用 <a href="https://www.sphinx-doc.org/">Sphinx</a> 构建，使用了 
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">主题</a>
+    由 <a href="https://readthedocs.org">Read the Docs</a>开发.
+  
+
+<script charset="UTF-8" id="LA_COLLECT" src="//sdk.51.la/js-sdk-pro.min.js"></script>
+<script>LA.init({id: "JoV5csIHTGhHiGQ4",ck: "JoV5csIHTGhHiGQ4"})</script>
+
+<br/>
+<script id="LA-DATA-WIDGET" crossorigin="anonymous" charset="UTF-8" src="https://v6-widget.51.la/v6/JoV5csIHTGhHiGQ4/quote.js?theme=#4C8AC2,#BB2626,#040000,#333333,#AE3535,#1690FF,14&f=14"></script>
+
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

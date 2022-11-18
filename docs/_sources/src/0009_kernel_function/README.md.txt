@@ -6,6 +6,9 @@
 
 NO.|文件名称|摘要
 :--:|:--|:--
+0029| [driver_probe_defer延迟机制](docs/0029_driver_probe_defer延迟机制.md) | probe defer延迟机制，让probe轮询起来。
+0028| [platform_driver_probe匹配及调用流程](docs/0028_platform_driver_probe匹配及调用流程.md) | 本文主要讲解一下platform driver是如何匹配platform device并执行probe函数的。
+0027| [设备树解析成device过程及platform设备注册](docs/0027_设备树解析成device过程及platform设备注册.md) | 一般把驱动程序分成两部分platform_device跟platform_driver这两部分，
 0026| [kernel工作队列(workqueue)简介](docs/0026_kernel工作队列(workqueue)简介.md) | 特性：
 0025| [内核卡死实例分析](docs/0025_内核卡死实例分析.md) | 项目实际遇到的一些内核卡死问题分析汇总。
 0024| [mtk_qcom_添加cmdline实现方案](docs/0024_mtk_qcom_添加cmdline实现方案.md) | 我们经常要在开机阶段检测某些硬件信息传递给kernel，可以通过cmdline方式传递。
