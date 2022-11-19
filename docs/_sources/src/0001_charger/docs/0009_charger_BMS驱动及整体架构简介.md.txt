@@ -1781,6 +1781,27 @@ adb shell am start -n com.pax.batterywarning/.BatteryWarningToShutdown --ei type
 
 ![0009_0017.png](images/0009_0017.png)
 
+* 低温测试打印：
+```
+[  878.014934] PAX_BMS:PRESENT = 1
+[  878.014943] PAX_BMS:g_bms_data.bat_info.soc = 92
+[  878.023565] PAX_BMS:chg vol: 5100000
+[  878.032074] PAX_BMS:bat vol: 8520000, bat_no_zcv: 1
+[  878.037535] PAX_BMS:temp: -300, min_bat_temp: -100, out of range.
+[  878.043704] PAX_BMS:notify_code: 0x1
+[  878.047497] PAX_BMS:type: NC_BAT_UT, set: 1, notify_code: 0x20
+```
+
+* 高温测试打印：
+```
+[  163.374401] PAX_BMS:g_bms_data.bat_info.soc = 92
+[  163.379360] PAX_BMS:chg vol: 5104000
+[  163.387945] PAX_BMS:bat vol: 8494000, bat_no_zcv: 1
+[  163.392944] PAX_BMS:temp: 610, max_bat_temp: 600, out of range.
+[  163.399139] PAX_BMS:notify_code: 0x1
+[  163.402832] PAX_BMS:type: NC_BAT_OT, set: 1, notify_code: 0x2
+```
+
 ## 3.NC_CHG_TMO超时测试
 
 通过命令`echo 10 > /sys/devices/platform/soc/soc:pax_bms/pax/bms/max_chg_time`设置一个10秒的充电超时时间，打印如下：
@@ -1792,3 +1813,4 @@ adb shell am start -n com.pax.batterywarning/.BatteryWarningToShutdown --ei type
 [  866.838535] pax_charger_update
 [  866.850534] PAX_CHG: BMS bms_dump: CHG [online: 0, type: 0, vol: 5000000, cur: 16800000, time: 15], BAT [present: 1, status: 1, vol: 3950000, cur: 449000, resistance: 0, temp: 300, soc: 61], OTHER [skin_temp: 0, chg_vote: 0x2000, notify_code: 0x2400],
 ```
+
