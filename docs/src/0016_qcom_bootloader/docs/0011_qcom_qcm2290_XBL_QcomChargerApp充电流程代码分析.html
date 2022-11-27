@@ -70,7 +70,7 @@
 </ul>
 </li>
 <li><a class="reference internal" href="#reboot">开机reboot无法启动(过压保护)</a></li>
-<li><a class="reference internal" href="#usb">低电量插USB开机无法充电直接关机</a></li>
+<li><a class="reference internal" href="#usb">低电量插USB开机无法充电直接关机/无法进入关机充电模式</a></li>
 </ul>
 </div>
         </div>
@@ -1953,7 +1953,7 @@
 </div>
 </section>
 <section id="usb">
-<h1>低电量插USB开机无法充电直接关机<a class="headerlink" href="#usb" title="此标题的永久链接"></a></h1>
+<h1>低电量插USB开机无法充电直接关机/无法进入关机充电模式<a class="headerlink" href="#usb" title="此标题的永久链接"></a></h1>
 <p>打印如下：</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">QcomChargerApp</span><span class="p">::</span> <span class="n">QcomChargerApp_Entry</span> <span class="n">QcomChargerApp_Entry</span> <span class="o">=</span> <span class="n">Success</span>
 <span class="n">ChargerLib</span><span class="p">::</span> <span class="n">ChargerLib_GetBatteryVoltageStatus</span> <span class="n">Battery</span> <span class="n">voltage</span> <span class="o">=</span> <span class="mi">3248</span> <span class="n">mV</span>
@@ -1994,6 +1994,24 @@ ChargerLib:: ChargerLib_GetBatteryVoltageStatus Battery voltage = 3670 mV
 QcomChargerDxe:: ChargerPlatform_CheckIfOkToBoot Weak Battery Check Pass! Good To Boot To HLOS BatteryVoltage= 3670 gThresholdVbatt = 3450
 QcomChargerDxe:: ChargerPlatform_GetChargingAction Action Returned = 3
 QcomChargerDxe::ChargerPlatform_TakeAction ChargingAction = 3
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>但是最后发现我们手机支持快充功能，但是模块最大OVP是6v，想来想去还是不连模块vbus了，<code class="docutils literal notranslate"><span class="pre">EFI_PmicSchgUsbinValid</span></code>直接ture：</p></li>
+</ul>
+<div class="highlight-diff notranslate"><div class="highlight"><pre><span></span><span class="gd">--- a/A6650_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/Drivers/PmicDxe/PmicSchgProtocol.c</span><span class="w"></span>
+<span class="gi">+++ b/A6650_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/Drivers/PmicDxe/PmicSchgProtocol.c</span><span class="w"></span>
+<span class="gu">@@ -355,8 +355,10 @@ EFI_PmicSchgUsbinValid</span><span class="w"></span>
+<span class="w"> </span>    errFlag = pm_schg_usb_irq_status(PmicDeviceIndex, PM_SCHG_USB_IRQ_USBIN_PLUGIN, PM_IRQ_STATUS_RT,(boolean*)&amp;UsbinPlugedIn);<span class="w"></span>
+
+<span class="w"> </span>    Status = (PM_ERR_FLAG__SUCCESS == errFlag)? PM_ERR_FLAG__SUCCESS : EFI_DEVICE_ERROR;<span class="w"></span>
+<span class="gd">-</span><span class="w"></span>
+<span class="gd">-    *Valid = (UsbinPlugedIn) ? TRUE : FALSE;</span><span class="w"></span>
+<span class="gi">+// [NEW FEATURE]-BEGIN by wugangnan@paxsz.com 2022-11-21,Not using module vbus, return ture</span><span class="w"></span>
+<span class="gi">+//    *Valid = (UsbinPlugedIn) ? TRUE : FALSE;</span><span class="w"></span>
+<span class="gi">+    *Valid = TRUE;</span><span class="w"></span>
+<span class="gi">+// [NEW FEATURE]-END by wugangnan@paxsz.com 2022-11-21,Not using module vbus, return ture</span><span class="w"></span>
+<span class="w"> </span>  }<span class="w"></span>
 </pre></div>
 </div>
 </section>

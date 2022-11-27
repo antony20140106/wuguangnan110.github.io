@@ -57,14 +57,16 @@
 <li><a class="reference internal" href="#app-batterywarning">三、异常信息广播APP batterywarning</a><ul>
 <li><a class="reference internal" href="#id9">1.异常信息定义</a></li>
 <li><a class="reference internal" href="#id10">2.BMS轮询上报</a></li>
-<li><a class="reference internal" href="#batterywarning-cepoll">3.batterywarning C应用epoll检测并发送广播上报</a><ul>
+<li><a class="reference internal" href="#batterywarning-cepoll">3.batterywarning C应用epoll异常检测并发送广播上报</a></li>
+<li><a class="reference internal" href="#batterywarning-java">4.batterywarning java应用异常处理</a></li>
+<li><a class="reference internal" href="#id11">5.总体流程打印</a><ul>
 <li><a class="reference internal" href="#android-12">Android 12无法发送广播</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#id11">4.防止过放功能</a></li>
+<li><a class="reference internal" href="#id12">4.防止过放功能</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#id12">四、底层BMS功能接口提供</a><ul>
+<li><a class="reference internal" href="#id13">四、底层BMS功能接口提供</a><ul>
 <li><a class="reference internal" href="#hal">HAL层接口实现</a><ul>
 <li><a class="reference internal" href="#hw-module-t-pax-bms-c">hw_module_t pax_bms.c</a></li>
 <li><a class="reference internal" href="#hw-device-t-paxbms-cpp">hw_device_t PaxBMS.cpp</a></li>
@@ -72,10 +74,10 @@
 </li>
 <li><a class="reference internal" href="#hidl-arch">HIDL Arch</a><ul>
 <li><a class="reference internal" href="#hidl">注册HIDL服务</a></li>
-<li><a class="reference internal" href="#id13">添加HIDL服务编译选项</a></li>
+<li><a class="reference internal" href="#id14">添加HIDL服务编译选项</a></li>
 <li><a class="reference internal" href="#hidl-manifest">添加HIDL manifest</a></li>
-<li><a class="reference internal" href="#id14">启动HIDL服务</a></li>
-<li><a class="reference internal" href="#id15">查看HIDL服务进程</a></li>
+<li><a class="reference internal" href="#id15">启动HIDL服务</a></li>
+<li><a class="reference internal" href="#id16">查看HIDL服务进程</a></li>
 </ul>
 </li>
 </ul>
@@ -795,7 +797,7 @@ static void bms_status_notify()
 </div>
 </section>
 <section id="batterywarning-cepoll">
-<h2>3.batterywarning C应用epoll检测并发送广播上报<a class="headerlink" href="#batterywarning-cepoll" title="此标题的永久链接"></a></h2>
+<h2>3.batterywarning C应用epoll异常检测并发送广播上报<a class="headerlink" href="#batterywarning-cepoll" title="此标题的永久链接"></a></h2>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">vendor/mediatek/proprietary/frameworks/opt/batterywarning/batterywarning.cpp</span></code>:</p></li>
 </ul>
@@ -1151,6 +1153,227 @@ static void bms_status_notify()
 <span class="p">}</span><span class="w"></span>
 </pre></div>
 </div>
+</section>
+<section id="batterywarning-java">
+<h2>4.batterywarning java应用异常处理<a class="headerlink" href="#batterywarning-java" title="此标题的永久链接"></a></h2>
+<p>目前BMS要求只要低温、高温、低压关机报警功能，首先看看接收异常广播<code class="docutils literal notranslate"><span class="pre">pax.intent.action.BATTERY_ABNORMAL</span></code>入口，主要完成以下事情：</p>
+<ul class="simple">
+<li><ol class="arabic simple">
+<li><p>接收<code class="docutils literal notranslate"><span class="pre">pax.intent.action.BATTERY_ABNORMAL</span></code>异常广播，上传的type都是向左移位的，所以需要将原始的tpye根据公式<code class="docutils literal notranslate"><span class="pre">Math.log</span></code>求2的对数的解析出来。</p></li>
+</ol>
+</li>
+<li><ol class="arabic simple" start="2">
+<li><p>将type值用intent传到<code class="docutils literal notranslate"><span class="pre">BatteryWarningToShutdown</span></code>的activity中进行处理。</p></li>
+</ol>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">QSSI.12/packages/apps/BatteryWarning/src/com/pax/batterywarning/BatteryWarningReceiver.java</span></code>:</p></li>
+</ul>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">BatteryWarningReceiver</span><span class="w"> </span><span class="kd">extends</span><span class="w"> </span><span class="n">BroadcastReceiver</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">     </span><span class="c1">// private static final String ACTION_IPO_BOOT = &quot;android.intent.action.ACTION_BOOT_IPO&quot;;</span><span class="w"></span>
+<span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kd">static</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="n">ACTION_BATTERY_WARNING</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;pax.intent.action.BATTERY_ABNORMAL&quot;</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kd">static</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="n">ACTION_BATTERY_NORMAL</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;pax.intent.action.BATTERY_NORMAL&quot;</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kd">static</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="n">TAG</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;BatteryWarningReceiver&quot;</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kd">static</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="n">SHARED_PREFERENCES_NAME</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;battery_warning_settings&quot;</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="n">Context</span><span class="w"> </span><span class="n">mContext</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">    </span><span class="c1">// Thermal over temperature</span><span class="w"></span>
+<span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kd">static</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="n">ACTION_THERMAL_WARNING</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;pax.intent.action.THERMAL_DIAG&quot;</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">   </span><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">onReceive</span><span class="p">(</span><span class="n">Context</span><span class="w"> </span><span class="n">context</span><span class="p">,</span><span class="w"> </span><span class="n">Intent</span><span class="w"> </span><span class="n">intent</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="n">mContext</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">context</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="n">String</span><span class="w"> </span><span class="n">action</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">intent</span><span class="p">.</span><span class="na">getAction</span><span class="p">();</span><span class="w"></span>
+<span class="w">        </span><span class="n">Log</span><span class="p">.</span><span class="na">d</span><span class="p">(</span><span class="n">TAG</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;action = &quot;</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">action</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">Intent</span><span class="p">.</span><span class="na">ACTION_BOOT_COMPLETED</span><span class="p">.</span><span class="na">equals</span><span class="p">(</span><span class="n">action</span><span class="p">))</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">            </span><span class="n">Log</span><span class="p">.</span><span class="na">d</span><span class="p">(</span><span class="n">TAG</span><span class="p">,</span><span class="w"> </span><span class="n">action</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s">&quot; clear battery_warning_settings shared preference&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">            </span><span class="n">SharedPreferences</span><span class="p">.</span><span class="na">Editor</span><span class="w"> </span><span class="n">editor</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">getSharedPreferences</span><span class="p">().</span><span class="na">edit</span><span class="p">();</span><span class="w"></span>
+<span class="w">            </span><span class="n">editor</span><span class="p">.</span><span class="na">clear</span><span class="p">();</span><span class="w"></span>
+<span class="w">            </span><span class="n">editor</span><span class="p">.</span><span class="na">apply</span><span class="p">();</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ACTION_BATTERY_WARNING</span><span class="p">.</span><span class="na">equals</span><span class="p">(</span><span class="n">action</span><span class="p">))</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">            </span><span class="n">Log</span><span class="p">.</span><span class="na">d</span><span class="p">(</span><span class="n">TAG</span><span class="p">,</span><span class="w"> </span><span class="n">action</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s">&quot; start activity according to shared preference&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">            </span><span class="kt">int</span><span class="w"> </span><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">intent</span><span class="p">.</span><span class="na">getIntExtra</span><span class="p">(</span><span class="s">&quot;type&quot;</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="mi">1</span><span class="p">);</span><span class="w"></span>
+<span class="w">            </span><span class="n">Log</span><span class="p">.</span><span class="na">d</span><span class="p">(</span><span class="n">TAG</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;type = &quot;</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">type</span><span class="p">);</span><span class="w"></span>
+<span class="w">            </span><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="p">)</span><span class="w"> </span><span class="p">(</span><span class="n">Math</span><span class="p">.</span><span class="na">log</span><span class="p">(</span><span class="n">type</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">Math</span><span class="p">.</span><span class="na">log</span><span class="p">(</span><span class="mi">2</span><span class="p">));</span><span class="w"></span>
+<span class="w">            </span><span class="n">Log</span><span class="p">.</span><span class="na">d</span><span class="p">(</span><span class="n">TAG</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;type = &quot;</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">type</span><span class="p">);</span><span class="w"></span>
+<span class="w">            </span><span class="k">if</span><span class="p">(</span><span class="n">type</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">BatteryWarningToShutdown</span><span class="p">.</span><span class="na">PAX_BAT_NC_UV</span><span class="w"> </span><span class="o">|</span><span class="w"> </span>
+<span class="w">			   </span><span class="n">type</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">BatteryWarningToShutdown</span><span class="p">.</span><span class="na">PAX_BAT_LOW_TEMP</span><span class="w"> </span><span class="o">|</span><span class="w"> </span>
+<span class="w">			   </span><span class="n">type</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">BatteryWarningToShutdown</span><span class="p">.</span><span class="na">PAX_BAT_HIGH_TEMP</span><span class="p">){</span><span class="w"></span>
+<span class="w">                </span><span class="n">ShowBatteryWaringToShutdownDialog</span><span class="p">(</span><span class="n">type</span><span class="p">);</span><span class="w"></span>
+<span class="w">            </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">ShowBatteryWaringToShutdownDialog</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">type</span><span class="p">){</span><span class="w"></span>
+<span class="w">        </span><span class="n">Intent</span><span class="w"> </span><span class="n">shutDownIntent</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">Intent</span><span class="p">();</span><span class="w"></span>
+<span class="w">        </span><span class="n">shutDownIntent</span><span class="p">.</span><span class="na">setFlags</span><span class="p">(</span><span class="n">Intent</span><span class="p">.</span><span class="na">FLAG_ACTIVITY_NEW_TASK</span><span class="w"></span>
+<span class="w">                </span><span class="o">|</span><span class="w"> </span><span class="n">Intent</span><span class="p">.</span><span class="na">FLAG_ACTIVITY_CLEAR_TOP</span><span class="w"></span>
+<span class="w">                </span><span class="o">|</span><span class="w"> </span><span class="n">Intent</span><span class="p">.</span><span class="na">FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="n">shutDownIntent</span><span class="p">.</span><span class="na">setClass</span><span class="p">(</span><span class="n">mContext</span><span class="p">,</span><span class="w"> </span><span class="n">BatteryWarningToShutdown</span><span class="p">.</span><span class="na">class</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="n">shutDownIntent</span><span class="p">.</span><span class="na">putExtra</span><span class="p">(</span><span class="n">BatteryWarningToShutdown</span><span class="p">.</span><span class="na">KEY_TYPE</span><span class="p">,</span><span class="w"> </span><span class="n">type</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="n">mContext</span><span class="p">.</span><span class="na">startActivity</span><span class="p">(</span><span class="n">shutDownIntent</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>处理异常如下：</p>
+<ul>
+<li><ol class="arabic simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">onCreate</span></code>接收到type值，调用弹框<code class="docutils literal notranslate"><span class="pre">showVoltageUnderWarningDialog</span></code>，这里启动10s定时器，并监听<code class="docutils literal notranslate"><span class="pre">BatteryManager.EXTRA_PLUGGED</span></code>广播，拔出usb则关闭定时器。</p></li>
+</ol>
+</li>
+<li><ol class="arabic simple" start="2">
+<li><p>定时器中发送给handleMessage刷新弹框倒计时时间，mShutDownTime–为0时则关机。</p></li>
+</ol>
+</li>
+</ul>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">QSSI.12/packages/apps/BatteryWarning/src/com/pax/batterywarning/BatteryWarningToShutdown.java</span></code>:</p></li>
+</ul>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">BatteryWarningToShutdown</span><span class="w"> </span><span class="kd">extends</span><span class="w"> </span><span class="n">Activity</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kd">static</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="n">TAG</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;BatteryWarningToShutdown&quot;</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="kd">protected</span><span class="w"> </span><span class="kd">static</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="n">KEY_TYPE</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;type&quot;</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kd">static</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">Uri</span><span class="w"> </span><span class="n">WARNING_SOUND_URI</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Uri</span><span class="p">.</span><span class="na">parse</span><span class="p">(</span><span class="s">&quot;file:///system/media/audio/ui/VideoRecord.ogg&quot;</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">    </span><span class="kd">protected</span><span class="w"> </span><span class="kd">static</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">PAX_BAT_NC_UV</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">18</span><span class="p">;</span><span class="w">  </span><span class="c1">//under voltage,power off</span><span class="w"></span>
+<span class="w">    </span><span class="kd">protected</span><span class="w"> </span><span class="kd">static</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">PAX_BAT_LOW_TEMP</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">5</span><span class="p">;</span><span class="w">  </span><span class="c1">//under temp,power off</span><span class="w"></span>
+<span class="w">	 </span><span class="kd">protected</span><span class="w"> </span><span class="kd">static</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">PAX_BAT_HIGH_TEMP</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span><span class="w">  </span><span class="c1">//over temp,power off</span><span class="w"></span>
+
+<span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="n">Handler</span><span class="w"> </span><span class="n">mHandler</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">Handler</span><span class="p">(){</span><span class="w"></span>
+<span class="w">        </span><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">handleMessage</span><span class="p">(</span><span class="n">Message</span><span class="w"> </span><span class="n">msg</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">            </span><span class="kd">super</span><span class="p">.</span><span class="na">handleMessage</span><span class="p">(</span><span class="n">msg</span><span class="p">);</span><span class="w"></span>
+<span class="w">            </span><span class="k">if</span><span class="p">(</span><span class="n">msg</span><span class="p">.</span><span class="na">what</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">1</span><span class="p">){</span><span class="w"></span>
+<span class="w">                </span><span class="n">mShutDownTime</span><span class="o">--</span><span class="p">;</span><span class="w"></span>
+<span class="w">                </span><span class="k">if</span><span class="p">(</span><span class="n">mShutDownTime</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">){</span><span class="w"></span>
+<span class="w">                    </span><span class="n">mContent</span><span class="p">.</span><span class="na">setText</span><span class="p">(</span><span class="n">getString</span><span class="p">(</span><span class="n">R</span><span class="p">.</span><span class="na">string</span><span class="p">.</span><span class="na">pax_shutdown_now_text</span><span class="p">));</span><span class="w"></span>
+<span class="w">                    </span><span class="n">mTimer</span><span class="p">.</span><span class="na">cancel</span><span class="p">();</span><span class="w"></span>
+<span class="w">                    </span><span class="n">stopRingtone</span><span class="p">();</span><span class="w"></span>
+<span class="w">                    </span><span class="k">try</span><span class="p">{</span><span class="w"></span>
+<span class="w">                        </span><span class="n">Log</span><span class="p">.</span><span class="na">d</span><span class="p">(</span><span class="n">TAG</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;pax under voltage will shutdown&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">                        </span><span class="n">IPowerManager</span><span class="w"> </span><span class="n">pm</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">IPowerManager</span><span class="p">.</span><span class="na">Stub</span><span class="p">.</span><span class="na">asInterface</span><span class="p">(</span><span class="w"></span>
+<span class="w">                            </span><span class="n">ServiceManager</span><span class="p">.</span><span class="na">getService</span><span class="p">(</span><span class="n">Context</span><span class="p">.</span><span class="na">POWER_SERVICE</span><span class="p">));</span><span class="w"></span>
+<span class="w">                        </span><span class="n">pm</span><span class="p">.</span><span class="na">shutdown</span><span class="p">(</span><span class="kc">false</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;under voltage&quot;</span><span class="p">,</span><span class="w"> </span><span class="kc">false</span><span class="p">);</span><span class="w"></span>
+<span class="w">                    </span><span class="p">}</span><span class="k">catch</span><span class="p">(</span><span class="n">RemoteException</span><span class="w"> </span><span class="n">e</span><span class="p">){</span><span class="w"></span>
+<span class="w">                        </span><span class="n">Log</span><span class="p">.</span><span class="na">d</span><span class="p">(</span><span class="n">TAG</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;pax battery under voltage shutdown fail.&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">                        </span><span class="n">e</span><span class="p">.</span><span class="na">printStackTrace</span><span class="p">();</span><span class="w"></span>
+<span class="w">                    </span><span class="p">}</span><span class="w"></span>
+<span class="w">                </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">					</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mType</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">PAX_BAT_LOW_TEMP</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">						</span><span class="n">mContent</span><span class="p">.</span><span class="na">setText</span><span class="p">(</span><span class="n">getString</span><span class="p">(</span><span class="n">R</span><span class="p">.</span><span class="na">string</span><span class="p">.</span><span class="na">pax_low_temp_shutdown_time_text</span><span class="p">,</span><span class="w"> </span><span class="n">mShutDownTime</span><span class="p">));</span><span class="w"></span>
+<span class="w">					</span><span class="p">}</span><span class="w"></span>
+<span class="w">					</span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">						</span><span class="n">mContent</span><span class="p">.</span><span class="na">setText</span><span class="p">(</span><span class="n">getString</span><span class="p">(</span><span class="n">R</span><span class="p">.</span><span class="na">string</span><span class="p">.</span><span class="na">pax_high_temp_shutdown_time_text</span><span class="p">,</span><span class="w"> </span><span class="n">mShutDownTime</span><span class="p">));</span><span class="w"></span>
+<span class="w">					</span><span class="p">}</span><span class="w"></span>
+<span class="w">                </span><span class="p">}</span><span class="w"></span>
+<span class="w">            </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="p">};</span><span class="w"></span>
+
+<span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="n">Timer</span><span class="w"> </span><span class="n">mTimer</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">Timer</span><span class="p">(</span><span class="kc">true</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="n">TimerTask</span><span class="w"> </span><span class="n">mTask</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">TimerTask</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">run</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">            </span><span class="n">Message</span><span class="w"> </span><span class="n">msg</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">Message</span><span class="p">();</span><span class="w"></span>
+<span class="w">            </span><span class="n">msg</span><span class="p">.</span><span class="na">what</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span><span class="w"></span>
+<span class="w">            </span><span class="n">mHandler</span><span class="p">.</span><span class="na">sendMessage</span><span class="p">(</span><span class="n">msg</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="p">};</span><span class="w"></span>
+
+<span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">BroadcastReceiver</span><span class="w"> </span><span class="n">mReceiver</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">BroadcastReceiver</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="nd">@Override</span><span class="w"></span>
+<span class="w">        </span><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">onReceive</span><span class="p">(</span><span class="n">Context</span><span class="w"> </span><span class="n">context</span><span class="p">,</span><span class="w"> </span><span class="n">Intent</span><span class="w"> </span><span class="n">intent</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">            </span><span class="n">String</span><span class="w"> </span><span class="n">action</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">intent</span><span class="p">.</span><span class="na">getAction</span><span class="p">();</span><span class="w"></span>
+<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">Intent</span><span class="p">.</span><span class="na">ACTION_BATTERY_CHANGED</span><span class="p">.</span><span class="na">equals</span><span class="p">(</span><span class="n">action</span><span class="p">))</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="kt">boolean</span><span class="w"> </span><span class="n">plugged</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="mi">0</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">intent</span><span class="p">.</span><span class="na">getIntExtra</span><span class="p">(</span><span class="n">BatteryManager</span><span class="p">.</span><span class="na">EXTRA_PLUGGED</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">));</span><span class="w"></span>
+<span class="w">                </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">plugged</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                    </span><span class="n">Log</span><span class="p">.</span><span class="na">d</span><span class="p">(</span><span class="n">TAG</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;receive ACTION_BATTERY_CHANGED broadcast plugged:&quot;</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">plugged</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s">&quot;, finish&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">                    </span><span class="n">mTimer</span><span class="p">.</span><span class="na">cancel</span><span class="p">();</span><span class="w"></span>
+<span class="w">                    </span><span class="n">stopRingtone</span><span class="p">();</span><span class="w"></span>
+<span class="w">                    </span><span class="n">finish</span><span class="p">();</span><span class="w"></span>
+<span class="w">                </span><span class="p">}</span><span class="w"></span>
+<span class="w">            </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="p">};</span><span class="w"></span>
+
+<span class="w">    </span><span class="nd">@Override</span><span class="w"></span>
+<span class="w">    </span><span class="kd">protected</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">onCreate</span><span class="p">(</span><span class="n">Bundle</span><span class="w"> </span><span class="n">savedInstanceState</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="kd">super</span><span class="p">.</span><span class="na">onCreate</span><span class="p">(</span><span class="n">savedInstanceState</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="n">Intent</span><span class="w"> </span><span class="n">intent</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">getIntent</span><span class="p">();</span><span class="w"></span>
+<span class="w">        </span><span class="n">mType</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">intent</span><span class="p">.</span><span class="na">getIntExtra</span><span class="p">(</span><span class="n">KEY_TYPE</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="mi">1</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="n">Log</span><span class="p">.</span><span class="na">d</span><span class="p">(</span><span class="n">TAG</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;onCreate, mType is &quot;</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">mType</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">        </span><span class="n">requestWindowFeature</span><span class="p">(</span><span class="n">Window</span><span class="p">.</span><span class="na">FEATURE_NO_TITLE</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="n">setContentView</span><span class="p">(</span><span class="n">R</span><span class="p">.</span><span class="na">layout</span><span class="p">.</span><span class="na">pax_battery_notify_warning</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">        </span><span class="n">mTitleView</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">TextView</span><span class="p">)</span><span class="w"> </span><span class="n">findViewById</span><span class="p">(</span><span class="n">R</span><span class="p">.</span><span class="na">id</span><span class="p">.</span><span class="na">title</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="n">mContent</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">TextView</span><span class="p">)</span><span class="w"> </span><span class="n">findViewById</span><span class="p">(</span><span class="n">R</span><span class="p">.</span><span class="na">id</span><span class="p">.</span><span class="na">content</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="n">mYesButton</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">Button</span><span class="p">)</span><span class="w"> </span><span class="n">findViewById</span><span class="p">(</span><span class="n">R</span><span class="p">.</span><span class="na">id</span><span class="p">.</span><span class="na">yes</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="k">if</span><span class="p">(</span><span class="n">mType</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">PAX_BAT_NC_UV</span><span class="p">){</span><span class="w"></span>
+<span class="w">            </span><span class="n">showVoltageUnderWarningDialog</span><span class="p">();</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">if</span><span class="p">(</span><span class="n">mType</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">PAX_BAT_LOW_TEMP</span><span class="p">){</span><span class="w"></span>
+<span class="w">            </span><span class="n">showTempLowWarningDialog</span><span class="p">();</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="p">(</span><span class="n">mType</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">PAX_BAT_HIGH_TEMP</span><span class="p">){</span><span class="w"></span>
+<span class="w">			</span><span class="n">showTempHighWarningDialog</span><span class="p">();</span><span class="w"></span>
+<span class="w">		</span><span class="p">}</span><span class="w"></span>
+<span class="w">		</span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">            </span><span class="n">finish</span><span class="p">();</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">showVoltageUnderWarningDialog</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="n">mShutDownTime</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">10</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="n">mTitleView</span><span class="p">.</span><span class="na">setText</span><span class="p">(</span><span class="n">R</span><span class="p">.</span><span class="na">string</span><span class="p">.</span><span class="na">pax_battery_voltage_under</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="n">mContent</span><span class="p">.</span><span class="na">setText</span><span class="p">(</span><span class="n">getString</span><span class="p">(</span><span class="n">R</span><span class="p">.</span><span class="na">string</span><span class="p">.</span><span class="na">pax_shutdown_time_text</span><span class="p">,</span><span class="w"> </span><span class="n">mShutDownTime</span><span class="p">));</span><span class="w"></span>
+
+<span class="w">        </span><span class="n">mYesButton</span><span class="p">.</span><span class="na">setText</span><span class="p">(</span><span class="n">getString</span><span class="p">(</span><span class="n">android</span><span class="p">.</span><span class="na">R</span><span class="p">.</span><span class="na">string</span><span class="p">.</span><span class="na">yes</span><span class="p">));</span><span class="w"></span>
+<span class="w">        </span><span class="n">mYesButton</span><span class="p">.</span><span class="na">setOnClickListener</span><span class="p">(</span><span class="n">mYesListener</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">        </span><span class="n">registerReceiver</span><span class="p">(</span><span class="n">mReceiver</span><span class="p">,</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">IntentFilter</span><span class="p">(</span><span class="n">Intent</span><span class="p">.</span><span class="na">ACTION_BATTERY_CHANGED</span><span class="p">));</span><span class="w"></span>
+<span class="w">        </span><span class="n">playAlertSound</span><span class="p">(</span><span class="n">WARNING_SOUND_URI</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="n">mTimer</span><span class="p">.</span><span class="na">schedule</span><span class="p">(</span><span class="n">mTask</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="o">*</span><span class="mi">1000</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+</section>
+<section id="id11">
+<h2>5.总体流程打印<a class="headerlink" href="#id11" title="此标题的永久链接"></a></h2>
+<p>流程如下：</p>
+<ul class="simple">
+<li><ol class="arabic simple">
+<li><p>底层bms轮询12次过温现象，发送过温code给上层batterywarning，启动notify_code: 0x2。</p></li>
+</ol>
+</li>
+<li><ol class="arabic simple" start="2">
+<li><p>batterywarning发送pax.intent.action.BATTERY_ABNORMAL广播给到BatteryWarning应用，其中type值为2。</p></li>
+</ol>
+</li>
+<li><ol class="arabic simple" start="3">
+<li><p>BatteryWarningReceiver接收到广播并解析弹框。</p></li>
+</ol>
+</li>
+</ul>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="c1">#define NC_BAT_OT				(1)</span>
+bms.c:
+<span class="o">[</span>  <span class="m">510</span>.675050<span class="o">]</span> PAX_BMS:temp: <span class="m">610</span>, max_bat_temp: <span class="m">600</span>, out of range.
+<span class="o">[</span>  <span class="m">510</span>.681010<span class="o">]</span> PAX_BMS:notify_code: 0x1
+<span class="o">[</span>  <span class="m">510</span>.684771<span class="o">]</span> PAX_BMS:type: NC_BAT_OT, set: <span class="m">1</span>, notify_code: 0x2
+
+batterywarning.cpp:
+android:/ <span class="c1"># logcat -s batterywarning</span>
+--------- beginning of main
+<span class="m">11</span>-08 <span class="m">14</span>:08:55.076  <span class="m">2850</span>  <span class="m">2850</span> D batterywarning: Inside file_index value : <span class="m">0</span>
+<span class="m">11</span>-08 <span class="m">14</span>:08:55.077  <span class="m">2850</span>  <span class="m">2850</span> D batterywarning: start activity by send intent to BatteryWarningReceiver, <span class="nb">type</span> <span class="o">=</span> <span class="m">2</span>
+<span class="m">11</span>-08 <span class="m">14</span>:08:55.077  <span class="m">2850</span>  <span class="m">2850</span> D batterywarning: sendBroadcastMessage<span class="o">()</span>: Action: pax.intent.action.BATTERY_ABNORMAL, Value: <span class="m">2</span>
+
+C:<span class="se">\U</span>sers<span class="se">\w</span>ugangnan&gt;adb logcat -s BatteryWarningReceiver
+--------- beginning of main
+<span class="m">11</span>-08 <span class="m">14</span>:08:55.094  <span class="m">3622</span>  <span class="m">3622</span> D BatteryWarningReceiver: <span class="nv">action</span> <span class="o">=</span> pax.intent.action.BATTERY_ABNORMAL
+<span class="m">11</span>-08 <span class="m">14</span>:08:55.095  <span class="m">3622</span>  <span class="m">3622</span> D BatteryWarningReceiver: pax.intent.action.BATTERY_ABNORMAL start activity according to shared preference
+<span class="m">11</span>-08 <span class="m">14</span>:08:55.095  <span class="m">3622</span>  <span class="m">3622</span> D BatteryWarningReceiver: <span class="nb">type</span> <span class="o">=</span> <span class="m">2</span>
+<span class="m">11</span>-08 <span class="m">14</span>:08:55.095  <span class="m">3622</span>  <span class="m">3622</span> D BatteryWarningReceiver: <span class="nb">type</span> <span class="o">=</span> <span class="m">1</span> //换算成2 &lt;&lt; <span class="m">1</span>
+</pre></div>
+</div>
 <section id="android-12">
 <h3>Android 12无法发送广播<a class="headerlink" href="#android-12" title="此标题的永久链接"></a></h3>
 <p>驱动层发送uevent事件没问题，使用binder调用函数<code class="docutils literal notranslate"><span class="pre">broadcastIntent</span></code>报错如下：</p>
@@ -1189,8 +1412,8 @@ static void bms_status_notify()
 <p><img alt="0009_0015.png" src="../../../_images/0009_0015.png" /></p>
 </section>
 </section>
-<section id="id11">
-<h2>4.防止过放功能<a class="headerlink" href="#id11" title="此标题的永久链接"></a></h2>
+<section id="id12">
+<h2>4.防止过放功能<a class="headerlink" href="#id12" title="此标题的永久链接"></a></h2>
 <p>实现原理是休眠时根据整机底电流<code class="docutils literal notranslate"><span class="pre">suspend_current_ua</span></code>计算整机能运行最大时长<code class="docutils literal notranslate"><span class="pre">secs</span></code>，启动唤醒定时器进行唤醒。</p>
 <div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="k">static</span><span class="w"> </span><span class="k">enum</span><span class="w"> </span><span class="nc">alarmtimer_restart</span><span class="w"> </span><span class="n">pax_battery_alarm_func</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">alarm</span><span class="w"> </span><span class="o">*</span><span class="n">alarm</span><span class="p">,</span><span class="w"> </span><span class="n">ktime_t</span><span class="w"> </span><span class="n">ktime</span><span class="p">)</span><span class="w"></span>
 <span class="p">{</span><span class="w"></span>
@@ -1323,8 +1546,8 @@ static void bms_status_notify()
 </div>
 </section>
 </section>
-<section id="id12">
-<h1>四、底层BMS功能接口提供<a class="headerlink" href="#id12" title="此标题的永久链接"></a></h1>
+<section id="id13">
+<h1>四、底层BMS功能接口提供<a class="headerlink" href="#id13" title="此标题的永久链接"></a></h1>
 <p>为了减少bms与charge、guage及平台的耦合性，BMS不和Charge、Guage直接交互，在他们中间增加了BMS Notify，BMS driver调用power_supply_get_property和power_supply_reg_notifier方法通过PSY core来获取Charger和Guage相关信息，同时可通过BMS Notify调bms_notify_call_chain向Charge发送相关指令.</p>
 <p><img alt="0009_0011.png" src="../../../_images/0009_0011.png" /></p>
 <section id="hal">
@@ -1705,8 +1928,8 @@ interface IPaxBMS {
 </pre></div>
 </div>
 </section>
-<section id="id13">
-<h3>添加HIDL服务编译选项<a class="headerlink" href="#id13" title="此标题的永久链接"></a></h3>
+<section id="id14">
+<h3>添加HIDL服务编译选项<a class="headerlink" href="#id14" title="此标题的永久链接"></a></h3>
 <div class="highlight-DIFF notranslate"><div class="highlight"><pre><span></span><span class="gd">--- a/device/mediatek/mt6765/device.mk</span><span class="w"></span>
 <span class="gi">+++ b/device/mediatek/mt6765/device.mk</span><span class="w"></span>
 <span class="gu">@@ -1051,6 +1051,14 @@ PRODUCT_PACKAGES += \</span><span class="w"></span>
@@ -1747,8 +1970,8 @@ interface IPaxBMS {
 </pre></div>
 </div>
 </section>
-<section id="id14">
-<h3>启动HIDL服务<a class="headerlink" href="#id14" title="此标题的永久链接"></a></h3>
+<section id="id15">
+<h3>启动HIDL服务<a class="headerlink" href="#id15" title="此标题的永久链接"></a></h3>
 <div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span>vendor/mediatek/proprietary/hardware/libpax_bms/1.0/default/android.hardware.pax_bms@1.0-service.rc
 @ -0,0 +1,9 @@
 service pax_bms-hal-1-0 /vendor/bin/hw/android.hardware.pax_bms@1.0-service
@@ -1793,8 +2016,8 @@ int main() {
 </pre></div>
 </div>
 </section>
-<section id="id15">
-<h3>查看HIDL服务进程<a class="headerlink" href="#id15" title="此标题的永久链接"></a></h3>
+<section id="id16">
+<h3>查看HIDL服务进程<a class="headerlink" href="#id16" title="此标题的永久链接"></a></h3>
 <p>实际上是一个<code class="docutils literal notranslate"><span class="pre">binder_ioctl_write_read</span></code>的进程。</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">PAYTABLETM8</span><span class="p">:</span><span class="o">/</span> <span class="c1"># ps -A | grep bms</span>
 <span class="n">system</span>          <span class="mi">479</span>      <span class="mi">1</span> <span class="mi">10776264</span>  <span class="mi">5036</span> <span class="n">binder_ioctl_write_read</span> <span class="mi">0</span> <span class="n">S</span> <span class="n">android</span><span class="o">.</span><span class="n">hardware</span><span class="o">.</span><span class="n">pax_bms</span><span class="o">@</span><span class="mf">1.0</span><span class="o">-</span><span class="n">service</span>

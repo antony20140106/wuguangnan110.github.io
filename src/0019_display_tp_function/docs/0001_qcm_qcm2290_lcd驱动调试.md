@@ -739,7 +739,6 @@ _NONE,    PLL_OVERRIDE_NONE, DISP_MODE_SINGLE_DSI,                DISP_MODE_SING
 +  }
 ```
 
-
 ## 代码流程
 
 根据配置文件`QcomPkg/SocPkg/AgattiPkg/LAA/Core.fdf`增加了显示驱动，在fdf文件中包含所有的inf文件所在路径：
@@ -1084,4 +1083,26 @@ ff 78
 ff 05
 
 </DSIInitSequence>
+```
+
+## 4.多屏兼容调试
+
+* 目前是只读到了DA并且匹配上了，其他的都是0：
+```log
+FindPanelIndex: Panel Id=29 found
+uPanelIndex: 0 address:000000DA readback[0]:00000033
+iCommandIndex: 0 bMatch OK readback:00000033 expectedReadback:00000033
+uPanelIndex: 0 address:000000DB readback[1]:00000000
+iCommandIndex: 1 bMatch OK readback:00000000 expectedReadback:00000000
+uPanelIndex: 0 address:000000DC readback[2]:00000000
+iCommandIndex: 2 bMatch OK readback:00000000 expectedReadback:00000000
+Detected panel id:00000023
+Detected panel id:00000023 pPlatformPanel->eSelectedPanel = 35 bMatch = 1
+FindPanelIndex: Panel Id=29 found
+```
+
+* 使用dump register功能dump出来确实又有写入：
+```
+0x00D8   0x00000000 0x00000000 0x00000033 0x000000CD
+0x00DC   0x00000004 0x00000000 0x00000000 0x00000000
 ```

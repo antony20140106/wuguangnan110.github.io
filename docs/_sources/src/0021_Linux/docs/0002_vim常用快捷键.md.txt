@@ -1,0 +1,115 @@
+# vim常用快捷键
+
+整理一下linux下vim常用高效快捷键。
+
+# 参考
+
+* [教你如何配置VIM,让你的VIM编辑器更高效](https://linux265.com/news/3395.html)
+
+# Vim设置项
+
+Vim的配置文件是/etc/vim/vimrc，用户配置是home目录下.vimrc文件，增加或编辑设置选项都是修改这个文件。
+
+```shell
+# ctags 设置
+set tag+=/xxx/tags
+
+# cscope设置，防止编译被删除
+if has("cscope")
+  set csprg=/usr/bin/cscope
+  set csto=1
+  set cst
+  set nocsverb
+
+  if filereadable("cscope.out_bak")
+      cs add cscope.out_bak
+  endif
+  set csverb
+endif
+
+# 快捷键定义
+nmap <C-@>s :cs find s <C-R>=expand("<cword>")<CR><CR>
+nmap <C-@>g :cs find g <C-R>=expand("<cword>")<CR><CR>
+nmap <C-@>c :cs find c <C-R>=expand("<cword>")<CR><CR>
+nmap <C-@>t :cs find t <C-R>=expand("<cword>")<CR><CR>
+nmap <C-@>e :cs find e <C-R>=expand("<cword>")<CR><CR>
+nmap <C-@>f :cs find f <C-R>=expand("<cfile>")<CR><CR>
+nmap <C-@>i :cs find i ^<C-R>=expand("<cfile>")<CR>$<CR>
+nmap <C-@>d :cs find d <C-R>=expand("<cword>")<CR><CR>
+
+# 1.缩进 & 制表符
+
+#使 Vim 在创建新行的时候使用与上一行同样的缩进：
+set autoindent
+
+#创建新行时使用智能缩进，主要用于 C 语言一类的程序。通常，打开 smartindent 时也应该打开 autoindent：
+set smartindent
+
+#如果你更喜欢在编辑文件时使用空格而不是制表符，设置以下选项可以使 Vim 在你按下 Tab 键时用空格代替制表符。
+set expandtab
+
+#设置文件里的制表符 (TAB) 的宽度（以空格的数量表示）：
+set tabstop=4
+
+# 2.显示 & 格式化
+
+#要在每行的前面显示行号，一般我不用，右下角有显示
+set number
+
+#要在文本行超过一定长度时自动换行：
+set textwidth=80
+
+#当光标遍历文件时经过括号时，高亮标识匹配的括号：
+set showmatch
+
+# 3. 搜索
+
+# 搜索设置高亮
+set hlsearch
+hi Search ctermbg=White
+hi Search ctermfg=Black
+
+#搜索过程中动态显示匹配内容，这个好用
+set incsearch
+
+#搜索时忽略大小写，这个慎用
+set ignorecase
+
+# 4. 浏览 & 滚动
+
+#为获得更好的视觉体验，你可能希望将光标放在窗口中间而不是第一行，以下选项使光标距窗口上下保留 5 行。这个好用，我一般设置的多点
+set scrolloff=5
+
+#在 Vim 窗口底部显示一个永久状态栏，可以显示文件名、行号和列号等内容，省得每次都用ctrl+g显示文件名
+set laststatus=2
+
+#其他选项
+
+#禁止创建交换文件：启用此选项后，Vim 将在编辑该文件时创建一个交换文件。 交换文件用于在崩溃或发生使用冲突时恢复文件。交换文件是以 . 开头并以 .swp 结尾的隐藏文件。
+set noswapfile
+```
+
+# 快速移动到文件头和文件尾
+
+* 执行`gg`，会快速移动到文件头位置；
+* 执行`Shift+G`，会快速移动到文结尾位置。
+
+# 、快速移动到行首和行尾
+
+* 执行`$`，会快速移动到行位；
+* 执行`^`，会快速移动到行首。
+
+# 文本全局替换
+
+* 执行：
+```
+:%s/oldstr/newstr/g
+```
+
+说明：
+* :%s - 表示搜索替换
+* oldstr - 被替换的字符串
+* newstr - 要替换的字符串
+* g - Global，表示全局替换（如果没有"/g"，则只替换每行的第一个）
+
+示例":%s/usage/用法/g"，表示将所有的"usage"字符串全部替换成"用法"字符串。

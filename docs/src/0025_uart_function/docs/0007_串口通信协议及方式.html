@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="zh-CN" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>wugn</title>
+
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script src="../../../_static/translations.js"></script>
+        <script src="../../../_static/js/baidutongji.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="索引" href="../../../genindex.html" />
+    <link rel="search" title="搜索" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../index.html" class="icon icon-home"> wugn_note
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="在文档中搜索" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">串口通信协议及方式</a></li>
+<li><a class="reference internal" href="#id2">参考</a></li>
+<li><a class="reference internal" href="#id3">通信的分类</a></li>
+<li><a class="reference internal" href="#id4">通信帧格式</a></li>
+<li><a class="reference internal" href="#id5">传输速率</a></li>
+<li><a class="reference internal" href="#id6">串口通信的经典方法</a></li>
+</ul>
+</div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">wugn_note</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs"> 
+<li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+<li>串口通信协议及方式</li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.forward()">Forward</a></li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.back()">Go Back</a> | </li>
+<li style="float: right;margin-left: 10px;"><a href="/index.html">Home</a> | </li>
+
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="id1">
+<h1>串口通信协议及方式<a class="headerlink" href="#id1" title="此标题的永久链接"></a></h1>
+<p>串口基础知识整理。</p>
+</section>
+<section id="id2">
+<h1>参考<a class="headerlink" href="#id2" title="此标题的永久链接"></a></h1>
+<ul class="simple">
+<li><p><a class="reference external" href="https://blog.csdn.net/m0_51429690/article/details/126867781">串口通信详解</a></p></li>
+</ul>
+</section>
+<section id="id3">
+<h1>通信的分类<a class="headerlink" href="#id3" title="此标题的永久链接"></a></h1>
+<p>按照传输方式的不同通信分为串行通信和并行通信。</p>
+<ul class="simple">
+<li><p>并行通信：同一时刻，可以传输多个bit位的信号，有多少个信号位就需要多少根信号线。</p></li>
+<li><p>串行通信：同一时刻，只能传输一个bit位的信号，只需要一根信号线。</p></li>
+</ul>
+<p><img alt="0007_0000.png" src="../../../_images/0007_00004.png" /></p>
+<p>其中串行通信分为两种方式：异步串行通信、同步串行通信。</p>
+<ul class="simple">
+<li><p>异步串行通信：是指发送方与接收方，使用各自的时钟控制数据发送和接收过程（为使双方收发协调，要求双方时钟尽可能一致）。</p></li>
+<li><p>同步串行通信：则是发送方时钟直接控制接收方时钟，使双方完全同步（同步方法有“外同步和自同步”两种）。</p></li>
+</ul>
+<p>按照传输方向可以分为单工通信和双工通信。</p>
+<ul class="simple">
+<li><p>单工数据：传输只支持数据在一个方向上传输。</p></li>
+<li><p>双工通信：可以再分为全双工通信和半双工通信。</p></li>
+<li><p>半双工：数据传输允许数据在两个方向上传输，但是，在某一时刻，只允许数据在一个方向上传输，它实际上是一种切换方向的单工通信;</p></li>
+<li><p>全双工：数据通信允许数据同时在两个方向上传输，因此，全双工通信是两个单工通信方式的结合，它要求发送设备和接收设备都有独立的接收和发送能力。</p></li>
+</ul>
+<p><img alt="0007_0001.png" src="../../../_images/0007_00013.png" /></p>
+</section>
+<section id="id4">
+<h1>通信帧格式<a class="headerlink" href="#id4" title="此标题的永久链接"></a></h1>
+<p>串口通信通常采用的是异步串行通信总线，该总线有两条数据线，可以实现全双工的发送和接收，在嵌入式系统中常用于主机与辅助设备之间的通信。</p>
+<p><img alt="0007_0002.png" src="../../../_images/0007_00023.png" /></p>
+<ul class="simple">
+<li><p>起始位：起始位为低电平。</p>
+<ul>
+<li><p>通信在空闲状态时保持高电平，因此出现下降沿即可判定为数据传输开始。</p></li>
+<li><p>虽然数据位也会出现低电平，但是空闲状态是保持高电平，而且起始状态就判断一次，所以不用担心数据位中的低电平误识别成起始位。</p></li>
+</ul>
+</li>
+<li><p>数据位：数据位 5-8 位，发送先发送低位后发送高位。</p></li>
+<li><p>奇偶校验位：奇偶校验位是可以不设置，大家自行选择。</p>
+<ul>
+<li><p>奇校验：数据位 + 校验位高电平的个数为奇数。</p></li>
+<li><p>偶校验：数据位 + 校验位高电平的个数为偶数。</p></li>
+</ul>
+</li>
+<li><p>停止位：一般0.5位到2位，通常设置为1位。</p>
+<ul>
+<li><p>1个停止位：停止位位数的默认值。</p></li>
+<li><p>2个停止位：可用于常规USART模式、单线模式以及调制解调器模式。</p></li>
+<li><p>0.5个停止位：在智能卡模式下接收数据时使用。</p></li>
+<li><p>1.5个停止位：在智能卡模式下发送和接收数据时使用。</p></li>
+</ul>
+</li>
+</ul>
+</section>
+<section id="id5">
+<h1>传输速率<a class="headerlink" href="#id5" title="此标题的永久链接"></a></h1>
+<ul class="simple">
+<li><p><strong>串口通讯的速率用波特率表示</strong>，单位是bps(bit per secong)（位/秒） 即每秒钟传送的bit的数量。1byte = 8bit。</p></li>
+<li><p>以9600bps为例，假设一个字符帧共有10位（1起始位、8数据位、1结束位），那么每秒钟能传输的最大字符数为“9600/10 = 960”。</p></li>
+<li><p><strong>串口接收和发送方的波特率应该是一致的</strong>，01 和 0011 产生的波形是一样的，区分方法是掐时间，因为波特率固定，每个位的持续时间时间固定，就可以区连续发送了几个高电平或者低电平。</p></li>
+<li><p><strong>串口发送一串数据不是连续发送</strong>，是一个字节一个字节发送的，其目的防止接收和发送的累计误差（时间误差），因为串口是异步通信，没有时间基准。比如：正常情况发送是一个字节共8个数据位，发送端的波特率为9600，接收端的波特率是9550，接收和发送之间是有时间差的，但是发送数据少，不影响我们区分正常的数据位，如果一次发送个1000字节共8000个数据位，那么就会出现数据出错。（因为不同单片机时钟不一样，两个单片机之间没有时间基准，所以都会出现波特率误差）。</p></li>
+<li><p><strong>波特率误差分析</strong> ：串行通讯误差要求实践表明，当波特率的相对误差小于4.5%时，不会影响数据的正确接收，一般要保证传输的可靠性，要求误差不大于2.5%。</p></li>
+</ul>
+</section>
+<section id="id6">
+<h1>串口通信的经典方法<a class="headerlink" href="#id6" title="此标题的永久链接"></a></h1>
+<ul class="simple">
+<li><p><strong>查询方式</strong>：可靠性很高，要考虑下个数据包覆盖上一个数据包的问题，小数据量，在10个字节以内，可以这样考虑， 很简单，很方便，很可靠。但是在数据量大的时候，程序阻塞的时间特别长，影响其他比较重要的外设的处理。</p></li>
+<li><p><strong>中断方式</strong>：不占用系统资源，但是如果数据量大，会频繁中断cpu，会其他高优先的数据处理造成影响。但是没有DMA不占用资源的好处， 如果没有串口队列的实现，必须通过标志位判断上一个包数据是否发送完成，在把新的数据覆盖到串口的缓冲区。</p></li>
+<li><p><strong>DMA方式</strong>：不占用系统资源，减少CPU对中断的响应。如何不建立数据包的队列，还是会出现，需要等待阻塞的问题。</p></li>
+<li><p><strong>FIFO方式</strong>：在串口的接收和发送中，串口接收到的数据可以先进入FIFO，不必马上进入中断服务程序接收，这样可节省CPU时间。对于发送数据也一样，可以把要发送的数据一起写入FIFO，串口控制器可按写入顺序依次发送出去。</p></li>
+</ul>
+</section>
+
+
+           </div>
+             <div class="articleComments">
+                <comments>
+  <script src="https://utteranc.es/client.js"
+    repo="iswbm/magic-python"
+    issue-term="pathname"
+    theme="github-light"
+    crossorigin="anonymous"
+    async>
+  </script>
+</comments>
+             </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; 版权所有 2022, wugn.</p>
+  </div>
+
+  利用 <a href="https://www.sphinx-doc.org/">Sphinx</a> 构建，使用了 
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">主题</a>
+    由 <a href="https://readthedocs.org">Read the Docs</a>开发.
+  
+
+<script charset="UTF-8" id="LA_COLLECT" src="//sdk.51.la/js-sdk-pro.min.js"></script>
+<script>LA.init({id: "JoV5csIHTGhHiGQ4",ck: "JoV5csIHTGhHiGQ4"})</script>
+
+<br/>
+<script id="LA-DATA-WIDGET" crossorigin="anonymous" charset="UTF-8" src="https://v6-widget.51.la/v6/JoV5csIHTGhHiGQ4/quote.js?theme=#4C8AC2,#BB2626,#040000,#333333,#AE3535,#1690FF,14&f=14"></script>
+
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

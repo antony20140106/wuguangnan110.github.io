@@ -226,3 +226,206 @@ public int interceptKeyBeforeQueueing(KeyEvent event, int policyFlags) {
 ```
 
 ### 2.uevent事件方式
+
+```C
+int authinfo_supply_uevent(struct device *dev, struct kobj_uevent_env *env)
+{
+	int ret = 0, j;
+	char *prop_buf;
+	char *attrname;
+
+	prop_buf = (char *)get_zeroed_page(GFP_KERNEL);
+	if (!prop_buf)
+		return -ENOMEM;
+
+	for (j = 0; j < authinfo.num_properties; j++) {
+		struct device_attribute *attr;
+		char *line;
+
+		attr = &authinfo_supply_attrs[authinfo.properties[j]];
+
+		ret = authinfo_supply_show_property(dev, attr, prop_buf);
+		if (ret == -ENODEV || ret == -ENODATA) {
+			/* When a battery is absent, we expect -ENODEV. Don't abort;
+			   send the uevent with at least the the PRESENT=0 property */
+			ret = 0;
+			continue;
+		}
+
+		if (ret < 0)
+			goto out;
+
+		line = strchr(prop_buf, '\n');
+		if (line)
+			*line = 0;
+
+		attrname = kstruprdup(attr->attr.name, GFP_KERNEL);
+		if (!attrname) {
+			ret = -ENOMEM;
+			goto out;
+		}
+
+		dev_dbg(dev, "prop %s=%s\n", attrname, prop_buf);
+		ret = add_uevent_var(env, "AUTHINFO_SUPPLY_%s=%s", attrname, prop_buf);
+		kfree(attrname);
+		if (ret)
+			goto out;
+	}
+
+out:
+	free_page((unsigned long)prop_buf);
+	return ret;
+}
+
+static int authinfo_probe(struct platform_device *pdev)
+{
+	authinfo.authinfo_supply_class = class_create(THIS_MODULE, "authinfo");
+	if (IS_ERR(authinfo.authinfo_supply_class))
+		return PTR_ERR(authinfo.authinfo_supply_class);
+
+	authinfo.authinfo_supply_class->dev_uevent = authinfo_supply_uevent;
+}
+```
+
+* `kernel/msm-4.19/drivers/base/core.c`:原理：
+```c
+static const struct kset_uevent_ops device_uevent_ops = {
+        .filter =       dev_uevent_filter,
+        .name =         dev_uevent_name,
+        .uevent =       dev_uevent,
+};
+
+static ssize_t uevent_show(struct device *dev, struct device_attribute *attr,
+                           char *buf)
+{
+        struct kobject *top_kobj;
+        struct kset *kset;
+        struct kobj_uevent_env *env = NULL;
+        int i;
+        size_t count = 0;
+        int retval;
+
+        /* search the kset, the device belongs to */
+        top_kobj = &dev->kobj;
+        while (!top_kobj->kset && top_kobj->parent)
+                top_kobj = top_kobj->parent;
+        if (!top_kobj->kset)
+                goto out;
+
+        kset = top_kobj->kset;
+        if (!kset->uevent_ops || !kset->uevent_ops->uevent)
+                goto out;
+
+        /* respect filter */
+        if (kset->uevent_ops && kset->uevent_ops->filter)
+                if (!kset->uevent_ops->filter(kset, &dev->kobj))
+                        goto out;
+
+        env = kzalloc(sizeof(struct kobj_uevent_env), GFP_KERNEL);
+        if (!env)
+                return -ENOMEM;
+
+        /* let the kset specific function add its keys */
+        retval = kset->uevent_ops->uevent(kset, &dev->kobj, env);
+        if (retval)
+                goto out;
+
+        /* copy keys to file */
+        for (i = 0; i < env->envp_idx; i++)
+                count += sprintf(&buf[count], "%s\n", env->envp[i]);
+out:
+        kfree(env);
+        return count;
+}
+
+static ssize_t uevent_store(struct device *dev, struct device_attribute *attr,
+                            const char *buf, size_t count)
+{
+        int rc;
+
+        rc = kobject_synth_uevent(&dev->kobj, buf, count);
+
+        if (rc) {
+                dev_err(dev, "uevent: failed to send synthetic uevent\n");
+                return rc;
+        }
+
+        return count;
+}
+static DEVICE_ATTR_RW(uevent);
+
+/**
+ * kobject_synth_uevent - send synthetic uevent with arguments
+ *
+ * @kobj: struct kobject for which synthetic uevent is to be generated
+ * @buf: buffer containing action type and action args, newline is ignored
+ * @count: length of buffer
+ *
+ * Returns 0 if kobject_synthetic_uevent() is completed with success or the
+ * corresponding error when it fails.
+ */
+int kobject_synth_uevent(struct kobject *kobj, const char *buf, size_t count)
+{
+        char *no_uuid_envp[] = { "SYNTH_UUID=0", NULL };
+        enum kobject_action action;
+        const char *action_args;
+        struct kobj_uevent_env *env;
+        const char *msg = NULL, *devpath;
+        int r;
+
+        r = kobject_action_type(buf, count, &action, &action_args);
+        if (r) {
+                msg = "unknown uevent action string\n";
+                goto out;
+        }
+
+        if (!action_args) {
+                r = kobject_uevent_env(kobj, action, no_uuid_envp);
+                goto out;
+        }
+
+        r = kobject_action_args(action_args,
+                                count - (action_args - buf), &env);
+        if (r == -EINVAL) {
+                msg = "incorrect uevent action arguments\n";
+                goto out;
+        }
+
+        if (r)
+                goto out;
+
+        r = kobject_uevent_env(kobj, action, env->envp);
+        kfree(env);
+out:
+        if (r) {
+                devpath = kobject_get_path(kobj, GFP_KERNEL);
+                printk(KERN_WARNING "synth uevent: %s: %s",
+                       devpath ?: "unknown device",
+                       msg ?: "failed to send uevent");
+                kfree(devpath);
+        }
+        return r;
+}
+
+```
+
+* 测试：
+```log
+A6650:/sys/class/authinfo/sp_authinfo # cat uevent
+AUTHINFO_SUPPLY_SPPOWERFLAG=1
+AUTHINFO_SUPPLY_SECMODE=3
+AUTHINFO_SUPPLY_BOOTLEVEL=1
+AUTHINFO_SUPPLY_TAMPERCLEAR=1
+AUTHINFO_SUPPLY_LASTBBLSTATUS=0
+AUTHINFO_SUPPLY_SNDOWNLOADSUM=0
+AUTHINFO_SUPPLY_AUTHDOWNSN=0
+AUTHINFO_SUPPLY_FIRMDEBUGSTATUS=0
+AUTHINFO_SUPPLY_APPDEBUGSTATUS=1
+AUTHINFO_SUPPLY_USPUKLEVEL=3
+AUTHINFO_SUPPLY_CUSTOMER=255
+AUTHINFO_SUPPLY_UPDATESLEEPTIME=30
+AUTHINFO_SUPPLY_NOWPUKLEVEL=0
+AUTHINFO_SUPPLY_PUKSTATUS=0
+AUTHINFO_SUPPLY_GPIOSLEEPSP=0
+AUTHINFO_SUPPLY_GPIOWAKEAP=0
+```

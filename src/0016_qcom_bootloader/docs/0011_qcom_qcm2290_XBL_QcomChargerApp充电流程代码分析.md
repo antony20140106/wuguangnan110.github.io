@@ -1785,7 +1785,7 @@ QcomChargerDxe:: ChargerPlatform_GetChargingAction Battery Profile Loading Not R
 QcomChargerDxe:: ChargerPlatform_GetChargingAction ErrorType = 11 PrevChargerAction =3
 ```
 
-# 低电量插USB开机无法充电直接关机
+# 低电量插USB开机无法充电直接关机/无法进入关机充电模式
 
 打印如下：
 ```
@@ -1833,3 +1833,19 @@ QcomChargerDxe:: ChargerPlatform_GetChargingAction Action Returned = 3
 QcomChargerDxe::ChargerPlatform_TakeAction ChargingAction = 3
 ```
 
+* 但是最后发现我们手机支持快充功能，但是模块最大OVP是6v，想来想去还是不连模块vbus了，`EFI_PmicSchgUsbinValid`直接ture：
+```diff
+--- a/A6650_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/Drivers/PmicDxe/PmicSchgProtocol.c
++++ b/A6650_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/Drivers/PmicDxe/PmicSchgProtocol.c
+@@ -355,8 +355,10 @@ EFI_PmicSchgUsbinValid
+     errFlag = pm_schg_usb_irq_status(PmicDeviceIndex, PM_SCHG_USB_IRQ_USBIN_PLUGIN, PM_IRQ_STATUS_RT,(boolean*)&UsbinPlugedIn);
+
+     Status = (PM_ERR_FLAG__SUCCESS == errFlag)? PM_ERR_FLAG__SUCCESS : EFI_DEVICE_ERROR;
+-
+-    *Valid = (UsbinPlugedIn) ? TRUE : FALSE;
++// [NEW FEATURE]-BEGIN by wugangnan@paxsz.com 2022-11-21,Not using module vbus, return ture
++//    *Valid = (UsbinPlugedIn) ? TRUE : FALSE;
++    *Valid = TRUE;
++// [NEW FEATURE]-END by wugangnan@paxsz.com 2022-11-21,Not using module vbus, return ture
+   }
+```

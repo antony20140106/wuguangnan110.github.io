@@ -315,6 +315,210 @@
 </section>
 <section id="uevent">
 <h3>2.uevent事件方式<a class="headerlink" href="#uevent" title="此标题的永久链接"></a></h3>
+<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">int</span><span class="w"> </span><span class="nf">authinfo_supply_uevent</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w"> </span><span class="o">*</span><span class="n">dev</span><span class="p">,</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">kobj_uevent_env</span><span class="w"> </span><span class="o">*</span><span class="n">env</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="kt">int</span><span class="w"> </span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">j</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">prop_buf</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">attrname</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">prop_buf</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="n">get_zeroed_page</span><span class="p">(</span><span class="n">GFP_KERNEL</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">prop_buf</span><span class="p">)</span><span class="w"></span>
+<span class="w">		</span><span class="k">return</span><span class="w"> </span><span class="o">-</span><span class="n">ENOMEM</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">	</span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="n">j</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">j</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">authinfo</span><span class="p">.</span><span class="n">num_properties</span><span class="p">;</span><span class="w"> </span><span class="n">j</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="k">struct</span><span class="w"> </span><span class="nc">device_attribute</span><span class="w"> </span><span class="o">*</span><span class="n">attr</span><span class="p">;</span><span class="w"></span>
+<span class="w">		</span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">line</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">		</span><span class="n">attr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">&amp;</span><span class="n">authinfo_supply_attrs</span><span class="p">[</span><span class="n">authinfo</span><span class="p">.</span><span class="n">properties</span><span class="p">[</span><span class="n">j</span><span class="p">]];</span><span class="w"></span>
+
+<span class="w">		</span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">authinfo_supply_show_property</span><span class="p">(</span><span class="n">dev</span><span class="p">,</span><span class="w"> </span><span class="n">attr</span><span class="p">,</span><span class="w"> </span><span class="n">prop_buf</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ret</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="o">-</span><span class="n">ENODEV</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="n">ret</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="o">-</span><span class="n">ENODATA</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">			</span><span class="cm">/* When a battery is absent, we expect -ENODEV. Don&#39;t abort;</span>
+<span class="cm">			   send the uevent with at least the the PRESENT=0 property */</span><span class="w"></span>
+<span class="w">			</span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="w">			</span><span class="k">continue</span><span class="p">;</span><span class="w"></span>
+<span class="w">		</span><span class="p">}</span><span class="w"></span>
+
+<span class="w">		</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ret</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"></span>
+<span class="w">			</span><span class="k">goto</span><span class="w"> </span><span class="n">out</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">		</span><span class="n">line</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">strchr</span><span class="p">(</span><span class="n">prop_buf</span><span class="p">,</span><span class="w"> </span><span class="sc">&#39;\n&#39;</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">line</span><span class="p">)</span><span class="w"></span>
+<span class="w">			</span><span class="o">*</span><span class="n">line</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">		</span><span class="n">attrname</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">kstruprdup</span><span class="p">(</span><span class="n">attr</span><span class="o">-&gt;</span><span class="n">attr</span><span class="p">.</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="n">GFP_KERNEL</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">attrname</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">			</span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">-</span><span class="n">ENOMEM</span><span class="p">;</span><span class="w"></span>
+<span class="w">			</span><span class="k">goto</span><span class="w"> </span><span class="n">out</span><span class="p">;</span><span class="w"></span>
+<span class="w">		</span><span class="p">}</span><span class="w"></span>
+
+<span class="w">		</span><span class="n">dev_dbg</span><span class="p">(</span><span class="n">dev</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;prop %s=%s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">attrname</span><span class="p">,</span><span class="w"> </span><span class="n">prop_buf</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">add_uevent_var</span><span class="p">(</span><span class="n">env</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;AUTHINFO_SUPPLY_%s=%s&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">attrname</span><span class="p">,</span><span class="w"> </span><span class="n">prop_buf</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="n">kfree</span><span class="p">(</span><span class="n">attrname</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ret</span><span class="p">)</span><span class="w"></span>
+<span class="w">			</span><span class="k">goto</span><span class="w"> </span><span class="n">out</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+
+<span class="nl">out</span><span class="p">:</span><span class="w"></span>
+<span class="w">	</span><span class="n">free_page</span><span class="p">((</span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">long</span><span class="p">)</span><span class="n">prop_buf</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="k">return</span><span class="w"> </span><span class="n">ret</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">authinfo_probe</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">platform_device</span><span class="w"> </span><span class="o">*</span><span class="n">pdev</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="n">authinfo</span><span class="p">.</span><span class="n">authinfo_supply_class</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">class_create</span><span class="p">(</span><span class="n">THIS_MODULE</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;authinfo&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">IS_ERR</span><span class="p">(</span><span class="n">authinfo</span><span class="p">.</span><span class="n">authinfo_supply_class</span><span class="p">))</span><span class="w"></span>
+<span class="w">		</span><span class="k">return</span><span class="w"> </span><span class="n">PTR_ERR</span><span class="p">(</span><span class="n">authinfo</span><span class="p">.</span><span class="n">authinfo_supply_class</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">authinfo</span><span class="p">.</span><span class="n">authinfo_supply_class</span><span class="o">-&gt;</span><span class="n">dev_uevent</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">authinfo_supply_uevent</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">kernel/msm-4.19/drivers/base/core.c</span></code>:原理：</p></li>
+</ul>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="k">static</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">kset_uevent_ops</span><span class="w"> </span><span class="n">device_uevent_ops</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="p">.</span><span class="n">filter</span><span class="w"> </span><span class="o">=</span><span class="w">       </span><span class="n">dev_uevent_filter</span><span class="p">,</span><span class="w"></span>
+<span class="w">        </span><span class="p">.</span><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w">         </span><span class="n">dev_uevent_name</span><span class="p">,</span><span class="w"></span>
+<span class="w">        </span><span class="p">.</span><span class="n">uevent</span><span class="w"> </span><span class="o">=</span><span class="w">       </span><span class="n">dev_uevent</span><span class="p">,</span><span class="w"></span>
+<span class="p">};</span><span class="w"></span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">ssize_t</span><span class="w"> </span><span class="nf">uevent_show</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w"> </span><span class="o">*</span><span class="n">dev</span><span class="p">,</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">device_attribute</span><span class="w"> </span><span class="o">*</span><span class="n">attr</span><span class="p">,</span><span class="w"></span>
+<span class="w">                           </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">buf</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="k">struct</span><span class="w"> </span><span class="nc">kobject</span><span class="w"> </span><span class="o">*</span><span class="n">top_kobj</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="k">struct</span><span class="w"> </span><span class="nc">kset</span><span class="w"> </span><span class="o">*</span><span class="n">kset</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="k">struct</span><span class="w"> </span><span class="nc">kobj_uevent_env</span><span class="w"> </span><span class="o">*</span><span class="n">env</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">NULL</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="kt">size_t</span><span class="w"> </span><span class="n">count</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="n">retval</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">        </span><span class="cm">/* search the kset, the device belongs to */</span><span class="w"></span>
+<span class="w">        </span><span class="n">top_kobj</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">&amp;</span><span class="n">dev</span><span class="o">-&gt;</span><span class="n">kobj</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="k">while</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">top_kobj</span><span class="o">-&gt;</span><span class="n">kset</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">top_kobj</span><span class="o">-&gt;</span><span class="n">parent</span><span class="p">)</span><span class="w"></span>
+<span class="w">                </span><span class="n">top_kobj</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">top_kobj</span><span class="o">-&gt;</span><span class="n">parent</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">top_kobj</span><span class="o">-&gt;</span><span class="n">kset</span><span class="p">)</span><span class="w"></span>
+<span class="w">                </span><span class="k">goto</span><span class="w"> </span><span class="n">out</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">        </span><span class="n">kset</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">top_kobj</span><span class="o">-&gt;</span><span class="n">kset</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">kset</span><span class="o">-&gt;</span><span class="n">uevent_ops</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="o">!</span><span class="n">kset</span><span class="o">-&gt;</span><span class="n">uevent_ops</span><span class="o">-&gt;</span><span class="n">uevent</span><span class="p">)</span><span class="w"></span>
+<span class="w">                </span><span class="k">goto</span><span class="w"> </span><span class="n">out</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">        </span><span class="cm">/* respect filter */</span><span class="w"></span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">kset</span><span class="o">-&gt;</span><span class="n">uevent_ops</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">kset</span><span class="o">-&gt;</span><span class="n">uevent_ops</span><span class="o">-&gt;</span><span class="n">filter</span><span class="p">)</span><span class="w"></span>
+<span class="w">                </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">kset</span><span class="o">-&gt;</span><span class="n">uevent_ops</span><span class="o">-&gt;</span><span class="n">filter</span><span class="p">(</span><span class="n">kset</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">dev</span><span class="o">-&gt;</span><span class="n">kobj</span><span class="p">))</span><span class="w"></span>
+<span class="w">                        </span><span class="k">goto</span><span class="w"> </span><span class="n">out</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">        </span><span class="n">env</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">kzalloc</span><span class="p">(</span><span class="k">sizeof</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">kobj_uevent_env</span><span class="p">),</span><span class="w"> </span><span class="n">GFP_KERNEL</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">env</span><span class="p">)</span><span class="w"></span>
+<span class="w">                </span><span class="k">return</span><span class="w"> </span><span class="o">-</span><span class="n">ENOMEM</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">        </span><span class="cm">/* let the kset specific function add its keys */</span><span class="w"></span>
+<span class="w">        </span><span class="n">retval</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">kset</span><span class="o">-&gt;</span><span class="n">uevent_ops</span><span class="o">-&gt;</span><span class="n">uevent</span><span class="p">(</span><span class="n">kset</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">dev</span><span class="o">-&gt;</span><span class="n">kobj</span><span class="p">,</span><span class="w"> </span><span class="n">env</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">retval</span><span class="p">)</span><span class="w"></span>
+<span class="w">                </span><span class="k">goto</span><span class="w"> </span><span class="n">out</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">        </span><span class="cm">/* copy keys to file */</span><span class="w"></span>
+<span class="w">        </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">env</span><span class="o">-&gt;</span><span class="n">envp_idx</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="o">++</span><span class="p">)</span><span class="w"></span>
+<span class="w">                </span><span class="n">count</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="n">sprintf</span><span class="p">(</span><span class="o">&amp;</span><span class="n">buf</span><span class="p">[</span><span class="n">count</span><span class="p">],</span><span class="w"> </span><span class="s">&quot;%s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">env</span><span class="o">-&gt;</span><span class="n">envp</span><span class="p">[</span><span class="n">i</span><span class="p">]);</span><span class="w"></span>
+<span class="nl">out</span><span class="p">:</span><span class="w"></span>
+<span class="w">        </span><span class="n">kfree</span><span class="p">(</span><span class="n">env</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">count</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">ssize_t</span><span class="w"> </span><span class="nf">uevent_store</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w"> </span><span class="o">*</span><span class="n">dev</span><span class="p">,</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">device_attribute</span><span class="w"> </span><span class="o">*</span><span class="n">attr</span><span class="p">,</span><span class="w"></span>
+<span class="w">                            </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">buf</span><span class="p">,</span><span class="w"> </span><span class="kt">size_t</span><span class="w"> </span><span class="n">count</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="n">rc</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">        </span><span class="n">rc</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">kobject_synth_uevent</span><span class="p">(</span><span class="o">&amp;</span><span class="n">dev</span><span class="o">-&gt;</span><span class="n">kobj</span><span class="p">,</span><span class="w"> </span><span class="n">buf</span><span class="p">,</span><span class="w"> </span><span class="n">count</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">rc</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="n">dev_err</span><span class="p">(</span><span class="n">dev</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;uevent: failed to send synthetic uevent</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">                </span><span class="k">return</span><span class="w"> </span><span class="n">rc</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">count</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+<span class="k">static</span><span class="w"> </span><span class="n">DEVICE_ATTR_RW</span><span class="p">(</span><span class="n">uevent</span><span class="p">);</span><span class="w"></span>
+
+<span class="cm">/**</span>
+<span class="cm"> * kobject_synth_uevent - send synthetic uevent with arguments</span>
+<span class="cm"> *</span>
+<span class="cm"> * @kobj: struct kobject for which synthetic uevent is to be generated</span>
+<span class="cm"> * @buf: buffer containing action type and action args, newline is ignored</span>
+<span class="cm"> * @count: length of buffer</span>
+<span class="cm"> *</span>
+<span class="cm"> * Returns 0 if kobject_synthetic_uevent() is completed with success or the</span>
+<span class="cm"> * corresponding error when it fails.</span>
+<span class="cm"> */</span><span class="w"></span>
+<span class="kt">int</span><span class="w"> </span><span class="nf">kobject_synth_uevent</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">kobject</span><span class="w"> </span><span class="o">*</span><span class="n">kobj</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">buf</span><span class="p">,</span><span class="w"> </span><span class="kt">size_t</span><span class="w"> </span><span class="n">count</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">no_uuid_envp</span><span class="p">[]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="s">&quot;SYNTH_UUID=0&quot;</span><span class="p">,</span><span class="w"> </span><span class="nb">NULL</span><span class="w"> </span><span class="p">};</span><span class="w"></span>
+<span class="w">        </span><span class="k">enum</span><span class="w"> </span><span class="n">kobject_action</span><span class="w"> </span><span class="n">action</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">action_args</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="k">struct</span><span class="w"> </span><span class="nc">kobj_uevent_env</span><span class="w"> </span><span class="o">*</span><span class="n">env</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">msg</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">NULL</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="n">devpath</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="n">r</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">        </span><span class="n">r</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">kobject_action_type</span><span class="p">(</span><span class="n">buf</span><span class="p">,</span><span class="w"> </span><span class="n">count</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">action</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">action_args</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">r</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="n">msg</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;unknown uevent action string</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span><span class="w"></span>
+<span class="w">                </span><span class="k">goto</span><span class="w"> </span><span class="n">out</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">action_args</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="n">r</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">kobject_uevent_env</span><span class="p">(</span><span class="n">kobj</span><span class="p">,</span><span class="w"> </span><span class="n">action</span><span class="p">,</span><span class="w"> </span><span class="n">no_uuid_envp</span><span class="p">);</span><span class="w"></span>
+<span class="w">                </span><span class="k">goto</span><span class="w"> </span><span class="n">out</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">        </span><span class="n">r</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">kobject_action_args</span><span class="p">(</span><span class="n">action_args</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                </span><span class="n">count</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="p">(</span><span class="n">action_args</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">buf</span><span class="p">),</span><span class="w"> </span><span class="o">&amp;</span><span class="n">env</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">r</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="o">-</span><span class="n">EINVAL</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="n">msg</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;incorrect uevent action arguments</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span><span class="w"></span>
+<span class="w">                </span><span class="k">goto</span><span class="w"> </span><span class="n">out</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">r</span><span class="p">)</span><span class="w"></span>
+<span class="w">                </span><span class="k">goto</span><span class="w"> </span><span class="n">out</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">        </span><span class="n">r</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">kobject_uevent_env</span><span class="p">(</span><span class="n">kobj</span><span class="p">,</span><span class="w"> </span><span class="n">action</span><span class="p">,</span><span class="w"> </span><span class="n">env</span><span class="o">-&gt;</span><span class="n">envp</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="n">kfree</span><span class="p">(</span><span class="n">env</span><span class="p">);</span><span class="w"></span>
+<span class="nl">out</span><span class="p">:</span><span class="w"></span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">r</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="n">devpath</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">kobject_get_path</span><span class="p">(</span><span class="n">kobj</span><span class="p">,</span><span class="w"> </span><span class="n">GFP_KERNEL</span><span class="p">);</span><span class="w"></span>
+<span class="w">                </span><span class="n">printk</span><span class="p">(</span><span class="n">KERN_WARNING</span><span class="w"> </span><span class="s">&quot;synth uevent: %s: %s&quot;</span><span class="p">,</span><span class="w"></span>
+<span class="w">                       </span><span class="n">devpath</span><span class="w"> </span><span class="o">?:</span><span class="w"> </span><span class="s">&quot;unknown device&quot;</span><span class="p">,</span><span class="w"></span>
+<span class="w">                       </span><span class="n">msg</span><span class="w"> </span><span class="o">?:</span><span class="w"> </span><span class="s">&quot;failed to send uevent&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">                </span><span class="n">kfree</span><span class="p">(</span><span class="n">devpath</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">r</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>测试：</p></li>
+</ul>
+<div class="highlight-log notranslate"><div class="highlight"><pre><span></span>A6650:/sys/class/authinfo/sp_authinfo # cat uevent
+AUTHINFO_SUPPLY_SPPOWERFLAG=1
+AUTHINFO_SUPPLY_SECMODE=3
+AUTHINFO_SUPPLY_BOOTLEVEL=1
+AUTHINFO_SUPPLY_TAMPERCLEAR=1
+AUTHINFO_SUPPLY_LASTBBLSTATUS=0
+AUTHINFO_SUPPLY_SNDOWNLOADSUM=0
+AUTHINFO_SUPPLY_AUTHDOWNSN=0
+AUTHINFO_SUPPLY_FIRMDEBUGSTATUS=0
+AUTHINFO_SUPPLY_APPDEBUGSTATUS=1
+AUTHINFO_SUPPLY_USPUKLEVEL=3
+AUTHINFO_SUPPLY_CUSTOMER=255
+AUTHINFO_SUPPLY_UPDATESLEEPTIME=30
+AUTHINFO_SUPPLY_NOWPUKLEVEL=0
+AUTHINFO_SUPPLY_PUKSTATUS=0
+AUTHINFO_SUPPLY_GPIOSLEEPSP=0
+AUTHINFO_SUPPLY_GPIOWAKEAP=0
+</pre></div>
+</div>
 </section>
 </section>
 </section>

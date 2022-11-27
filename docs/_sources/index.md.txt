@@ -1,10 +1,8 @@
-# README
+# 前言
 
-本网站主要为本人学习文档记录，整理归档知识体系。
+不积跬步，无以至千里；不积小流，无以成江海；本网站主要为本人学习文档记录，整理归档知识体系。
 
 * [个人早期博客园(CSDN)文档](http://blog.csdn.net/u011784994)
-* [个人GitHub账号：wuguangnan110](https://github.com/wuguangnan110)
-* [个人Gitee账号: wugn_note](https://gitee.com/wugn-note)
 
 # 常用链接
 
@@ -15,12 +13,13 @@
 
 # 宝藏博主
 
-* [蜗窝科技-Android内核电源中断时间等子系统](http://www.wowotech.net/)
+* [蜗窝科技](http://www.wowotech.net/)
 
 # docs
 
 NO.|文件名称|摘要
 :--:|:--|:--
+0025| [uart_function](src/0025_uart_function/README.md) | android uart驱动分析
 0024| [NFC_function](src/0024_NFC_function/README.md) | Android系统NFC系统学习
 0023| [hardware_function](src/0023_hardware_function/README.md) | 驱动工程师必备的硬件知识，储备起来
 0022| [Android](src/0022_Android/README.md) | 记录一些零散的Android方面的学习知识。
@@ -46,3 +45,5 @@ NO.|文件名称|摘要
 0002| [usb_switch](src/0002_usb_switch/README.md) | M8项目usb switch驱动分析。
 0001| [charger](src/0001_charger/README.md) | Android平台charger、BMS相关知识及调试整理。
 0000| [example](src/0000_example/README.md) | 这个是一个md的文档模板目录示例架构。
+
+* 联系方式:qq 569542647
