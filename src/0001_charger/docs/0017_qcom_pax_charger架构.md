@@ -488,6 +488,76 @@ probe()
 [10990.822242] PM: suspend exit
 ```
 
+# 动态AICL机制
+
+非快充情况下，vbus一般都是小于等于5V的，充电器功率一定时，当vbus小于mivr电压时，会导致cable out停止充电，尤其是恒流阶段充电电流一般比较大，再加上vbus上其他的器件分压，很容易让vbus小于mivr导致停充，动态AICL机制完美解决这一痛点。
+
+* dts参数说明：
+```log
+charger: charger {
+	compatible = "pax,charger";
+	
+	enable_dynamic_mivr; //使能动态的触发AICL机制的门限电压
+	
+	max_charger_voltage = <6500000>;
+	min_charger_voltage = <4600000>;
+	
+	/* dynamic mivr */
+	min_charger_voltage_1 = <4400000>;  //最大mivr
+	min_charger_voltage_2 = <4200000>; //最小mivr
+	max_dmivr_charger_current = <1400000>; //AICL最大充电电流
+	}
+```
+
+* 动态mivr设定在充电线程charger_routine_thread中完成：
+```c
+static int charger_routine_thread(void *arg)
+{
+    check_dynamic_mivr(info);
+}
+
+
+static void check_dynamic_mivr(struct charger_manager *info)
+{
+	int vbat = 0;
+
+	if (info->enable_dynamic_mivr) {
+		if (!mtk_pe40_get_is_connect(info) &&
+			!mtk_pe20_get_is_connect(info) &&
+			!mtk_pe_get_is_connect(info) &&
+			!mtk_pdc_check_charger(info)) {
+
+			vbat = battery_get_bat_voltage(); //获取电池电压vbat
+			if (vbat <
+				info->data.min_charger_voltage_2 / 1000 - 200)
+				charger_dev_set_mivr(info->chg1_dev,
+					info->data.min_charger_voltage_2); 
+			else if (vbat <
+				info->data.min_charger_voltage_1 / 1000 - 200)
+				charger_dev_set_mivr(info->chg1_dev,
+					info->data.min_charger_voltage_1);
+			else
+				charger_dev_set_mivr(info->chg1_dev,
+					info->data.min_charger_voltage);
+		}
+	}
+}
+```
+
+以上得知当vbat< min_charger_voltage_1 - 0.2时，mivr设置为min_charger_voltage_1(4.4v),当vbat < min_charger_voltage_2 - 0.2时,mivr设置为min_charger_voltage_2(4.2v)，一般vbat都是大于4v的，所以一般mivr都是4.4v，如果vbat大于4.2v则设置mivr为min_charger_voltage(4.6v),逻辑如下：
+
+```log
+vbat < 4.0v
+mivr = 4.2v  min_charger_voltage_2
+
+4.0v < vbat < 4.2v 
+mivr = 4.4v min_charger_voltage_1
+
+vbat > 4.2v
+mivr = 4.6v  min_charger_voltage
+```
+原理很简单，就是低电量时设置更低的门限电压mivr，不让轻易断开充电。
+
 # 底座充电功能开发
 
 * 硬件信息：

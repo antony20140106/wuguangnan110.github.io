@@ -44,6 +44,12 @@
               <div class="local-toc"><ul>
 <li><a class="reference internal" href="#">qcom qcm2290 apsp串口功能调试</a></li>
 <li><a class="reference internal" href="#apsp">APSP串口不通</a></li>
+<li><a class="reference internal" href="#k">串口配置750k波特率并增加宏控</a></li>
+<li><a class="reference internal" href="#sp">sp下载软件失败(发送失败)</a><ul>
+<li><a class="reference internal" href="#uart">UART发送丢失数据(参考)</a></li>
+<li><a class="reference internal" href="#id1">解决方案</a></li>
+</ul>
+</li>
 </ul>
 </div>
         </div>
@@ -80,51 +86,287 @@
 <section id="apsp">
 <h1>APSP串口不通<a class="headerlink" href="#apsp" title="此标题的永久链接"></a></h1>
 <p>目前AP端的串口程序都是A6650项目可用的，但是在ABL阶段使用流控功能出现握手失败。</p>
-<ul class="simple">
-<li><p>修改成115200波特率：</p></li>
-</ul>
-<div class="highlight-diff notranslate"><div class="highlight"><pre><span></span><span class="gd">--- a/UM.9.15/bootable/bootloader/edk2/MdePkg/Library/UartQupv3Lib/UartXBL.c</span><span class="w"></span>
+<p>原因是SP端RTS功能未打开，当AP发送时RTS未拉低，SP端发送，AP不接收。</p>
+</section>
+<section id="k">
+<h1>串口配置750k波特率并增加宏控<a class="headerlink" href="#k" title="此标题的永久链接"></a></h1>
+<div class="highlight-diff notranslate"><div class="highlight"><pre><span></span><span class="gd">--- a/UM.9.15/bootable/bootloader/edk2/AndroidBoot.mk</span><span class="w"></span>
+<span class="gi">+++ b/UM.9.15/bootable/bootloader/edk2/AndroidBoot.mk</span><span class="w"></span>
+<span class="gu">@@ -129,6 +129,12 @@ else</span><span class="w"></span>
+<span class="w"> </span>       CLANG35_GCC_TOOLCHAIN := $(ANDROID_TOP)/prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-$(TARGET_GCC_VERSION)<span class="w"></span>
+<span class="w"> </span>endif<span class="w"></span>
+
+<span class="gi">+#[feature]-add-begin xielianxiong@paxsz.com,for M9200 abl</span><span class="w"></span>
+<span class="gi">+ifeq ($(M9200),true)</span><span class="w"></span>
+<span class="gi">+       M9200 := M9200=1</span><span class="w"></span>
+<span class="gi">+endif</span><span class="w"></span>
+<span class="gi">+#[feature]-add-end xielianxiong@paxsz.com,for M9200 abl</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+
+<span class="w"> </span># ABL ELF output<span class="w"></span>
+<span class="w"> </span>TARGET_ABL := $(PRODUCT_OUT)/abl.elf<span class="w"></span>
+<span class="gu">@@ -167,4 +173,5 @@ $(TARGET_ABL): $(LOCAL_ABL_SRC_FILE) | $(ABL_OUT) $(INSTALLED_KEYSTOREIMAGE_TARG</span><span class="w"></span>
+<span class="w"> </span>               CLANG_GCC_TOOLCHAIN=$(CLANG35_GCC_TOOLCHAIN)\<span class="w"></span>
+<span class="w"> </span>               TARGET_ARCHITECTURE=$(TARGET_ARCHITECTURE) \<span class="w"></span>
+<span class="w"> </span>               BOARD_BOOTLOADER_PRODUCT_NAME=$(BOARD_BOOTLOADER_PRODUCT_NAME) \<span class="w"></span>
+<span class="gd">-               USERDATAIMAGE_FILE_SYSTEM_TYPE=$(USERDATAIMAGE_FILE_SYSTEM_TYPE)</span><span class="w"></span>
+<span class="gi">+               USERDATAIMAGE_FILE_SYSTEM_TYPE=$(USERDATAIMAGE_FILE_SYSTEM_TYPE) \</span><span class="w"></span>
+<span class="gi">+               $(M9200)</span><span class="w"></span>
+<span class="gh">diff --git a/UM.9.15/bootable/bootloader/edk2/MdePkg/Library/UartQupv3Lib/UartXBL.c b/UM.9.15/bootable/bootloader/edk2/MdePkg/Library/UartQupv3Lib/UartXBL.c</span><span class="w"></span>
+<span class="gh">index bea319ce553..9cf597fcd2c 100755</span><span class="w"></span>
+<span class="gd">--- a/UM.9.15/bootable/bootloader/edk2/MdePkg/Library/UartQupv3Lib/UartXBL.c</span><span class="w"></span>
 <span class="gi">+++ b/UM.9.15/bootable/bootloader/edk2/MdePkg/Library/UartQupv3Lib/UartXBL.c</span><span class="w"></span>
-<span class="gu">@@ -979,7 +979,7 @@ DESCRIPTION:</span><span class="w"></span>
-<span class="w"> </span>RETURN_STATUS EFIAPI<span class="w"></span>
-<span class="w"> </span>uart_initialize(void)<span class="w"></span>
+<span class="gu">@@ -87,6 +87,7 @@ static const CLOCK_SETTINGS baud_table[] =</span><span class="w"></span>
 <span class="w"> </span>{<span class="w"></span>
-<span class="gd">-/*</span><span class="w"></span>
-<span class="gi">+</span><span class="w"></span>
-<span class="w"> </span>   uart_open_config c;<span class="w"></span>
-
-<span class="w"> </span>   c.baud_rate = 115200;<span class="w"></span>
-<span class="gu">@@ -994,7 +994,7 @@ uart_initialize(void)</span><span class="w"></span>
-
-
-<span class="w"> </span>   uart_open(&amp;uart_debug_handle, UART_DEBUG_PORT, &amp;c);<span class="w"></span>
-<span class="gd">-*/</span><span class="w"></span>
-<span class="gi">+</span><span class="w"></span>
-<span class="w"> </span>   return RETURN_SUCCESS;<span class="w"></span>
-<span class="w"> </span>}<span class="w"></span>
-
-<span class="gu">@@ -1010,7 +1010,7 @@ uart5_initialize(void)</span><span class="w"></span>
+<span class="w"> </span>   // bit_rate, input_freq, divider<span class="w"></span>
+<span class="w"> </span>   {     115200,     7372800,      64 },<span class="w"></span>
+<span class="gi">+   {     750000,     96000000,     128 },</span><span class="w"></span>
+<span class="w"> </span>   {     1500000,    96000000,     64 },<span class="w"></span>
+<span class="w"> </span>   {     3000000,    96000000,     32 },<span class="w"></span>
+<span class="w"> </span>   {0}<span class="w"></span>
+<span class="gu">@@ -1010,7 +1011,11 @@ uart5_initialize(void)</span><span class="w"></span>
 <span class="w"> </span>{<span class="w"></span>
 <span class="w"> </span>   uart_open_config uart5_c;<span class="w"></span>
 
-<span class="gd">-   uart5_c.baud_rate = 3000000;</span><span class="w"></span>
-<span class="gi">+   uart5_c.baud_rate = 115200;</span><span class="w"></span>
+<span class="gi">+#ifdef M9200</span><span class="w"></span>
+<span class="gi">+   uart5_c.baud_rate = 750000;//3000000;</span><span class="w"></span>
+<span class="gi">+#else</span><span class="w"></span>
+<span class="w"> </span>   uart5_c.baud_rate = 3000000;<span class="w"></span>
+<span class="gi">+#endif</span><span class="w"></span>
 <span class="w"> </span>   uart5_c.parity_mode = UART_NO_PARITY;<span class="w"></span>
 <span class="w"> </span>   uart5_c.num_stop_bits = UART_1_0_STOP_BITS;<span class="w"></span>
 <span class="w"> </span>   uart5_c.bits_per_char = UART_8_BITS_PER_CHAR;<span class="w"></span>
+<span class="gd">--- a/UM.9.15/bootable/bootloader/edk2/QcomModulePkg/QcomModulePkg.dsc</span><span class="w"></span>
+<span class="gi">+++ b/UM.9.15/bootable/bootloader/edk2/QcomModulePkg/QcomModulePkg.dsc</span><span class="w"></span>
+<span class="gu">@@ -154,6 +154,11 @@</span><span class="w"></span>
+<span class="w"> </span>  !if $(USERDATAIMAGE_FILE_SYSTEM_TYPE)<span class="w"></span>
+<span class="w"> </span>      GCC:*_*_*_CC_FLAGS = -DUSERDATA_FS_TYPE=\&quot;$(USERDATAIMAGE_FILE_SYSTEM_TYPE)\&quot;<span class="w"></span>
+<span class="w"> </span>  !endif<span class="w"></span>
+<span class="gi">+#[feature]-add-begin xielianxiong@paxsz.com,20221202,abl define M9200</span><span class="w"></span>
+<span class="gi">+  !if $(M9200) == 1</span><span class="w"></span>
+<span class="gi">+      GCC:*_*_*_CC_FLAGS = -DM9200</span><span class="w"></span>
+<span class="gi">+  !endif</span><span class="w"></span>
+<span class="gi">+#[feature]-add-end xielianxiong@paxsz.com,20221202,abl define M9200</span><span class="w"></span>
 
-<span class="gd">--- a/A6650_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/Library/UartQupv3Lib/UartXBL.c</span><span class="w"></span>
-<span class="gi">+++ b/A6650_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/Library/UartQupv3Lib/UartXBL.c</span><span class="w"></span>
-<span class="gu">@@ -841,7 +841,8 @@ uart_initialize(void)</span><span class="w"></span>
+<span class="w"> </span>[PcdsFixedAtBuild.common]<span class="w"></span>
 
-<span class="w"> </span>   uart_open_config uart5_c;<span class="w"></span>
+<span class="gh">diff --git a/UM.9.15/bootable/bootloader/edk2/makefile b/UM.9.15/bootable/bootloader/edk2/makefile</span><span class="w"></span>
+<span class="gh">index 580b3cc7b29..fbafb095449 100644</span><span class="w"></span>
+<span class="gd">--- a/UM.9.15/bootable/bootloader/edk2/makefile</span><span class="w"></span>
+<span class="gi">+++ b/UM.9.15/bootable/bootloader/edk2/makefile</span><span class="w"></span>
+<span class="gu">@@ -117,6 +117,12 @@ export LLVM_ENABLE_SAFESTACK := $(LLVM_ENABLE_SAFESTACK)</span><span class="w"></span>
+<span class="w"> </span>export LLVM_SAFESTACK_USE_PTR := $(LLVM_SAFESTACK_USE_PTR)<span class="w"></span>
+<span class="w"> </span>export LLVM_SAFESTACK_COLORING := $(LLVM_SAFESTACK_COLORING)<span class="w"></span>
 
-<span class="gd">-   uart5_c.baud_rate = 3000000/*115200*/;</span><span class="w"></span>
-<span class="gi">+   uart5_c.baud_rate = 115200;</span><span class="w"></span>
-<span class="gi">+   //uart5_c.baud_rate = 3000000/*115200*/;</span><span class="w"></span>
+<span class="gi">+#[feature]-add-begin xielianxiong@paxsz.com,20221202,abl define M9200</span><span class="w"></span>
+<span class="gi">+ifeq &quot;$(TARGET_PRODUCT)&quot; &quot;bengal_32go&quot;</span><span class="w"></span>
+<span class="gi">+export M9200 := true</span><span class="w"></span>
+<span class="gi">+endif</span><span class="w"></span>
+<span class="gi">+#[feature]-add-end xielianxiong@paxsz.com,20221202,abl define M9200</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="w"> </span>.PHONY: all cleanall<span class="w"></span>
+
+<span class="w"> </span>all: ABL_FV_ELF<span class="w"></span>
+<span class="gu">@@ -157,6 +163,7 @@ ABL_FV_IMG: EDK_TOOLS_BIN</span><span class="w"></span>
+<span class="w"> </span>       -D ENABLE_SYSTEMD_BOOTSLOT=$(ENABLE_SYSTEMD_BOOTSLOT) \<span class="w"></span>
+<span class="w"> </span>       -D RW_ROOTFS=$(RW_ROOTFS) \<span class="w"></span>
+<span class="w"> </span>       -D USERDATAIMAGE_FILE_SYSTEM_TYPE=$(USERDATAIMAGE_FILE_SYSTEM_TYPE) \<span class="w"></span>
+<span class="gi">+       -D M9200=$(M9200) \</span><span class="w"></span>
+<span class="w"> </span>       -j build_modulepkg.log $*<span class="w"></span>
+
+<span class="w"> </span>       cp $(BUILD_ROOT)/FV/FVMAIN_COMPACT.Fv $(ABL_FV_IMG)<span class="w"></span>
 </pre></div>
 </div>
-<p>原因是SP端RTS复位功能未打开，当AP发送时RTS未拉低，SP端发送，AP不接收。</p>
+</section>
+<section id="sp">
+<h1>sp下载软件失败(发送失败)<a class="headerlink" href="#sp" title="此标题的永久链接"></a></h1>
+<p>看看sp下载软件逻辑：</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">fastbootcmds.c</span></code>:</p></li>
+</ul>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span>* CmdFlash
+  └── if(is_sp_partition(PartitionName)) //判断下载名称是否为cfg、sp_boot、sp_reboot、sp_monitor、exsn、sp_mac、sp_time、sp_test
+      ├── if(StrnCmp(PartitionName, L&quot;exsn&quot;, StrLen(L&quot;exsn&quot;)) == 0)
+      │   └── verify_pax_image(mFlashDataBuffer,mFlashNumDataBytes,0) //校验
+      │       ├── memcpy(ucInfo, addr+len-16, 16); if (memcmp(ucInfo, &quot;SIGNED_VER:00001&quot;, 16)) //校验最后16字节是不是SIGNED_VER:00001字符
+      │       ├── compute_sha(addr,len-284,hash); //计算exsn hash
+      │       └── RSARecover(&amp;mf_puk[4], 256, &amp;mf_puk[260], 4, (uchar *)pTEncry_Digest, (uchar *)pTDigset); //RSA加解密运算函数
+      ├── if ( (StrnCmp(PartitionName, LPAX_CFG_PARTITION_NAME, StrLen(LPAX_CFG_PARTITION_NAME)) == 0) //#define LPAX_CFG_PARTITION_NAME     L&quot;pax_cfg&quot; #define LCFG_PARTITION_NAME         L&quot;cfg&quot;
+      │   ├── verify_pax_image(mFlashDataBuffer,mFlashNumDataBytes,0) 
+      │   └── Status = HandleRawImgFlash (LPAX_CFG_PARTITION_NAME,ARRAY_SIZE (LPAX_CFG_PARTITION_NAME),mFlashDataBuffer, mFlashNumDataBytes);
+      └── if (sp_download_all(PartitionName, mFlashDataBuffer, mFlashNumDataBytes) &lt; 0)
+          ├── if(409600 &gt; sz)return -1;//sp monitor almost 500KB
+          ├── if(StrnCmp(DownloadName, L&quot;sp_monitor&quot;, StrLen(L&quot;sp_monitor&quot;)) ==0 )
+          │   └── downloadSpMonitor(data, sz);
+          │       └── downloadSpFile(download_file, data, sz);
+          │           ├── ret = checkSprebootAndHandshake(); //1. shakehand sp 发送X字符
+          │           ├── ret = donwloadSpRequest(download_file, sz); // 2. download request
+          │           │   ├── uchar cmd = CMD_DOWNLOAD_REQUEST; //E2下载请求指令
+          │           │   ├── makePackage(g_tx_buf, cmd, data, sizeof(data)); //发送
+          │           │   ├── puts_sp(g_tx_buf, len);
+          │           │   └── receivePackage(cmd, g_rx_buf, &amp;g_rx_index, &amp;g_rx_size); //接收
+          │           ├── donwloadSpEraseFlash(SP_PARTITION_BACK); // 3. erase back partition  E3擦除指令
+          │           ├── for (i = 0; i &lt; cnt; i++) ret = donwloadSpTranseData(pack_index, data+i*block_size, block_size) //4. download transefile
+          │           │   ├── uchar cmd = CMD_TRANSE_FILE;
+          │           │   ├── makePackage(g_tx_buf, cmd, tmp_buf, size);
+          │           │   └── puts_sp(g_tx_buf, len);
+          │           │       └── pax_serial_putc(tx_buff, len);
+          │           │           ├── for (i = 0; i &lt; count; i++) len = uart5_write((UINT8*)buf+i*TXFIFO_SIZE,TXFIFO_SIZE);  MicroSecondDelay(250);//3M,3000000// #define TXFIFO_SIZE 64  所有数据64个byte为一个包 ，for循环发送
+          │           │           ├── len = uart5_write((UINT8*)buf+count*TXFIFO_SIZE,bytes_to_tx % TXFIFO_SIZE); //最后一个64byte包
+          │           │           └── MicroSecondDelay(250);//3M,3000000 延迟0.25ms
+          │           ├── ret = donwloadSpCheckTranseFinish(); //5. check transe finish  检查是否传输完成
+          │           ├── ret = donwloadSpEraseFlash(SP_PARTITION_TARGET);//6. erase target partition 
+          │           └── ret = donwloadSpWrite2Flash(); // 7. write to flash(target)
+          │               └── uchar cmd = CMD_WRITE_FILE_TO_FLASH; // E4指令， sp将串口接收数据下载到flash
+          ├── else if(StrnCmp(DownloadName, L&quot;sp_boot&quot;, StrLen(L&quot;sp_boot&quot;)) ==0 )
+          │   └── downloadSpBoot(data, sz);
+          ├── pax_serial_flush(); //缓冲区清空
+          │   └── pax_serial_getc(buf, 512);
+          │       └── uart5_read((UINT8 *)buf, bytes_to_rx);
+          └── pax_sp_reset(); //sp复位
+              ├── TLMMProtocol-&gt;GpioOut((UINT32)EFI_GPIO_CFG(32, 0, GPIO_OUTPUT, GPIO_NO_PULL, GPIO_8MA), GPIO_HIGH_VALUE);
+              └── TLMMProtocol-&gt;GpioOut((UINT32)EFI_GPIO_CFG(32, 0, GPIO_OUTPUT, GPIO_NO_PULL, GPIO_8MA), GPIO_LOW_VALUE);
+</pre></div>
+</div>
+<ul>
+<li><p>downloadSpMonitor步骤如下：</p>
+<ul class="simple">
+<li><ol class="arabic simple">
+<li><p>shakehand sp 发送握手X字符</p></li>
+</ol>
+</li>
+<li><ol class="arabic simple" start="2">
+<li><p>download request 发送下载请求包 E2指令</p></li>
+</ol>
+</li>
+<li><ol class="arabic simple" start="3">
+<li><p>erase back partition E3擦除指令</p></li>
+</ol>
+</li>
+<li><ol class="arabic simple" start="4">
+<li><p>download transefile 串口传输到sp</p></li>
+</ol>
+</li>
+<li><ol class="arabic simple" start="5">
+<li><p>check transe finish  检查是否传输完成</p></li>
+</ol>
+</li>
+<li><ol class="arabic simple" start="6">
+<li><p>erase target partition</p></li>
+</ol>
+</li>
+<li><ol class="arabic simple" start="7">
+<li><p>write to flash(target) E4指令，sp将串口接收数据下载到flash</p></li>
+</ol>
+</li>
+</ul>
+<p>我们sp_monitor大小必须大于500kb，将分成数个64byte的数据包依次发送，如下结构：</p>
+<p><img alt="0002_0002.png" src="../../../_images/0002_00026.png" /></p>
+</li>
+</ul>
+<p>按照之前调试下载功能，发现下载过程会失败，打印如下：</p>
+<ul class="simple">
+<li><p>AP：</p></li>
+</ul>
+<p><img alt="0002_0000.png" src="../../../_images/0002_000010.png" /></p>
+<ul class="simple">
+<li><p>SP：</p></li>
+</ul>
+<p><img alt="0002_0001.png" src="../../../_images/0002_00018.png" /></p>
+<p>我们从log上看：</p>
+<ul class="simple">
+<li><p>AP/SP握手成功，且数据都已经发出去，AP发完没有收到SP ACK。</p></li>
+<li><p>SP端收到E2/E3/E4命令，接收到传输文件，提示timeout了。</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">CMD_DOWNLOAD_REQUEST</span> <span class="o">=</span> <span class="mh">0xE2</span><span class="p">,</span>
+<span class="n">CMD_ERASE_FLASH</span> <span class="o">=</span> <span class="mh">0xE3</span><span class="p">,</span>
+<span class="n">CMD_TRANSE_FILE</span> <span class="o">=</span> <span class="mh">0xE4</span><span class="p">,</span>
+</pre></div>
+</div>
+<p>逻辑分析中得知软件发送500字节数据，实际上只发送了200多个字节，也就是说还有200多没法出去，我们猜测串口发送就像装子弹一样，当一发子弹装上，打完了才能装第二发子弹，如果一发装完还没打完就装下一发，这样就造成第一发子弹没打出去，装子弹的过程就像串口FIFO方式发送数据时填充fifo过程，正确做法是等待fifo中数据都传输完成，再进行下一次填充fifo，参考下面文章，一般串口都有判断fifo是否为空和是否传输完成标志：</p>
+<ul class="simple">
+<li><p><a class="reference external" href="https://blog.csdn.net/weiqifa0/article/details/123606116">串口丢数据常见的原因</a></p></li>
+<li><p><a class="reference external" href="https://blog.csdn.net/best_xiaolong/article/details/111658992">STM32串口发送数据和接收数据方式总结</a></p></li>
+<li><p>TXE：发送数据寄存器为空 (Transmit data register empty)</p>
+<ul>
+<li><p>0：数据未传输到移位寄存器</p></li>
+<li><p>1：数据传输到移位寄存器</p></li>
+</ul>
+</li>
+<li><p>TC：发送完成 (Transmission complete)</p>
+<ul>
+<li><p>0：传送未完成</p></li>
+<li><p>1：传送已完成</p></li>
+</ul>
+</li>
+</ul>
+<section id="uart">
+<h2>UART发送丢失数据(参考)<a class="headerlink" href="#uart" title="此标题的永久链接"></a></h2>
+<p>UART发送丢失数据很多工程师都遇到过，通常情况下是传输未完成的原因。
+HAL库已经有几年了，但还是有很多工程师都使用标准外设库，这时如果自己封装接口不当，就会存在发送最后一字节数据丢失的问题。
+1.UART传输未完成导致数据丢失</p>
+<p>如下代码，只考虑非空，但实际传输并未完成。</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span><span class="w"> </span><span class="nf">UART_SendByte</span><span class="p">(</span><span class="kt">uint8_t</span><span class="w"> </span><span class="n">Data</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="k">while</span><span class="p">(</span><span class="n">RESET</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">USART_GetFlagStatus</span><span class="p">(</span><span class="n">USART1</span><span class="p">,</span><span class="w"> </span><span class="n">USART_FLAG_TXE</span><span class="p">));</span><span class="w"></span>
+<span class="w">  </span><span class="n">USART_SendData</span><span class="p">(</span><span class="n">USART1</span><span class="p">,</span><span class="w"> </span><span class="n">Data</span><span class="p">);</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<p>但发送非空不代表发送完成，虽然在某些场合更高效，但某些场合就会导致数据丢失。</p>
+<p>比如：使用此函数发送之后进入休眠、关闭接收端设备电源等情况下。</p>
+<p>解决办法：
+等待发送完成：</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span><span class="w"> </span><span class="nf">UART_SendByte</span><span class="p">(</span><span class="kt">uint8_t</span><span class="w"> </span><span class="n">Data</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="k">while</span><span class="p">(</span><span class="n">RESET</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">USART_GetFlagStatus</span><span class="p">(</span><span class="n">USART1</span><span class="p">,</span><span class="w"> </span><span class="n">USART_FLAG_TXE</span><span class="p">));</span><span class="w"></span>
+<span class="w">  </span><span class="n">USART_SendData</span><span class="p">(</span><span class="n">USART1</span><span class="p">,</span><span class="w"> </span><span class="n">Data</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="k">while</span><span class="p">(</span><span class="n">RESET</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">USART_GetFlagStatus</span><span class="p">(</span><span class="n">USART1</span><span class="p">,</span><span class="w"> </span><span class="n">USART_FLAG_TC</span><span class="p">));</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<p>如果使用标准外设库，要根据实际情况封装函数，比如发送超时。</p>
+<p>或者使用HAL封装的接口，代码包含判断传输完成：</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="n">HAL_StatusTypeDef</span><span class="w"> </span><span class="n">HAL_UART_Transmit</span><span class="p">(</span><span class="n">UART_HandleTypeDef</span><span class="w"> </span><span class="o">*</span><span class="n">huart</span><span class="p">,</span><span class="w"> </span><span class="kt">uint8_t</span><span class="w"> </span><span class="o">*</span><span class="n">pData</span><span class="p">,</span><span class="w"> </span><span class="kt">uint16_t</span><span class="w"> </span><span class="n">Size</span><span class="p">,</span><span class="w"> </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">Timeout</span><span class="p">)</span><span class="w"></span>
+</pre></div>
+</div>
+</section>
+<section id="id1">
+<h2>解决方案<a class="headerlink" href="#id1" title="此标题的永久链接"></a></h2>
+<p>暂时没有找到qcm2290平台fifo是否为空和是否传输完成标志，只能通过延时的方式。</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="n">uint32</span><span class="w"> </span><span class="nf">pax_serial_putc</span><span class="p">(</span><span class="kt">void</span><span class="o">*</span><span class="w"> </span><span class="n">buf</span><span class="p">,</span><span class="w"> </span><span class="n">uint32</span><span class="w"> </span><span class="n">bytes_to_tx</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="c1">//[feature]-add-begin xielianxiong@paxsz.com,20220910,for txfifo only 64byte</span>
+<span class="w">    </span><span class="cp">#define TXFIFO_SIZE 64</span>
+<span class="w">    </span><span class="n">uint32</span><span class="w"> </span><span class="n">i</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="n">uint32</span><span class="w"> </span><span class="n">len</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="n">uint32</span><span class="w"> </span><span class="n">totalcount</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="n">uint32</span><span class="w"> </span><span class="n">count</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">bytes_to_tx</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">TXFIFO_SIZE</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="c1">//DEBUG((EFI_D_ERROR, &quot;victor, bytes_to_tx = %d,count = %d,\n&quot;, bytes_to_tx,count));</span>
+
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">count</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">         </span><span class="n">len</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">uart5_write</span><span class="p">((</span><span class="n">UINT8</span><span class="o">*</span><span class="p">)</span><span class="n">buf</span><span class="o">+</span><span class="n">i</span><span class="o">*</span><span class="n">TXFIFO_SIZE</span><span class="p">,</span><span class="n">TXFIFO_SIZE</span><span class="p">);</span><span class="w"></span>
+<span class="w">         </span><span class="n">totalcount</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">totalcount</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">len</span><span class="p">;</span><span class="w"></span>
+<span class="cp">#ifdef M9200</span>
+<span class="w">         </span><span class="n">MicroSecondDelay</span><span class="p">(</span><span class="mi">1300</span><span class="p">);</span><span class="c1">//750000</span>
+<span class="cp">#else</span>
+<span class="w">         </span><span class="n">MicroSecondDelay</span><span class="p">(</span><span class="mi">250</span><span class="p">);</span><span class="c1">//3M,3000000</span>
+<span class="cp">#endif</span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="n">len</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">uart5_write</span><span class="p">((</span><span class="n">UINT8</span><span class="o">*</span><span class="p">)</span><span class="n">buf</span><span class="o">+</span><span class="n">count</span><span class="o">*</span><span class="n">TXFIFO_SIZE</span><span class="p">,</span><span class="n">bytes_to_tx</span><span class="w"> </span><span class="o">%</span><span class="w"> </span><span class="n">TXFIFO_SIZE</span><span class="p">);</span><span class="c1">//size;</span>
+<span class="w">    </span><span class="n">totalcount</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">totalcount</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">len</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="c1">//DEBUG((EFI_D_ERROR, &quot;victor, totalcount = %d,len = %d,\n&quot;, totalcount,len));</span>
+<span class="cp">#ifdef M9200</span>
+<span class="w">    </span><span class="n">MicroSecondDelay</span><span class="p">(</span><span class="mi">2300</span><span class="p">);</span><span class="c1">//750000</span>
+<span class="cp">#else</span>
+<span class="w">    </span><span class="n">MicroSecondDelay</span><span class="p">(</span><span class="mi">250</span><span class="p">);</span><span class="c1">//3M,3000000</span>
+<span class="cp">#endif</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">totalcount</span><span class="p">;</span><span class="w"></span>
+<span class="c1">//[feature]-add-begin xielianxiong@paxsz.com,20220910,for txfifo only 64byte</span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+</section>
 </section>
 
 

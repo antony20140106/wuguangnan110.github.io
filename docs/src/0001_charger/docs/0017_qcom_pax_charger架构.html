@@ -48,6 +48,7 @@
 <li><a class="reference internal" href="#charger-class">charger_class架构介绍</a></li>
 <li><a class="reference internal" href="#id4">充电状态上报逻辑</a></li>
 <li><a class="reference internal" href="#pm">PM电源管理</a></li>
+<li><a class="reference internal" href="#aicl">动态AICL机制</a></li>
 <li><a class="reference internal" href="#id5">底座充电功能开发</a></li>
 <li><a class="reference internal" href="#id6">问题点</a><ul>
 <li><a class="reference internal" href="#bc1-2">bc1.2轮询方案</a></li>
@@ -581,6 +582,76 @@ static int mp2721_charger_probe(struct i2c_client *client,
 <span class="o">[</span><span class="m">10990</span>.822242<span class="o">]</span> PM: <span class="nb">suspend</span> <span class="nb">exit</span>
 </pre></div>
 </div>
+</section>
+<section id="aicl">
+<h1>动态AICL机制<a class="headerlink" href="#aicl" title="此标题的永久链接"></a></h1>
+<p>非快充情况下，vbus一般都是小于等于5V的，充电器功率一定时，当vbus小于mivr电压时，会导致cable out停止充电，尤其是恒流阶段充电电流一般比较大，再加上vbus上其他的器件分压，很容易让vbus小于mivr导致停充，动态AICL机制完美解决这一痛点。</p>
+<ul class="simple">
+<li><p>dts参数说明：</p></li>
+</ul>
+<div class="highlight-log notranslate"><div class="highlight"><pre><span></span>charger: charger {
+	compatible = &quot;pax,charger&quot;;
+	
+	enable_dynamic_mivr; //使能动态的触发AICL机制的门限电压
+	
+	max_charger_voltage = &lt;6500000&gt;;
+	min_charger_voltage = &lt;4600000&gt;;
+	
+	/* dynamic mivr */
+	min_charger_voltage_1 = &lt;4400000&gt;;  //最大mivr
+	min_charger_voltage_2 = &lt;4200000&gt;; //最小mivr
+	max_dmivr_charger_current = &lt;1400000&gt;; //AICL最大充电电流
+	}
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>动态mivr设定在充电线程charger_routine_thread中完成：</p></li>
+</ul>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">charger_routine_thread</span><span class="p">(</span><span class="kt">void</span><span class="w"> </span><span class="o">*</span><span class="n">arg</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">check_dynamic_mivr</span><span class="p">(</span><span class="n">info</span><span class="p">);</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+
+<span class="k">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">check_dynamic_mivr</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">charger_manager</span><span class="w"> </span><span class="o">*</span><span class="n">info</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="kt">int</span><span class="w"> </span><span class="n">vbat</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">info</span><span class="o">-&gt;</span><span class="n">enable_dynamic_mivr</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">mtk_pe40_get_is_connect</span><span class="p">(</span><span class="n">info</span><span class="p">)</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"></span>
+<span class="w">			</span><span class="o">!</span><span class="n">mtk_pe20_get_is_connect</span><span class="p">(</span><span class="n">info</span><span class="p">)</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"></span>
+<span class="w">			</span><span class="o">!</span><span class="n">mtk_pe_get_is_connect</span><span class="p">(</span><span class="n">info</span><span class="p">)</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"></span>
+<span class="w">			</span><span class="o">!</span><span class="n">mtk_pdc_check_charger</span><span class="p">(</span><span class="n">info</span><span class="p">))</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+
+<span class="w">			</span><span class="n">vbat</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">battery_get_bat_voltage</span><span class="p">();</span><span class="w"> </span><span class="c1">//获取电池电压vbat</span>
+<span class="w">			</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">vbat</span><span class="w"> </span><span class="o">&lt;</span><span class="w"></span>
+<span class="w">				</span><span class="n">info</span><span class="o">-&gt;</span><span class="n">data</span><span class="p">.</span><span class="n">min_charger_voltage_2</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">1000</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">200</span><span class="p">)</span><span class="w"></span>
+<span class="w">				</span><span class="n">charger_dev_set_mivr</span><span class="p">(</span><span class="n">info</span><span class="o">-&gt;</span><span class="n">chg1_dev</span><span class="p">,</span><span class="w"></span>
+<span class="w">					</span><span class="n">info</span><span class="o">-&gt;</span><span class="n">data</span><span class="p">.</span><span class="n">min_charger_voltage_2</span><span class="p">);</span><span class="w"> </span>
+<span class="w">			</span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">vbat</span><span class="w"> </span><span class="o">&lt;</span><span class="w"></span>
+<span class="w">				</span><span class="n">info</span><span class="o">-&gt;</span><span class="n">data</span><span class="p">.</span><span class="n">min_charger_voltage_1</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">1000</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">200</span><span class="p">)</span><span class="w"></span>
+<span class="w">				</span><span class="n">charger_dev_set_mivr</span><span class="p">(</span><span class="n">info</span><span class="o">-&gt;</span><span class="n">chg1_dev</span><span class="p">,</span><span class="w"></span>
+<span class="w">					</span><span class="n">info</span><span class="o">-&gt;</span><span class="n">data</span><span class="p">.</span><span class="n">min_charger_voltage_1</span><span class="p">);</span><span class="w"></span>
+<span class="w">			</span><span class="k">else</span><span class="w"></span>
+<span class="w">				</span><span class="n">charger_dev_set_mivr</span><span class="p">(</span><span class="n">info</span><span class="o">-&gt;</span><span class="n">chg1_dev</span><span class="p">,</span><span class="w"></span>
+<span class="w">					</span><span class="n">info</span><span class="o">-&gt;</span><span class="n">data</span><span class="p">.</span><span class="n">min_charger_voltage</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="p">}</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<p>以上得知当vbat&lt; min_charger_voltage_1 - 0.2时，mivr设置为min_charger_voltage_1(4.4v),当vbat &lt; min_charger_voltage_2 - 0.2时,mivr设置为min_charger_voltage_2(4.2v)，一般vbat都是大于4v的，所以一般mivr都是4.4v，如果vbat大于4.2v则设置mivr为min_charger_voltage(4.6v),逻辑如下：</p>
+<div class="highlight-log notranslate"><div class="highlight"><pre><span></span>vbat &lt; 4.0v
+mivr = 4.2v  min_charger_voltage_2
+
+4.0v &lt; vbat &lt; 4.2v 
+mivr = 4.4v min_charger_voltage_1
+
+vbat &gt; 4.2v
+mivr = 4.6v  min_charger_voltage
+</pre></div>
+</div>
+<p>原理很简单，就是低电量时设置更低的门限电压mivr，不让轻易断开充电。</p>
 </section>
 <section id="id5">
 <h1>底座充电功能开发<a class="headerlink" href="#id5" title="此标题的永久链接"></a></h1>

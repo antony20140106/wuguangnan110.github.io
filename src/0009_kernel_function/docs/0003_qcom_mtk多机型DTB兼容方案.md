@@ -12,6 +12,7 @@
 * [Android DTO和dtbo简介](https://blog.csdn.net/zhangdaxia2/article/details/100109684/)
 * [深入浅出理解Linux设备树(DTS)](https://deepinout.com/android-system-analysis/android-kernel-related/easy-to-understand-linux-dts.html)
 * [MTK平台DTBO如何生成的以及DWS生成DTS](https://blog.csdn.net/u013463707/article/details/119459687)
+* [Android 设备树的匹配流程](http://codingsky.com/doc/2022/1/11/919.html)
 
 * Dts：DTS即Device Tree Source，是一个文本形式的文件，用于描述硬件信息。一般都是固定信息，无法变更，无法overlay。
 
@@ -49,6 +50,18 @@ Linux使用设备树的主要原因如下
 # 设备树解耦框架设计
 
 ![0003_0001.png](images/0003_0001.png)
+
+# Android 8以后dtb存放位置
+
+Android 8之后为了更好的解耦与升级，google引入了DTO，将DTS分成两部分，一部分是平台相关的DTS，仍是编译成dtb.img打包至boot.img，一部分是ODM/OEM根据硬件客制化修改的DTS，编译的产物放到dtbo分区。
+
+![0003_0004.png](images/0003_0004.png)
+
+# Android 11以上+kernel-5.4以上dtb存放位置
+
+Kernel-5.4以上由于GKI问题，dtb.img不再打包到boot.img，而是放入vendor_boot.img，加入vendor_boot分区，需要BOARD_BOOT_HEADER_VERSION等于3，bootloader加载也会使用到这个值。
+
+![0003_0005.png](images/0003_0005.png)
 
 # QCM2290
 
@@ -107,38 +120,45 @@ m9200-scuba-iot-idp.dts
 };
 ```
 
-
-流程如下：
-```C++
-* LinuxLoaderEntry //ABL入口函数
-  * BootLinux (&Info);
-    * Status = DTBImgCheckAndAppendDT (Info, &BootParamlistPtr);
-      * if (HeaderVersion > BOOT_HEADER_VERSION_ONE)
-        * NumKernelPages =GetNumberOfPages (BootParamlistPtr->KernelSize,BootParamlistPtr->PageSize); //从boot.img中获取
-          * if (HeaderVersion  == BOOT_HEADER_VERSION_TWO)
-            * ImageBuffer = BootParamlistPtr->ImageBuffer;
-          * if (HeaderVersion  == BOOT_HEADER_VERSION_THREE)
-            * ImageBuffer = BootParamlistPtr->VendorImageBuffer; //从vendor_boot.img中获取
-      * SocDtb = GetSocDtb (ImageBuffer,ImageSize,BootParamlistPtr->DtbOffset, (VOID *)BootParamlistPtr->DeviceTreeLoadAddr); //获取dtb
-        * ReadDtbFindMatch (&CurDtbInfo, &BestDtbInfo, BIT(SOC_MATCH) | BIT(PAX_BOARD_INFO_MATCH) //匹配dtb
-          * PlatProp = (CONST CHAR8 *)fdt_getprop (Dtb, RootOffset, "qcom,msm-id",&LenPlatId); //读取dtb中的qcom,msm-id
-          * BoardProp = (CONST CHAR8 *)fdt_getprop (Dtb, RootOffset, "qcom,board-id",&LenBoardId);//读取dtb中的qcom,board-id
-          * GetBoardMatchDtb (CurDtbInfo, BoardProp, LenBoardId); //和xbl中读出来的对比，Get the properties like variant id, subtype from Dtb then compare the dtb vs Board
-          * (CONST CHAR8 *)fdt_getprop (Dtb, RootOffset, "qcom,pmic-id", &LenPmicId);
-          * ReadBestPmicMatch (PmicProp, PmicMaxIdx, PmicEntCount, &BestPmicInfo);// 对比qcom,pmic-id，dts中没这个
-          * GetPaxBoardInfoMatchDtb(CurDtbInfo); //pax加的
-            * RootOffset = fdt_path_offset(Dtb, "/soc/pax_board_info"); //找到soc=pax_board_info的dtb
-            * MainBoardProp = (CONST CHAR8 *)fdt_getprop(Dtb, RootOffset, "pax,main_board",
-            * PortBoardProp = (CONST CHAR8 *)fdt_getprop(Dtb, RootOffset, "pax,port_board",
-            * TerminalNameProp = (CONST CHAR8 *)fdt_getprop(Dtb, RootOffset, "pax,terminal_name", //读取三个dtb属性
-            * if (getCfgTermialName(Buff) < 0)
-              * return getCfgItemValStr("TERMINAL_NAME", buf); //pax_lib.c 我们terminal_name、port_board、main_board都是从sp配置文件中获取的
-              * if (AsciiStrnCmp(Buff, TerminalName, TerminalNamePropLen))
-        * return BestDtbInfo.Dtb; //
+```
 
 ```
 
-## header_version版本决定dtbo存储位置
+ABL匹配dtbo和dtb流程如下：
+```c
+* LinuxLoaderEntry //ABL入口函数
+  └── BootLinux (&Info);
+      └── Status = DTBImgCheckAndAppendDT (Info, &BootParamlistPtr);
+          ├── if (HeaderVersion > BOOT_HEADER_VERSION_ONE)
+          │   └── NumKernelPages =GetNumberOfPages (BootParamlistPtr->KernelSize,BootParamlistPtr->PageSize); //从boot.img中获取dtb
+          │       ├── if (HeaderVersion  == BOOT_HEADER_VERSION_TWO)
+          │       │   └── ImageBuffer = BootParamlistPtr->ImageBuffer;
+          │       └── if (HeaderVersion  == BOOT_HEADER_VERSION_THREE)
+          │           └── ImageBuffer = BootParamlistPtr->VendorImageBuffer; //从vendor_boot.img中获取dtb
+          └── SocDtb = GetSocDtb (ImageBuffer,ImageSize,BootParamlistPtr->DtbOffset, (VOID *)BootParamlistPtr->DeviceTreeLoadAddr); //获取dtb
+              ├── ReadDtbFindMatch (&CurDtbInfo, &BestDtbInfo, BIT(SOC_MATCH) | BIT(PAX_BOARD_INFO_MATCH) //匹配dtb
+              │   ├── PlatProp = (CONST CHAR8 *)fdt_getprop (Dtb, RootOffset, "qcom,msm-id",&LenPlatId); //读取dtb中的qcom,msm-id
+              │   ├── BoardProp = (CONST CHAR8 *)fdt_getprop (Dtb, RootOffset, "qcom,board-id",&LenBoardId);//读取dtb中的qcom,board-id
+              │   ├── GetBoardMatchDtb (CurDtbInfo, BoardProp, LenBoardId); //和xbl中读出来的对比，Get the properties like variant id, subtype from Dtb then compare the dtb vs Board
+              │   ├── (CONST CHAR8 *)fdt_getprop (Dtb, RootOffset, "qcom,pmic-id", &LenPmicId);
+              │   ├── ReadBestPmicMatch (PmicProp, PmicMaxIdx, PmicEntCount, &BestPmicInfo);// 对比qcom,pmic-id，dts中没这个
+              │   └── GetPaxBoardInfoMatchDtb(CurDtbInfo); //pax加的
+              │       ├── RootOffset = fdt_path_offset(Dtb, "/soc/pax_board_info"); //找到soc=pax_board_info的dtb
+              │       ├── MainBoardProp = (CONST CHAR8 *)fdt_getprop(Dtb, RootOffset, "pax,main_board",
+              │       ├── PortBoardProp = (CONST CHAR8 *)fdt_getprop(Dtb, RootOffset, "pax,port_board",
+              │       ├── TerminalNameProp = (CONST CHAR8 *)fdt_getprop(Dtb, RootOffset, "pax,terminal_name", //读取dts中三个dtb属性
+              │       ├── if (getCfgTermialName(Buff) < 0) //对比terminal_name
+              │       │   └── return getCfgItemValStr("TERMINAL_NAME", buf); //pax_lib.c 我们terminal_name、port_board、main_board都是从sp配置文件中获取的
+              │       ├── if (AsciiStrnCmp(Buff, TerminalName, TerminalNamePropLen))
+              │       │   └── return EFI_NOT_FOUND;
+              │       ├── if (getCfgMainBoard(Buff) < 0)
+              │       ├── if (AsciiStrnCmp(Buff, MainBoard, MainBoardPropLen)) //对比main_board
+              │       ├── if (getCfgPortBoard(Buff) < 0)
+              │       └── if (AsciiStrnCmp(Buff, PortBoard, PortBoardPropLen)) //对比port_board
+              └── return BestDtbInfo.Dtb; //
+```
+
+## header_version版本决定dtb存储位置
 
 * `BootImage.h`解释：
 ```C++
@@ -271,18 +291,36 @@ struct boot_img_hdr_v2 {
  *    jump to kernel_addr
  */
 ```
-可以看到当`BOOT_HEADER_VERSION_THREE 3`时，dtb.img不再打包到boot.img，而是放入vendor_boot.img，加入vendor_boot分区，bootloader加载也会使用到这个值。
+可以看到当`BOOT_HEADER_VERSION_THREE 3`时，表示内核版本是Kernel-5.4以上，由于GKI问题，dtb.img不再打包到boot.img，而是放入vendor_boot.img，加入vendor_boot分区，ABL加载也会使用到这个值，目前qcm2290没有这个分区，所有dtb还是放在boot.img，可见还是由内核版本决定的。
 
-* `HEADER_VERSION`获取方式：
+* 目前ABL中`HEADER_VERSION`获取方式是从boot.img镜像中获取：
 ```C++
 EFI_STATUS
 BootLinux (BootInfo *Info)
 {
+
+  Status = GetImage (Info,
+                     &BootParamlistPtr.ImageBuffer,
+                     (UINTN *)&BootParamlistPtr.ImageSize,
+                     ((!Info->MultiSlotBoot ||
+                        IsDynamicPartitionSupport ()) &&
+                        (Recovery &&
+                        !IsBuildUseRecoveryAsBoot ()))?
+                        "recovery" : "boot");
+  if (Status != EFI_SUCCESS ||
+      BootParamlistPtr.ImageBuffer == NULL ||
+      BootParamlistPtr.ImageSize <= 0) {
+    DEBUG ((EFI_D_ERROR, "BootLinux: Get%aImage failed!\n",
+            (!Info->MultiSlotBoot &&
+             (Recovery &&
+             !IsBuildUseRecoveryAsBoot ()))? "Recovery" : "Boot"));
+    return EFI_NOT_STARTED;
+  }
+
   Info->HeaderVersion = ((boot_img_hdr *)
                          (BootParamlistPtr.ImageBuffer))->header_version;
 }
 ```
-
 
 ## 分割DT
 

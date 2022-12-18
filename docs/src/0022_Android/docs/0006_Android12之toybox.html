@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="zh-CN" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>wugn</title>
+
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script src="../../../_static/translations.js"></script>
+        <script src="../../../_static/js/baidutongji.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="索引" href="../../../genindex.html" />
+    <link rel="search" title="搜索" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../index.html" class="icon icon-home"> wugn_note
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="在文档中搜索" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">概述</a></li>
+<li><a class="reference internal" href="#id2">参考</a></li>
+<li><a class="reference internal" href="#toybox">toybox工具制作原理</a></li>
+<li><a class="reference internal" href="#id3">toybox工作命令原理</a></li>
+<li><a class="reference internal" href="#sttyandroid">stty工具Android源码修改</a></li>
+</ul>
+</div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">wugn_note</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs"> 
+<li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+<li>概述</li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.forward()">Forward</a></li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.back()">Go Back</a> | </li>
+<li style="float: right;margin-left: 10px;"><a href="/index.html">Home</a> | </li>
+
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="id1">
+<h1>概述<a class="headerlink" href="#id1" title="此标题的永久链接"></a></h1>
+<p>在Android版本中，许多Linux命令以及Android自带的命令，有一部分命令已经是二进制实体直接放在/system/bin/目录下了，比较新的android版本，还有一部分命令是集成在toybox这个二进制文件中了，然后是通过软连接到toybox来执行对应命令的。</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span> root:/ <span class="c1"># cd system/bin/</span>
+ root:/system/bin <span class="c1"># ls -l</span>
+ -rwxr-xr-x <span class="m">1</span> root shell  <span class="m">489352</span> <span class="m">2009</span>-01-01 <span class="m">08</span>:00 toybox
+ -rwxr-xr-x <span class="m">1</span> root shell   <span class="m">11688</span> <span class="m">2009</span>-01-01 <span class="m">08</span>:00 reboot
+ -rwxr-xr-x <span class="m">1</span> root shell  <span class="m">164928</span> <span class="m">2009</span>-01-01 <span class="m">08</span>:00 remount
+ lrwxr-xr-x <span class="m">1</span> root shell       <span class="m">6</span> <span class="m">2009</span>-01-01 <span class="m">08</span>:00 sync -&gt; toybox
+ lrwxr-xr-x <span class="m">1</span> root shell       <span class="m">6</span> <span class="m">2009</span>-01-01 <span class="m">08</span>:00 sysctl -&gt; toybox
+ lrwxr-xr-x <span class="m">1</span> root shell       <span class="m">6</span> <span class="m">2009</span>-01-01 <span class="m">08</span>:00 tac -&gt; toybox
+ lrwxr-xr-x <span class="m">1</span> root shell       <span class="m">6</span> <span class="m">2009</span>-01-01 <span class="m">08</span>:00 tail -&gt; toybox
+ lrwxr-xr-x <span class="m">1</span> root shell       <span class="m">6</span> <span class="m">2009</span>-01-01 <span class="m">08</span>:00 tar -&gt; toybox
+ lrwxr-xr-x <span class="m">1</span> root shell       <span class="m">6</span> <span class="m">2009</span>-01-01 <span class="m">08</span>:00 vmstat -&gt; toybox
+ lrwxr-xr-x <span class="m">1</span> root shell       <span class="m">6</span> <span class="m">2009</span>-01-01 <span class="m">08</span>:00 watch -&gt; toybox
+ lrwxr-xr-x <span class="m">1</span> root shell       <span class="m">6</span> <span class="m">2009</span>-01-01 <span class="m">08</span>:00 wc -&gt; toybox
+ lrwxr-xr-x <span class="m">1</span> root shell       <span class="m">6</span> <span class="m">2009</span>-01-01 <span class="m">08</span>:00 which -&gt; toybox
+ lrwxr-xr-x <span class="m">1</span> root shell       <span class="m">6</span> <span class="m">2009</span>-01-01 <span class="m">08</span>:00 whoami -&gt; toybox
+ ......
+ root:/system/bin <span class="c1"># toybox</span>
+ acpi base64 basename blkid blockdev cal cat chattr chcon chgrp 
+</pre></div>
+</div>
+</section>
+<section id="id2">
+<h1>参考<a class="headerlink" href="#id2" title="此标题的永久链接"></a></h1>
+<ul class="simple">
+<li><p><a class="reference external" href="https://blog.csdn.net/ldswfun/article/details/119783255">Android12 系统的裁剪编译规则</a></p></li>
+</ul>
+</section>
+<section id="toybox">
+<h1>toybox工具制作原理<a class="headerlink" href="#toybox" title="此标题的永久链接"></a></h1>
+<p>1.通过toybox的main()函数，可以调用到子命令函数。</p>
+<p>即主main函数根据传进来的参数，调用子main函数。</p>
+<p>2.将每个子命令软连接到系统，Android系统在/system/bin目录下，Linux在/usr/bin目录下。</p>
+<p>即创建软连接。</p>
+</section>
+<section id="id3">
+<h1>toybox工作命令原理<a class="headerlink" href="#id3" title="此标题的永久链接"></a></h1>
+<p>如果执行”toybox ls”, 拆成两个字符串，如果第一个为空，就会接着判断第二个字符串“ls”,主main调用ls_main()函数即可。</p>
+</section>
+<section id="sttyandroid">
+<h1>stty工具Android源码修改<a class="headerlink" href="#sttyandroid" title="此标题的永久链接"></a></h1>
+<ul class="simple">
+<li><p>stty工具显示不支持750k波特率，打印如下：</p></li>
+</ul>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="m">1</span><span class="p">|</span>M9200:/ <span class="c1"># stty -F /dev/ttyHS1 speed 750000 cs8 -parenb -cstopb</span>
+<span class="m">9600</span>
+stty: unknown speed: <span class="m">750000</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>修改如下：</p></li>
+</ul>
+<div class="highlight-diff notranslate"><div class="highlight"><pre><span></span><span class="gd">--- a/QSSI.12/external/toybox/toys/pending/stty.c</span><span class="w"></span>
+<span class="gi">+++ b/QSSI.12/external/toybox/toys/pending/stty.c</span><span class="w"></span>
+<span class="gu">@@ -49,7 +49,7 @@ GLOBALS(</span><span class="w"></span>
+
+<span class="w"> </span>static const int bauds[] = {<span class="w"></span>
+<span class="w"> </span>  0, 50, 75, 110, 134, 150, 200, 300, 600, 1200, 1800, 2400, 4800, 9600,<span class="w"></span>
+<span class="gd">-  19200, 38400, 57600, 115200, 230400, 460800, 500000, 576000, 921600,</span><span class="w"></span>
+<span class="gi">+  19200, 38400, 57600, 115200, 230400, 460800, 500000, 576000, 750000, 921600,</span><span class="w"></span>
+<span class="w"> </span>  1000000, 1152000, 1500000, 2000000, 2500000, 3000000, 3500000, 4000000<span class="w"></span>
+<span class="w"> </span>};<span class="w"></span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>修改后能够设置：</p></li>
+</ul>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>M9200:/ <span class="c1"># stty -F /dev/ttyHS1 speed 750000 cs8 -parenb -cstopb</span>
+<span class="m">750000</span>
+M9200:/ <span class="c1"># stty -F /dev/ttyHS1 -a</span>
+speed <span class="m">750000</span> baud<span class="p">;</span> rows <span class="m">0</span><span class="p">;</span> columns <span class="m">0</span><span class="p">;</span> <span class="nv">line</span> <span class="o">=</span> <span class="m">0</span><span class="p">;</span>
+<span class="nv">intr</span> <span class="o">=</span> ^C<span class="p">;</span> <span class="nv">quit</span> <span class="o">=</span> ^<span class="se">\;</span> <span class="nv">erase</span> <span class="o">=</span> ^?<span class="p">;</span> <span class="nb">kill</span> <span class="o">=</span> ^U<span class="p">;</span> <span class="nv">eof</span> <span class="o">=</span> ^D<span class="p">;</span> <span class="nv">eol</span> <span class="o">=</span> &lt;undef&gt;<span class="p">;</span> <span class="nv">eol2</span> <span class="o">=</span> &lt;undef&gt;<span class="p">;</span> <span class="nv">swtch</span> <span class="o">=</span> &lt;undef&gt;<span class="p">;</span> <span class="nv">start</span> <span class="o">=</span> ^Q<span class="p">;</span>
+<span class="nv">stop</span> <span class="o">=</span> ^S<span class="p">;</span> <span class="nv">susp</span> <span class="o">=</span> ^Z<span class="p">;</span> <span class="nv">rprnt</span> <span class="o">=</span> ^R<span class="p">;</span> <span class="nv">werase</span> <span class="o">=</span> ^W<span class="p">;</span> <span class="nv">lnext</span> <span class="o">=</span> ^V<span class="p">;</span> <span class="nv">discard</span> <span class="o">=</span> ^O<span class="p">;</span> <span class="nv">min</span> <span class="o">=</span> <span class="m">1</span><span class="p">;</span> <span class="nb">time</span> <span class="o">=</span> <span class="m">0</span><span class="p">;</span>
+-parenb -parodd -cmspar cs8 hupcl -cstopb cread clocal -crtscts
+-ignbrk -brkint -ignpar -parmrk -inpck -istrip -inlcr -igncr icrnl ixon -ixoff -iuclc -ixany -imaxbel -iutf8
+opost -olcuc -ocrnl onlcr -onocr -onlret -ofill -ofdel nl0 cr0 tab0 bs0 vt0 ff0
+isig icanon iexten <span class="nb">echo</span> echoe echok -echonl -noflsh -xcase -tostop -echoprt echoctl echoke -flusho -extproc
+</pre></div>
+</div>
+</section>
+
+
+           </div>
+             <div class="articleComments">
+                <comments>
+  <script src="https://utteranc.es/client.js"
+    repo="iswbm/magic-python"
+    issue-term="pathname"
+    theme="github-light"
+    crossorigin="anonymous"
+    async>
+  </script>
+</comments>
+             </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; 版权所有 2022, wugn.</p>
+  </div>
+
+  利用 <a href="https://www.sphinx-doc.org/">Sphinx</a> 构建，使用了 
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">主题</a>
+    由 <a href="https://readthedocs.org">Read the Docs</a>开发.
+  
+
+<script charset="UTF-8" id="LA_COLLECT" src="//sdk.51.la/js-sdk-pro.min.js"></script>
+<script>LA.init({id: "JoV5csIHTGhHiGQ4",ck: "JoV5csIHTGhHiGQ4"})</script>
+
+<br/>
+<script id="LA-DATA-WIDGET" crossorigin="anonymous" charset="UTF-8" src="https://v6-widget.51.la/v6/JoV5csIHTGhHiGQ4/quote.js?theme=#4C8AC2,#BB2626,#040000,#333333,#AE3535,#1690FF,14&f=14"></script>
+
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

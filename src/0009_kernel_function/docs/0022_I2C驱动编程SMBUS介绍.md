@@ -8,7 +8,7 @@ SMBus（System Management Bus）是系统管理总线的简称，该总线由SBS
 * [SMBus接口信号和帧格式_SMBus与I2C的差异](https://www.elecfans.com/emb/jiekou/202010271346975.html)
 * [I2C通信协议：了解PMBus和SMBus](https://rohm.eefocus.com/article/id-2431)
 
-SMBus为I2C协议的子集（常用数字接口（3） I2C ），SMBus接口信号与I2C信号之间映射关系如下，其中SMBSUS#，SMBALERT#为可选信号，协议并未强制。
+SMBus为I2C协议的子集（常用数字接口（3） I2C ），SMBus接口信号与I2C信号之间映射关系如下，其中SMBSUS，SMBALERT为可选信号，协议并未强制。
 
 ![0022_0000.png](images/0022_0000.png)
 

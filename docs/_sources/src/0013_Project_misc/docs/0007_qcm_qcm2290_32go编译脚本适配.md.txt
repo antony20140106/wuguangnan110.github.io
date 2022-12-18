@@ -1,0 +1,502 @@
+# 概述
+
+记录一下高通平台编译脚本适配，包括静态logo制作、pack、编译等功能。
+
+# 制作静态logo
+
+* `A6650-project\UM.9.15\device\qcom\common\display\logo\readme.txt`只需要执行`python ./logo_gen.py xxx.bmp`会生成`splash.img`，然后烧录就可以了：
+```
+The steps to generate a splash.img:
+1 sudo apt-get install python-imaging
+2 python ./logo_gen.py Quectel.bmp
+```
+
+# 动态logo适配
+
+目前M9200使用1440x720分辨率，可以直接用M50项目的，主要讲一下适配原理：
+* `QSSI.12/frameworks/base/cmds/bootanimation/BootAnimation.cpp`:
+```C++
+bool BootAnimation::findBootAnimationFileInternal(const std::vector<std::string> &files) {
+//[FEATURE]-Add-BEGIN by xielianxiong@paxsz.com 2022-10-06,for find boot animation file through w and h
+    ui::Size resolution(0, 0);
+    sp<IBinder>mToken = SurfaceComposerClient::getInternalDisplayToken();
+    if (mToken != nullptr){
+        DisplayMode displayMode;
+        const status_t error = SurfaceComposerClient::getActiveDisplayMode(mToken, &displayMode);
+        if (error == NO_ERROR){
+            resolution = displayMode.resolution;
+        }
+    }
+//[FEATURE]-Add-end by xielianxiong@paxsz.com 2022-10-06,for find boot animation file through w and h
+    for (const std::string& f : files) {
+//[FEATURE]-Add-BEGIN by (xielianxiong@paxsz.com), 2022/7/12, for TERMINAL_NAME bootanimation
+        if (!mShuttingDown && strcmp(f.c_str(), SYSTEM_BOOTANIMATION_FILE) == 0) {
+            char product[PROPERTY_VALUE_MAX];
+            sprintf(pax_boot_file, "system/media/bootanimation_%dx%d.zip", resolution.width,resolution.height);
+            ALOGD("bootanimation width:%d,height:%d,path:%s",mWidth,mHeight,pax_boot_file);
+            if (access(pax_boot_file, R_OK) == 0) {
+                mZipFileName = pax_boot_file;
+                return true;
+            }
+            property_get("ro.fac.cfg.TERMINAL_NAME", product, "A6650");
+            sprintf(pax_boot_file, "system/media/bootanimation_%s.zip", product);
+            ALOGD("bootanimation : path:%s",pax_boot_file);
+            if (access(pax_boot_file, R_OK) == 0) {
+                mZipFileName = pax_boot_file;
+                return true;
+            }
+        }
+//[FEATURE]-Add-end by (xielianxiong@paxsz.com), 2022/7/12, for TERMINAL_NAME bootanimation
+        if (access(f.c_str(), R_OK) == 0) {
+            mZipFileName = f.c_str();
+            return true;
+        }
+    }
+    return false;
+}
+```
+
+以上，首先按照分辨率匹配，没有匹配成功,就按照原来的,匹配机型号,例如bootanimation_A6650.zip
+
+# sp boot/os镜像获取方式
+
+* 采用脚本的方式scp获取，r然后使用sign_file.py进行签名，如下：
+```shell
+src_dir=/home/jenkins/workspace/RunthOS_master_android/output/*
+dest_dir=`pwd`
+host=172.16.2.211
+port=22
+username=jenkins
+password=jenkins123
+
+sign_sp_img()
+{
+    IMG_FILE=$1
+    if [ ! -z $IMG_FILE ]; then
+        echo "to sign: $IMG_FILE"
+        SIGN_TOOL=sign_file.py
+        python ${SIGN_TOOL} $IMG_FILE
+        echo "sign $IMG_FILE done "
+    fi
+}
+
+rm -f $dest_dir/runthos-sp-qingming-*
+# 将远程服务器上的文件拷贝到本机
+./expect.sh $host $port $username $password $src_dir $dest_dir
+
+RUNTH_IMG=`ls $dest_dir/runthos-sp-qingming-*`
+sign_sp_img $RUNTH_IMG
+
+echo "end"
+```
+
+* `expect.sh`
+```shell
+#!/usr/bin/expect
+set timeout 3600
+set host [lindex $argv 0]
+set port [lindex $argv 1]
+set username [lindex $argv 2]
+set password [lindex $argv 3]
+set src_file [lindex $argv 4]
+set dest_file [lindex $argv 5]
+#spawn scp $src_file $username@$host:$dest_file
+spawn scp -P $port -p $username@$host:$src_file $dest_file
+expect {
+"(yes/no)?" {
+   send "yes\n"
+   expect "*assword:" { send "$password\n" }
+}
+"*assword:" {
+   send "$password\n"
+}
+
+}
+expect "100%"
+expect eof
+```
+
+# 最终代码
+
+```shell
+#!/bin/bash
+# color: 0~6 --> black, red, green, yellow, blue, purple, cyan, grey
+export ECHO_STYLE_DEFAULT="\033[0m"        # default style(black background, white foreground)
+export ECHO_STYLE_HID="\033[49;39;25m"  # 
+export ECHO_STYLE_01="\033[41;33;5m"  #  
+export ECHO_STYLE_02="\033[49;33;25m"  # 
+export ECHO_STYLE_03="\033[49;31;5m"  # 
+export ECHO_STYLE_04="\033[49;32;25m"  # 
+export ECHO_STYLE_04_1="\033[49;32;5m"  # 
+export ECHO_STYLE_05="\033[49;34;25m"  # 
+export ECHO_STYLE_06="\033[49;33;25m"  # 
+export ECHO_STYLE_07="\033[49;31;25m"  # 
+export ECHO_STYLE_08="\033[49;31;25m"  # 
+
+#if TARGET_PRODUCT is diffrent, please change the TARGET_PRODUCT and QSSI_PRODUCT and TARGET_BUILD_VARIANT here
+export QSSI_PRODUCT=qssi_32go
+export TARGET_PRODUCT=bengal_32go
+export TARGET_BUILD_VARIANT=userdebug
+export PRODUCT_NAME=M9200
+export PRODUCT_ALIAS=Kapok
+
+export ANDROID_DIR=${PWD}
+export TARGET_DIR=${ANDROID_DIR}/UM.9.15
+export QSSI_DIR=${ANDROID_DIR}/QSSI.12
+export TARGET_OUT_DIR=${TARGET_DIR}/out/target/product/${TARGET_PRODUCT}
+export QSSI_OUT_DIR=${QSSI_DIR}/out/target/product/${QSSI_PRODUCT}
+export PAYDROID_SCATTER_DIR=${QSSI_DIR}/vendor/paxsz/PayDroid/$PRODUCT_NAME
+export VERSION_FILE_PATH=${QSSI_DIR}/vendor/paxsz/version_${PRODUCT_ALIAS}.mk
+export ANDROID_VERSION=`grep ^PAYDROID_ANDROID_VERSION= ${VERSION_FILE_PATH} | sed 's/PAYDROID_ANDROID_VERSION=//g'`
+export PLATFORM_NAME=`grep ^PAYDROID_PLATFORM_NAME= ${VERSION_FILE_PATH} | sed 's/PAYDROID_PLATFORM_NAME=//g'`
+export PAX_PLATFORM_VERSION=`grep ^PAYDROID_PLATFORM_ID= ${VERSION_FILE_PATH} | sed 's/PAYDROID_PLATFORM_ID=//g'`
+export SOFTWARE_VERSION=`grep ^VERSION_NUMBER= ${VERSION_FILE_PATH} | sed 's/VERSION_NUMBER=//g'`
+export TODAY=$(date +%Y%m%d)
+export OTA_COMPRESS_NAME=Uniphiz_${ANDROID_VERSION}_${PLATFORM_NAME}_V${PAX_PLATFORM_VERSION}.${SOFTWARE_VERSION}_${TODAY}
+export COMPRESS_NAME=Uniphiz_${ANDROID_VERSION}_${PLATFORM_NAME}_V${PAX_PLATFORM_VERSION}.${SOFTWARE_VERSION}_${TODAY}_Release
+export OTA_PACKAGE_NAME=${OTA_COMPRESS_NAME}_OTA.zip
+export OTA_TARGET_FILE_NAME=${COMPRESS_NAME}_TARGET.zip
+export QFIL_COMPRESS_NAME=${COMPRESS_NAME}_Fac.zip
+export UNIPHIZ_COMPRESS_NAME=${COMPRESS_NAME}.uniphiz
+
+export LOGO_SRC_DIR="${QSSI_DIR}/vendor/paxsz/bootanimation"
+export SP_SRC_DIR="$ANDROID_DIR/QSSI.12/vendor/paxsz/paxsp/$PRODUCT_NAME"
+
+export UNPACK_TOOL_SRC_DIR=${ANDROID_DIR}/A6650_Unpacking_Tool
+export UNPACK_TOOL_DEST_DIR=${ANDROID_DIR}/Unpacking_Tool
+export XBL_DIR=${ANDROID_DIR}/Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/SocPkg/AgattiPkg
+export ANDROID_OUTPUT_DIR=${ANDROID_DIR}/android_image_${TARGET_PRODUCT}_${TARGET_BUILD_VARIANT}
+export LOG_DIR=${ANDROID_DIR}/log
+export INPUT_DELAY=2
+JOB_NUM=`grep processor /proc/cpuinfo |wc -l`
+#If the build server is too laggy, please open it consciously.
+if [ ! `whoami` == "jenkins" ]; then
+	JOB_NUM=`expr $JOB_NUM / 3`
+fi
+
+set -e
+TOP=$(pwd)
+
+paxlogo(){
+
+	echo -e "${ECHO_STYLE_02}**********************************${ECHO_STYLE_DEFAULT}"
+	echo -e "${ECHO_STYLE_02}**********************************${ECHO_STYLE_DEFAULT}"
+	echo -e "${ECHO_STYLE_02}----------------------------------${ECHO_STYLE_DEFAULT}"
+	echo -e "${ECHO_STYLE_04}******       **       **     **				${ECHO_STYLE_DEFAULT}"
+	echo -e "${ECHO_STYLE_04}**    **    ****       **   ** 				${ECHO_STYLE_DEFAULT}"
+	echo -e "${ECHO_STYLE_04}**     **  **  **       ** ** 					${ECHO_STYLE_DEFAULT}"
+	echo -e "${ECHO_STYLE_04}**    **  ********       ***					${ECHO_STYLE_DEFAULT}"
+	echo -e "${ECHO_STYLE_04}******   **      **     **  **					${ECHO_STYLE_DEFAULT}"
+	echo -e "${ECHO_STYLE_04}**      **        **   **    **				${ECHO_STYLE_DEFAULT}"
+	echo -e "${ECHO_STYLE_04}**     **          ** **      **				${ECHO_STYLE_DEFAULT}"
+	echo -e "${ECHO_STYLE_02}----------------------------------${ECHO_STYLE_DEFAULT}"
+	echo -e "${ECHO_STYLE_02}**********************************${ECHO_STYLE_DEFAULT}"
+	echo -e "${ECHO_STYLE_02}**********************************${ECHO_STYLE_DEFAULT}"
+	echo
+}
+
+function build_xbl()
+{
+(	echo -e "${ECHO_STYLE_04}---start copy $UNPACK_TOOL_DEST_DIR start---${ECHO_STYLE_DEFAULT}"
+	if [ -d $UNPACK_TOOL_DEST_DIR ]; then
+        	echo $UNPACK_TOOL_DEST_DIR already exit
+        	cp -rf $UNPACK_TOOL_SRC_DIR/* $UNPACK_TOOL_DEST_DIR
+	else
+        	cp -rf $UNPACK_TOOL_SRC_DIR $UNPACK_TOOL_DEST_DIR
+	fi
+	echo -e "${ECHO_STYLE_04}---start copy $UNPACK_TOOL_DEST_DIR done---${ECHO_STYLE_DEFAULT}"
+
+	export EDK_TOOLS_PATH=$TOP/Unpacking_Tool/BOOT.XF.4.1/boot_images/BaseTools	
+pushd $XBL_DIR
+	python ../../buildex.py --variant LAA -r RELEASE -t AgattiPkg,QcomToolsPkg 2>&1 | tee $LOG_DIR/xbl_32go_build.log
+	if [[ $? != 0 ]]; then
+		echo -e "${ECHO_STYLE_03}Fail to Build xbl image, Exiting .....${ECHO_STYLE_DEFAULT}"
+		exit 1
+	else
+		cp -rf $XBL_DIR/Bin/LAA/RELEASE/xbl* $ANDROID_OUTPUT_DIR
+		echo -e "${ECHO_STYLE_04}#### build xbl completed successfully ####${ECHO_STYLE_DEFAULT}"
+	fi
+popd
+)
+}
+
+function build_abl()
+{
+(	
+pushd $TARGET_DIR
+	source build/envsetup.sh
+	lunch ${TARGET_PRODUCT}-${TARGET_BUILD_VARIANT}
+	make aboot $1 2>&1 | tee $LOG_DIR/abl_32go_build.log
+	if [[ $? != 0 ]]; then
+		echo -e "${ECHO_STYLE_03}Fail to Build abl image, Exiting .....${ECHO_STYLE_DEFAULT}"
+		exit 1
+	else
+		cp ${TARGET_OUT_DIR}/abl_ecc.elf  ${ANDROID_OUTPUT_DIR}
+		echo -e "${ECHO_STYLE_04}#### build abl completed successfully ####${ECHO_STYLE_DEFAULT}"
+	fi
+popd
+)
+}
+
+function copy_pack()
+{
+(	echo -e "${ECHO_STYLE_04}Start copy android new image to ${ANDROID_OUTPUT_DIR}   ${ECHO_STYLE_DEFAULT}"
+
+	rm ${ANDROID_OUTPUT_DIR}/* -rf
+
+pushd $SP_SRC_DIR
+	cp runthos-sp-boot-qingming.sig ${ANDROID_OUTPUT_DIR}
+	
+	./get-sp-firmware.sh
+	cp runthos-sp-qingming-* ${ANDROID_OUTPUT_DIR}/runthos-sp-qingming.bin
+	rm runthos-sp-qingming-*
+	rm runthos-sp-chunfen-*
+popd
+
+	cp $LOGO_SRC_DIR/splash_$PRODUCT_NAME.img      ${ANDROID_OUTPUT_DIR}
+	cp $XBL_DIR/Bin/LAA/RELEASE/xbl*  ${ANDROID_OUTPUT_DIR}
+	cp ${PAYDROID_SCATTER_DIR}/Kapok_Release_Android_scatter.txt ${ANDROID_OUTPUT_DIR}
+	cp ${PAYDROID_SCATTER_DIR}/rawprogram_unsparse.xml ${ANDROID_OUTPUT_DIR}
+	cp ${PAYDROID_SCATTER_DIR}/rawprogram0_update_unsparse_m9200.xml ${ANDROID_OUTPUT_DIR}
+	cp ${PAYDROID_SCATTER_DIR}/patch0.xml ${ANDROID_OUTPUT_DIR}
+	cp ${PAYDROID_SCATTER_DIR}/prog_firehose_ddr.elf ${ANDROID_OUTPUT_DIR}
+	cp ${PAYDROID_SCATTER_DIR}/empty_misc.img  ${ANDROID_OUTPUT_DIR}
+	cp ${PAYDROID_SCATTER_DIR}/gpt_main0.bin  ${ANDROID_OUTPUT_DIR}
+	cp ${PAYDROID_SCATTER_DIR}/gpt_backup0.bin ${ANDROID_OUTPUT_DIR}
+	cp ${PAYDROID_SCATTER_DIR}/devcfg.mbn  ${ANDROID_OUTPUT_DIR}
+	cp ${PAYDROID_SCATTER_DIR}/checksparse.py ${ANDROID_OUTPUT_DIR}
+	cp ${TARGET_OUT_DIR}/boot.img  ${ANDROID_OUTPUT_DIR}
+	cp ${TARGET_OUT_DIR}/dtbo.img  ${ANDROID_OUTPUT_DIR}
+	cp ${TARGET_OUT_DIR}/recovery.img  ${ANDROID_OUTPUT_DIR}
+	cp ${TARGET_OUT_DIR}/vbmeta.img  ${ANDROID_OUTPUT_DIR}
+	cp ${TARGET_OUT_DIR}/vbmeta_system.img ${ANDROID_OUTPUT_DIR}
+	cp ${TARGET_OUT_DIR}/abl_ecc.elf  ${ANDROID_OUTPUT_DIR}
+	cp ${TARGET_OUT_DIR}/metadata.img  ${ANDROID_OUTPUT_DIR}
+	cp ${TARGET_OUT_DIR}/userdata.img  ${ANDROID_OUTPUT_DIR}
+	cp ${TARGET_OUT_DIR}/obj/KERNEL_OBJ/vmlinux  ${ANDROID_OUTPUT_DIR}
+	cp ${TARGET_OUT_DIR}/super.img  ${ANDROID_OUTPUT_DIR}
+
+	echo -e "\n"
+	echo -e "${ECHO_STYLE_04}copy android image finish!!!!  ${ECHO_STYLE_DEFAULT}"
+	echo -e "\n"
+	echo -e "${ECHO_STYLE_04}Start rar android image to $ANDROID_OUTPUT_DIR/$UNIPHIZ_COMPRESS_NAME   ${ECHO_STYLE_DEFAULT}"
+	echo -e "\n"
+
+pushd $ANDROID_OUTPUT_DIR
+	rar a -ppaydroid20170417 -r $ANDROID_OUTPUT_DIR/$UNIPHIZ_COMPRESS_NAME \
+	Kapok_Release_Android_scatter.txt \
+	abl_ecc.elf \
+	xbl.elf \
+	xbl_config.elf \
+	devcfg.mbn \
+	empty_misc.img \
+	splash_$PRODUCT_NAME.img \
+	boot.img \
+	dtbo.img \
+	super.img \
+	vbmeta_system.img \
+	metadata.img \
+	recovery.img \
+	vbmeta.img \
+	userdata.img \
+	runthos-sp-boot-qingming.sig \
+	runthos-sp-qingming.bin \
+	vmlinux
+	echo -e "${ECHO_STYLE_04}rar android image finish!!!!  ${ECHO_STYLE_DEFAULT}"
+	python checksparse.py -i rawprogram0_update_unsparse_m9200.xml -s . -o rawprogram_unsparse.xml
+	rm ${ANDROID_OUTPUT_DIR}/rawprogram0_update_unsparse_m9200*
+popd
+	echo -e "${ECHO_STYLE_04}#### pack all completed successfully ####${ECHO_STYLE_DEFAULT}"
+)
+}
+
+function build_qssi()
+{
+(
+	./paydroidbuild.sh
+	if [ $? -ne 0 ];then
+		echo ---Get paxdroid or libspc project error!!!---
+		exit 1
+	fi
+
+pushd $QSSI_DIR
+	source build/envsetup.sh 
+	lunch ${QSSI_PRODUCT}-${TARGET_BUILD_VARIANT} 
+	bash build.sh dist --qssi_only EXPERIMENTAL_USE_OPENJDK9=1.8 $1 2>&1 | tee $LOG_DIR/qssi_32go_build.log
+	if [ $? -ne 0 ];then
+		echo "${ECHO_STYLE_03}---Build qssi error!!!---${ECHO_STYLE_DEFAULT}"
+		exit 1
+	fi
+popd
+)
+}
+
+function build_target()
+{
+(pushd $TARGET_DIR
+	source build/envsetup.sh
+	lunch ${TARGET_PRODUCT}-${TARGET_BUILD_VARIANT}
+	bash build.sh dist --target_only EXPERIMENTAL_USE_OPENJDK9=1.8 $1 2>&1 | tee $LOG_DIR/target_32go_build.log
+	if [ $? -ne 0 ];then
+		echo "${ECHO_STYLE_03}---Build target error!!!---${ECHO_STYLE_DEFAULT}"
+		exit 1
+	fi
+	cp ${TARGET_OUT_DIR}/abl_ecc.elf  ${ANDROID_OUTPUT_DIR}
+	cp ${TARGET_OUT_DIR}/boot.img  ${ANDROID_OUTPUT_DIR}
+	cp ${TARGET_OUT_DIR}/dtbo.img  ${ANDROID_OUTPUT_DIR}
+popd
+)
+}
+
+function build_super()
+{
+(
+pushd $TARGET_DIR
+	python vendor/qcom/opensource/core-utils/build/build_image_standalone.py --image super --qssi_build_path ../QSSI.12/ --target_build_path ./ --merged_build_path ./ --target_lunch bengal_32go --output_ota 2>&1 | tee $LOG_DIR/super_32go_build.log
+	if [ $? -ne 0 ];then
+		echo "${ECHO_STYLE_03}---Build SUPER error!!!---${ECHO_STYLE_DEFAULT}"
+		exit 1
+	else
+		echo -e "${ECHO_STYLE_04}#### build super completed successfully ####${ECHO_STYLE_DEFAULT}"
+	fi
+popd
+)
+}
+
+clean_all_images() {
+	echo -e "${ECHO_STYLE_04}Start clean all image   ${ECHO_STYLE_DEFAULT}"
+	rm -rf ./${TARGET_DIR}/out
+	rm -rf ./${QSSI_DIR}/out
+	rm -rf ./Unpacking_Tool
+	echo -e "${ECHO_STYLE_04}clean all image done  ${ECHO_STYLE_DEFAULT}"
+}
+
+buildclean(){
+	echo
+	echo -n -e "${ECHO_STYLE_04}input your select,you only have $INPUT_DELAY seconds:${ECHO_STYLE_DEFAULT}"
+	echo
+    echo -n -e "${ECHO_STYLE_04}(1)----Do you want to make clean ?${ECHO_STYLE_DEFAULT}"
+	echo -n -e "${ECHO_STYLE_08}  (y/n)${ECHO_STYLE_DEFAULT}"
+
+	if read -t $INPUT_DELAY answer
+	then
+		echo
+	else
+		echo
+		echo -e "${ECHO_STYLE_04}Sorry, too slow! Don't make clean , will next  ${ECHO_STYLE_DEFAULT}"
+	fi
+
+	case  "$answer"  in   
+	"y"| "Y" )  
+
+	echo -n -e "${ECHO_STYLE_04}Start make clean, please wait${ECHO_STYLE_DEFAULT}"
+	echo -e "${ECHO_STYLE_04_1}......${ECHO_STYLE_DEFAULT}"
+	echo
+	clean_all_images
+	return 
+	;;  
+	"n" | "N" )  
+	echo
+	echo -e "${ECHO_STYLE_04}Don't make clean , will next  ${ECHO_STYLE_DEFAULT}"
+	echo
+	return 
+	;;
+	
+	*) 
+	 echo
+	 echo -e "${ECHO_STYLE_04}Don't make clean, will next  ${ECHO_STYLE_DEFAULT}"
+	 echo
+	 return 
+	;; 
+	esac  
+}
+
+paxmain(){
+
+	if [ ! -d $LOG_DIR ];then
+		mkdir -p $LOG_DIR
+	fi
+
+	if [ ! -d ${ANDROID_OUTPUT_DIR} ];then
+		mkdir -p -m 777 ${ANDROID_OUTPUT_DIR}  
+	fi
+
+	paxlogo
+	if [ ! -z "`echo $BUILD_ALL | grep true`" ];then
+		buildclean
+		build_xbl
+		#build_qssi -j$JOB_NUM
+		build_target -j$JOB_NUM
+		build_super
+		copy_pack
+		return
+	fi
+
+	case "$build_type" in
+		"--xbl")
+			build_xbl
+			;;
+		"--abl")
+			build_abl -j$JOB_NUM
+			;;
+		"--qssi")
+			build_qssi -j$JOB_NUM
+			build_super
+			copy_pack
+			;;
+		"--target")
+			build_target -j$JOB_NUM
+			;;
+		"--super")
+			build_super
+			;;
+		"--pack")
+			copy_pack
+			;;
+		"--clean")
+			clean_all_images
+			;;
+		*)
+			echo -e "${ECHO_STYLE_03}invalid parameter!${ECHO_STYLE_DEFAULT}"
+			;;
+	esac
+}
+
+print_help() {
+	echo -e "${ECHO_STYLE_04}----------how to use-----------\n${ECHO_STYLE_DEFAULT}"
+	echo -e "${ECHO_STYLE_04}./selfbuild_32go_userdebug			<build all android source incluce OTA image>${ECHO_STYLE_DEFAULT}"
+	echo -e "${ECHO_STYLE_04}./selfbuild_32go_userdebug --help		<print help info>${ECHO_STYLE_DEFAULT}"
+	echo -e "${ECHO_STYLE_04}./selfbuild_32go_userdebug --target		<build target image>${ECHO_STYLE_DEFAULT}"
+	echo -e "${ECHO_STYLE_04}./selfbuild_32go_userdebug --qssi  		<build qssi image>${ECHO_STYLE_DEFAULT}"
+	echo -e "${ECHO_STYLE_04}./selfbuild_32go_userdebug --super    		<build super image>\n${ECHO_STYLE_DEFAULT}"
+	echo -e "${ECHO_STYLE_04}./selfbuild_32go_userdebug --xbl    		<build xbl image>\n${ECHO_STYLE_DEFAULT}"
+	echo -e "${ECHO_STYLE_04}./selfbuild_32go_userdebug --abl    		<build abl image>\n${ECHO_STYLE_DEFAULT}"
+	echo -e "${ECHO_STYLE_04}./selfbuild_32go_userdebug --pack    		<pack all image to ${ANDROID_OUTPUT_DIR} document>\n${ECHO_STYLE_DEFAULT}"
+	echo -e "${ECHO_STYLE_04}tip:after build complete,new image can be found in ${ANDROID_OUTPUT_DIR} document${ECHO_STYLE_DEFAULT}"
+}
+
+
+INPUT_PARA=$*
+if [ ! -z "`echo $INPUT_PARA | grep h`" ];then
+	print_help
+	exit
+fi
+
+if [ -z "$INPUT_PARA" ];then
+	export BUILD_ALL=true
+else
+	export BUILD_ALL=false
+fi
+	
+while [ $# -gt 0 ];do
+	case "$1" in
+		"--xbl"|"--abl"|"--qssi"|"--target"|"--super"|"--pack"|"--clean")
+			build_type=$1
+			;;
+	esac
+	shift
+done
+
+echo -e "${ECHO_STYLE_04}cpu thread number:$JOB_NUM ${ECHO_STYLE_DEFAULT}"
+paxmain
+```

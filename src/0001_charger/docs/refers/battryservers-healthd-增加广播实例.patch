@@ -1,0 +1,1200 @@
+From f006dcf97a5b80a8b89d38f1aadc67e303c83abf Mon Sep 17 00:00:00 2001
+From: shanliangliang <shanliangliang@paxsz.com>
+Date: Fri, 3 Sep 2021 16:32:12 +0800
+Subject: [PATCH] [Title]: update healthd hal
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+[Summary]: 添加充电器电压/电流、电池SOH/厂商/序列号接口
+
+[Test Plan]: BMS测试
+
+[Module]: BMS
+
+[Model]: M8/M50
+
+[author]: shanliangliang@paxsz.com
+
+[date]: 2021-09-07
+---
+ .../core/java/android/os/BatteryManager.java  | 35 ++++++++++
+ .../com/android/server/BatteryService.java    | 25 ++++++-
+ .../include/batteryservice/BatteryService.h   |  5 ++
+ hardware/interfaces/current.txt               |  2 +-
+ .../interfaces/health/1.0/default/convert.cpp | 24 +++++++
+ hardware/interfaces/health/1.0/types.hal      | 39 +++++++++++
+ .../android.hardware.health@1.0.so.lsdump     | 48 +++++++++++--
+ .../android.hardware.health@2.0.so.lsdump     | 54 ++++++++++++--
+ .../android.hardware.health@2.1.so.lsdump     | 70 +++++++++++++++----
+ .../android.hardware.health@1.0.so.lsdump     | 48 +++++++++++--
+ .../android.hardware.health@2.0.so.lsdump     | 54 ++++++++++++--
+ .../android.hardware.health@2.1.so.lsdump     | 70 +++++++++++++++----
+ system/core/healthd/BatteryMonitor.cpp        | 70 +++++++++++++++++++
+ .../healthd/include/healthd/BatteryMonitor.h  |  2 +
+ system/core/healthd/include/healthd/healthd.h |  3 +
+ 15 files changed, 495 insertions(+), 54 deletions(-)
+
+diff --git a/frameworks/base/core/java/android/os/BatteryManager.java b/frameworks/base/core/java/android/os/BatteryManager.java
+index 12ec0a0c21d..fd8a132f18c 100644
+--- a/frameworks/base/core/java/android/os/BatteryManager.java
++++ b/frameworks/base/core/java/android/os/BatteryManager.java
+@@ -164,6 +164,41 @@ public class BatteryManager {
+     @SystemApi
+     public static final String EXTRA_EVENT_TIMESTAMP = "android.os.extra.EVENT_TIMESTAMP";
+ 
++    /**
++     * Extra for {@link android.content.Intent#ACTION_BATTERY_CHANGED}:
++     * integer containing the current charger voltage level.
++     * {@hide}
++     */
++    public static final String EXTRA_CHARGER_VOLTAGE = "android.os.extra.CHARGER_VOLTAGE";
++
++    /**
++     * Extra for {@link android.content.Intent#ACTION_BATTERY_CHANGED}:
++     * integer containing the current charger current level.
++     * {@hide}
++     */
++    public static final String EXTRA_CHARGER_CURRENT = "android.os.extra.CHARGER_CURRENT";
++
++    /**
++     * Extra for {@link android.content.Intent#ACTION_BATTERY_CHANGED}:
++     * integer containing the current battery state of health.
++     * {@hide}
++     */
++    public static final String EXTRA_SOH = "android.os.extra.SOH";
++
++    /**
++     * Extra for {@link android.content.Intent#ACTION_BATTERY_CHANGED}:
++     * String describing the manufactuer name of the current battery.
++     * {@hide}
++     */
++    public static final String EXTRA_MANUFACTURER = "android.os.extra.MANUFACTURER";
++
++    /**
++     * Extra for {@link android.content.Intent#ACTION_BATTERY_CHANGED}:
++     * String describing the serial number of the current battery.
++     * {@hide}
++     */
++    public static final String EXTRA_SERIAL_NUMBER = "android.os.extra.SERIAL_NUMBER";
++
+     // values for "status" field in the ACTION_BATTERY_CHANGED Intent
+     public static final int BATTERY_STATUS_UNKNOWN = Constants.BATTERY_STATUS_UNKNOWN;
+     public static final int BATTERY_STATUS_CHARGING = Constants.BATTERY_STATUS_CHARGING;
+diff --git a/frameworks/base/services/core/java/com/android/server/BatteryService.java b/frameworks/base/services/core/java/com/android/server/BatteryService.java
+index 6bd239efb1b..9867d846db0 100755
+--- a/frameworks/base/services/core/java/com/android/server/BatteryService.java
++++ b/frameworks/base/services/core/java/com/android/server/BatteryService.java
+@@ -159,6 +159,9 @@ public final class BatteryService extends SystemService {
+     private int mLastMaxChargingCurrent;
+     private int mLastMaxChargingVoltage;
+     private int mLastChargeCounter;
++	private int mLastChargerVoltage;
++	private int mLastChargerCurrent;
++	private int mLastBatteryStateofHealth;
+ 
+     private int mSequence = 1;
+ 
+@@ -461,6 +464,11 @@ public final class BatteryService extends SystemService {
+         dst.batteryFullCharge = src.batteryFullCharge;
+         dst.batteryChargeCounter = src.batteryChargeCounter;
+         dst.batteryTechnology = src.batteryTechnology;
++		dst.chargerVoltage = src.chargerVoltage;
++		dst.chargerCurrent = src.chargerCurrent;
++		dst.batteryStateOfHealth = src.batteryStateOfHealth;
++		dst.batteryManufactuer = src.batteryManufactuer;
++		dst.batterySerialNumber = src.batterySerialNumber;
+     }
+ 
+     private void processValuesLocked(boolean force) {
+@@ -511,7 +519,11 @@ public final class BatteryService extends SystemService {
+                 mHealthInfo.maxChargingCurrent != mLastMaxChargingCurrent ||
+                 mHealthInfo.maxChargingVoltage != mLastMaxChargingVoltage ||
+                 mHealthInfo.batteryChargeCounter != mLastChargeCounter ||
+-                mInvalidCharger != mLastInvalidCharger)) {
++                mInvalidCharger != mLastInvalidCharger ||
++				mHealthInfo.chargerVoltage != mLastChargerVoltage ||
++				mHealthInfo.chargerCurrent != mLastChargerCurrent||
++				mHealthInfo.batteryStateOfHealth != mLastBatteryStateofHealth
++				)) {
+ 
+             if (mPlugType != mLastPlugType) {
+                 if (mLastPlugType == BATTERY_PLUGGED_NONE) {
+@@ -682,6 +694,9 @@ public final class BatteryService extends SystemService {
+             mLastChargeCounter = mHealthInfo.batteryChargeCounter;
+             mLastBatteryLevelCritical = mBatteryLevelCritical;
+             mLastInvalidCharger = mInvalidCharger;
++			mLastChargerVoltage = mHealthInfo.chargerVoltage;
++			mLastChargerCurrent = mHealthInfo.chargerCurrent;
++			mLastBatteryStateofHealth = mHealthInfo.batteryStateOfHealth;
+         }
+     }
+ 
+@@ -709,6 +724,11 @@ public final class BatteryService extends SystemService {
+         intent.putExtra(BatteryManager.EXTRA_MAX_CHARGING_CURRENT, mHealthInfo.maxChargingCurrent);
+         intent.putExtra(BatteryManager.EXTRA_MAX_CHARGING_VOLTAGE, mHealthInfo.maxChargingVoltage);
+         intent.putExtra(BatteryManager.EXTRA_CHARGE_COUNTER, mHealthInfo.batteryChargeCounter);
++        intent.putExtra(BatteryManager.EXTRA_CHARGER_VOLTAGE, mHealthInfo.chargerVoltage);
++        intent.putExtra(BatteryManager.EXTRA_CHARGER_CURRENT, mHealthInfo.chargerCurrent);
++        intent.putExtra(BatteryManager.EXTRA_SOH, mHealthInfo.batteryStateOfHealth);
++        intent.putExtra(BatteryManager.EXTRA_MANUFACTURER, mHealthInfo.batteryManufactuer);
++        intent.putExtra(BatteryManager.EXTRA_SERIAL_NUMBER, mHealthInfo.batterySerialNumber);
+         if (DEBUG) {
+             Slog.d(TAG, "Sending ACTION_BATTERY_CHANGED. scale:" + BATTERY_SCALE
+                     + ", info:" + mHealthInfo.toString());
+@@ -732,6 +752,9 @@ public final class BatteryService extends SystemService {
+         event.putInt(BatteryManager.EXTRA_TEMPERATURE, mHealthInfo.batteryTemperature);
+         event.putInt(BatteryManager.EXTRA_CHARGE_COUNTER, mHealthInfo.batteryChargeCounter);
+         event.putLong(BatteryManager.EXTRA_EVENT_TIMESTAMP, now);
++        event.putInt(BatteryManager.EXTRA_CHARGER_VOLTAGE, mHealthInfo.chargerVoltage);
++        event.putInt(BatteryManager.EXTRA_CHARGER_CURRENT, mHealthInfo.chargerCurrent);
++        event.putInt(BatteryManager.EXTRA_SOH, mHealthInfo.batteryStateOfHealth);
+ 
+         boolean queueWasEmpty = mBatteryLevelsEventQueue.isEmpty();
+         mBatteryLevelsEventQueue.add(event);
+diff --git a/frameworks/native/services/batteryservice/include/batteryservice/BatteryService.h b/frameworks/native/services/batteryservice/include/batteryservice/BatteryService.h
+index 1e8eb1e4b3d..64e5f1a386e 100644
+--- a/frameworks/native/services/batteryservice/include/batteryservice/BatteryService.h
++++ b/frameworks/native/services/batteryservice/include/batteryservice/BatteryService.h
+@@ -53,6 +53,11 @@ struct BatteryProperties {
+     int batteryFullCharge;
+     int batteryChargeCounter;
+     String8 batteryTechnology;
++	int chargerVoltage;
++	int chargerCurrent;
++	int batteryStateOfHealth;
++	String8 batteryManufactuer;
++	String8 batterySerialNumber;
+ };
+ 
+ struct BatteryProperty {
+diff --git a/hardware/interfaces/current.txt b/hardware/interfaces/current.txt
+index 669651625dd..afc15addf7d 100644
+--- a/hardware/interfaces/current.txt
++++ b/hardware/interfaces/current.txt
+@@ -102,7 +102,7 @@ b19d00eb8a8b3b0034a0321f22e8f32162bf4c2aebbce6da22c025f56e459ea2 android.hardwar
+ a695898589e1ef15b2b2510f11edd6aafac9918d9cf8d74b4b6143b309dee542 android.hardware.graphics.mapper@2.0::IMapper
+ 28507d385a3dd224bf3c32f1bfd9f96092c4701b9c1cc66caa578fc3efc97877 android.hardware.graphics.mapper@2.0::types
+ 91e2ba3805c923f01fc1231ec9ff838942aee3346f2d7614ecc0caeadbe57ed4 android.hardware.health@1.0::IHealth
+-1275aa2e8732909101b26aec49ed2285489e89d97b8610a8908b7868e35a3cc5 android.hardware.health@1.0::types
++e1c2e9acf910617cdc4bddadcfeea1abea6f10c156f7a1a747acaadb00c01d34 android.hardware.health@1.0::types
+ 3a8d3922e06e6d4f8e0befc6be78d0e9e07aed1585b3da6521bed406d25a9483 android.hardware.ir@1.0::IConsumerIr
+ 7090bd37912fcf723a12f4bc17783e3527577c4944805a028c296fd7a95bd682 android.hardware.ir@1.0::types
+ cc7925a78c0ab022515f48840d3dae76f384ed3a1287abadcb461a5cd5396163 android.hardware.keymaster@3.0::IKeymasterDevice
+diff --git a/hardware/interfaces/health/1.0/default/convert.cpp b/hardware/interfaces/health/1.0/default/convert.cpp
+index 7f1e3c4c113..00f425efbce 100644
+--- a/hardware/interfaces/health/1.0/default/convert.cpp
++++ b/hardware/interfaces/health/1.0/default/convert.cpp
+@@ -38,6 +38,9 @@ void convertToHealthConfig(const struct healthd_config *hc, HealthConfig& config
+     config.batteryChargeCounterPath = hc->batteryChargeCounterPath.string();
+     config.batteryFullChargePath    = hc->batteryFullChargePath.string();
+     config.batteryCycleCountPath    = hc->batteryCycleCountPath.string();
++    config.batteryStateOfHealthPath = hc->batteryStateOfHealthPath.string();
++    config.batteryManufactuerPath = hc->batteryManufactuerPath.string();
++    config.batterySerialNumberPath = hc->batterySerialNumberPath.string();
+ 
+ }
+ 
+@@ -93,6 +96,17 @@ void convertFromHealthConfig(const HealthConfig& c, struct healthd_config *hc) {
+         android::String8(c.batteryCycleCountPath.c_str(),
+                          c.batteryCycleCountPath.size());
+ 
++    hc->batteryStateOfHealthPath =
++        android::String8(c.batteryStateOfHealthPath.c_str(),
++                         c.batteryStateOfHealthPath.size());
++
++    hc->batteryManufactuerPath =
++        android::String8(c.batteryManufactuerPath.c_str(),
++                         c.batteryManufactuerPath.size());
++
++    hc->batterySerialNumberPath =
++        android::String8(c.batterySerialNumberPath.c_str(),
++                         c.batterySerialNumberPath.size());
+     // energyCounter is handled through special means so all calls to
+     // the function go across the HALs
+ 
+@@ -119,6 +133,11 @@ void convertToHealthInfo(const struct android::BatteryProperties *p,
+     info.batteryFullCharge      = p->batteryFullCharge;
+     info.batteryChargeCounter   = p->batteryChargeCounter;
+     info.batteryTechnology      = p->batteryTechnology;
++	info.chargerVoltage         = p->chargerVoltage;
++	info.chargerCurrent         = p->chargerCurrent;
++	info.batteryStateOfHealth   = p->batteryStateOfHealth;
++	info.batteryManufactuer     = p->batteryManufactuer;
++	info.batterySerialNumber      = p->batterySerialNumber;
+ }
+ 
+ void convertFromHealthInfo(const HealthInfo& info,
+@@ -139,6 +158,11 @@ void convertFromHealthInfo(const HealthInfo& info,
+     p->batteryFullCharge        = info.batteryFullCharge;
+     p->batteryChargeCounter     = info.batteryChargeCounter;
+     p->batteryTechnology        = android::String8(info.batteryTechnology.c_str());
++	p->chargerVoltage           = info.chargerVoltage;
++	p->chargerCurrent           = info.chargerCurrent;
++	p->batteryStateOfHealth     = info.batteryStateOfHealth;
++	p->batteryManufactuer       = android::String8(info.batteryManufactuer.c_str());
++	p->batterySerialNumber      = android::String8(info.batterySerialNumber.c_str());;
+ }
+ 
+ } // namespace hal_conversion
+diff --git a/hardware/interfaces/health/1.0/types.hal b/hardware/interfaces/health/1.0/types.hal
+index 90b8bb1d584..a45d615d908 100644
+--- a/hardware/interfaces/health/1.0/types.hal
++++ b/hardware/interfaces/health/1.0/types.hal
+@@ -159,6 +159,27 @@ struct HealthConfig {
+      * (POWER_SUPPLY_PROP_CYCLE_COUNT)
+      */
+     string batteryCycleCountPath;
++
++	/** Add-BEGIN by (shanliangliang@paxsz.com), 2021/09/06 */
++    /**
++     * batteryStateOfHealthPath - file path to read battery state of health.
++     * (POWER_SUPPLY_PROP_SOH)
++     */
++    string batteryStateOfHealthPath;
++
++    /**
++     * batteryManufactuerPath - file path to read battery manufactuer info.
++     * (POWER_SUPPLY_PROP_MANUFACTURER)
++     */
++    string batteryManufactuerPath;
++
++    /**
++     * batterySerialNumberPath - file path to read battery serial number.
++     * (POWER_SUPPLY_PROP_SERIAL_NUMBER)
++     */
++    string batterySerialNumberPath;
++
++	/** Add-END by (shanliangliang@paxsz.com), 2021/09/06 */
+ };
+ 
+ /**
+@@ -216,4 +237,22 @@ struct HealthInfo {
+ 
+     /** Battery technology, e.g. "Li-ion, Li-Poly" etc. */
+     string batteryTechnology;
++
++	/** Add-BEGIN by (shanliangliang@paxsz.com), 2021/09/06 */
++	/** Charger output voltage in microvolts(uV) */
++	int32_t chargerVoltage;
++
++	/** Charger output Current in uA */
++	int32_t chargerCurrent;
++
++	/** Battery state of health */
++	int32_t batteryStateOfHealth;
++
++	/** Battery manufactuer */
++	string batteryManufactuer;
++
++	/** Battery serial number */
++	string batterySerialNumber;
++
++	/** Add-END by (shanliangliang@paxsz.com), 2021/09/06 */
+ };
+diff --git a/prebuilts/abi-dumps/vndk/30/64/arm64_armv8-a/source-based/android.hardware.health@1.0.so.lsdump b/prebuilts/abi-dumps/vndk/30/64/arm64_armv8-a/source-based/android.hardware.health@1.0.so.lsdump
+index 585baaa9a60..3c3ce1e1471 100644
+--- a/prebuilts/abi-dumps/vndk/30/64/arm64_armv8-a/source-based/android.hardware.health@1.0.so.lsdump
++++ b/prebuilts/abi-dumps/vndk/30/64/arm64_armv8-a/source-based/android.hardware.health@1.0.so.lsdump
+@@ -6186,7 +6186,7 @@
+    "name" : "const android::hardware::health::V1_0::HealthInfo",
+    "referenced_type" : "_ZTIN7android8hardware6health4V1_010HealthInfoE",
+    "self_type" : "_ZTIKN7android8hardware6health4V1_010HealthInfoE",
+-   "size" : 72,
++   "size" : 120,
+    "source_file" : "/out/soong/.intermediates/hardware/interfaces/health/1.0/android.hardware.health@1.0_genc++_headers/gen/android/hardware/health/1.0/BpHwHealth.h"
+   },
+   {
+@@ -6196,7 +6196,7 @@
+    "name" : "const android::hardware::health::V1_0::HealthConfig",
+    "referenced_type" : "_ZTIN7android8hardware6health4V1_012HealthConfigE",
+    "self_type" : "_ZTIKN7android8hardware6health4V1_012HealthConfigE",
+-   "size" : 200,
++   "size" : 248,
+    "source_file" : "/out/soong/.intermediates/hardware/interfaces/health/1.0/android.hardware.health@1.0_genc++_headers/gen/android/hardware/health/1.0/BpHwHealth.h"
+   },
+   {
+@@ -11501,13 +11501,38 @@
+      "field_name" : "batteryTechnology",
+      "field_offset" : 448,
+      "referenced_type" : "_ZTIN7android8hardware11hidl_stringE"
++    },
++    {
++     "field_name" : "chargerVoltage",
++     "field_offset" : 576,
++     "referenced_type" : "_ZTIi"
++    },
++    {
++     "field_name" : "chargerCurrent",
++     "field_offset" : 608,
++     "referenced_type" : "_ZTIi"
++    },
++    {
++     "field_name" : "batteryStateOfHealth",
++     "field_offset" : 640,
++     "referenced_type" : "_ZTIi"
++    },
++    {
++     "field_name" : "batteryManufactuer",
++     "field_offset" : 704,
++     "referenced_type" : "_ZTIN7android8hardware11hidl_stringE"
++    },
++    {
++     "field_name" : "batterySerialNumber",
++     "field_offset" : 832,
++     "referenced_type" : "_ZTIN7android8hardware11hidl_stringE"
+     }
+    ],
+    "linker_set_key" : "_ZTIN7android8hardware6health4V1_010HealthInfoE",
+    "name" : "android::hardware::health::V1_0::HealthInfo",
+    "referenced_type" : "_ZTIN7android8hardware6health4V1_010HealthInfoE",
+    "self_type" : "_ZTIN7android8hardware6health4V1_010HealthInfoE",
+-   "size" : 72,
++   "size" : 120,
+    "source_file" : "/out/soong/.intermediates/hardware/interfaces/health/1.0/android.hardware.health@1.0_genc++_headers/gen/android/hardware/health/1.0/types.h"
+   },
+   {
+@@ -11582,13 +11607,28 @@
+      "field_name" : "batteryCycleCountPath",
+      "field_offset" : 1472,
+      "referenced_type" : "_ZTIN7android8hardware11hidl_stringE"
++    },
++    {
++     "field_name" : "batteryStateOfHealthPath",
++     "field_offset" : 1600,
++     "referenced_type" : "_ZTIN7android8hardware11hidl_stringE"
++    },
++    {
++     "field_name" : "batteryManufactuerPath",
++     "field_offset" : 1728,
++     "referenced_type" : "_ZTIN7android8hardware11hidl_stringE"
++    },
++    {
++     "field_name" : "batterySerialNumberPath",
++     "field_offset" : 1856,
++     "referenced_type" : "_ZTIN7android8hardware11hidl_stringE"
+     }
+    ],
+    "linker_set_key" : "_ZTIN7android8hardware6health4V1_012HealthConfigE",
+    "name" : "android::hardware::health::V1_0::HealthConfig",
+    "referenced_type" : "_ZTIN7android8hardware6health4V1_012HealthConfigE",
+    "self_type" : "_ZTIN7android8hardware6health4V1_012HealthConfigE",
+-   "size" : 200,
++   "size" : 248,
+    "source_file" : "/out/soong/.intermediates/hardware/interfaces/health/1.0/android.hardware.health@1.0_genc++_headers/gen/android/hardware/health/1.0/types.h"
+   },
+   {
+diff --git a/prebuilts/abi-dumps/vndk/30/64/arm64_armv8-a/source-based/android.hardware.health@2.0.so.lsdump b/prebuilts/abi-dumps/vndk/30/64/arm64_armv8-a/source-based/android.hardware.health@2.0.so.lsdump
+index 44ca1565692..d16360f38a1 100644
+--- a/prebuilts/abi-dumps/vndk/30/64/arm64_armv8-a/source-based/android.hardware.health@2.0.so.lsdump
++++ b/prebuilts/abi-dumps/vndk/30/64/arm64_armv8-a/source-based/android.hardware.health@2.0.so.lsdump
+@@ -8326,7 +8326,7 @@
+    "name" : "const android::hardware::health::V2_0::HealthInfo",
+    "referenced_type" : "_ZTIN7android8hardware6health4V2_010HealthInfoE",
+    "self_type" : "_ZTIKN7android8hardware6health4V2_010HealthInfoE",
+-   "size" : 112,
++   "size" : 160,
+    "source_file" : "/out/soong/.intermediates/hardware/interfaces/health/2.0/android.hardware.health@2.0_genc++_headers/gen/android/hardware/health/2.0/BpHwHealthInfoCallback.h"
+   },
+   {
+@@ -13648,13 +13648,38 @@
+      "field_name" : "batteryTechnology",
+      "field_offset" : 448,
+      "referenced_type" : "_ZTIN7android8hardware11hidl_stringE"
++    },
++    {
++     "field_name" : "chargerVoltage",
++     "field_offset" : 576,
++     "referenced_type" : "_ZTIi"
++    },
++    {
++     "field_name" : "chargerCurrent",
++     "field_offset" : 608,
++     "referenced_type" : "_ZTIi"
++    },
++    {
++     "field_name" : "batteryStateOfHealth",
++     "field_offset" : 640,
++     "referenced_type" : "_ZTIi"
++    },
++    {
++     "field_name" : "batteryManufactuer",
++     "field_offset" : 704,
++     "referenced_type" : "_ZTIN7android8hardware11hidl_stringE"
++    },
++    {
++     "field_name" : "batterySerialNumber",
++     "field_offset" : 832,
++     "referenced_type" : "_ZTIN7android8hardware11hidl_stringE"
+     }
+    ],
+    "linker_set_key" : "_ZTIN7android8hardware6health4V1_010HealthInfoE",
+    "name" : "android::hardware::health::V1_0::HealthInfo",
+    "referenced_type" : "_ZTIN7android8hardware6health4V1_010HealthInfoE",
+    "self_type" : "_ZTIN7android8hardware6health4V1_010HealthInfoE",
+-   "size" : 72,
++   "size" : 120,
+    "source_file" : "/out/soong/.intermediates/hardware/interfaces/health/1.0/android.hardware.health@1.0_genc++_headers/gen/android/hardware/health/1.0/types.h"
+   },
+   {
+@@ -13729,13 +13754,28 @@
+      "field_name" : "batteryCycleCountPath",
+      "field_offset" : 1472,
+      "referenced_type" : "_ZTIN7android8hardware11hidl_stringE"
++    },
++    {
++     "field_name" : "batteryStateOfHealthPath",
++     "field_offset" : 1600,
++     "referenced_type" : "_ZTIN7android8hardware11hidl_stringE"
++    },
++    {
++     "field_name" : "batteryManufactuerPath",
++     "field_offset" : 1728,
++     "referenced_type" : "_ZTIN7android8hardware11hidl_stringE"
++    },
++    {
++     "field_name" : "batterySerialNumberPath",
++     "field_offset" : 1856,
++     "referenced_type" : "_ZTIN7android8hardware11hidl_stringE"
+     }
+    ],
+    "linker_set_key" : "_ZTIN7android8hardware6health4V1_012HealthConfigE",
+    "name" : "android::hardware::health::V1_0::HealthConfig",
+    "referenced_type" : "_ZTIN7android8hardware6health4V1_012HealthConfigE",
+    "self_type" : "_ZTIN7android8hardware6health4V1_012HealthConfigE",
+-   "size" : 200,
++   "size" : 248,
+    "source_file" : "/out/soong/.intermediates/hardware/interfaces/health/1.0/android.hardware.health@1.0_genc++_headers/gen/android/hardware/health/1.0/types.h"
+   },
+   {
+@@ -14129,17 +14169,17 @@
+     },
+     {
+      "field_name" : "batteryCurrentAverage",
+-     "field_offset" : 576,
++     "field_offset" : 960,
+      "referenced_type" : "_ZTIi"
+     },
+     {
+      "field_name" : "diskStats",
+-     "field_offset" : 640,
++     "field_offset" : 1024,
+      "referenced_type" : "_ZTIN7android8hardware8hidl_vecINS0_6health4V2_09DiskStatsEEE"
+     },
+     {
+      "field_name" : "storageInfos",
+-     "field_offset" : 768,
++     "field_offset" : 1152,
+      "referenced_type" : "_ZTIN7android8hardware8hidl_vecINS0_6health4V2_011StorageInfoEEE"
+     }
+    ],
+@@ -14147,7 +14187,7 @@
+    "name" : "android::hardware::health::V2_0::HealthInfo",
+    "referenced_type" : "_ZTIN7android8hardware6health4V2_010HealthInfoE",
+    "self_type" : "_ZTIN7android8hardware6health4V2_010HealthInfoE",
+-   "size" : 112,
++   "size" : 160,
+    "source_file" : "/out/soong/.intermediates/hardware/interfaces/health/2.0/android.hardware.health@2.0_genc++_headers/gen/android/hardware/health/2.0/types.h"
+   },
+   {
+diff --git a/prebuilts/abi-dumps/vndk/30/64/arm64_armv8-a/source-based/android.hardware.health@2.1.so.lsdump b/prebuilts/abi-dumps/vndk/30/64/arm64_armv8-a/source-based/android.hardware.health@2.1.so.lsdump
+index b461b6ec691..f9d3c2c9735 100644
+--- a/prebuilts/abi-dumps/vndk/30/64/arm64_armv8-a/source-based/android.hardware.health@2.1.so.lsdump
++++ b/prebuilts/abi-dumps/vndk/30/64/arm64_armv8-a/source-based/android.hardware.health@2.1.so.lsdump
+@@ -8192,7 +8192,7 @@
+    "name" : "const android::hardware::health::V2_0::HealthInfo",
+    "referenced_type" : "_ZTIN7android8hardware6health4V2_010HealthInfoE",
+    "self_type" : "_ZTIKN7android8hardware6health4V2_010HealthInfoE",
+-   "size" : 112,
++   "size" : 160,
+    "source_file" : "/out/soong/.intermediates/hardware/interfaces/health/2.1/android.hardware.health@2.1_genc++_headers/gen/android/hardware/health/2.1/BpHwHealthInfoCallback.h"
+   },
+   {
+@@ -8272,7 +8272,7 @@
+    "name" : "const android::hardware::health::V2_1::HealthInfo",
+    "referenced_type" : "_ZTIN7android8hardware6health4V2_110HealthInfoE",
+    "self_type" : "_ZTIKN7android8hardware6health4V2_110HealthInfoE",
+-   "size" : 136,
++   "size" : 184,
+    "source_file" : "/out/soong/.intermediates/hardware/interfaces/health/2.1/android.hardware.health@2.1_genc++_headers/gen/android/hardware/health/2.1/BpHwHealthInfoCallback.h"
+   },
+   {
+@@ -8282,7 +8282,7 @@
+    "name" : "const android::hardware::health::V2_1::HealthConfig",
+    "referenced_type" : "_ZTIN7android8hardware6health4V2_112HealthConfigE",
+    "self_type" : "_ZTIKN7android8hardware6health4V2_112HealthConfigE",
+-   "size" : 208,
++   "size" : 256,
+    "source_file" : "/out/soong/.intermediates/hardware/interfaces/health/2.1/android.hardware.health@2.1_genc++_headers/gen/android/hardware/health/2.1/hwtypes.h"
+   },
+   {
+@@ -14070,13 +14070,38 @@
+      "field_name" : "batteryTechnology",
+      "field_offset" : 448,
+      "referenced_type" : "_ZTIN7android8hardware11hidl_stringE"
++    },
++    {
++     "field_name" : "chargerVoltage",
++     "field_offset" : 576,
++     "referenced_type" : "_ZTIi"
++    },
++    {
++     "field_name" : "chargerCurrent",
++     "field_offset" : 608,
++     "referenced_type" : "_ZTIi"
++    },
++    {
++     "field_name" : "batteryStateOfHealth",
++     "field_offset" : 640,
++     "referenced_type" : "_ZTIi"
++    },
++    {
++     "field_name" : "batteryManufactuer",
++     "field_offset" : 704,
++     "referenced_type" : "_ZTIN7android8hardware11hidl_stringE"
++    },
++    {
++     "field_name" : "batterySerialNumber",
++     "field_offset" : 832,
++     "referenced_type" : "_ZTIN7android8hardware11hidl_stringE"
+     }
+    ],
+    "linker_set_key" : "_ZTIN7android8hardware6health4V1_010HealthInfoE",
+    "name" : "android::hardware::health::V1_0::HealthInfo",
+    "referenced_type" : "_ZTIN7android8hardware6health4V1_010HealthInfoE",
+    "self_type" : "_ZTIN7android8hardware6health4V1_010HealthInfoE",
+-   "size" : 72,
++   "size" : 120,
+    "source_file" : "/out/soong/.intermediates/hardware/interfaces/health/1.0/android.hardware.health@1.0_genc++_headers/gen/android/hardware/health/1.0/types.h"
+   },
+   {
+@@ -14151,13 +14176,28 @@
+      "field_name" : "batteryCycleCountPath",
+      "field_offset" : 1472,
+      "referenced_type" : "_ZTIN7android8hardware11hidl_stringE"
++    },
++    {
++     "field_name" : "batteryStateOfHealthPath",
++     "field_offset" : 1600,
++     "referenced_type" : "_ZTIN7android8hardware11hidl_stringE"
++    },
++    {
++     "field_name" : "batteryManufactuerPath",
++     "field_offset" : 1728,
++     "referenced_type" : "_ZTIN7android8hardware11hidl_stringE"
++    },
++    {
++     "field_name" : "batterySerialNumberPath",
++     "field_offset" : 1856,
++     "referenced_type" : "_ZTIN7android8hardware11hidl_stringE"
+     }
+    ],
+    "linker_set_key" : "_ZTIN7android8hardware6health4V1_012HealthConfigE",
+    "name" : "android::hardware::health::V1_0::HealthConfig",
+    "referenced_type" : "_ZTIN7android8hardware6health4V1_012HealthConfigE",
+    "self_type" : "_ZTIN7android8hardware6health4V1_012HealthConfigE",
+-   "size" : 200,
++   "size" : 248,
+    "source_file" : "/out/soong/.intermediates/hardware/interfaces/health/1.0/android.hardware.health@1.0_genc++_headers/gen/android/hardware/health/1.0/types.h"
+   },
+   {
+@@ -14551,17 +14591,17 @@
+     },
+     {
+      "field_name" : "batteryCurrentAverage",
+-     "field_offset" : 576,
++     "field_offset" : 960,
+      "referenced_type" : "_ZTIi"
+     },
+     {
+      "field_name" : "diskStats",
+-     "field_offset" : 640,
++     "field_offset" : 1024,
+      "referenced_type" : "_ZTIN7android8hardware8hidl_vecINS0_6health4V2_09DiskStatsEEE"
+     },
+     {
+      "field_name" : "storageInfos",
+-     "field_offset" : 768,
++     "field_offset" : 1152,
+      "referenced_type" : "_ZTIN7android8hardware8hidl_vecINS0_6health4V2_011StorageInfoEEE"
+     }
+    ],
+@@ -14569,7 +14609,7 @@
+    "name" : "android::hardware::health::V2_0::HealthInfo",
+    "referenced_type" : "_ZTIN7android8hardware6health4V2_010HealthInfoE",
+    "self_type" : "_ZTIN7android8hardware6health4V2_010HealthInfoE",
+-   "size" : 112,
++   "size" : 160,
+    "source_file" : "/out/soong/.intermediates/hardware/interfaces/health/2.0/android.hardware.health@2.0_genc++_headers/gen/android/hardware/health/2.0/types.h"
+   },
+   {
+@@ -15733,17 +15773,17 @@
+     },
+     {
+      "field_name" : "batteryCapacityLevel",
+-     "field_offset" : 896,
++     "field_offset" : 1280,
+      "referenced_type" : "_ZTIN7android8hardware6health4V2_120BatteryCapacityLevelE"
+     },
+     {
+      "field_name" : "batteryChargeTimeToFullNowSeconds",
+-     "field_offset" : 960,
++     "field_offset" : 1344,
+      "referenced_type" : "_ZTIl"
+     },
+     {
+      "field_name" : "batteryFullChargeDesignCapacityUah",
+-     "field_offset" : 1024,
++     "field_offset" : 1408,
+      "referenced_type" : "_ZTIi"
+     }
+    ],
+@@ -15751,7 +15791,7 @@
+    "name" : "android::hardware::health::V2_1::HealthInfo",
+    "referenced_type" : "_ZTIN7android8hardware6health4V2_110HealthInfoE",
+    "self_type" : "_ZTIN7android8hardware6health4V2_110HealthInfoE",
+-   "size" : 136,
++   "size" : 184,
+    "source_file" : "/out/soong/.intermediates/hardware/interfaces/health/2.1/android.hardware.health@2.1_genc++_headers/gen/android/hardware/health/2.1/types.h"
+   },
+   {
+@@ -15764,7 +15804,7 @@
+     },
+     {
+      "field_name" : "bootMinCap",
+-     "field_offset" : 1600,
++     "field_offset" : 1984,
+      "referenced_type" : "_ZTIi"
+     }
+    ],
+@@ -15772,7 +15812,7 @@
+    "name" : "android::hardware::health::V2_1::HealthConfig",
+    "referenced_type" : "_ZTIN7android8hardware6health4V2_112HealthConfigE",
+    "self_type" : "_ZTIN7android8hardware6health4V2_112HealthConfigE",
+-   "size" : 208,
++   "size" : 256,
+    "source_file" : "/out/soong/.intermediates/hardware/interfaces/health/2.1/android.hardware.health@2.1_genc++_headers/gen/android/hardware/health/2.1/types.h"
+   },
+   {
+diff --git a/prebuilts/abi-dumps/vndk/30/64/arm_armv8-a/source-based/android.hardware.health@1.0.so.lsdump b/prebuilts/abi-dumps/vndk/30/64/arm_armv8-a/source-based/android.hardware.health@1.0.so.lsdump
+index 65934143f4f..f313110c25d 100644
+--- a/prebuilts/abi-dumps/vndk/30/64/arm_armv8-a/source-based/android.hardware.health@1.0.so.lsdump
++++ b/prebuilts/abi-dumps/vndk/30/64/arm_armv8-a/source-based/android.hardware.health@1.0.so.lsdump
+@@ -6186,7 +6186,7 @@
+    "name" : "const android::hardware::health::V1_0::HealthInfo",
+    "referenced_type" : "_ZTIN7android8hardware6health4V1_010HealthInfoE",
+    "self_type" : "_ZTIKN7android8hardware6health4V1_010HealthInfoE",
+-   "size" : 72,
++   "size" : 120,
+    "source_file" : "/out/soong/.intermediates/hardware/interfaces/health/1.0/android.hardware.health@1.0_genc++_headers/gen/android/hardware/health/1.0/BpHwHealth.h"
+   },
+   {
+@@ -6196,7 +6196,7 @@
+    "name" : "const android::hardware::health::V1_0::HealthConfig",
+    "referenced_type" : "_ZTIN7android8hardware6health4V1_012HealthConfigE",
+    "self_type" : "_ZTIKN7android8hardware6health4V1_012HealthConfigE",
+-   "size" : 200,
++   "size" : 248,
+    "source_file" : "/out/soong/.intermediates/hardware/interfaces/health/1.0/android.hardware.health@1.0_genc++_headers/gen/android/hardware/health/1.0/BpHwHealth.h"
+   },
+   {
+@@ -11491,13 +11491,38 @@
+      "field_name" : "batteryTechnology",
+      "field_offset" : 448,
+      "referenced_type" : "_ZTIN7android8hardware11hidl_stringE"
++    },
++    {
++     "field_name" : "chargerVoltage",
++     "field_offset" : 576,
++     "referenced_type" : "_ZTIi"
++    },
++    {
++     "field_name" : "chargerCurrent",
++     "field_offset" : 608,
++     "referenced_type" : "_ZTIi"
++    },
++    {
++     "field_name" : "batteryStateOfHealth",
++     "field_offset" : 640,
++     "referenced_type" : "_ZTIi"
++    },
++    {
++     "field_name" : "batteryManufactuer",
++     "field_offset" : 704,
++     "referenced_type" : "_ZTIN7android8hardware11hidl_stringE"
++    },
++    {
++     "field_name" : "batterySerialNumber",
++     "field_offset" : 832,
++     "referenced_type" : "_ZTIN7android8hardware11hidl_stringE"
+     }
+    ],
+    "linker_set_key" : "_ZTIN7android8hardware6health4V1_010HealthInfoE",
+    "name" : "android::hardware::health::V1_0::HealthInfo",
+    "referenced_type" : "_ZTIN7android8hardware6health4V1_010HealthInfoE",
+    "self_type" : "_ZTIN7android8hardware6health4V1_010HealthInfoE",
+-   "size" : 72,
++   "size" : 120,
+    "source_file" : "/out/soong/.intermediates/hardware/interfaces/health/1.0/android.hardware.health@1.0_genc++_headers/gen/android/hardware/health/1.0/types.h"
+   },
+   {
+@@ -11572,13 +11597,28 @@
+      "field_name" : "batteryCycleCountPath",
+      "field_offset" : 1472,
+      "referenced_type" : "_ZTIN7android8hardware11hidl_stringE"
++    },
++    {
++     "field_name" : "batteryStateOfHealthPath",
++     "field_offset" : 1600,
++     "referenced_type" : "_ZTIN7android8hardware11hidl_stringE"
++    },
++    {
++     "field_name" : "batteryManufactuerPath",
++     "field_offset" : 1728,
++     "referenced_type" : "_ZTIN7android8hardware11hidl_stringE"
++    },
++    {
++     "field_name" : "batterySerialNumberPath",
++     "field_offset" : 1856,
++     "referenced_type" : "_ZTIN7android8hardware11hidl_stringE"
+     }
+    ],
+    "linker_set_key" : "_ZTIN7android8hardware6health4V1_012HealthConfigE",
+    "name" : "android::hardware::health::V1_0::HealthConfig",
+    "referenced_type" : "_ZTIN7android8hardware6health4V1_012HealthConfigE",
+    "self_type" : "_ZTIN7android8hardware6health4V1_012HealthConfigE",
+-   "size" : 200,
++   "size" : 248,
+    "source_file" : "/out/soong/.intermediates/hardware/interfaces/health/1.0/android.hardware.health@1.0_genc++_headers/gen/android/hardware/health/1.0/types.h"
+   },
+   {
+diff --git a/prebuilts/abi-dumps/vndk/30/64/arm_armv8-a/source-based/android.hardware.health@2.0.so.lsdump b/prebuilts/abi-dumps/vndk/30/64/arm_armv8-a/source-based/android.hardware.health@2.0.so.lsdump
+index 9abe9c1f8f5..cfe665e9f76 100644
+--- a/prebuilts/abi-dumps/vndk/30/64/arm_armv8-a/source-based/android.hardware.health@2.0.so.lsdump
++++ b/prebuilts/abi-dumps/vndk/30/64/arm_armv8-a/source-based/android.hardware.health@2.0.so.lsdump
+@@ -8326,7 +8326,7 @@
+    "name" : "const android::hardware::health::V2_0::HealthInfo",
+    "referenced_type" : "_ZTIN7android8hardware6health4V2_010HealthInfoE",
+    "self_type" : "_ZTIKN7android8hardware6health4V2_010HealthInfoE",
+-   "size" : 112,
++   "size" : 160,
+    "source_file" : "/out/soong/.intermediates/hardware/interfaces/health/2.0/android.hardware.health@2.0_genc++_headers/gen/android/hardware/health/2.0/BpHwHealthInfoCallback.h"
+   },
+   {
+@@ -13638,13 +13638,38 @@
+      "field_name" : "batteryTechnology",
+      "field_offset" : 448,
+      "referenced_type" : "_ZTIN7android8hardware11hidl_stringE"
++    },
++    {
++     "field_name" : "chargerVoltage",
++     "field_offset" : 576,
++     "referenced_type" : "_ZTIi"
++    },
++    {
++     "field_name" : "chargerCurrent",
++     "field_offset" : 608,
++     "referenced_type" : "_ZTIi"
++    },
++    {
++     "field_name" : "batteryStateOfHealth",
++     "field_offset" : 640,
++     "referenced_type" : "_ZTIi"
++    },
++    {
++     "field_name" : "batteryManufactuer",
++     "field_offset" : 704,
++     "referenced_type" : "_ZTIN7android8hardware11hidl_stringE"
++    },
++    {
++     "field_name" : "batterySerialNumber",
++     "field_offset" : 832,
++     "referenced_type" : "_ZTIN7android8hardware11hidl_stringE"
+     }
+    ],
+    "linker_set_key" : "_ZTIN7android8hardware6health4V1_010HealthInfoE",
+    "name" : "android::hardware::health::V1_0::HealthInfo",
+    "referenced_type" : "_ZTIN7android8hardware6health4V1_010HealthInfoE",
+    "self_type" : "_ZTIN7android8hardware6health4V1_010HealthInfoE",
+-   "size" : 72,
++   "size" : 120,
+    "source_file" : "/out/soong/.intermediates/hardware/interfaces/health/1.0/android.hardware.health@1.0_genc++_headers/gen/android/hardware/health/1.0/types.h"
+   },
+   {
+@@ -13719,13 +13744,28 @@
+      "field_name" : "batteryCycleCountPath",
+      "field_offset" : 1472,
+      "referenced_type" : "_ZTIN7android8hardware11hidl_stringE"
++    },
++    {
++     "field_name" : "batteryStateOfHealthPath",
++     "field_offset" : 1600,
++     "referenced_type" : "_ZTIN7android8hardware11hidl_stringE"
++    },
++    {
++     "field_name" : "batteryManufactuerPath",
++     "field_offset" : 1728,
++     "referenced_type" : "_ZTIN7android8hardware11hidl_stringE"
++    },
++    {
++     "field_name" : "batterySerialNumberPath",
++     "field_offset" : 1856,
++     "referenced_type" : "_ZTIN7android8hardware11hidl_stringE"
+     }
+    ],
+    "linker_set_key" : "_ZTIN7android8hardware6health4V1_012HealthConfigE",
+    "name" : "android::hardware::health::V1_0::HealthConfig",
+    "referenced_type" : "_ZTIN7android8hardware6health4V1_012HealthConfigE",
+    "self_type" : "_ZTIN7android8hardware6health4V1_012HealthConfigE",
+-   "size" : 200,
++   "size" : 248,
+    "source_file" : "/out/soong/.intermediates/hardware/interfaces/health/1.0/android.hardware.health@1.0_genc++_headers/gen/android/hardware/health/1.0/types.h"
+   },
+   {
+@@ -14119,17 +14159,17 @@
+     },
+     {
+      "field_name" : "batteryCurrentAverage",
+-     "field_offset" : 576,
++     "field_offset" : 960,
+      "referenced_type" : "_ZTIi"
+     },
+     {
+      "field_name" : "diskStats",
+-     "field_offset" : 640,
++     "field_offset" : 1024,
+      "referenced_type" : "_ZTIN7android8hardware8hidl_vecINS0_6health4V2_09DiskStatsEEE"
+     },
+     {
+      "field_name" : "storageInfos",
+-     "field_offset" : 768,
++     "field_offset" : 1152,
+      "referenced_type" : "_ZTIN7android8hardware8hidl_vecINS0_6health4V2_011StorageInfoEEE"
+     }
+    ],
+@@ -14137,7 +14177,7 @@
+    "name" : "android::hardware::health::V2_0::HealthInfo",
+    "referenced_type" : "_ZTIN7android8hardware6health4V2_010HealthInfoE",
+    "self_type" : "_ZTIN7android8hardware6health4V2_010HealthInfoE",
+-   "size" : 112,
++   "size" : 160,
+    "source_file" : "/out/soong/.intermediates/hardware/interfaces/health/2.0/android.hardware.health@2.0_genc++_headers/gen/android/hardware/health/2.0/types.h"
+   },
+   {
+diff --git a/prebuilts/abi-dumps/vndk/30/64/arm_armv8-a/source-based/android.hardware.health@2.1.so.lsdump b/prebuilts/abi-dumps/vndk/30/64/arm_armv8-a/source-based/android.hardware.health@2.1.so.lsdump
+index e17a4c6170b..1053abad7b8 100644
+--- a/prebuilts/abi-dumps/vndk/30/64/arm_armv8-a/source-based/android.hardware.health@2.1.so.lsdump
++++ b/prebuilts/abi-dumps/vndk/30/64/arm_armv8-a/source-based/android.hardware.health@2.1.so.lsdump
+@@ -8192,7 +8192,7 @@
+    "name" : "const android::hardware::health::V2_0::HealthInfo",
+    "referenced_type" : "_ZTIN7android8hardware6health4V2_010HealthInfoE",
+    "self_type" : "_ZTIKN7android8hardware6health4V2_010HealthInfoE",
+-   "size" : 112,
++   "size" : 160,
+    "source_file" : "/out/soong/.intermediates/hardware/interfaces/health/2.1/android.hardware.health@2.1_genc++_headers/gen/android/hardware/health/2.1/BpHwHealthInfoCallback.h"
+   },
+   {
+@@ -8272,7 +8272,7 @@
+    "name" : "const android::hardware::health::V2_1::HealthInfo",
+    "referenced_type" : "_ZTIN7android8hardware6health4V2_110HealthInfoE",
+    "self_type" : "_ZTIKN7android8hardware6health4V2_110HealthInfoE",
+-   "size" : 136,
++   "size" : 184,
+    "source_file" : "/out/soong/.intermediates/hardware/interfaces/health/2.1/android.hardware.health@2.1_genc++_headers/gen/android/hardware/health/2.1/BpHwHealthInfoCallback.h"
+   },
+   {
+@@ -8282,7 +8282,7 @@
+    "name" : "const android::hardware::health::V2_1::HealthConfig",
+    "referenced_type" : "_ZTIN7android8hardware6health4V2_112HealthConfigE",
+    "self_type" : "_ZTIKN7android8hardware6health4V2_112HealthConfigE",
+-   "size" : 208,
++   "size" : 256,
+    "source_file" : "/out/soong/.intermediates/hardware/interfaces/health/2.1/android.hardware.health@2.1_genc++_headers/gen/android/hardware/health/2.1/hwtypes.h"
+   },
+   {
+@@ -14060,13 +14060,38 @@
+      "field_name" : "batteryTechnology",
+      "field_offset" : 448,
+      "referenced_type" : "_ZTIN7android8hardware11hidl_stringE"
++    },
++    {
++     "field_name" : "chargerVoltage",
++     "field_offset" : 576,
++     "referenced_type" : "_ZTIi"
++    },
++    {
++     "field_name" : "chargerCurrent",
++     "field_offset" : 608,
++     "referenced_type" : "_ZTIi"
++    },
++    {
++     "field_name" : "batteryStateOfHealth",
++     "field_offset" : 640,
++     "referenced_type" : "_ZTIi"
++    },
++    {
++     "field_name" : "batteryManufactuer",
++     "field_offset" : 704,
++     "referenced_type" : "_ZTIN7android8hardware11hidl_stringE"
++    },
++    {
++     "field_name" : "batterySerialNumber",
++     "field_offset" : 832,
++     "referenced_type" : "_ZTIN7android8hardware11hidl_stringE"
+     }
+    ],
+    "linker_set_key" : "_ZTIN7android8hardware6health4V1_010HealthInfoE",
+    "name" : "android::hardware::health::V1_0::HealthInfo",
+    "referenced_type" : "_ZTIN7android8hardware6health4V1_010HealthInfoE",
+    "self_type" : "_ZTIN7android8hardware6health4V1_010HealthInfoE",
+-   "size" : 72,
++   "size" : 120,
+    "source_file" : "/out/soong/.intermediates/hardware/interfaces/health/1.0/android.hardware.health@1.0_genc++_headers/gen/android/hardware/health/1.0/types.h"
+   },
+   {
+@@ -14141,13 +14166,28 @@
+      "field_name" : "batteryCycleCountPath",
+      "field_offset" : 1472,
+      "referenced_type" : "_ZTIN7android8hardware11hidl_stringE"
++    },
++    {
++     "field_name" : "batteryStateOfHealthPath",
++     "field_offset" : 1600,
++     "referenced_type" : "_ZTIN7android8hardware11hidl_stringE"
++    },
++    {
++     "field_name" : "batteryManufactuerPath",
++     "field_offset" : 1728,
++     "referenced_type" : "_ZTIN7android8hardware11hidl_stringE"
++    },
++    {
++     "field_name" : "batterySerialNumberPath",
++     "field_offset" : 1856,
++     "referenced_type" : "_ZTIN7android8hardware11hidl_stringE"
+     }
+    ],
+    "linker_set_key" : "_ZTIN7android8hardware6health4V1_012HealthConfigE",
+    "name" : "android::hardware::health::V1_0::HealthConfig",
+    "referenced_type" : "_ZTIN7android8hardware6health4V1_012HealthConfigE",
+    "self_type" : "_ZTIN7android8hardware6health4V1_012HealthConfigE",
+-   "size" : 200,
++   "size" : 248,
+    "source_file" : "/out/soong/.intermediates/hardware/interfaces/health/1.0/android.hardware.health@1.0_genc++_headers/gen/android/hardware/health/1.0/types.h"
+   },
+   {
+@@ -14541,17 +14581,17 @@
+     },
+     {
+      "field_name" : "batteryCurrentAverage",
+-     "field_offset" : 576,
++     "field_offset" : 960,
+      "referenced_type" : "_ZTIi"
+     },
+     {
+      "field_name" : "diskStats",
+-     "field_offset" : 640,
++     "field_offset" : 1024,
+      "referenced_type" : "_ZTIN7android8hardware8hidl_vecINS0_6health4V2_09DiskStatsEEE"
+     },
+     {
+      "field_name" : "storageInfos",
+-     "field_offset" : 768,
++     "field_offset" : 1152,
+      "referenced_type" : "_ZTIN7android8hardware8hidl_vecINS0_6health4V2_011StorageInfoEEE"
+     }
+    ],
+@@ -14559,7 +14599,7 @@
+    "name" : "android::hardware::health::V2_0::HealthInfo",
+    "referenced_type" : "_ZTIN7android8hardware6health4V2_010HealthInfoE",
+    "self_type" : "_ZTIN7android8hardware6health4V2_010HealthInfoE",
+-   "size" : 112,
++   "size" : 160,
+    "source_file" : "/out/soong/.intermediates/hardware/interfaces/health/2.0/android.hardware.health@2.0_genc++_headers/gen/android/hardware/health/2.0/types.h"
+   },
+   {
+@@ -15723,17 +15763,17 @@
+     },
+     {
+      "field_name" : "batteryCapacityLevel",
+-     "field_offset" : 896,
++     "field_offset" : 1280,
+      "referenced_type" : "_ZTIN7android8hardware6health4V2_120BatteryCapacityLevelE"
+     },
+     {
+      "field_name" : "batteryChargeTimeToFullNowSeconds",
+-     "field_offset" : 960,
++     "field_offset" : 1344,
+      "referenced_type" : "_ZTIx"
+     },
+     {
+      "field_name" : "batteryFullChargeDesignCapacityUah",
+-     "field_offset" : 1024,
++     "field_offset" : 1408,
+      "referenced_type" : "_ZTIi"
+     }
+    ],
+@@ -15741,7 +15781,7 @@
+    "name" : "android::hardware::health::V2_1::HealthInfo",
+    "referenced_type" : "_ZTIN7android8hardware6health4V2_110HealthInfoE",
+    "self_type" : "_ZTIN7android8hardware6health4V2_110HealthInfoE",
+-   "size" : 136,
++   "size" : 184,
+    "source_file" : "/out/soong/.intermediates/hardware/interfaces/health/2.1/android.hardware.health@2.1_genc++_headers/gen/android/hardware/health/2.1/types.h"
+   },
+   {
+@@ -15754,7 +15794,7 @@
+     },
+     {
+      "field_name" : "bootMinCap",
+-     "field_offset" : 1600,
++     "field_offset" : 1984,
+      "referenced_type" : "_ZTIi"
+     }
+    ],
+@@ -15762,7 +15802,7 @@
+    "name" : "android::hardware::health::V2_1::HealthConfig",
+    "referenced_type" : "_ZTIN7android8hardware6health4V2_112HealthConfigE",
+    "self_type" : "_ZTIN7android8hardware6health4V2_112HealthConfigE",
+-   "size" : 208,
++   "size" : 256,
+    "source_file" : "/out/soong/.intermediates/hardware/interfaces/health/2.1/android.hardware.health@2.1_genc++_headers/gen/android/hardware/health/2.1/types.h"
+   },
+   {
+diff --git a/system/core/healthd/BatteryMonitor.cpp b/system/core/healthd/BatteryMonitor.cpp
+index ed75c9c5093..5595695c65d 100755
+--- a/system/core/healthd/BatteryMonitor.cpp
++++ b/system/core/healthd/BatteryMonitor.cpp
+@@ -243,6 +243,30 @@ bool BatteryMonitor::isScopedPowerSupply(const char* name) {
+     return (readFromFile(path, &scope) > 0 && scope == kScopeDevice);
+ }
+ 
++int BatteryMonitor::getChargerVoltage(const char* name) {
++	String8 path;
++
++	path.clear();
++	path.appendFormat("%s/%s/voltage_now", POWER_SUPPLY_SYSFS_PATH, name);
++	
++	if (access(path, R_OK) == 0)
++		return getIntField(path);
++
++	return 0;
++}
++
++int BatteryMonitor::getChargerCurrent(const char* name) {
++	String8 path;
++
++	path.clear();
++	path.appendFormat("%s/%s/current_now", POWER_SUPPLY_SYSFS_PATH, name);
++
++	if (access(path, R_OK) == 0)
++		return getIntField(path);
++
++	return 0;
++}
++
+ void BatteryMonitor::updateValues(void) {
+     initHealthInfo(mHealthInfo.get());
+ 
+@@ -299,6 +323,23 @@ void BatteryMonitor::updateValues(void) {
+ 
+     if (readFromFile(mHealthdConfig->batteryTechnologyPath, &buf) > 0)
+         props.batteryTechnology = String8(buf.c_str());
++
++    if (!mHealthdConfig->batteryStateOfHealthPath.isEmpty())
++        props.batteryStateOfHealth = getIntField(mHealthdConfig->batteryStateOfHealthPath);
++	else
++		props.batteryStateOfHealth = 100;
++
++	if (!mHealthdConfig->batteryManufactuerPath.isEmpty())
++		if (readFromFile(mHealthdConfig->batteryManufactuerPath, &buf) > 0)
++			props.batteryManufactuer = String8(buf.c_str());
++
++	if (!mHealthdConfig->batterySerialNumberPath.isEmpty())
++		if (readFromFile(mHealthdConfig->batterySerialNumberPath, &buf) > 0)
++			props.batterySerialNumber = String8(buf.c_str());
++
++	props.chargerVoltage = 0;
++	props.chargerCurrent = 0;
++
+     double MaxPower = 0;
+ 
+     for (size_t i = 0; i < mChargerNames.size(); i++) {
+@@ -313,12 +354,18 @@ void BatteryMonitor::updateValues(void) {
+             KLOG_WARNING(LOG_TAG, "************path2:%s \n",path.c_str());
+             switch(readPowerSupplyType(path)) {
+             case ANDROID_POWER_SUPPLY_TYPE_AC:
++				props.chargerVoltage = getChargerVoltage(mChargerNames[i].string());
++				props.chargerCurrent = getChargerCurrent(mChargerNames[i].string());
+                 props.chargerAcOnline = true;
+                 break;
+             case ANDROID_POWER_SUPPLY_TYPE_USB:
++				props.chargerVoltage = getChargerVoltage(mChargerNames[i].string());
++				props.chargerCurrent = getChargerCurrent(mChargerNames[i].string());
+                 props.chargerUsbOnline = true;
+                 break;
+             case ANDROID_POWER_SUPPLY_TYPE_WIRELESS:
++				props.chargerVoltage = getChargerVoltage(mChargerNames[i].string());
++				props.chargerCurrent = getChargerCurrent(mChargerNames[i].string());
+                 props.chargerWirelessOnline = true;
+                 break;
+             default:
+@@ -687,6 +734,29 @@ void BatteryMonitor::init(struct healthd_config *hc) {
+                         mHealthdConfig->batteryTechnologyPath = path;
+                 }
+ 
++                if (mHealthdConfig->batteryStateOfHealthPath.isEmpty()) {
++                    path.clear();
++                    path.appendFormat("%s/%s/soh",
++                                      POWER_SUPPLY_SYSFS_PATH, name);
++                    if (access(path, R_OK) == 0)
++                        mHealthdConfig->batteryStateOfHealthPath = path;
++                }
++
++                if (mHealthdConfig->batteryManufactuerPath.isEmpty()) {
++                    path.clear();
++                    path.appendFormat("%s/%s/manufacturer",
++                                      POWER_SUPPLY_SYSFS_PATH, name);
++                    if (access(path, R_OK) == 0)
++                        mHealthdConfig->batteryManufactuerPath = path;
++                }
++
++                if (mHealthdConfig->batterySerialNumberPath.isEmpty()) {
++                    path.clear();
++                    path.appendFormat("%s/%s/serial_number",
++                                      POWER_SUPPLY_SYSFS_PATH, name);
++                    if (access(path, R_OK) == 0)
++                        mHealthdConfig->batterySerialNumberPath = path;
++                }
+                 break;
+ 
+             case ANDROID_POWER_SUPPLY_TYPE_UNKNOWN:
+diff --git a/system/core/healthd/include/healthd/BatteryMonitor.h b/system/core/healthd/include/healthd/BatteryMonitor.h
+index fadb5a58c88..f8f073810dd 100644
+--- a/system/core/healthd/include/healthd/BatteryMonitor.h
++++ b/system/core/healthd/include/healthd/BatteryMonitor.h
+@@ -79,6 +79,8 @@ class BatteryMonitor {
+     bool getBooleanField(const String8& path);
+     int getIntField(const String8& path);
+     bool isScopedPowerSupply(const char* name);
++	int getChargerVoltage(const char* name);
++	int getChargerCurrent(const char* name);
+ };
+ 
+ }; // namespace android
+diff --git a/system/core/healthd/include/healthd/healthd.h b/system/core/healthd/include/healthd/healthd.h
+index 706c3328e0c..010587bfee9 100644
+--- a/system/core/healthd/include/healthd/healthd.h
++++ b/system/core/healthd/include/healthd/healthd.h
+@@ -72,6 +72,9 @@ struct healthd_config {
+     android::String8 batteryCapacityLevelPath;
+     android::String8 batteryChargeTimeToFullNowPath;
+     android::String8 batteryFullChargeDesignCapacityUahPath;
++    android::String8 batteryStateOfHealthPath;
++    android::String8 batteryManufactuerPath;
++    android::String8 batterySerialNumberPath;;
+ 
+     int (*energyCounter)(int64_t *);
+     int boot_min_cap;
+-- 
+2.17.1
+

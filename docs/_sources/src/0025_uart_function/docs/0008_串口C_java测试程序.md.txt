@@ -46,10 +46,10 @@ int select_serial_node(int num, char* name)
 	switch(num)
 	{
 		case 1:
-			strcpy(name, "/dev/ttyHSL1");
+			strcpy(name, "/dev/ttyHS1");
 			break;
 		case 2:
-			strcpy(name, "/dev/ttyHSL2");
+			strcpy(name, "/dev/ttyHS2");
 			break;
 		default:
 			return -1;

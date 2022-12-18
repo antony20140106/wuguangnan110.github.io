@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="zh-CN" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>wugn</title>
+
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script src="../../../_static/translations.js"></script>
+        <script src="../../../_static/js/baidutongji.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="索引" href="../../../genindex.html" />
+    <link rel="search" title="搜索" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../index.html" class="icon icon-home"> wugn_note
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="在文档中搜索" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">概述</a></li>
+<li><a class="reference internal" href="#id2">参考</a></li>
+<li><a class="reference internal" href="#runtime-pm">Runtime PM详解</a></li>
+<li><a class="reference internal" href="#id3">Runtime PM历程</a></li>
+<li><a class="reference internal" href="#dts">dts</a></li>
+<li><a class="reference internal" href="#id4">代码分析</a></li>
+<li><a class="reference internal" href="#master-xfer-pm">master_xfer pm流程</a></li>
+<li><a class="reference internal" href="#id5">runtime PM</a></li>
+</ul>
+</div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">wugn_note</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs"> 
+<li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+<li>概述</li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.forward()">Forward</a></li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.back()">Go Back</a> | </li>
+<li style="float: right;margin-left: 10px;"><a href="/index.html">Home</a> | </li>
+
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="id1">
+<h1>概述<a class="headerlink" href="#id1" title="此标题的永久链接"></a></h1>
+<p>高通平台i2c总线初始化和其他平台不同，休眠时会将pinctrl配置为gpio并且禁止上下拉，也就是SDA/SCL拉低了，看一下流程。</p>
+</section>
+<section id="id2">
+<h1>参考<a class="headerlink" href="#id2" title="此标题的永久链接"></a></h1>
+<ul class="simple">
+<li><p><a class="reference external" href="https://blog.csdn.net/eliot_shao/article/details/103116810">Linux电源管理-Runtime PM</a></p></li>
+<li><p><a class="reference external" href="http://www.javashuo.com/article/p-flxcrhmg-ko.html">Linux电源管理(11)_Runtime PM之功能描述</a></p></li>
+<li><p><a class="reference external" href="https://www.cnblogs.com/bigfish0506/p/14843328.html">Runtime PM 处理不当导致的 external abort on non-linefetch 案例分享</a></p></li>
+</ul>
+</section>
+<section id="runtime-pm">
+<h1>Runtime PM详解<a class="headerlink" href="#runtime-pm" title="此标题的永久链接"></a></h1>
+<ul class="simple">
+<li><p>什么是Runtime PM
+Runtime PM (Runtime Power Management)翻译过来就是运行时电源管理。每个设备（包括芯片内部件）各自处理好自身的电源管理工作，在不需要工作的时候尽量进入低功耗状态，在需要工作时又重新起来。这样即使整个系统没有进入睡眠的情况下，设备自身也可以根据实际工作情况决定是否要进入低功耗状态，达到尽量省电的目的。</p></li>
+<li><p>为什么需要Runtime PM
+system suspend需要很长时间完成，其中还可能出现失败。比如freeze task的时候。而suspend设备速度相对system suspend快很对，而且还不需要freeze task。当设备不忙的时候就进入自己的低功耗模式，这样一来每个device(包括CPU) 都做好自己的事，整个系统就达到最大节省能源。这时候突然想起了一句话”只要人人都献出一片爱，世界将变成美好的人间”。</p></li>
+</ul>
+</section>
+<section id="id3">
+<h1>Runtime PM历程<a class="headerlink" href="#id3" title="此标题的永久链接"></a></h1>
+<p>落实到代码上，当需要设备工作时，通过调用 pm_runtime_get_sync 让设备 runtime resume；当工作完成后，通过调用 pm_runtime_put 让设备 runtime suspend，伪代码如下：</p>
+<ul class="simple">
+<li><p>发送数据：</p></li>
+</ul>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="n">senddata</span><span class="p">()</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">pm_runtime_get_sync</span><span class="p">()</span><span class="w"></span>
+<span class="w">    </span><span class="k">do</span><span class="w"> </span><span class="n">something</span><span class="w"> </span><span class="p">...</span><span class="w"></span>
+<span class="w">    </span><span class="n">pm_runtime_put</span><span class="p">()</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>接收数据：</p></li>
+</ul>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="n">recvdata</span><span class="p">()</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">pm_runtime_get_sync</span><span class="p">()</span><span class="w"></span>
+<span class="w">    </span><span class="k">do</span><span class="w"> </span><span class="n">something</span><span class="w"> </span><span class="p">...</span><span class="w"></span>
+<span class="w">    </span><span class="n">pm_runtime_put</span><span class="p">()</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<p>pm_runtime_get_sync 和 pm_runtime_put 会维护一个引用计数，pm_runtime_get_sync 会增加引用计数，pm_runtime_put 会减少引用计数，当引用计数为0时，才会真正让设备进入低功耗。</p>
+<p>Runtime PM 的概念是比较直观的，对于某个设备来说，就是谁需要我工作，就 get 我，否则就 put 我。但是提供的函数接口有点多，本文的重点不在这里，就不一一介绍了，常用的如下：</p>
+<ul class="simple">
+<li><p>pm_runtime_get_sync //请求</p></li>
+<li><p>pm_runtime_put //释放</p></li>
+<li><p>pm_runtime_use_autosuspend //启用auto-suspend</p></li>
+<li><p>pm_runtime_set_autosuspend_delay //设置多久之后auto-suspend</p></li>
+<li><p>pm_runtime_put_autosuspend //带auto-suspend的释放</p></li>
+<li><p>pm_runtime_mark_last_busy //重置auto-suspend时间计数</p></li>
+<li><p>pm_runtime_set_active/pm_runtime_set_suspended(设置设备的runtime运行状态)</p></li>
+</ul>
+<p>Runtime PM 调用的时机，需要设备驱动仔细地处理，不然可能引发功耗问题或者系统异常。</p>
+<ul class="simple">
+<li><p>如果控制的粒度太细，比如封装一个寄存器读写接口，每次去读写这个设备的寄存器时，都先 get 再 put，那未免代价太高了；</p></li>
+<li><p>如果控制的粒度太粗，比如设备驱动起来后就一直 get，直到系统 suspend 才 put，那就和传统的电源管理差不多了，失去了 Runtime PM 的意义。</p></li>
+<li><p>如果 get / put 接口没有成对调用，比如 get 的次数大于 put 的次数，那设备就进不了低功耗。</p></li>
+<li><p>如果 put 的时机不太合适，导致设备下电后仍然有代码访问设备，那么就可能出现异常。</p></li>
+</ul>
+</section>
+<section id="dts">
+<h1>dts<a class="headerlink" href="#dts" title="此标题的永久链接"></a></h1>
+<div class="highlight-log notranslate"><div class="highlight"><pre><span></span>scuba-qupv3.dtsi:
+    qupv3_se0_i2c: i2c@4a80000 {
+        compatible = &quot;qcom,i2c-geni&quot;;
+        reg = &lt;0x4a80000 0x4000&gt;;
+        #address-cells = &lt;1&gt;;
+        #size-cells = &lt;0&gt;;
+        interrupts = &lt;GIC_SPI 327 IRQ_TYPE_LEVEL_HIGH&gt;;
+        clock-names = &quot;se-clk&quot;, &quot;m-ahb&quot;, &quot;s-ahb&quot;;
+        clocks = &lt;&amp;gcc GCC_QUPV3_WRAP0_S0_CLK&gt;,
+            &lt;&amp;gcc GCC_QUPV3_WRAP_0_M_AHB_CLK&gt;,
+            &lt;&amp;gcc GCC_QUPV3_WRAP_0_S_AHB_CLK&gt;;
+        pinctrl-names = &quot;default&quot;, &quot;sleep&quot;;
+        pinctrl-0 = &lt;&amp;qupv3_se0_i2c_active&gt;;
+        pinctrl-1 = &lt;&amp;qupv3_se0_i2c_sleep&gt;;
+        dmas = &lt;&amp;gpi_dma0 0 0 3 64 0&gt;,
+            &lt;&amp;gpi_dma0 1 0 3 64 0&gt;;
+        dma-names = &quot;tx&quot;, &quot;rx&quot;;
+        qcom,wrapper-core = &lt;&amp;qupv3_0&gt;;
+        status = &quot;disabled&quot;;
+    };
+
+scuba-pinctrl.dtsi:
+        qupv3_se0_i2c_pins: qupv3_se0_i2c_pins {
+            qupv3_se0_i2c_active: qupv3_se0_i2c_active {
+                mux {
+                    pins = &quot;gpio0&quot;, &quot;gpio1&quot;;
+                    function = &quot;qup0&quot;;
+                };
+
+                config {
+                    pins = &quot;gpio0&quot;, &quot;gpio1&quot;;
+                    drive-strength = &lt;2&gt;;
+                    bias-pull-up;
+                };
+            };
+
+            qupv3_se0_i2c_sleep: qupv3_se0_i2c_sleep {
+                mux {
+                    pins = &quot;gpio0&quot;, &quot;gpio1&quot;;
+                    function = &quot;qup0&quot;;
+                };
+
+                config {
+                    pins = &quot;gpio0&quot;, &quot;gpio1&quot;;
+                    drive-strength = &lt;2&gt;;
+                    bias-pull-up;
+                };
+            };
+        };
+</pre></div>
+</div>
+</section>
+<section id="id4">
+<h1>代码分析<a class="headerlink" href="#id4" title="此标题的永久链接"></a></h1>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">bengal_defconfig</span></code>:</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="mi">359</span><span class="p">:</span><span class="n">CONFIG_I2C_CHARDEV</span><span class="o">=</span><span class="n">y</span>
+<span class="mi">360</span><span class="p">:</span><span class="n">CONFIG_I2C_QCOM_GENI</span><span class="o">=</span><span class="n">y</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">UM.9.15/kernel/msm-4.19/drivers/i2c/Makefile</span></code>i2c相关的代码：</p></li>
+</ul>
+<div class="highlight-makefile notranslate"><div class="highlight"><pre><span></span><span class="nv">obj-$(CONFIG_I2C)</span>       <span class="o">+=</span> i2c-core.o
+<span class="nv">i2c-core-objs</span>           <span class="o">:=</span> i2c-core-base.o i2c-core-smbus.o
+<span class="nv">obj-$(CONFIG_I2C_CHARDEV)</span>   <span class="o">+=</span> i2c-dev.o
+<span class="nv">obj-y</span>               <span class="o">+=</span> algos/ busses/ muxes/
+
+<span class="c"># busses/Makefile</span>
+<span class="nv">obj-$(CONFIG_I2C_QCOM_GENI)</span>  <span class="o">+=</span> i2c-qcom-geni.o
+</pre></div>
+</div>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">UM.9.15/kernel/msm-4.19/drivers/i2c/busses/i2c-qcom-geni.c</span></code>:</p></li>
+</ul>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="cp">#define I2C_AUTO_SUSPEND_DELAY  250</span>
+
+<span class="k">static</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">i2c_algorithm</span><span class="w"> </span><span class="n">geni_i2c_algo</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">master_xfer</span><span class="w">	</span><span class="o">=</span><span class="w"> </span><span class="n">geni_i2c_xfer</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">functionality</span><span class="w">	</span><span class="o">=</span><span class="w"> </span><span class="n">geni_i2c_func</span><span class="p">,</span><span class="w"></span>
+<span class="p">};</span><span class="w"></span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">geni_i2c_probe</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">platform_device</span><span class="w"> </span><span class="o">*</span><span class="n">pdev</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="n">gi2c</span><span class="o">-&gt;</span><span class="n">i2c_rsc</span><span class="p">.</span><span class="n">geni_pinctrl</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">devm_pinctrl_get</span><span class="p">(</span><span class="o">&amp;</span><span class="n">pdev</span><span class="o">-&gt;</span><span class="n">dev</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">IS_ERR_OR_NULL</span><span class="p">(</span><span class="n">gi2c</span><span class="o">-&gt;</span><span class="n">i2c_rsc</span><span class="p">.</span><span class="n">geni_pinctrl</span><span class="p">))</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="n">dev_err</span><span class="p">(</span><span class="o">&amp;</span><span class="n">pdev</span><span class="o">-&gt;</span><span class="n">dev</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;No pinctrl config specified</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">PTR_ERR</span><span class="p">(</span><span class="n">gi2c</span><span class="o">-&gt;</span><span class="n">i2c_rsc</span><span class="p">.</span><span class="n">geni_pinctrl</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="k">return</span><span class="w"> </span><span class="n">ret</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+<span class="w">	</span><span class="n">gi2c</span><span class="o">-&gt;</span><span class="n">i2c_rsc</span><span class="p">.</span><span class="n">geni_gpio_active</span><span class="w"> </span><span class="o">=</span><span class="w"></span>
+<span class="w">		</span><span class="n">pinctrl_lookup_state</span><span class="p">(</span><span class="n">gi2c</span><span class="o">-&gt;</span><span class="n">i2c_rsc</span><span class="p">.</span><span class="n">geni_pinctrl</span><span class="p">,</span><span class="w"></span>
+<span class="w">							</span><span class="n">PINCTRL_DEFAULT</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">IS_ERR_OR_NULL</span><span class="p">(</span><span class="n">gi2c</span><span class="o">-&gt;</span><span class="n">i2c_rsc</span><span class="p">.</span><span class="n">geni_gpio_active</span><span class="p">))</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="n">dev_err</span><span class="p">(</span><span class="o">&amp;</span><span class="n">pdev</span><span class="o">-&gt;</span><span class="n">dev</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;No default config specified</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">PTR_ERR</span><span class="p">(</span><span class="n">gi2c</span><span class="o">-&gt;</span><span class="n">i2c_rsc</span><span class="p">.</span><span class="n">geni_gpio_active</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="k">return</span><span class="w"> </span><span class="n">ret</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+<span class="w">	</span><span class="n">gi2c</span><span class="o">-&gt;</span><span class="n">i2c_rsc</span><span class="p">.</span><span class="n">geni_gpio_sleep</span><span class="w"> </span><span class="o">=</span><span class="w"></span>
+<span class="w">		</span><span class="n">pinctrl_lookup_state</span><span class="p">(</span><span class="n">gi2c</span><span class="o">-&gt;</span><span class="n">i2c_rsc</span><span class="p">.</span><span class="n">geni_pinctrl</span><span class="p">,</span><span class="w"></span>
+<span class="w">							</span><span class="n">PINCTRL_SLEEP</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">IS_ERR_OR_NULL</span><span class="p">(</span><span class="n">gi2c</span><span class="o">-&gt;</span><span class="n">i2c_rsc</span><span class="p">.</span><span class="n">geni_gpio_sleep</span><span class="p">))</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="n">dev_err</span><span class="p">(</span><span class="o">&amp;</span><span class="n">pdev</span><span class="o">-&gt;</span><span class="n">dev</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;No sleep config specified</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">PTR_ERR</span><span class="p">(</span><span class="n">gi2c</span><span class="o">-&gt;</span><span class="n">i2c_rsc</span><span class="p">.</span><span class="n">geni_gpio_sleep</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="k">return</span><span class="w"> </span><span class="n">ret</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">of_property_read_bool</span><span class="p">(</span><span class="n">pdev</span><span class="o">-&gt;</span><span class="n">dev</span><span class="p">.</span><span class="n">of_node</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;qcom,shared&quot;</span><span class="p">))</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="n">gi2c</span><span class="o">-&gt;</span><span class="n">is_shared</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">true</span><span class="p">;</span><span class="w"></span>
+<span class="w">		</span><span class="n">dev_info</span><span class="p">(</span><span class="o">&amp;</span><span class="n">pdev</span><span class="o">-&gt;</span><span class="n">dev</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Multi-EE usecase</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">gi2c</span><span class="o">-&gt;</span><span class="n">adap</span><span class="p">.</span><span class="n">algo</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">&amp;</span><span class="n">geni_i2c_algo</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">devm_request_irq</span><span class="p">(</span><span class="n">gi2c</span><span class="o">-&gt;</span><span class="n">dev</span><span class="p">,</span><span class="w"> </span><span class="n">gi2c</span><span class="o">-&gt;</span><span class="n">irq</span><span class="p">,</span><span class="w"> </span><span class="n">geni_i2c_irq</span><span class="p">,</span><span class="w"></span>
+<span class="w">			       </span><span class="n">IRQF_TRIGGER_HIGH</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;i2c_geni&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">gi2c</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">pm_runtime_set_suspended</span><span class="p">(</span><span class="n">gi2c</span><span class="o">-&gt;</span><span class="n">dev</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="n">pm_runtime_set_autosuspend_delay</span><span class="p">(</span><span class="n">gi2c</span><span class="o">-&gt;</span><span class="n">dev</span><span class="p">,</span><span class="w"> </span><span class="n">I2C_AUTO_SUSPEND_DELAY</span><span class="p">);</span><span class="w"> </span><span class="c1">//250ms后自动休眠</span>
+<span class="w">	</span><span class="n">pm_runtime_use_autosuspend</span><span class="p">(</span><span class="n">gi2c</span><span class="o">-&gt;</span><span class="n">dev</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="n">pm_runtime_enable</span><span class="p">(</span><span class="n">gi2c</span><span class="o">-&gt;</span><span class="n">dev</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">i2c_add_adapter</span><span class="p">(</span><span class="o">&amp;</span><span class="n">gi2c</span><span class="o">-&gt;</span><span class="n">adap</span><span class="p">);</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<p>以上得知：</p>
+<ul class="simple">
+<li><p>I2C适配器驱动的主要工作就是初始化i2c_adapter结构体变量。</p></li>
+<li><p>然后设置i2c_algorithm中的master_xfer函数。master_xfer就是I2C适配器的传输函数，可以通过此函数来完成与IIC设备之间的通信。</p></li>
+<li><p>完成以后通过i2c_add_numbered_adapter或i2c_add_adapter这两个函数向系统注册设置好的i2c_adapter。</p></li>
+</ul>
+</section>
+<section id="master-xfer-pm">
+<h1>master_xfer pm流程<a class="headerlink" href="#master-xfer-pm" title="此标题的永久链接"></a></h1>
+<p>以下就是i2c读写时的runtime pm流程：</p>
+<ul class="simple">
+<li><p>pm_runtime_get_sync请求</p></li>
+<li><p>i2c读写操作省略</p></li>
+<li><p>pm_runtime_mark_last_busy 重置auto-suspend时间计数</p></li>
+<li><p>pm_runtime_put_autosuspend 带auto-suspend的释放，目前设置的是250ms后休眠</p></li>
+</ul>
+<p>以下是rumtime pm流程图：</p>
+<p><img alt="0030_0000.png" src="../../../_images/0030_00001.png" /></p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="k">static</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">i2c_algorithm</span><span class="w"> </span><span class="n">geni_i2c_algo</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">master_xfer</span><span class="w">	</span><span class="o">=</span><span class="w"> </span><span class="n">geni_i2c_xfer</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">functionality</span><span class="w">	</span><span class="o">=</span><span class="w"> </span><span class="n">geni_i2c_func</span><span class="p">,</span><span class="w"></span>
+<span class="p">};</span><span class="w"></span>
+
+
+<span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">geni_i2c_xfer</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">i2c_adapter</span><span class="w"> </span><span class="o">*</span><span class="n">adap</span><span class="p">,</span><span class="w"></span>
+<span class="w">			 </span><span class="k">struct</span><span class="w"> </span><span class="nc">i2c_msg</span><span class="w"> </span><span class="n">msgs</span><span class="p">[],</span><span class="w"></span>
+<span class="w">			 </span><span class="kt">int</span><span class="w"> </span><span class="n">num</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="k">struct</span><span class="w"> </span><span class="nc">geni_i2c_dev</span><span class="w"> </span><span class="o">*</span><span class="n">gi2c</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">i2c_get_adapdata</span><span class="p">(</span><span class="n">adap</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">timeout</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">gi2c</span><span class="o">-&gt;</span><span class="n">err</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">	</span><span class="cm">/* Client to respect system suspend */</span><span class="w"></span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">pm_runtime_enabled</span><span class="p">(</span><span class="n">gi2c</span><span class="o">-&gt;</span><span class="n">dev</span><span class="p">))</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="n">GENI_SE_ERR</span><span class="p">(</span><span class="n">gi2c</span><span class="o">-&gt;</span><span class="n">ipcl</span><span class="p">,</span><span class="w"> </span><span class="nb">false</span><span class="p">,</span><span class="w"> </span><span class="n">gi2c</span><span class="o">-&gt;</span><span class="n">dev</span><span class="p">,</span><span class="w"></span>
+<span class="w">			</span><span class="s">&quot;%s: System suspended</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">__func__</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="k">return</span><span class="w"> </span><span class="o">-</span><span class="n">EACCES</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pm_runtime_get_sync</span><span class="p">(</span><span class="n">gi2c</span><span class="o">-&gt;</span><span class="n">dev</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ret</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="n">GENI_SE_ERR</span><span class="p">(</span><span class="n">gi2c</span><span class="o">-&gt;</span><span class="n">ipcl</span><span class="p">,</span><span class="w"> </span><span class="nb">true</span><span class="p">,</span><span class="w"> </span><span class="n">gi2c</span><span class="o">-&gt;</span><span class="n">dev</span><span class="p">,</span><span class="w"></span>
+<span class="w">			    </span><span class="s">&quot;error turning SE resources:%d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">ret</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="n">pm_runtime_put_noidle</span><span class="p">(</span><span class="n">gi2c</span><span class="o">-&gt;</span><span class="n">dev</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="cm">/* Set device in suspended since resume failed */</span><span class="w"></span>
+<span class="w">		</span><span class="n">pm_runtime_set_suspended</span><span class="p">(</span><span class="n">gi2c</span><span class="o">-&gt;</span><span class="n">dev</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="k">return</span><span class="w"> </span><span class="n">ret</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+
+<span class="w">    </span><span class="c1">//...省略...</span>
+
+<span class="w">	</span><span class="n">pm_runtime_mark_last_busy</span><span class="p">(</span><span class="n">gi2c</span><span class="o">-&gt;</span><span class="n">dev</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="n">pm_runtime_put_autosuspend</span><span class="p">(</span><span class="n">gi2c</span><span class="o">-&gt;</span><span class="n">dev</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="n">gi2c</span><span class="o">-&gt;</span><span class="n">cur</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">NULL</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="n">gi2c</span><span class="o">-&gt;</span><span class="n">err</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="n">GENI_SE_DBG</span><span class="p">(</span><span class="n">gi2c</span><span class="o">-&gt;</span><span class="n">ipcl</span><span class="p">,</span><span class="w"> </span><span class="nb">false</span><span class="p">,</span><span class="w"> </span><span class="n">gi2c</span><span class="o">-&gt;</span><span class="n">dev</span><span class="p">,</span><span class="w"></span>
+<span class="w">			</span><span class="s">&quot;i2c txn ret:%d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">ret</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="k">return</span><span class="w"> </span><span class="n">ret</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+</section>
+<section id="id5">
+<h1>runtime PM<a class="headerlink" href="#id5" title="此标题的永久链接"></a></h1>
+<p>我们i2c注册了中断，所以不会跑noirq的pm函数：
+以上当调用get时会调用geni_i2c_runtime_resume
+释放后会调用geni_i2c_runtime_suspend，当配置打开dts中bool类型qcom,shared，只会调用关闭clk函数<code class="docutils literal notranslate"><span class="pre">se_geni_clks_off</span></code>，而se_geni_resources_off才会配置为gpio并拉低。</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">geni_i2c_resume_noirq</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w"> </span><span class="o">*</span><span class="n">device</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="k">struct</span><span class="w"> </span><span class="nc">geni_i2c_dev</span><span class="w"> </span><span class="o">*</span><span class="n">gi2c</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">dev_get_drvdata</span><span class="p">(</span><span class="n">device</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">GENI_SE_DBG</span><span class="p">(</span><span class="n">gi2c</span><span class="o">-&gt;</span><span class="n">ipcl</span><span class="p">,</span><span class="w"> </span><span class="nb">false</span><span class="p">,</span><span class="w"> </span><span class="n">gi2c</span><span class="o">-&gt;</span><span class="n">dev</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;%s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">__func__</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="cp">#ifdef CONFIG_PM</span>
+<span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">geni_i2c_runtime_suspend</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w"> </span><span class="o">*</span><span class="n">dev</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="k">struct</span><span class="w"> </span><span class="nc">geni_i2c_dev</span><span class="w"> </span><span class="o">*</span><span class="n">gi2c</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">dev_get_drvdata</span><span class="p">(</span><span class="n">dev</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">gi2c</span><span class="o">-&gt;</span><span class="n">se_mode</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">FIFO_SE_DMA</span><span class="p">)</span><span class="w"></span>
+<span class="w">		</span><span class="n">disable_irq</span><span class="p">(</span><span class="n">gi2c</span><span class="o">-&gt;</span><span class="n">irq</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">gi2c</span><span class="o">-&gt;</span><span class="n">is_shared</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="cm">/* Do not unconfigure GPIOs if shared se */</span><span class="w"></span>
+<span class="w">		</span><span class="n">se_geni_clks_off</span><span class="p">(</span><span class="o">&amp;</span><span class="n">gi2c</span><span class="o">-&gt;</span><span class="n">i2c_rsc</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="n">se_geni_resources_off</span><span class="p">(</span><span class="o">&amp;</span><span class="n">gi2c</span><span class="o">-&gt;</span><span class="n">i2c_rsc</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+<span class="w">	</span><span class="n">GENI_SE_DBG</span><span class="p">(</span><span class="n">gi2c</span><span class="o">-&gt;</span><span class="n">ipcl</span><span class="p">,</span><span class="w"> </span><span class="nb">false</span><span class="p">,</span><span class="w"> </span><span class="n">gi2c</span><span class="o">-&gt;</span><span class="n">dev</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;%s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">__func__</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">geni_i2c_runtime_resume</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w"> </span><span class="o">*</span><span class="n">dev</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="kt">int</span><span class="w"> </span><span class="n">ret</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="k">struct</span><span class="w"> </span><span class="nc">geni_i2c_dev</span><span class="w"> </span><span class="o">*</span><span class="n">gi2c</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">dev_get_drvdata</span><span class="p">(</span><span class="n">dev</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">gi2c</span><span class="o">-&gt;</span><span class="n">ipcl</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="kt">char</span><span class="w"> </span><span class="n">ipc_name</span><span class="p">[</span><span class="n">I2C_NAME_SIZE</span><span class="p">];</span><span class="w"></span>
+
+<span class="w">		</span><span class="n">snprintf</span><span class="p">(</span><span class="n">ipc_name</span><span class="p">,</span><span class="w"> </span><span class="n">I2C_NAME_SIZE</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;%s&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">dev_name</span><span class="p">(</span><span class="n">gi2c</span><span class="o">-&gt;</span><span class="n">dev</span><span class="p">));</span><span class="w"></span>
+<span class="w">		</span><span class="n">gi2c</span><span class="o">-&gt;</span><span class="n">ipcl</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ipc_log_context_create</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="n">ipc_name</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">se_geni_resources_on</span><span class="p">(</span><span class="o">&amp;</span><span class="n">gi2c</span><span class="o">-&gt;</span><span class="n">i2c_rsc</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ret</span><span class="p">)</span><span class="w"></span>
+<span class="w">		</span><span class="k">return</span><span class="w"> </span><span class="n">ret</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">gi2c</span><span class="o">-&gt;</span><span class="n">se_mode</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">UNINITIALIZED</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="kt">int</span><span class="w"> </span><span class="n">proto</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">get_se_proto</span><span class="p">(</span><span class="n">gi2c</span><span class="o">-&gt;</span><span class="n">base</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="n">u32</span><span class="w"> </span><span class="n">se_mode</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">		</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">unlikely</span><span class="p">(</span><span class="n">proto</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">I2C</span><span class="p">))</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">			</span><span class="n">dev_err</span><span class="p">(</span><span class="n">gi2c</span><span class="o">-&gt;</span><span class="n">dev</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Invalid proto %d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">proto</span><span class="p">);</span><span class="w"></span>
+<span class="w">			</span><span class="n">se_geni_resources_off</span><span class="p">(</span><span class="o">&amp;</span><span class="n">gi2c</span><span class="o">-&gt;</span><span class="n">i2c_rsc</span><span class="p">);</span><span class="w"></span>
+<span class="w">			</span><span class="k">return</span><span class="w"> </span><span class="o">-</span><span class="n">ENXIO</span><span class="p">;</span><span class="w"></span>
+<span class="w">		</span><span class="p">}</span><span class="w"></span>
+
+<span class="w">		</span><span class="n">se_mode</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">readl_relaxed</span><span class="p">(</span><span class="n">gi2c</span><span class="o">-&gt;</span><span class="n">base</span><span class="w"> </span><span class="o">+</span><span class="w"></span>
+<span class="w">					</span><span class="n">GENI_IF_FIFO_DISABLE_RO</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">se_mode</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">			</span><span class="n">gi2c</span><span class="o">-&gt;</span><span class="n">se_mode</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">GSI_ONLY</span><span class="p">;</span><span class="w"></span>
+<span class="w">			</span><span class="n">geni_se_select_mode</span><span class="p">(</span><span class="n">gi2c</span><span class="o">-&gt;</span><span class="n">base</span><span class="p">,</span><span class="w"> </span><span class="n">GSI_DMA</span><span class="p">);</span><span class="w"></span>
+<span class="w">			</span><span class="n">GENI_SE_DBG</span><span class="p">(</span><span class="n">gi2c</span><span class="o">-&gt;</span><span class="n">ipcl</span><span class="p">,</span><span class="w"> </span><span class="nb">false</span><span class="p">,</span><span class="w"> </span><span class="n">gi2c</span><span class="o">-&gt;</span><span class="n">dev</span><span class="p">,</span><span class="w"></span>
+<span class="w">					</span><span class="s">&quot;i2c GSI mode</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">			</span><span class="kt">int</span><span class="w"> </span><span class="n">gi2c_tx_depth</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">get_tx_fifo_depth</span><span class="p">(</span><span class="n">gi2c</span><span class="o">-&gt;</span><span class="n">base</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">			</span><span class="n">gi2c</span><span class="o">-&gt;</span><span class="n">se_mode</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">FIFO_SE_DMA</span><span class="p">;</span><span class="w"></span>
+<span class="w">			</span><span class="n">gi2c</span><span class="o">-&gt;</span><span class="n">tx_wm</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">gi2c_tx_depth</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span><span class="w"></span>
+<span class="w">			</span><span class="n">geni_se_init</span><span class="p">(</span><span class="n">gi2c</span><span class="o">-&gt;</span><span class="n">base</span><span class="p">,</span><span class="w"> </span><span class="n">gi2c</span><span class="o">-&gt;</span><span class="n">tx_wm</span><span class="p">,</span><span class="w"> </span><span class="n">gi2c_tx_depth</span><span class="p">);</span><span class="w"></span>
+<span class="w">			</span><span class="n">se_config_packing</span><span class="p">(</span><span class="n">gi2c</span><span class="o">-&gt;</span><span class="n">base</span><span class="p">,</span><span class="w"> </span><span class="mi">8</span><span class="p">,</span><span class="w"> </span><span class="mi">4</span><span class="p">,</span><span class="w"> </span><span class="nb">true</span><span class="p">);</span><span class="w"></span>
+<span class="w">			</span><span class="n">qcom_geni_i2c_conf</span><span class="p">(</span><span class="n">gi2c</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span><span class="w"></span>
+<span class="w">			</span><span class="n">GENI_SE_DBG</span><span class="p">(</span><span class="n">gi2c</span><span class="o">-&gt;</span><span class="n">ipcl</span><span class="p">,</span><span class="w"> </span><span class="nb">false</span><span class="p">,</span><span class="w"> </span><span class="n">gi2c</span><span class="o">-&gt;</span><span class="n">dev</span><span class="p">,</span><span class="w"></span>
+<span class="w">				    </span><span class="s">&quot;i2c fifo/se-dma mode. fifo depth:%d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"></span>
+<span class="w">				    </span><span class="n">gi2c_tx_depth</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="p">}</span><span class="w"></span>
+<span class="w">		</span><span class="n">GENI_SE_DBG</span><span class="p">(</span><span class="n">gi2c</span><span class="o">-&gt;</span><span class="n">ipcl</span><span class="p">,</span><span class="w"> </span><span class="nb">false</span><span class="p">,</span><span class="w"> </span><span class="n">gi2c</span><span class="o">-&gt;</span><span class="n">dev</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;i2c-%d: %s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"></span>
+<span class="w">			</span><span class="n">gi2c</span><span class="o">-&gt;</span><span class="n">adap</span><span class="p">.</span><span class="n">nr</span><span class="p">,</span><span class="w"> </span><span class="n">dev_name</span><span class="p">(</span><span class="n">gi2c</span><span class="o">-&gt;</span><span class="n">dev</span><span class="p">));</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">gi2c</span><span class="o">-&gt;</span><span class="n">se_mode</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">FIFO_SE_DMA</span><span class="p">)</span><span class="w"></span>
+<span class="w">		</span><span class="n">enable_irq</span><span class="p">(</span><span class="n">gi2c</span><span class="o">-&gt;</span><span class="n">irq</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">GENI_SE_DBG</span><span class="p">(</span><span class="n">gi2c</span><span class="o">-&gt;</span><span class="n">ipcl</span><span class="p">,</span><span class="w"> </span><span class="nb">false</span><span class="p">,</span><span class="w"> </span><span class="n">gi2c</span><span class="o">-&gt;</span><span class="n">dev</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;%s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">__func__</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">geni_i2c_suspend_noirq</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w"> </span><span class="o">*</span><span class="n">device</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="k">struct</span><span class="w"> </span><span class="nc">geni_i2c_dev</span><span class="w"> </span><span class="o">*</span><span class="n">gi2c</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">dev_get_drvdata</span><span class="p">(</span><span class="n">device</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="kt">int</span><span class="w"> </span><span class="n">ret</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">	</span><span class="cm">/* Make sure no transactions are pending */</span><span class="w"></span>
+<span class="w">	</span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">i2c_trylock_bus</span><span class="p">(</span><span class="o">&amp;</span><span class="n">gi2c</span><span class="o">-&gt;</span><span class="n">adap</span><span class="p">,</span><span class="w"> </span><span class="n">I2C_LOCK_SEGMENT</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">ret</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="n">GENI_SE_ERR</span><span class="p">(</span><span class="n">gi2c</span><span class="o">-&gt;</span><span class="n">ipcl</span><span class="p">,</span><span class="w"> </span><span class="nb">true</span><span class="p">,</span><span class="w"> </span><span class="n">gi2c</span><span class="o">-&gt;</span><span class="n">dev</span><span class="p">,</span><span class="w"></span>
+<span class="w">				</span><span class="s">&quot;late I2C transaction request</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="k">return</span><span class="w"> </span><span class="o">-</span><span class="n">EBUSY</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">pm_runtime_status_suspended</span><span class="p">(</span><span class="n">device</span><span class="p">))</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="n">GENI_SE_DBG</span><span class="p">(</span><span class="n">gi2c</span><span class="o">-&gt;</span><span class="n">ipcl</span><span class="p">,</span><span class="w"> </span><span class="nb">false</span><span class="p">,</span><span class="w"> </span><span class="n">gi2c</span><span class="o">-&gt;</span><span class="n">dev</span><span class="p">,</span><span class="w"></span>
+<span class="w">			</span><span class="s">&quot;%s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">__func__</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="n">geni_i2c_runtime_suspend</span><span class="p">(</span><span class="n">device</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="n">pm_runtime_disable</span><span class="p">(</span><span class="n">device</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="n">pm_runtime_set_suspended</span><span class="p">(</span><span class="n">device</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="n">pm_runtime_enable</span><span class="p">(</span><span class="n">device</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+<span class="w">	</span><span class="n">i2c_unlock_bus</span><span class="p">(</span><span class="o">&amp;</span><span class="n">gi2c</span><span class="o">-&gt;</span><span class="n">adap</span><span class="p">,</span><span class="w"> </span><span class="n">I2C_LOCK_SEGMENT</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="k">static</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">dev_pm_ops</span><span class="w"> </span><span class="n">geni_i2c_pm_ops</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">suspend_noirq</span><span class="w">		</span><span class="o">=</span><span class="w"> </span><span class="n">geni_i2c_suspend_noirq</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">resume_noirq</span><span class="w">		</span><span class="o">=</span><span class="w"> </span><span class="n">geni_i2c_resume_noirq</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">runtime_suspend</span><span class="w">	</span><span class="o">=</span><span class="w"> </span><span class="n">geni_i2c_runtime_suspend</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">runtime_resume</span><span class="w">		</span><span class="o">=</span><span class="w"> </span><span class="n">geni_i2c_runtime_resume</span><span class="p">,</span><span class="w"></span>
+<span class="p">};</span><span class="w"></span>
+
+<span class="k">static</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">of_device_id</span><span class="w"> </span><span class="n">geni_i2c_dt_match</span><span class="p">[]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="p">{</span><span class="w"> </span><span class="p">.</span><span class="n">compatible</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;qcom,i2c-geni&quot;</span><span class="w"> </span><span class="p">},</span><span class="w"></span>
+<span class="w">	</span><span class="p">{}</span><span class="w"></span>
+<span class="p">};</span><span class="w"></span>
+<span class="n">MODULE_DEVICE_TABLE</span><span class="p">(</span><span class="n">of</span><span class="p">,</span><span class="w"> </span><span class="n">geni_i2c_dt_match</span><span class="p">);</span><span class="w"></span>
+
+<span class="k">static</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">platform_driver</span><span class="w"> </span><span class="n">geni_i2c_driver</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">probe</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="n">geni_i2c_probe</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">remove</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">geni_i2c_remove</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">driver</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="p">.</span><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;i2c_geni&quot;</span><span class="p">,</span><span class="w"></span>
+<span class="w">		</span><span class="p">.</span><span class="n">pm</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">&amp;</span><span class="n">geni_i2c_pm_ops</span><span class="p">,</span><span class="w"></span>
+<span class="w">		</span><span class="p">.</span><span class="n">of_match_table</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">geni_i2c_dt_match</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="p">},</span><span class="w"></span>
+<span class="p">};</span><span class="w"></span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>关闭资源函数：</p></li>
+</ul>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="cm">/**</span>
+<span class="cm"> * se_geni_clks_off() - Turn off clocks associated with the serial</span>
+<span class="cm"> *                      engine</span>
+<span class="cm"> * @rsc:	Handle to resources associated with the serial engine.</span>
+<span class="cm"> *</span>
+<span class="cm"> * Return:	0 on success, standard Linux error codes on failure/error.</span>
+<span class="cm"> */</span><span class="w"></span>
+<span class="kt">int</span><span class="w"> </span><span class="nf">se_geni_clks_off</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">se_geni_rsc</span><span class="w"> </span><span class="o">*</span><span class="n">rsc</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="kt">int</span><span class="w"> </span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="k">struct</span><span class="w"> </span><span class="nc">geni_se_device</span><span class="w"> </span><span class="o">*</span><span class="n">geni_se_dev</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">unlikely</span><span class="p">(</span><span class="o">!</span><span class="n">rsc</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="o">!</span><span class="n">rsc</span><span class="o">-&gt;</span><span class="n">wrapper_dev</span><span class="p">))</span><span class="w"></span>
+<span class="w">		</span><span class="k">return</span><span class="w"> </span><span class="o">-</span><span class="n">EINVAL</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">geni_se_dev</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">dev_get_drvdata</span><span class="p">(</span><span class="n">rsc</span><span class="o">-&gt;</span><span class="n">wrapper_dev</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">unlikely</span><span class="p">(</span><span class="o">!</span><span class="n">geni_se_dev</span><span class="p">))</span><span class="w"></span>
+<span class="w">		</span><span class="k">return</span><span class="w"> </span><span class="o">-</span><span class="n">ENODEV</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">clk_disable_unprepare</span><span class="p">(</span><span class="n">rsc</span><span class="o">-&gt;</span><span class="n">se_clk</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="n">clk_disable_unprepare</span><span class="p">(</span><span class="n">rsc</span><span class="o">-&gt;</span><span class="n">s_ahb_clk</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="n">clk_disable_unprepare</span><span class="p">(</span><span class="n">rsc</span><span class="o">-&gt;</span><span class="n">m_ahb_clk</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">geni_se_rmv_ab_ib</span><span class="p">(</span><span class="n">geni_se_dev</span><span class="p">,</span><span class="w"> </span><span class="n">rsc</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ret</span><span class="p">)</span><span class="w"></span>
+<span class="w">		</span><span class="n">GENI_SE_ERR</span><span class="p">(</span><span class="n">geni_se_dev</span><span class="o">-&gt;</span><span class="n">log_ctx</span><span class="p">,</span><span class="w"> </span><span class="nb">false</span><span class="p">,</span><span class="w"> </span><span class="nb">NULL</span><span class="p">,</span><span class="w"></span>
+<span class="w">			</span><span class="s">&quot;%s: Error %d during bus_bw_update</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">__func__</span><span class="p">,</span><span class="w"> </span><span class="n">ret</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">	</span><span class="k">return</span><span class="w"> </span><span class="n">ret</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+<span class="n">EXPORT_SYMBOL</span><span class="p">(</span><span class="n">se_geni_clks_off</span><span class="p">);</span><span class="w"></span>
+
+<span class="cm">/**</span>
+<span class="cm"> * se_geni_resources_off() - Turn off resources associated with the serial</span>
+<span class="cm"> *                           engine</span>
+<span class="cm"> * @rsc:	Handle to resources associated with the serial engine.</span>
+<span class="cm"> *</span>
+<span class="cm"> * Return:	0 on success, standard Linux error codes on failure/error.</span>
+<span class="cm"> */</span><span class="w"></span>
+<span class="kt">int</span><span class="w"> </span><span class="nf">se_geni_resources_off</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">se_geni_rsc</span><span class="w"> </span><span class="o">*</span><span class="n">rsc</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="kt">int</span><span class="w"> </span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="k">struct</span><span class="w"> </span><span class="nc">geni_se_device</span><span class="w"> </span><span class="o">*</span><span class="n">geni_se_dev</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">unlikely</span><span class="p">(</span><span class="o">!</span><span class="n">rsc</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="o">!</span><span class="n">rsc</span><span class="o">-&gt;</span><span class="n">wrapper_dev</span><span class="p">))</span><span class="w"></span>
+<span class="w">		</span><span class="k">return</span><span class="w"> </span><span class="o">-</span><span class="n">EINVAL</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">geni_se_dev</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">dev_get_drvdata</span><span class="p">(</span><span class="n">rsc</span><span class="o">-&gt;</span><span class="n">wrapper_dev</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">unlikely</span><span class="p">(</span><span class="o">!</span><span class="n">geni_se_dev</span><span class="p">))</span><span class="w"></span>
+<span class="w">		</span><span class="k">return</span><span class="w"> </span><span class="o">-</span><span class="n">ENODEV</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">se_geni_clks_off</span><span class="p">(</span><span class="n">rsc</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ret</span><span class="p">)</span><span class="w"></span>
+<span class="w">		</span><span class="n">GENI_SE_ERR</span><span class="p">(</span><span class="n">geni_se_dev</span><span class="o">-&gt;</span><span class="n">log_ctx</span><span class="p">,</span><span class="w"> </span><span class="nb">false</span><span class="p">,</span><span class="w"> </span><span class="nb">NULL</span><span class="p">,</span><span class="w"></span>
+<span class="w">			</span><span class="s">&quot;%s: Error %d turning off clocks</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">__func__</span><span class="p">,</span><span class="w"> </span><span class="n">ret</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pinctrl_select_state</span><span class="p">(</span><span class="n">rsc</span><span class="o">-&gt;</span><span class="n">geni_pinctrl</span><span class="p">,</span><span class="w"> </span><span class="n">rsc</span><span class="o">-&gt;</span><span class="n">geni_gpio_sleep</span><span class="p">);</span><span class="w"> </span><span class="c1">//配置gpio</span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ret</span><span class="p">)</span><span class="w"></span>
+<span class="w">		</span><span class="n">GENI_SE_ERR</span><span class="p">(</span><span class="n">geni_se_dev</span><span class="o">-&gt;</span><span class="n">log_ctx</span><span class="p">,</span><span class="w"> </span><span class="nb">false</span><span class="p">,</span><span class="w"> </span><span class="nb">NULL</span><span class="p">,</span><span class="w"></span>
+<span class="w">			</span><span class="s">&quot;%s: Error %d pinctrl_select_state</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">__func__</span><span class="p">,</span><span class="w"> </span><span class="n">ret</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="k">return</span><span class="w"> </span><span class="n">ret</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+<span class="n">EXPORT_SYMBOL</span><span class="p">(</span><span class="n">se_geni_resources_off</span><span class="p">);</span><span class="w"></span>
+</pre></div>
+</div>
+</section>
+
+
+           </div>
+             <div class="articleComments">
+                <comments>
+  <script src="https://utteranc.es/client.js"
+    repo="iswbm/magic-python"
+    issue-term="pathname"
+    theme="github-light"
+    crossorigin="anonymous"
+    async>
+  </script>
+</comments>
+             </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; 版权所有 2022, wugn.</p>
+  </div>
+
+  利用 <a href="https://www.sphinx-doc.org/">Sphinx</a> 构建，使用了 
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">主题</a>
+    由 <a href="https://readthedocs.org">Read the Docs</a>开发.
+  
+
+<script charset="UTF-8" id="LA_COLLECT" src="//sdk.51.la/js-sdk-pro.min.js"></script>
+<script>LA.init({id: "JoV5csIHTGhHiGQ4",ck: "JoV5csIHTGhHiGQ4"})</script>
+
+<br/>
+<script id="LA-DATA-WIDGET" crossorigin="anonymous" charset="UTF-8" src="https://v6-widget.51.la/v6/JoV5csIHTGhHiGQ4/quote.js?theme=#4C8AC2,#BB2626,#040000,#333333,#AE3535,#1690FF,14&f=14"></script>
+
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

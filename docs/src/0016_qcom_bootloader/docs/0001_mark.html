@@ -62,6 +62,12 @@
 <li><a class="reference internal" href="#id5">各种命令</a></li>
 <li><a class="reference internal" href="#id6">回读分区</a></li>
 <li><a class="reference internal" href="#add2line">add2line使用方法</a></li>
+<li><a class="reference internal" href="#filesystem-on-dev-block-by-name-metadata-was-not-cleanly-shutdown">Filesystem on /dev/block/by-name/metadata was not cleanly shutdown</a></li>
+<li><a class="reference internal" href="#platform-version">新增属性PLATFORM_VERSION编译报错</a></li>
+<li><a class="reference internal" href="#qfil">QFIL相关介绍</a></li>
+<li><a class="reference internal" href="#android-audit2allow">android audit2allow工具使用步骤</a></li>
+<li><a class="reference internal" href="#android-mk">Android.mk中打印输出信息</a></li>
+<li><a class="reference internal" href="#user">如何打开user调试串口</a></li>
 </ul>
 </div>
         </div>
@@ -570,6 +576,147 @@ setprop sys.usb.config diag,serial_cdev,rmnet,adb</p>
 </ul>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">mandatory_lock</span>
 <span class="o">/</span><span class="n">home</span><span class="o">/</span><span class="n">wugn</span><span class="o">/</span><span class="n">A6650</span><span class="o">-</span><span class="n">project</span><span class="o">/</span><span class="n">UM</span><span class="mf">.9.15</span><span class="o">/</span><span class="n">kernel</span><span class="o">/</span><span class="n">msm</span><span class="o">-</span><span class="mf">4.19</span><span class="o">/</span><span class="n">include</span><span class="o">/</span><span class="n">linux</span><span class="o">/</span><span class="n">fs</span><span class="o">.</span><span class="n">h</span><span class="p">:</span><span class="mi">2388</span>
+</pre></div>
+</div>
+</section>
+<section id="filesystem-on-dev-block-by-name-metadata-was-not-cleanly-shutdown">
+<h1>Filesystem on /dev/block/by-name/metadata was not cleanly shutdown<a class="headerlink" href="#filesystem-on-dev-block-by-name-metadata-was-not-cleanly-shutdown" title="此标题的永久链接"></a></h1>
+<p>开机无法启动，报错如下：</p>
+<div class="highlight-log notranslate"><div class="highlight"><pre><span></span>[    6.508845] init: init first stage started!
+[    6.513216] init: Unable to open /lib/modules, skipping module loading.
+[    6.521092] init: [libfs_mgr]dt_fstab: Skip disabled entry for partition vendor
+[    6.528489] init: [libfs_mgr]ReadFstabFromDt(): failed to read fstab from dt
+[    6.535888] init: [libfs_mgr]dt_fstab: Skip disabled entry for partition vendor
+[    6.547330] init: Using Android DT directory /proc/device-tree/firmware/android/
+[    6.747193] init: [libfs_mgr]superblock s_max_mnt_count:65535,/dev/block/by-name/metadata
+[    6.755606] init: [libfs_mgr]Filesystem on /dev/block/by-name/metadata was not cleanly shutdown; state flags: 0x1, incompat feature flags: 0x46
+[    6.768996] init: [libfs_mgr]check_fs(): mount(/dev/block/by-name/metadata,/metadata,ext4)=-1: No such file or directory
+[    6.780172] ini[   10.853468] Trying to create more than 6 SchedTune boosting groups
+[   10.860968] Trying to create more than 6 SchedTune boosting groups
+</pre></div>
+</div>
+<p>尝试用QFIL工具清掉重刷metadata无效。</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">QSSI.12/system/core/fs_mgr/fs_mgr.cpp</span></code>代码跟踪：</p></li>
+</ul>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">prepare_fs_for_mount</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span><span class="w"> </span><span class="n">blk_device</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">FstabEntry</span><span class="o">&amp;</span><span class="w"> </span><span class="n">entry</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                </span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span><span class="w"> </span><span class="n">alt_mount_point</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;&quot;</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="k">auto</span><span class="o">&amp;</span><span class="w"> </span><span class="n">mount_point</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">alt_mount_point</span><span class="p">.</span><span class="n">empty</span><span class="p">()</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="n">entry</span><span class="p">.</span><span class="n">mount_point</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">alt_mount_point</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="c1">// We need this because sometimes we have legacy symlinks that are</span>
+<span class="w">    </span><span class="c1">// lingering around and need cleaning up.</span>
+<span class="w">    </span><span class="k">struct</span><span class="w"> </span><span class="nc">stat</span><span class="w"> </span><span class="n">info</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">lstat</span><span class="p">(</span><span class="n">mount_point</span><span class="p">.</span><span class="n">c_str</span><span class="p">(),</span><span class="w"> </span><span class="o">&amp;</span><span class="n">info</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="p">(</span><span class="n">info</span><span class="p">.</span><span class="n">st_mode</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="n">S_IFMT</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">S_IFLNK</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="n">unlink</span><span class="p">(</span><span class="n">mount_point</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="n">mkdir</span><span class="p">(</span><span class="n">mount_point</span><span class="p">.</span><span class="n">c_str</span><span class="p">(),</span><span class="w"> </span><span class="mo">0755</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">    </span><span class="c1">// Don&#39;t need to return error, since it&#39;s a salt</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">entry</span><span class="p">.</span><span class="n">readahead_size_kb</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="mi">-1</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="n">SetReadAheadSize</span><span class="p">(</span><span class="n">blk_device</span><span class="p">,</span><span class="w"> </span><span class="n">entry</span><span class="p">.</span><span class="n">readahead_size_kb</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">fs_stat</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="k">struct</span><span class="w"> </span><span class="nc">f2fs_super_block</span><span class="w"> </span><span class="n">f2fs_sb</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">is_extfs</span><span class="p">(</span><span class="n">entry</span><span class="p">.</span><span class="n">fs_type</span><span class="p">))</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="k">struct</span><span class="w"> </span><span class="nc">ext4_super_block</span><span class="w"> </span><span class="n">sb</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">read_ext4_superblock</span><span class="p">(</span><span class="n">blk_device</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">sb</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">fs_stat</span><span class="p">))</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">((</span><span class="n">sb</span><span class="p">.</span><span class="n">s_feature_incompat</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="n">EXT4_FEATURE_INCOMPAT_RECOVER</span><span class="p">)</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="o">||</span><span class="w"></span>
+<span class="w">                </span><span class="p">(</span><span class="n">sb</span><span class="p">.</span><span class="n">s_state</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="n">EXT4_VALID_FS</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="n">LINFO</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;Filesystem on &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">blk_device</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot; was not cleanly shutdown; &quot;</span><span class="w"></span>
+<span class="w">                      </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;state flags: 0x&quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">hex</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">sb</span><span class="p">.</span><span class="n">s_state</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;, &quot;</span><span class="w"></span>
+<span class="w">                      </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;incompat feature flags: 0x&quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">hex</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">sb</span><span class="p">.</span><span class="n">s_feature_incompat</span><span class="p">;</span><span class="w"></span>
+<span class="w">                </span><span class="n">fs_stat</span><span class="w"> </span><span class="o">|=</span><span class="w"> </span><span class="n">FS_STAT_UNCLEAN_SHUTDOWN</span><span class="p">;</span><span class="w"></span>
+<span class="w">            </span><span class="p">}</span><span class="w"></span>
+<span class="c1">//省略</span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+</section>
+<section id="platform-version">
+<h1>新增属性PLATFORM_VERSION编译报错<a class="headerlink" href="#platform-version" title="此标题的永久链接"></a></h1>
+<p>在Android里面<code class="docutils literal notranslate"><span class="pre">PLATFORM_VERSION</span></code>表示Android版本，如果编译时自定义了该属性会导致编译报错，编译报错如下：</p>
+<div class="highlight-log notranslate"><div class="highlight"><pre><span></span>build/make/core/Makefile:894: warning: ignoring old commands for target `out/target/product/bengal_32go/vendor/lib/modules/qca_cld3_wlan.ko&#39;
+No need to regenerate ninja file
+Starting ninja...
+FAILED: ninja: &#39;out/target/product/bengal_32go/obj/SHARED_LIBRARIES/android.hardware.power-V1-ndk_platform_intermediates/android.hardware.power-V1-ndk_platform.so.toc&#39;, needed by &#39;out/target/product/bengal_32go/obj/EXECUTABLES/android.hardware.power-service_intermediates/LINKED/android.hardware.power-service&#39;, missing and no known rule to make it
+07:52:50 ninja failed with: exit status 1
+
+#### failed to build some targets (02:40 (mm:ss)) ####
+</pre></div>
+</div>
+</section>
+<section id="qfil">
+<h1>QFIL相关介绍<a class="headerlink" href="#qfil" title="此标题的永久链接"></a></h1>
+<ul class="simple">
+<li><p>prog_firehose_ddr.elf —— firehose下载协议</p></li>
+<li><p>partition.xml —— 分区表</p></li>
+<li><p>rawprogram0.xml —— QFIL下载image的指向表</p></li>
+<li><p>patch0.xml —— 刷机软件根据手机服务端返回的具体磁盘大小打上最后一个分区的补丁、完成分区表头校验的配置文件，没有正确的 patch0.xml分区表头就不能通过校验，手机也启动不了</p></li>
+</ul>
+</section>
+<section id="android-audit2allow">
+<h1>android audit2allow工具使用步骤<a class="headerlink" href="#android-audit2allow" title="此标题的永久链接"></a></h1>
+<ul class="simple">
+<li><p><a class="reference external" href="https://blog.csdn.net/jackone12347/article/details/123500552">android audit2allow工具使用步骤</a></p></li>
+</ul>
+</section>
+<section id="android-mk">
+<h1>Android.mk中打印输出信息<a class="headerlink" href="#android-mk" title="此标题的永久链接"></a></h1>
+<ul class="simple">
+<li><p>在Android.mk中打印输出信息的方法是：$(warning string)或者$(error string) $(info string):</p></li>
+</ul>
+<div class="highlight-makefile notranslate"><div class="highlight"><pre><span></span><span class="k">$(</span><span class="nv">warning</span>  &quot; [<span class="nv">wugn</span> <span class="nv">test</span>]<span class="nv">BOOT_LOGO_RESOURCE</span> =  <span class="k">$(</span><span class="nv">BOOT_LOGO_RESOURCE</span><span class="k">)</span>&quot;<span class="k">)</span><span class="w"></span>
+<span class="k">$(</span><span class="nv">info</span> <span class="k">$(</span><span class="nv">LOCAL_SRC_FILES</span><span class="k">)</span>,<span class="k">$(</span><span class="nv">LOCAL_PATH</span><span class="k">))</span><span class="w"></span>
+<span class="k">$(</span><span class="nv">error</span> <span class="k">$(</span><span class="nv">all-subdir-makefiles</span><span class="k">)</span>,<span class="k">$(</span><span class="nv">this.makefile</span><span class="k">))</span><span class="w"></span>
+<span class="k">$(</span><span class="nv">warning</span> <span class="k">$(</span><span class="nv">TARGET_ARCH</span><span class="k">))</span><span class="w"></span>
+</pre></div>
+</div>
+</section>
+<section id="user">
+<h1>如何打开user调试串口<a class="headerlink" href="#user" title="此标题的永久链接"></a></h1>
+<ul class="simple">
+<li><p>参考</p></li>
+<li><p><a class="reference external" href="https://blog.csdn.net/hyl1718/article/details/116696714">高通8953 Android 9.0 打开user调试串口</a></p></li>
+</ul>
+<div class="highlight-diff notranslate"><div class="highlight"><pre><span></span><span class="w">//输入：</span>
+<span class="gh">diff --git a/QSSI.12/build/make/core/main.mk b/QSSI.12/build/make/core/main.mk</span><span class="w"></span>
+<span class="gh">index 99c5f2ac0ee..4b0c9f91ab2 100755</span><span class="w"></span>
+<span class="gd">--- a/QSSI.12/build/make/core/main.mk</span><span class="w"></span>
+<span class="gi">+++ b/QSSI.12/build/make/core/main.mk</span><span class="w"></span>
+<span class="gu">@@ -406,7 +406,7 @@ ifeq (true,$(strip $(enable_target_debugging)))</span><span class="w"></span>
+<span class="w"> </span>  ADDITIONAL_SYSTEM_PROPERTIES += dalvik.vm.lockprof.threshold=500<span class="w"></span>
+<span class="w"> </span>else # !enable_target_debugging<span class="w"></span>
+<span class="w"> </span>  # Target is less debuggable and adbd is off by default<span class="w"></span>
+<span class="gd">-  ADDITIONAL_SYSTEM_PROPERTIES += ro.debuggable=0</span><span class="w"></span>
+<span class="gi">+  ADDITIONAL_SYSTEM_PROPERTIES += ro.debuggable=1</span><span class="w"></span>
+<span class="w"> </span>endif # !enable_target_debugging<span class="w"></span>
+
+<span class="gh">diff --git a/UM.9.15/build/make/core/main.mk b/UM.9.15/build/make/core/main.mk</span><span class="w"></span>
+<span class="gh">index 899beb1a5c1..e5edc1a5f49 100755</span><span class="w"></span>
+<span class="gd">--- a/UM.9.15/build/make/core/main.mk</span><span class="w"></span>
+<span class="gi">+++ b/UM.9.15/build/make/core/main.mk</span><span class="w"></span>
+<span class="gu">@@ -297,7 +297,7 @@ ifeq (true,$(strip $(enable_target_debugging)))</span><span class="w"></span>
+<span class="w"> </span>  ADDITIONAL_BUILD_PROPERTIES += dalvik.vm.lockprof.threshold=500<span class="w"></span>
+<span class="w"> </span>else # !enable_target_debugging<span class="w"></span>
+<span class="w"> </span>  # Target is less debuggable and adbd is off by default<span class="w"></span>
+<span class="gd">-  ADDITIONAL_DEFAULT_PROPERTIES += ro.debuggable=0</span><span class="w"></span>
+<span class="gi">+  ADDITIONAL_DEFAULT_PROPERTIES += ro.debuggable=1</span><span class="w"></span>
+<span class="w"> </span>endif # !enable_target_debugging<span class="w"></span>
+
+<span class="w">//输出</span>
+<span class="gh">diff --git a/UM.9.15/kernel/msm-4.19/arch/arm/configs/vendor/bengal-perf_defconfig b/UM.9.15/kernel/msm-4.19/arch/arm/configs/vendor/bengal-perf_defconfig</span><span class="w"></span>
+<span class="w">old mode 100755</span>
+<span class="w">new mode 100644</span>
+<span class="gh">index 5a150fe0e7a..dee95f591f5</span><span class="w"></span>
+<span class="gd">--- a/UM.9.15/kernel/msm-4.19/arch/arm/configs/vendor/bengal-perf_defconfig</span><span class="w"></span>
+<span class="gi">+++ b/UM.9.15/kernel/msm-4.19/arch/arm/configs/vendor/bengal-perf_defconfig</span><span class="w"></span>
+<span class="w"> </span># CONFIG_DEVMEM is not set<span class="w"></span>
+<span class="w"> </span>CONFIG_SERIAL_MSM_GENI=y<span class="w"></span>
+<span class="w"> </span>CONFIG_SERIAL_MSM_GENI_HALF_SAMPLING=y<span class="w"></span>
+<span class="gi">+CONFIG_SERIAL_MSM_GENI_CONSOLE=y</span><span class="w"></span>
+<span class="w"> </span>CONFIG_HW_RANDOM=y<span class="w"></span>
 </pre></div>
 </div>
 </section>

@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="zh-CN" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>wugn</title>
+
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script src="../../../_static/translations.js"></script>
+        <script src="../../../_static/js/baidutongji.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="索引" href="../../../genindex.html" />
+    <link rel="search" title="搜索" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../index.html" class="icon icon-home"> wugn_note
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="在文档中搜索" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">概述</a></li>
+<li><a class="reference internal" href="#logo">制作静态logo</a></li>
+<li><a class="reference internal" href="#id2">动态logo适配</a></li>
+<li><a class="reference internal" href="#sp-boot-os">sp boot/os镜像获取方式</a></li>
+<li><a class="reference internal" href="#id3">最终代码</a></li>
+</ul>
+</div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">wugn_note</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs"> 
+<li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+<li>概述</li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.forward()">Forward</a></li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.back()">Go Back</a> | </li>
+<li style="float: right;margin-left: 10px;"><a href="/index.html">Home</a> | </li>
+
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="id1">
+<h1>概述<a class="headerlink" href="#id1" title="此标题的永久链接"></a></h1>
+<p>记录一下高通平台编译脚本适配，包括静态logo制作、pack、编译等功能。</p>
+</section>
+<section id="logo">
+<h1>制作静态logo<a class="headerlink" href="#logo" title="此标题的永久链接"></a></h1>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">A6650-project\UM.9.15\device\qcom\common\display\logo\readme.txt</span></code>只需要执行<code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">./logo_gen.py</span> <span class="pre">xxx.bmp</span></code>会生成<code class="docutils literal notranslate"><span class="pre">splash.img</span></code>，然后烧录就可以了：</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">The</span> <span class="n">steps</span> <span class="n">to</span> <span class="n">generate</span> <span class="n">a</span> <span class="n">splash</span><span class="o">.</span><span class="n">img</span><span class="p">:</span>
+<span class="mi">1</span> <span class="n">sudo</span> <span class="n">apt</span><span class="o">-</span><span class="n">get</span> <span class="n">install</span> <span class="n">python</span><span class="o">-</span><span class="n">imaging</span>
+<span class="mi">2</span> <span class="n">python</span> <span class="o">./</span><span class="n">logo_gen</span><span class="o">.</span><span class="n">py</span> <span class="n">Quectel</span><span class="o">.</span><span class="n">bmp</span>
+</pre></div>
+</div>
+</section>
+<section id="id2">
+<h1>动态logo适配<a class="headerlink" href="#id2" title="此标题的永久链接"></a></h1>
+<p>目前M9200使用1440x720分辨率，可以直接用M50项目的，主要讲一下适配原理：</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">QSSI.12/frameworks/base/cmds/bootanimation/BootAnimation.cpp</span></code>:</p></li>
+</ul>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="kt">bool</span><span class="w"> </span><span class="nf">BootAnimation::findBootAnimationFileInternal</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&gt;</span><span class="w"> </span><span class="o">&amp;</span><span class="n">files</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="c1">//[FEATURE]-Add-BEGIN by xielianxiong@paxsz.com 2022-10-06,for find boot animation file through w and h</span>
+<span class="w">    </span><span class="n">ui</span><span class="o">::</span><span class="n">Size</span><span class="w"> </span><span class="n">resolution</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="n">sp</span><span class="o">&lt;</span><span class="n">IBinder</span><span class="o">&gt;</span><span class="n">mToken</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">SurfaceComposerClient</span><span class="o">::</span><span class="n">getInternalDisplayToken</span><span class="p">();</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mToken</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="k">nullptr</span><span class="p">){</span><span class="w"></span>
+<span class="w">        </span><span class="n">DisplayMode</span><span class="w"> </span><span class="n">displayMode</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="k">const</span><span class="w"> </span><span class="n">status_t</span><span class="w"> </span><span class="n">error</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">SurfaceComposerClient</span><span class="o">::</span><span class="n">getActiveDisplayMode</span><span class="p">(</span><span class="n">mToken</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">displayMode</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">error</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">NO_ERROR</span><span class="p">){</span><span class="w"></span>
+<span class="w">            </span><span class="n">resolution</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">displayMode</span><span class="p">.</span><span class="n">resolution</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="c1">//[FEATURE]-Add-end by xielianxiong@paxsz.com 2022-10-06,for find boot animation file through w and h</span>
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span><span class="w"> </span><span class="n">f</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">files</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="c1">//[FEATURE]-Add-BEGIN by (xielianxiong@paxsz.com), 2022/7/12, for TERMINAL_NAME bootanimation</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">mShuttingDown</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">strcmp</span><span class="p">(</span><span class="n">f</span><span class="p">.</span><span class="n">c_str</span><span class="p">(),</span><span class="w"> </span><span class="n">SYSTEM_BOOTANIMATION_FILE</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">            </span><span class="kt">char</span><span class="w"> </span><span class="n">product</span><span class="p">[</span><span class="n">PROPERTY_VALUE_MAX</span><span class="p">];</span><span class="w"></span>
+<span class="w">            </span><span class="n">sprintf</span><span class="p">(</span><span class="n">pax_boot_file</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;system/media/bootanimation_%dx%d.zip&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">resolution</span><span class="p">.</span><span class="n">width</span><span class="p">,</span><span class="n">resolution</span><span class="p">.</span><span class="n">height</span><span class="p">);</span><span class="w"></span>
+<span class="w">            </span><span class="n">ALOGD</span><span class="p">(</span><span class="s">&quot;bootanimation width:%d,height:%d,path:%s&quot;</span><span class="p">,</span><span class="n">mWidth</span><span class="p">,</span><span class="n">mHeight</span><span class="p">,</span><span class="n">pax_boot_file</span><span class="p">);</span><span class="w"></span>
+<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">access</span><span class="p">(</span><span class="n">pax_boot_file</span><span class="p">,</span><span class="w"> </span><span class="n">R_OK</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="n">mZipFileName</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pax_boot_file</span><span class="p">;</span><span class="w"></span>
+<span class="w">                </span><span class="k">return</span><span class="w"> </span><span class="nb">true</span><span class="p">;</span><span class="w"></span>
+<span class="w">            </span><span class="p">}</span><span class="w"></span>
+<span class="w">            </span><span class="n">property_get</span><span class="p">(</span><span class="s">&quot;ro.fac.cfg.TERMINAL_NAME&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">product</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;A6650&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">            </span><span class="n">sprintf</span><span class="p">(</span><span class="n">pax_boot_file</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;system/media/bootanimation_%s.zip&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">product</span><span class="p">);</span><span class="w"></span>
+<span class="w">            </span><span class="n">ALOGD</span><span class="p">(</span><span class="s">&quot;bootanimation : path:%s&quot;</span><span class="p">,</span><span class="n">pax_boot_file</span><span class="p">);</span><span class="w"></span>
+<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">access</span><span class="p">(</span><span class="n">pax_boot_file</span><span class="p">,</span><span class="w"> </span><span class="n">R_OK</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="n">mZipFileName</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pax_boot_file</span><span class="p">;</span><span class="w"></span>
+<span class="w">                </span><span class="k">return</span><span class="w"> </span><span class="nb">true</span><span class="p">;</span><span class="w"></span>
+<span class="w">            </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="c1">//[FEATURE]-Add-end by (xielianxiong@paxsz.com), 2022/7/12, for TERMINAL_NAME bootanimation</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">access</span><span class="p">(</span><span class="n">f</span><span class="p">.</span><span class="n">c_str</span><span class="p">(),</span><span class="w"> </span><span class="n">R_OK</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">            </span><span class="n">mZipFileName</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">f</span><span class="p">.</span><span class="n">c_str</span><span class="p">();</span><span class="w"></span>
+<span class="w">            </span><span class="k">return</span><span class="w"> </span><span class="nb">true</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="nb">false</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<p>以上，首先按照分辨率匹配，没有匹配成功,就按照原来的,匹配机型号,例如bootanimation_A6650.zip</p>
+</section>
+<section id="sp-boot-os">
+<h1>sp boot/os镜像获取方式<a class="headerlink" href="#sp-boot-os" title="此标题的永久链接"></a></h1>
+<ul class="simple">
+<li><p>采用脚本的方式scp获取，r然后使用sign_file.py进行签名，如下：</p></li>
+</ul>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="nv">src_dir</span><span class="o">=</span>/home/jenkins/workspace/RunthOS_master_android/output/*
+<span class="nv">dest_dir</span><span class="o">=</span><span class="sb">`</span><span class="nb">pwd</span><span class="sb">`</span>
+<span class="nv">host</span><span class="o">=</span><span class="m">172</span>.16.2.211
+<span class="nv">port</span><span class="o">=</span><span class="m">22</span>
+<span class="nv">username</span><span class="o">=</span>jenkins
+<span class="nv">password</span><span class="o">=</span>jenkins123
+
+sign_sp_img<span class="o">()</span>
+<span class="o">{</span>
+    <span class="nv">IMG_FILE</span><span class="o">=</span><span class="nv">$1</span>
+    <span class="k">if</span> <span class="o">[</span> ! -z <span class="nv">$IMG_FILE</span> <span class="o">]</span><span class="p">;</span> <span class="k">then</span>
+        <span class="nb">echo</span> <span class="s2">&quot;to sign: </span><span class="nv">$IMG_FILE</span><span class="s2">&quot;</span>
+        <span class="nv">SIGN_TOOL</span><span class="o">=</span>sign_file.py
+        python <span class="si">${</span><span class="nv">SIGN_TOOL</span><span class="si">}</span> <span class="nv">$IMG_FILE</span>
+        <span class="nb">echo</span> <span class="s2">&quot;sign </span><span class="nv">$IMG_FILE</span><span class="s2"> done &quot;</span>
+    <span class="k">fi</span>
+<span class="o">}</span>
+
+rm -f <span class="nv">$dest_dir</span>/runthos-sp-qingming-*
+<span class="c1"># 将远程服务器上的文件拷贝到本机</span>
+./expect.sh <span class="nv">$host</span> <span class="nv">$port</span> <span class="nv">$username</span> <span class="nv">$password</span> <span class="nv">$src_dir</span> <span class="nv">$dest_dir</span>
+
+<span class="nv">RUNTH_IMG</span><span class="o">=</span><span class="sb">`</span>ls <span class="nv">$dest_dir</span>/runthos-sp-qingming-*<span class="sb">`</span>
+sign_sp_img <span class="nv">$RUNTH_IMG</span>
+
+<span class="nb">echo</span> <span class="s2">&quot;end&quot;</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">expect.sh</span></code></p></li>
+</ul>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="ch">#!/usr/bin/expect</span>
+<span class="nb">set</span> timeout <span class="m">3600</span>
+<span class="nb">set</span> host <span class="o">[</span>lindex <span class="nv">$argv</span> <span class="m">0</span><span class="o">]</span>
+<span class="nb">set</span> port <span class="o">[</span>lindex <span class="nv">$argv</span> <span class="m">1</span><span class="o">]</span>
+<span class="nb">set</span> username <span class="o">[</span>lindex <span class="nv">$argv</span> <span class="m">2</span><span class="o">]</span>
+<span class="nb">set</span> password <span class="o">[</span>lindex <span class="nv">$argv</span> <span class="m">3</span><span class="o">]</span>
+<span class="nb">set</span> src_file <span class="o">[</span>lindex <span class="nv">$argv</span> <span class="m">4</span><span class="o">]</span>
+<span class="nb">set</span> dest_file <span class="o">[</span>lindex <span class="nv">$argv</span> <span class="m">5</span><span class="o">]</span>
+<span class="c1">#spawn scp $src_file $username@$host:$dest_file</span>
+spawn scp -P <span class="nv">$port</span> -p <span class="nv">$username</span>@<span class="nv">$host</span>:<span class="nv">$src_file</span> <span class="nv">$dest_file</span>
+expect <span class="o">{</span>
+<span class="s2">&quot;(yes/no)?&quot;</span> <span class="o">{</span>
+   send <span class="s2">&quot;yes\n&quot;</span>
+   expect <span class="s2">&quot;*assword:&quot;</span> <span class="o">{</span> send <span class="s2">&quot;</span><span class="nv">$password</span><span class="s2">\n&quot;</span> <span class="o">}</span>
+<span class="o">}</span>
+<span class="s2">&quot;*assword:&quot;</span> <span class="o">{</span>
+   send <span class="s2">&quot;</span><span class="nv">$password</span><span class="s2">\n&quot;</span>
+<span class="o">}</span>
+
+<span class="o">}</span>
+expect <span class="s2">&quot;100%&quot;</span>
+expect eof
+</pre></div>
+</div>
+</section>
+<section id="id3">
+<h1>最终代码<a class="headerlink" href="#id3" title="此标题的永久链接"></a></h1>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="ch">#!/bin/bash</span>
+<span class="c1"># color: 0~6 --&gt; black, red, green, yellow, blue, purple, cyan, grey</span>
+<span class="nb">export</span> <span class="nv">ECHO_STYLE_DEFAULT</span><span class="o">=</span><span class="s2">&quot;\033[0m&quot;</span>        <span class="c1"># default style(black background, white foreground)</span>
+<span class="nb">export</span> <span class="nv">ECHO_STYLE_HID</span><span class="o">=</span><span class="s2">&quot;\033[49;39;25m&quot;</span>  <span class="c1"># </span>
+<span class="nb">export</span> <span class="nv">ECHO_STYLE_01</span><span class="o">=</span><span class="s2">&quot;\033[41;33;5m&quot;</span>  <span class="c1">#  </span>
+<span class="nb">export</span> <span class="nv">ECHO_STYLE_02</span><span class="o">=</span><span class="s2">&quot;\033[49;33;25m&quot;</span>  <span class="c1"># </span>
+<span class="nb">export</span> <span class="nv">ECHO_STYLE_03</span><span class="o">=</span><span class="s2">&quot;\033[49;31;5m&quot;</span>  <span class="c1"># </span>
+<span class="nb">export</span> <span class="nv">ECHO_STYLE_04</span><span class="o">=</span><span class="s2">&quot;\033[49;32;25m&quot;</span>  <span class="c1"># </span>
+<span class="nb">export</span> <span class="nv">ECHO_STYLE_04_1</span><span class="o">=</span><span class="s2">&quot;\033[49;32;5m&quot;</span>  <span class="c1"># </span>
+<span class="nb">export</span> <span class="nv">ECHO_STYLE_05</span><span class="o">=</span><span class="s2">&quot;\033[49;34;25m&quot;</span>  <span class="c1"># </span>
+<span class="nb">export</span> <span class="nv">ECHO_STYLE_06</span><span class="o">=</span><span class="s2">&quot;\033[49;33;25m&quot;</span>  <span class="c1"># </span>
+<span class="nb">export</span> <span class="nv">ECHO_STYLE_07</span><span class="o">=</span><span class="s2">&quot;\033[49;31;25m&quot;</span>  <span class="c1"># </span>
+<span class="nb">export</span> <span class="nv">ECHO_STYLE_08</span><span class="o">=</span><span class="s2">&quot;\033[49;31;25m&quot;</span>  <span class="c1"># </span>
+
+<span class="c1">#if TARGET_PRODUCT is diffrent, please change the TARGET_PRODUCT and QSSI_PRODUCT and TARGET_BUILD_VARIANT here</span>
+<span class="nb">export</span> <span class="nv">QSSI_PRODUCT</span><span class="o">=</span>qssi_32go
+<span class="nb">export</span> <span class="nv">TARGET_PRODUCT</span><span class="o">=</span>bengal_32go
+<span class="nb">export</span> <span class="nv">TARGET_BUILD_VARIANT</span><span class="o">=</span>userdebug
+<span class="nb">export</span> <span class="nv">PRODUCT_NAME</span><span class="o">=</span>M9200
+<span class="nb">export</span> <span class="nv">PRODUCT_ALIAS</span><span class="o">=</span>Kapok
+
+<span class="nb">export</span> <span class="nv">ANDROID_DIR</span><span class="o">=</span><span class="si">${</span><span class="nv">PWD</span><span class="si">}</span>
+<span class="nb">export</span> <span class="nv">TARGET_DIR</span><span class="o">=</span><span class="si">${</span><span class="nv">ANDROID_DIR</span><span class="si">}</span>/UM.9.15
+<span class="nb">export</span> <span class="nv">QSSI_DIR</span><span class="o">=</span><span class="si">${</span><span class="nv">ANDROID_DIR</span><span class="si">}</span>/QSSI.12
+<span class="nb">export</span> <span class="nv">TARGET_OUT_DIR</span><span class="o">=</span><span class="si">${</span><span class="nv">TARGET_DIR</span><span class="si">}</span>/out/target/product/<span class="si">${</span><span class="nv">TARGET_PRODUCT</span><span class="si">}</span>
+<span class="nb">export</span> <span class="nv">QSSI_OUT_DIR</span><span class="o">=</span><span class="si">${</span><span class="nv">QSSI_DIR</span><span class="si">}</span>/out/target/product/<span class="si">${</span><span class="nv">QSSI_PRODUCT</span><span class="si">}</span>
+<span class="nb">export</span> <span class="nv">PAYDROID_SCATTER_DIR</span><span class="o">=</span><span class="si">${</span><span class="nv">QSSI_DIR</span><span class="si">}</span>/vendor/paxsz/PayDroid/<span class="nv">$PRODUCT_NAME</span>
+<span class="nb">export</span> <span class="nv">VERSION_FILE_PATH</span><span class="o">=</span><span class="si">${</span><span class="nv">QSSI_DIR</span><span class="si">}</span>/vendor/paxsz/version_<span class="si">${</span><span class="nv">PRODUCT_ALIAS</span><span class="si">}</span>.mk
+<span class="nb">export</span> <span class="nv">ANDROID_VERSION</span><span class="o">=</span><span class="sb">`</span>grep ^PAYDROID_ANDROID_VERSION<span class="o">=</span> <span class="si">${</span><span class="nv">VERSION_FILE_PATH</span><span class="si">}</span> <span class="p">|</span> sed <span class="s1">&#39;s/PAYDROID_ANDROID_VERSION=//g&#39;</span><span class="sb">`</span>
+<span class="nb">export</span> <span class="nv">PLATFORM_NAME</span><span class="o">=</span><span class="sb">`</span>grep ^PAYDROID_PLATFORM_NAME<span class="o">=</span> <span class="si">${</span><span class="nv">VERSION_FILE_PATH</span><span class="si">}</span> <span class="p">|</span> sed <span class="s1">&#39;s/PAYDROID_PLATFORM_NAME=//g&#39;</span><span class="sb">`</span>
+<span class="nb">export</span> <span class="nv">PAX_PLATFORM_VERSION</span><span class="o">=</span><span class="sb">`</span>grep ^PAYDROID_PLATFORM_ID<span class="o">=</span> <span class="si">${</span><span class="nv">VERSION_FILE_PATH</span><span class="si">}</span> <span class="p">|</span> sed <span class="s1">&#39;s/PAYDROID_PLATFORM_ID=//g&#39;</span><span class="sb">`</span>
+<span class="nb">export</span> <span class="nv">SOFTWARE_VERSION</span><span class="o">=</span><span class="sb">`</span>grep ^VERSION_NUMBER<span class="o">=</span> <span class="si">${</span><span class="nv">VERSION_FILE_PATH</span><span class="si">}</span> <span class="p">|</span> sed <span class="s1">&#39;s/VERSION_NUMBER=//g&#39;</span><span class="sb">`</span>
+<span class="nb">export</span> <span class="nv">TODAY</span><span class="o">=</span><span class="k">$(</span>date +%Y%m%d<span class="k">)</span>
+<span class="nb">export</span> <span class="nv">OTA_COMPRESS_NAME</span><span class="o">=</span>Uniphiz_<span class="si">${</span><span class="nv">ANDROID_VERSION</span><span class="si">}</span>_<span class="si">${</span><span class="nv">PLATFORM_NAME</span><span class="si">}</span>_V<span class="si">${</span><span class="nv">PAX_PLATFORM_VERSION</span><span class="si">}</span>.<span class="si">${</span><span class="nv">SOFTWARE_VERSION</span><span class="si">}</span>_<span class="si">${</span><span class="nv">TODAY</span><span class="si">}</span>
+<span class="nb">export</span> <span class="nv">COMPRESS_NAME</span><span class="o">=</span>Uniphiz_<span class="si">${</span><span class="nv">ANDROID_VERSION</span><span class="si">}</span>_<span class="si">${</span><span class="nv">PLATFORM_NAME</span><span class="si">}</span>_V<span class="si">${</span><span class="nv">PAX_PLATFORM_VERSION</span><span class="si">}</span>.<span class="si">${</span><span class="nv">SOFTWARE_VERSION</span><span class="si">}</span>_<span class="si">${</span><span class="nv">TODAY</span><span class="si">}</span>_Release
+<span class="nb">export</span> <span class="nv">OTA_PACKAGE_NAME</span><span class="o">=</span><span class="si">${</span><span class="nv">OTA_COMPRESS_NAME</span><span class="si">}</span>_OTA.zip
+<span class="nb">export</span> <span class="nv">OTA_TARGET_FILE_NAME</span><span class="o">=</span><span class="si">${</span><span class="nv">COMPRESS_NAME</span><span class="si">}</span>_TARGET.zip
+<span class="nb">export</span> <span class="nv">QFIL_COMPRESS_NAME</span><span class="o">=</span><span class="si">${</span><span class="nv">COMPRESS_NAME</span><span class="si">}</span>_Fac.zip
+<span class="nb">export</span> <span class="nv">UNIPHIZ_COMPRESS_NAME</span><span class="o">=</span><span class="si">${</span><span class="nv">COMPRESS_NAME</span><span class="si">}</span>.uniphiz
+
+<span class="nb">export</span> <span class="nv">LOGO_SRC_DIR</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">QSSI_DIR</span><span class="si">}</span><span class="s2">/vendor/paxsz/bootanimation&quot;</span>
+<span class="nb">export</span> <span class="nv">SP_SRC_DIR</span><span class="o">=</span><span class="s2">&quot;</span><span class="nv">$ANDROID_DIR</span><span class="s2">/QSSI.12/vendor/paxsz/paxsp/</span><span class="nv">$PRODUCT_NAME</span><span class="s2">&quot;</span>
+
+<span class="nb">export</span> <span class="nv">UNPACK_TOOL_SRC_DIR</span><span class="o">=</span><span class="si">${</span><span class="nv">ANDROID_DIR</span><span class="si">}</span>/A6650_Unpacking_Tool
+<span class="nb">export</span> <span class="nv">UNPACK_TOOL_DEST_DIR</span><span class="o">=</span><span class="si">${</span><span class="nv">ANDROID_DIR</span><span class="si">}</span>/Unpacking_Tool
+<span class="nb">export</span> <span class="nv">XBL_DIR</span><span class="o">=</span><span class="si">${</span><span class="nv">ANDROID_DIR</span><span class="si">}</span>/Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/SocPkg/AgattiPkg
+<span class="nb">export</span> <span class="nv">ANDROID_OUTPUT_DIR</span><span class="o">=</span><span class="si">${</span><span class="nv">ANDROID_DIR</span><span class="si">}</span>/android_image_<span class="si">${</span><span class="nv">TARGET_PRODUCT</span><span class="si">}</span>_<span class="si">${</span><span class="nv">TARGET_BUILD_VARIANT</span><span class="si">}</span>
+<span class="nb">export</span> <span class="nv">LOG_DIR</span><span class="o">=</span><span class="si">${</span><span class="nv">ANDROID_DIR</span><span class="si">}</span>/log
+<span class="nb">export</span> <span class="nv">INPUT_DELAY</span><span class="o">=</span><span class="m">2</span>
+<span class="nv">JOB_NUM</span><span class="o">=</span><span class="sb">`</span>grep processor /proc/cpuinfo <span class="p">|</span>wc -l<span class="sb">`</span>
+<span class="c1">#If the build server is too laggy, please open it consciously.</span>
+<span class="k">if</span> <span class="o">[</span> ! <span class="sb">`</span>whoami<span class="sb">`</span> <span class="o">==</span> <span class="s2">&quot;jenkins&quot;</span> <span class="o">]</span><span class="p">;</span> <span class="k">then</span>
+	<span class="nv">JOB_NUM</span><span class="o">=</span><span class="sb">`</span>expr <span class="nv">$JOB_NUM</span> / <span class="m">3</span><span class="sb">`</span>
+<span class="k">fi</span>
+
+<span class="nb">set</span> -e
+<span class="nv">TOP</span><span class="o">=</span><span class="k">$(</span><span class="nb">pwd</span><span class="k">)</span>
+
+paxlogo<span class="o">(){</span>
+
+	<span class="nb">echo</span> -e <span class="s2">&quot;</span><span class="si">${</span><span class="nv">ECHO_STYLE_02</span><span class="si">}</span><span class="s2">**********************************</span><span class="si">${</span><span class="nv">ECHO_STYLE_DEFAULT</span><span class="si">}</span><span class="s2">&quot;</span>
+	<span class="nb">echo</span> -e <span class="s2">&quot;</span><span class="si">${</span><span class="nv">ECHO_STYLE_02</span><span class="si">}</span><span class="s2">**********************************</span><span class="si">${</span><span class="nv">ECHO_STYLE_DEFAULT</span><span class="si">}</span><span class="s2">&quot;</span>
+	<span class="nb">echo</span> -e <span class="s2">&quot;</span><span class="si">${</span><span class="nv">ECHO_STYLE_02</span><span class="si">}</span><span class="s2">----------------------------------</span><span class="si">${</span><span class="nv">ECHO_STYLE_DEFAULT</span><span class="si">}</span><span class="s2">&quot;</span>
+	<span class="nb">echo</span> -e <span class="s2">&quot;</span><span class="si">${</span><span class="nv">ECHO_STYLE_04</span><span class="si">}</span><span class="s2">******       **       **     **				</span><span class="si">${</span><span class="nv">ECHO_STYLE_DEFAULT</span><span class="si">}</span><span class="s2">&quot;</span>
+	<span class="nb">echo</span> -e <span class="s2">&quot;</span><span class="si">${</span><span class="nv">ECHO_STYLE_04</span><span class="si">}</span><span class="s2">**    **    ****       **   ** 				</span><span class="si">${</span><span class="nv">ECHO_STYLE_DEFAULT</span><span class="si">}</span><span class="s2">&quot;</span>
+	<span class="nb">echo</span> -e <span class="s2">&quot;</span><span class="si">${</span><span class="nv">ECHO_STYLE_04</span><span class="si">}</span><span class="s2">**     **  **  **       ** ** 					</span><span class="si">${</span><span class="nv">ECHO_STYLE_DEFAULT</span><span class="si">}</span><span class="s2">&quot;</span>
+	<span class="nb">echo</span> -e <span class="s2">&quot;</span><span class="si">${</span><span class="nv">ECHO_STYLE_04</span><span class="si">}</span><span class="s2">**    **  ********       ***					</span><span class="si">${</span><span class="nv">ECHO_STYLE_DEFAULT</span><span class="si">}</span><span class="s2">&quot;</span>
+	<span class="nb">echo</span> -e <span class="s2">&quot;</span><span class="si">${</span><span class="nv">ECHO_STYLE_04</span><span class="si">}</span><span class="s2">******   **      **     **  **					</span><span class="si">${</span><span class="nv">ECHO_STYLE_DEFAULT</span><span class="si">}</span><span class="s2">&quot;</span>
+	<span class="nb">echo</span> -e <span class="s2">&quot;</span><span class="si">${</span><span class="nv">ECHO_STYLE_04</span><span class="si">}</span><span class="s2">**      **        **   **    **				</span><span class="si">${</span><span class="nv">ECHO_STYLE_DEFAULT</span><span class="si">}</span><span class="s2">&quot;</span>
+	<span class="nb">echo</span> -e <span class="s2">&quot;</span><span class="si">${</span><span class="nv">ECHO_STYLE_04</span><span class="si">}</span><span class="s2">**     **          ** **      **				</span><span class="si">${</span><span class="nv">ECHO_STYLE_DEFAULT</span><span class="si">}</span><span class="s2">&quot;</span>
+	<span class="nb">echo</span> -e <span class="s2">&quot;</span><span class="si">${</span><span class="nv">ECHO_STYLE_02</span><span class="si">}</span><span class="s2">----------------------------------</span><span class="si">${</span><span class="nv">ECHO_STYLE_DEFAULT</span><span class="si">}</span><span class="s2">&quot;</span>
+	<span class="nb">echo</span> -e <span class="s2">&quot;</span><span class="si">${</span><span class="nv">ECHO_STYLE_02</span><span class="si">}</span><span class="s2">**********************************</span><span class="si">${</span><span class="nv">ECHO_STYLE_DEFAULT</span><span class="si">}</span><span class="s2">&quot;</span>
+	<span class="nb">echo</span> -e <span class="s2">&quot;</span><span class="si">${</span><span class="nv">ECHO_STYLE_02</span><span class="si">}</span><span class="s2">**********************************</span><span class="si">${</span><span class="nv">ECHO_STYLE_DEFAULT</span><span class="si">}</span><span class="s2">&quot;</span>
+	<span class="nb">echo</span>
+<span class="o">}</span>
+
+<span class="k">function</span> build_xbl<span class="o">()</span>
+<span class="o">{</span>
+<span class="o">(</span>	<span class="nb">echo</span> -e <span class="s2">&quot;</span><span class="si">${</span><span class="nv">ECHO_STYLE_04</span><span class="si">}</span><span class="s2">---start copy </span><span class="nv">$UNPACK_TOOL_DEST_DIR</span><span class="s2"> start---</span><span class="si">${</span><span class="nv">ECHO_STYLE_DEFAULT</span><span class="si">}</span><span class="s2">&quot;</span>
+	<span class="k">if</span> <span class="o">[</span> -d <span class="nv">$UNPACK_TOOL_DEST_DIR</span> <span class="o">]</span><span class="p">;</span> <span class="k">then</span>
+        	<span class="nb">echo</span> <span class="nv">$UNPACK_TOOL_DEST_DIR</span> already <span class="nb">exit</span>
+        	cp -rf <span class="nv">$UNPACK_TOOL_SRC_DIR</span>/* <span class="nv">$UNPACK_TOOL_DEST_DIR</span>
+	<span class="k">else</span>
+        	cp -rf <span class="nv">$UNPACK_TOOL_SRC_DIR</span> <span class="nv">$UNPACK_TOOL_DEST_DIR</span>
+	<span class="k">fi</span>
+	<span class="nb">echo</span> -e <span class="s2">&quot;</span><span class="si">${</span><span class="nv">ECHO_STYLE_04</span><span class="si">}</span><span class="s2">---start copy </span><span class="nv">$UNPACK_TOOL_DEST_DIR</span><span class="s2"> done---</span><span class="si">${</span><span class="nv">ECHO_STYLE_DEFAULT</span><span class="si">}</span><span class="s2">&quot;</span>
+
+	<span class="nb">export</span> <span class="nv">EDK_TOOLS_PATH</span><span class="o">=</span><span class="nv">$TOP</span>/Unpacking_Tool/BOOT.XF.4.1/boot_images/BaseTools	
+<span class="nb">pushd</span> <span class="nv">$XBL_DIR</span>
+	python ../../buildex.py --variant LAA -r RELEASE -t AgattiPkg,QcomToolsPkg <span class="m">2</span>&gt;<span class="p">&amp;</span><span class="m">1</span> <span class="p">|</span> tee <span class="nv">$LOG_DIR</span>/xbl_32go_build.log
+	<span class="k">if</span> <span class="o">[[</span> <span class="nv">$?</span> !<span class="o">=</span> <span class="m">0</span> <span class="o">]]</span><span class="p">;</span> <span class="k">then</span>
+		<span class="nb">echo</span> -e <span class="s2">&quot;</span><span class="si">${</span><span class="nv">ECHO_STYLE_03</span><span class="si">}</span><span class="s2">Fail to Build xbl image, Exiting .....</span><span class="si">${</span><span class="nv">ECHO_STYLE_DEFAULT</span><span class="si">}</span><span class="s2">&quot;</span>
+		<span class="nb">exit</span> <span class="m">1</span>
+	<span class="k">else</span>
+		cp -rf <span class="nv">$XBL_DIR</span>/Bin/LAA/RELEASE/xbl* <span class="nv">$ANDROID_OUTPUT_DIR</span>
+		<span class="nb">echo</span> -e <span class="s2">&quot;</span><span class="si">${</span><span class="nv">ECHO_STYLE_04</span><span class="si">}</span><span class="s2">#### build xbl completed successfully ####</span><span class="si">${</span><span class="nv">ECHO_STYLE_DEFAULT</span><span class="si">}</span><span class="s2">&quot;</span>
+	<span class="k">fi</span>
+<span class="nb">popd</span>
+<span class="o">)</span>
+<span class="o">}</span>
+
+<span class="k">function</span> build_abl<span class="o">()</span>
+<span class="o">{</span>
+<span class="o">(</span>	
+<span class="nb">pushd</span> <span class="nv">$TARGET_DIR</span>
+	<span class="nb">source</span> build/envsetup.sh
+	lunch <span class="si">${</span><span class="nv">TARGET_PRODUCT</span><span class="si">}</span>-<span class="si">${</span><span class="nv">TARGET_BUILD_VARIANT</span><span class="si">}</span>
+	make aboot <span class="nv">$1</span> <span class="m">2</span>&gt;<span class="p">&amp;</span><span class="m">1</span> <span class="p">|</span> tee <span class="nv">$LOG_DIR</span>/abl_32go_build.log
+	<span class="k">if</span> <span class="o">[[</span> <span class="nv">$?</span> !<span class="o">=</span> <span class="m">0</span> <span class="o">]]</span><span class="p">;</span> <span class="k">then</span>
+		<span class="nb">echo</span> -e <span class="s2">&quot;</span><span class="si">${</span><span class="nv">ECHO_STYLE_03</span><span class="si">}</span><span class="s2">Fail to Build abl image, Exiting .....</span><span class="si">${</span><span class="nv">ECHO_STYLE_DEFAULT</span><span class="si">}</span><span class="s2">&quot;</span>
+		<span class="nb">exit</span> <span class="m">1</span>
+	<span class="k">else</span>
+		cp <span class="si">${</span><span class="nv">TARGET_OUT_DIR</span><span class="si">}</span>/abl_ecc.elf  <span class="si">${</span><span class="nv">ANDROID_OUTPUT_DIR</span><span class="si">}</span>
+		<span class="nb">echo</span> -e <span class="s2">&quot;</span><span class="si">${</span><span class="nv">ECHO_STYLE_04</span><span class="si">}</span><span class="s2">#### build abl completed successfully ####</span><span class="si">${</span><span class="nv">ECHO_STYLE_DEFAULT</span><span class="si">}</span><span class="s2">&quot;</span>
+	<span class="k">fi</span>
+<span class="nb">popd</span>
+<span class="o">)</span>
+<span class="o">}</span>
+
+<span class="k">function</span> copy_pack<span class="o">()</span>
+<span class="o">{</span>
+<span class="o">(</span>	<span class="nb">echo</span> -e <span class="s2">&quot;</span><span class="si">${</span><span class="nv">ECHO_STYLE_04</span><span class="si">}</span><span class="s2">Start copy android new image to </span><span class="si">${</span><span class="nv">ANDROID_OUTPUT_DIR</span><span class="si">}</span><span class="s2">   </span><span class="si">${</span><span class="nv">ECHO_STYLE_DEFAULT</span><span class="si">}</span><span class="s2">&quot;</span>
+
+	rm <span class="si">${</span><span class="nv">ANDROID_OUTPUT_DIR</span><span class="si">}</span>/* -rf
+
+<span class="nb">pushd</span> <span class="nv">$SP_SRC_DIR</span>
+	cp runthos-sp-boot-qingming.sig <span class="si">${</span><span class="nv">ANDROID_OUTPUT_DIR</span><span class="si">}</span>
+	
+	./get-sp-firmware.sh
+	cp runthos-sp-qingming-* <span class="si">${</span><span class="nv">ANDROID_OUTPUT_DIR</span><span class="si">}</span>/runthos-sp-qingming.bin
+	rm runthos-sp-qingming-*
+	rm runthos-sp-chunfen-*
+<span class="nb">popd</span>
+
+	cp <span class="nv">$LOGO_SRC_DIR</span>/splash_<span class="nv">$PRODUCT_NAME</span>.img      <span class="si">${</span><span class="nv">ANDROID_OUTPUT_DIR</span><span class="si">}</span>
+	cp <span class="nv">$XBL_DIR</span>/Bin/LAA/RELEASE/xbl*  <span class="si">${</span><span class="nv">ANDROID_OUTPUT_DIR</span><span class="si">}</span>
+	cp <span class="si">${</span><span class="nv">PAYDROID_SCATTER_DIR</span><span class="si">}</span>/Kapok_Release_Android_scatter.txt <span class="si">${</span><span class="nv">ANDROID_OUTPUT_DIR</span><span class="si">}</span>
+	cp <span class="si">${</span><span class="nv">PAYDROID_SCATTER_DIR</span><span class="si">}</span>/rawprogram_unsparse.xml <span class="si">${</span><span class="nv">ANDROID_OUTPUT_DIR</span><span class="si">}</span>
+	cp <span class="si">${</span><span class="nv">PAYDROID_SCATTER_DIR</span><span class="si">}</span>/rawprogram0_update_unsparse_m9200.xml <span class="si">${</span><span class="nv">ANDROID_OUTPUT_DIR</span><span class="si">}</span>
+	cp <span class="si">${</span><span class="nv">PAYDROID_SCATTER_DIR</span><span class="si">}</span>/patch0.xml <span class="si">${</span><span class="nv">ANDROID_OUTPUT_DIR</span><span class="si">}</span>
+	cp <span class="si">${</span><span class="nv">PAYDROID_SCATTER_DIR</span><span class="si">}</span>/prog_firehose_ddr.elf <span class="si">${</span><span class="nv">ANDROID_OUTPUT_DIR</span><span class="si">}</span>
+	cp <span class="si">${</span><span class="nv">PAYDROID_SCATTER_DIR</span><span class="si">}</span>/empty_misc.img  <span class="si">${</span><span class="nv">ANDROID_OUTPUT_DIR</span><span class="si">}</span>
+	cp <span class="si">${</span><span class="nv">PAYDROID_SCATTER_DIR</span><span class="si">}</span>/gpt_main0.bin  <span class="si">${</span><span class="nv">ANDROID_OUTPUT_DIR</span><span class="si">}</span>
+	cp <span class="si">${</span><span class="nv">PAYDROID_SCATTER_DIR</span><span class="si">}</span>/gpt_backup0.bin <span class="si">${</span><span class="nv">ANDROID_OUTPUT_DIR</span><span class="si">}</span>
+	cp <span class="si">${</span><span class="nv">PAYDROID_SCATTER_DIR</span><span class="si">}</span>/devcfg.mbn  <span class="si">${</span><span class="nv">ANDROID_OUTPUT_DIR</span><span class="si">}</span>
+	cp <span class="si">${</span><span class="nv">PAYDROID_SCATTER_DIR</span><span class="si">}</span>/checksparse.py <span class="si">${</span><span class="nv">ANDROID_OUTPUT_DIR</span><span class="si">}</span>
+	cp <span class="si">${</span><span class="nv">TARGET_OUT_DIR</span><span class="si">}</span>/boot.img  <span class="si">${</span><span class="nv">ANDROID_OUTPUT_DIR</span><span class="si">}</span>
+	cp <span class="si">${</span><span class="nv">TARGET_OUT_DIR</span><span class="si">}</span>/dtbo.img  <span class="si">${</span><span class="nv">ANDROID_OUTPUT_DIR</span><span class="si">}</span>
+	cp <span class="si">${</span><span class="nv">TARGET_OUT_DIR</span><span class="si">}</span>/recovery.img  <span class="si">${</span><span class="nv">ANDROID_OUTPUT_DIR</span><span class="si">}</span>
+	cp <span class="si">${</span><span class="nv">TARGET_OUT_DIR</span><span class="si">}</span>/vbmeta.img  <span class="si">${</span><span class="nv">ANDROID_OUTPUT_DIR</span><span class="si">}</span>
+	cp <span class="si">${</span><span class="nv">TARGET_OUT_DIR</span><span class="si">}</span>/vbmeta_system.img <span class="si">${</span><span class="nv">ANDROID_OUTPUT_DIR</span><span class="si">}</span>
+	cp <span class="si">${</span><span class="nv">TARGET_OUT_DIR</span><span class="si">}</span>/abl_ecc.elf  <span class="si">${</span><span class="nv">ANDROID_OUTPUT_DIR</span><span class="si">}</span>
+	cp <span class="si">${</span><span class="nv">TARGET_OUT_DIR</span><span class="si">}</span>/metadata.img  <span class="si">${</span><span class="nv">ANDROID_OUTPUT_DIR</span><span class="si">}</span>
+	cp <span class="si">${</span><span class="nv">TARGET_OUT_DIR</span><span class="si">}</span>/userdata.img  <span class="si">${</span><span class="nv">ANDROID_OUTPUT_DIR</span><span class="si">}</span>
+	cp <span class="si">${</span><span class="nv">TARGET_OUT_DIR</span><span class="si">}</span>/obj/KERNEL_OBJ/vmlinux  <span class="si">${</span><span class="nv">ANDROID_OUTPUT_DIR</span><span class="si">}</span>
+	cp <span class="si">${</span><span class="nv">TARGET_OUT_DIR</span><span class="si">}</span>/super.img  <span class="si">${</span><span class="nv">ANDROID_OUTPUT_DIR</span><span class="si">}</span>
+
+	<span class="nb">echo</span> -e <span class="s2">&quot;\n&quot;</span>
+	<span class="nb">echo</span> -e <span class="s2">&quot;</span><span class="si">${</span><span class="nv">ECHO_STYLE_04</span><span class="si">}</span><span class="s2">copy android image finish!!!!  </span><span class="si">${</span><span class="nv">ECHO_STYLE_DEFAULT</span><span class="si">}</span><span class="s2">&quot;</span>
+	<span class="nb">echo</span> -e <span class="s2">&quot;\n&quot;</span>
+	<span class="nb">echo</span> -e <span class="s2">&quot;</span><span class="si">${</span><span class="nv">ECHO_STYLE_04</span><span class="si">}</span><span class="s2">Start rar android image to </span><span class="nv">$ANDROID_OUTPUT_DIR</span><span class="s2">/</span><span class="nv">$UNIPHIZ_COMPRESS_NAME</span><span class="s2">   </span><span class="si">${</span><span class="nv">ECHO_STYLE_DEFAULT</span><span class="si">}</span><span class="s2">&quot;</span>
+	<span class="nb">echo</span> -e <span class="s2">&quot;\n&quot;</span>
+
+<span class="nb">pushd</span> <span class="nv">$ANDROID_OUTPUT_DIR</span>
+	rar a -ppaydroid20170417 -r <span class="nv">$ANDROID_OUTPUT_DIR</span>/<span class="nv">$UNIPHIZ_COMPRESS_NAME</span> <span class="se">\</span>
+	Kapok_Release_Android_scatter.txt <span class="se">\</span>
+	abl_ecc.elf <span class="se">\</span>
+	xbl.elf <span class="se">\</span>
+	xbl_config.elf <span class="se">\</span>
+	devcfg.mbn <span class="se">\</span>
+	empty_misc.img <span class="se">\</span>
+	splash_<span class="nv">$PRODUCT_NAME</span>.img <span class="se">\</span>
+	boot.img <span class="se">\</span>
+	dtbo.img <span class="se">\</span>
+	super.img <span class="se">\</span>
+	vbmeta_system.img <span class="se">\</span>
+	metadata.img <span class="se">\</span>
+	recovery.img <span class="se">\</span>
+	vbmeta.img <span class="se">\</span>
+	userdata.img <span class="se">\</span>
+	runthos-sp-boot-qingming.sig <span class="se">\</span>
+	runthos-sp-qingming.bin <span class="se">\</span>
+	vmlinux
+	<span class="nb">echo</span> -e <span class="s2">&quot;</span><span class="si">${</span><span class="nv">ECHO_STYLE_04</span><span class="si">}</span><span class="s2">rar android image finish!!!!  </span><span class="si">${</span><span class="nv">ECHO_STYLE_DEFAULT</span><span class="si">}</span><span class="s2">&quot;</span>
+	python checksparse.py -i rawprogram0_update_unsparse_m9200.xml -s . -o rawprogram_unsparse.xml
+	rm <span class="si">${</span><span class="nv">ANDROID_OUTPUT_DIR</span><span class="si">}</span>/rawprogram0_update_unsparse_m9200*
+<span class="nb">popd</span>
+	<span class="nb">echo</span> -e <span class="s2">&quot;</span><span class="si">${</span><span class="nv">ECHO_STYLE_04</span><span class="si">}</span><span class="s2">#### pack all completed successfully ####</span><span class="si">${</span><span class="nv">ECHO_STYLE_DEFAULT</span><span class="si">}</span><span class="s2">&quot;</span>
+<span class="o">)</span>
+<span class="o">}</span>
+
+<span class="k">function</span> build_qssi<span class="o">()</span>
+<span class="o">{</span>
+<span class="o">(</span>
+	./paydroidbuild.sh
+	<span class="k">if</span> <span class="o">[</span> <span class="nv">$?</span> -ne <span class="m">0</span> <span class="o">]</span><span class="p">;</span><span class="k">then</span>
+		<span class="nb">echo</span> ---Get paxdroid or libspc project error!!!---
+		<span class="nb">exit</span> <span class="m">1</span>
+	<span class="k">fi</span>
+
+<span class="nb">pushd</span> <span class="nv">$QSSI_DIR</span>
+	<span class="nb">source</span> build/envsetup.sh 
+	lunch <span class="si">${</span><span class="nv">QSSI_PRODUCT</span><span class="si">}</span>-<span class="si">${</span><span class="nv">TARGET_BUILD_VARIANT</span><span class="si">}</span> 
+	bash build.sh dist --qssi_only <span class="nv">EXPERIMENTAL_USE_OPENJDK9</span><span class="o">=</span><span class="m">1</span>.8 <span class="nv">$1</span> <span class="m">2</span>&gt;<span class="p">&amp;</span><span class="m">1</span> <span class="p">|</span> tee <span class="nv">$LOG_DIR</span>/qssi_32go_build.log
+	<span class="k">if</span> <span class="o">[</span> <span class="nv">$?</span> -ne <span class="m">0</span> <span class="o">]</span><span class="p">;</span><span class="k">then</span>
+		<span class="nb">echo</span> <span class="s2">&quot;</span><span class="si">${</span><span class="nv">ECHO_STYLE_03</span><span class="si">}</span><span class="s2">---Build qssi error!!!---</span><span class="si">${</span><span class="nv">ECHO_STYLE_DEFAULT</span><span class="si">}</span><span class="s2">&quot;</span>
+		<span class="nb">exit</span> <span class="m">1</span>
+	<span class="k">fi</span>
+<span class="nb">popd</span>
+<span class="o">)</span>
+<span class="o">}</span>
+
+<span class="k">function</span> build_target<span class="o">()</span>
+<span class="o">{</span>
+<span class="o">(</span><span class="nb">pushd</span> <span class="nv">$TARGET_DIR</span>
+	<span class="nb">source</span> build/envsetup.sh
+	lunch <span class="si">${</span><span class="nv">TARGET_PRODUCT</span><span class="si">}</span>-<span class="si">${</span><span class="nv">TARGET_BUILD_VARIANT</span><span class="si">}</span>
+	bash build.sh dist --target_only <span class="nv">EXPERIMENTAL_USE_OPENJDK9</span><span class="o">=</span><span class="m">1</span>.8 <span class="nv">$1</span> <span class="m">2</span>&gt;<span class="p">&amp;</span><span class="m">1</span> <span class="p">|</span> tee <span class="nv">$LOG_DIR</span>/target_32go_build.log
+	<span class="k">if</span> <span class="o">[</span> <span class="nv">$?</span> -ne <span class="m">0</span> <span class="o">]</span><span class="p">;</span><span class="k">then</span>
+		<span class="nb">echo</span> <span class="s2">&quot;</span><span class="si">${</span><span class="nv">ECHO_STYLE_03</span><span class="si">}</span><span class="s2">---Build target error!!!---</span><span class="si">${</span><span class="nv">ECHO_STYLE_DEFAULT</span><span class="si">}</span><span class="s2">&quot;</span>
+		<span class="nb">exit</span> <span class="m">1</span>
+	<span class="k">fi</span>
+	cp <span class="si">${</span><span class="nv">TARGET_OUT_DIR</span><span class="si">}</span>/abl_ecc.elf  <span class="si">${</span><span class="nv">ANDROID_OUTPUT_DIR</span><span class="si">}</span>
+	cp <span class="si">${</span><span class="nv">TARGET_OUT_DIR</span><span class="si">}</span>/boot.img  <span class="si">${</span><span class="nv">ANDROID_OUTPUT_DIR</span><span class="si">}</span>
+	cp <span class="si">${</span><span class="nv">TARGET_OUT_DIR</span><span class="si">}</span>/dtbo.img  <span class="si">${</span><span class="nv">ANDROID_OUTPUT_DIR</span><span class="si">}</span>
+<span class="nb">popd</span>
+<span class="o">)</span>
+<span class="o">}</span>
+
+<span class="k">function</span> build_super<span class="o">()</span>
+<span class="o">{</span>
+<span class="o">(</span>
+<span class="nb">pushd</span> <span class="nv">$TARGET_DIR</span>
+	python vendor/qcom/opensource/core-utils/build/build_image_standalone.py --image super --qssi_build_path ../QSSI.12/ --target_build_path ./ --merged_build_path ./ --target_lunch bengal_32go --output_ota <span class="m">2</span>&gt;<span class="p">&amp;</span><span class="m">1</span> <span class="p">|</span> tee <span class="nv">$LOG_DIR</span>/super_32go_build.log
+	<span class="k">if</span> <span class="o">[</span> <span class="nv">$?</span> -ne <span class="m">0</span> <span class="o">]</span><span class="p">;</span><span class="k">then</span>
+		<span class="nb">echo</span> <span class="s2">&quot;</span><span class="si">${</span><span class="nv">ECHO_STYLE_03</span><span class="si">}</span><span class="s2">---Build SUPER error!!!---</span><span class="si">${</span><span class="nv">ECHO_STYLE_DEFAULT</span><span class="si">}</span><span class="s2">&quot;</span>
+		<span class="nb">exit</span> <span class="m">1</span>
+	<span class="k">else</span>
+		<span class="nb">echo</span> -e <span class="s2">&quot;</span><span class="si">${</span><span class="nv">ECHO_STYLE_04</span><span class="si">}</span><span class="s2">#### build super completed successfully ####</span><span class="si">${</span><span class="nv">ECHO_STYLE_DEFAULT</span><span class="si">}</span><span class="s2">&quot;</span>
+	<span class="k">fi</span>
+<span class="nb">popd</span>
+<span class="o">)</span>
+<span class="o">}</span>
+
+clean_all_images<span class="o">()</span> <span class="o">{</span>
+	<span class="nb">echo</span> -e <span class="s2">&quot;</span><span class="si">${</span><span class="nv">ECHO_STYLE_04</span><span class="si">}</span><span class="s2">Start clean all image   </span><span class="si">${</span><span class="nv">ECHO_STYLE_DEFAULT</span><span class="si">}</span><span class="s2">&quot;</span>
+	rm -rf ./<span class="si">${</span><span class="nv">TARGET_DIR</span><span class="si">}</span>/out
+	rm -rf ./<span class="si">${</span><span class="nv">QSSI_DIR</span><span class="si">}</span>/out
+	rm -rf ./Unpacking_Tool
+	<span class="nb">echo</span> -e <span class="s2">&quot;</span><span class="si">${</span><span class="nv">ECHO_STYLE_04</span><span class="si">}</span><span class="s2">clean all image done  </span><span class="si">${</span><span class="nv">ECHO_STYLE_DEFAULT</span><span class="si">}</span><span class="s2">&quot;</span>
+<span class="o">}</span>
+
+buildclean<span class="o">(){</span>
+	<span class="nb">echo</span>
+	<span class="nb">echo</span> -n -e <span class="s2">&quot;</span><span class="si">${</span><span class="nv">ECHO_STYLE_04</span><span class="si">}</span><span class="s2">input your select,you only have </span><span class="nv">$INPUT_DELAY</span><span class="s2"> seconds:</span><span class="si">${</span><span class="nv">ECHO_STYLE_DEFAULT</span><span class="si">}</span><span class="s2">&quot;</span>
+	<span class="nb">echo</span>
+    <span class="nb">echo</span> -n -e <span class="s2">&quot;</span><span class="si">${</span><span class="nv">ECHO_STYLE_04</span><span class="si">}</span><span class="s2">(1)----Do you want to make clean ?</span><span class="si">${</span><span class="nv">ECHO_STYLE_DEFAULT</span><span class="si">}</span><span class="s2">&quot;</span>
+	<span class="nb">echo</span> -n -e <span class="s2">&quot;</span><span class="si">${</span><span class="nv">ECHO_STYLE_08</span><span class="si">}</span><span class="s2">  (y/n)</span><span class="si">${</span><span class="nv">ECHO_STYLE_DEFAULT</span><span class="si">}</span><span class="s2">&quot;</span>
+
+	<span class="k">if</span> <span class="nb">read</span> -t <span class="nv">$INPUT_DELAY</span> answer
+	<span class="k">then</span>
+		<span class="nb">echo</span>
+	<span class="k">else</span>
+		<span class="nb">echo</span>
+		<span class="nb">echo</span> -e <span class="s2">&quot;</span><span class="si">${</span><span class="nv">ECHO_STYLE_04</span><span class="si">}</span><span class="s2">Sorry, too slow! Don&#39;t make clean , will next  </span><span class="si">${</span><span class="nv">ECHO_STYLE_DEFAULT</span><span class="si">}</span><span class="s2">&quot;</span>
+	<span class="k">fi</span>
+
+	<span class="k">case</span>  <span class="s2">&quot;</span><span class="nv">$answer</span><span class="s2">&quot;</span>  <span class="k">in</span>   
+	<span class="s2">&quot;y&quot;</span><span class="p">|</span> <span class="s2">&quot;Y&quot;</span> <span class="o">)</span>  
+
+	<span class="nb">echo</span> -n -e <span class="s2">&quot;</span><span class="si">${</span><span class="nv">ECHO_STYLE_04</span><span class="si">}</span><span class="s2">Start make clean, please wait</span><span class="si">${</span><span class="nv">ECHO_STYLE_DEFAULT</span><span class="si">}</span><span class="s2">&quot;</span>
+	<span class="nb">echo</span> -e <span class="s2">&quot;</span><span class="si">${</span><span class="nv">ECHO_STYLE_04_1</span><span class="si">}</span><span class="s2">......</span><span class="si">${</span><span class="nv">ECHO_STYLE_DEFAULT</span><span class="si">}</span><span class="s2">&quot;</span>
+	<span class="nb">echo</span>
+	clean_all_images
+	<span class="k">return</span> 
+	<span class="p">;;</span>  
+	<span class="s2">&quot;n&quot;</span> <span class="p">|</span> <span class="s2">&quot;N&quot;</span> <span class="o">)</span>  
+	<span class="nb">echo</span>
+	<span class="nb">echo</span> -e <span class="s2">&quot;</span><span class="si">${</span><span class="nv">ECHO_STYLE_04</span><span class="si">}</span><span class="s2">Don&#39;t make clean , will next  </span><span class="si">${</span><span class="nv">ECHO_STYLE_DEFAULT</span><span class="si">}</span><span class="s2">&quot;</span>
+	<span class="nb">echo</span>
+	<span class="k">return</span> 
+	<span class="p">;;</span>
+	
+	*<span class="o">)</span> 
+	 <span class="nb">echo</span>
+	 <span class="nb">echo</span> -e <span class="s2">&quot;</span><span class="si">${</span><span class="nv">ECHO_STYLE_04</span><span class="si">}</span><span class="s2">Don&#39;t make clean, will next  </span><span class="si">${</span><span class="nv">ECHO_STYLE_DEFAULT</span><span class="si">}</span><span class="s2">&quot;</span>
+	 <span class="nb">echo</span>
+	 <span class="k">return</span> 
+	<span class="p">;;</span> 
+	<span class="k">esac</span>  
+<span class="o">}</span>
+
+paxmain<span class="o">(){</span>
+
+	<span class="k">if</span> <span class="o">[</span> ! -d <span class="nv">$LOG_DIR</span> <span class="o">]</span><span class="p">;</span><span class="k">then</span>
+		mkdir -p <span class="nv">$LOG_DIR</span>
+	<span class="k">fi</span>
+
+	<span class="k">if</span> <span class="o">[</span> ! -d <span class="si">${</span><span class="nv">ANDROID_OUTPUT_DIR</span><span class="si">}</span> <span class="o">]</span><span class="p">;</span><span class="k">then</span>
+		mkdir -p -m <span class="m">777</span> <span class="si">${</span><span class="nv">ANDROID_OUTPUT_DIR</span><span class="si">}</span>  
+	<span class="k">fi</span>
+
+	paxlogo
+	<span class="k">if</span> <span class="o">[</span> ! -z <span class="s2">&quot;`echo </span><span class="nv">$BUILD_ALL</span><span class="s2"> | grep true`&quot;</span> <span class="o">]</span><span class="p">;</span><span class="k">then</span>
+		buildclean
+		build_xbl
+		<span class="c1">#build_qssi -j$JOB_NUM</span>
+		build_target -j<span class="nv">$JOB_NUM</span>
+		build_super
+		copy_pack
+		<span class="k">return</span>
+	<span class="k">fi</span>
+
+	<span class="k">case</span> <span class="s2">&quot;</span><span class="nv">$build_type</span><span class="s2">&quot;</span> <span class="k">in</span>
+		<span class="s2">&quot;--xbl&quot;</span><span class="o">)</span>
+			build_xbl
+			<span class="p">;;</span>
+		<span class="s2">&quot;--abl&quot;</span><span class="o">)</span>
+			build_abl -j<span class="nv">$JOB_NUM</span>
+			<span class="p">;;</span>
+		<span class="s2">&quot;--qssi&quot;</span><span class="o">)</span>
+			build_qssi -j<span class="nv">$JOB_NUM</span>
+			build_super
+			copy_pack
+			<span class="p">;;</span>
+		<span class="s2">&quot;--target&quot;</span><span class="o">)</span>
+			build_target -j<span class="nv">$JOB_NUM</span>
+			<span class="p">;;</span>
+		<span class="s2">&quot;--super&quot;</span><span class="o">)</span>
+			build_super
+			<span class="p">;;</span>
+		<span class="s2">&quot;--pack&quot;</span><span class="o">)</span>
+			copy_pack
+			<span class="p">;;</span>
+		<span class="s2">&quot;--clean&quot;</span><span class="o">)</span>
+			clean_all_images
+			<span class="p">;;</span>
+		*<span class="o">)</span>
+			<span class="nb">echo</span> -e <span class="s2">&quot;</span><span class="si">${</span><span class="nv">ECHO_STYLE_03</span><span class="si">}</span><span class="s2">invalid parameter!</span><span class="si">${</span><span class="nv">ECHO_STYLE_DEFAULT</span><span class="si">}</span><span class="s2">&quot;</span>
+			<span class="p">;;</span>
+	<span class="k">esac</span>
+<span class="o">}</span>
+
+print_help<span class="o">()</span> <span class="o">{</span>
+	<span class="nb">echo</span> -e <span class="s2">&quot;</span><span class="si">${</span><span class="nv">ECHO_STYLE_04</span><span class="si">}</span><span class="s2">----------how to use-----------\n</span><span class="si">${</span><span class="nv">ECHO_STYLE_DEFAULT</span><span class="si">}</span><span class="s2">&quot;</span>
+	<span class="nb">echo</span> -e <span class="s2">&quot;</span><span class="si">${</span><span class="nv">ECHO_STYLE_04</span><span class="si">}</span><span class="s2">./selfbuild_32go_userdebug			&lt;build all android source incluce OTA image&gt;</span><span class="si">${</span><span class="nv">ECHO_STYLE_DEFAULT</span><span class="si">}</span><span class="s2">&quot;</span>
+	<span class="nb">echo</span> -e <span class="s2">&quot;</span><span class="si">${</span><span class="nv">ECHO_STYLE_04</span><span class="si">}</span><span class="s2">./selfbuild_32go_userdebug --help		&lt;print help info&gt;</span><span class="si">${</span><span class="nv">ECHO_STYLE_DEFAULT</span><span class="si">}</span><span class="s2">&quot;</span>
+	<span class="nb">echo</span> -e <span class="s2">&quot;</span><span class="si">${</span><span class="nv">ECHO_STYLE_04</span><span class="si">}</span><span class="s2">./selfbuild_32go_userdebug --target		&lt;build target image&gt;</span><span class="si">${</span><span class="nv">ECHO_STYLE_DEFAULT</span><span class="si">}</span><span class="s2">&quot;</span>
+	<span class="nb">echo</span> -e <span class="s2">&quot;</span><span class="si">${</span><span class="nv">ECHO_STYLE_04</span><span class="si">}</span><span class="s2">./selfbuild_32go_userdebug --qssi  		&lt;build qssi image&gt;</span><span class="si">${</span><span class="nv">ECHO_STYLE_DEFAULT</span><span class="si">}</span><span class="s2">&quot;</span>
+	<span class="nb">echo</span> -e <span class="s2">&quot;</span><span class="si">${</span><span class="nv">ECHO_STYLE_04</span><span class="si">}</span><span class="s2">./selfbuild_32go_userdebug --super    		&lt;build super image&gt;\n</span><span class="si">${</span><span class="nv">ECHO_STYLE_DEFAULT</span><span class="si">}</span><span class="s2">&quot;</span>
+	<span class="nb">echo</span> -e <span class="s2">&quot;</span><span class="si">${</span><span class="nv">ECHO_STYLE_04</span><span class="si">}</span><span class="s2">./selfbuild_32go_userdebug --xbl    		&lt;build xbl image&gt;\n</span><span class="si">${</span><span class="nv">ECHO_STYLE_DEFAULT</span><span class="si">}</span><span class="s2">&quot;</span>
+	<span class="nb">echo</span> -e <span class="s2">&quot;</span><span class="si">${</span><span class="nv">ECHO_STYLE_04</span><span class="si">}</span><span class="s2">./selfbuild_32go_userdebug --abl    		&lt;build abl image&gt;\n</span><span class="si">${</span><span class="nv">ECHO_STYLE_DEFAULT</span><span class="si">}</span><span class="s2">&quot;</span>
+	<span class="nb">echo</span> -e <span class="s2">&quot;</span><span class="si">${</span><span class="nv">ECHO_STYLE_04</span><span class="si">}</span><span class="s2">./selfbuild_32go_userdebug --pack    		&lt;pack all image to </span><span class="si">${</span><span class="nv">ANDROID_OUTPUT_DIR</span><span class="si">}</span><span class="s2"> document&gt;\n</span><span class="si">${</span><span class="nv">ECHO_STYLE_DEFAULT</span><span class="si">}</span><span class="s2">&quot;</span>
+	<span class="nb">echo</span> -e <span class="s2">&quot;</span><span class="si">${</span><span class="nv">ECHO_STYLE_04</span><span class="si">}</span><span class="s2">tip:after build complete,new image can be found in </span><span class="si">${</span><span class="nv">ANDROID_OUTPUT_DIR</span><span class="si">}</span><span class="s2"> document</span><span class="si">${</span><span class="nv">ECHO_STYLE_DEFAULT</span><span class="si">}</span><span class="s2">&quot;</span>
+<span class="o">}</span>
+
+
+<span class="nv">INPUT_PARA</span><span class="o">=</span><span class="nv">$*</span>
+<span class="k">if</span> <span class="o">[</span> ! -z <span class="s2">&quot;`echo </span><span class="nv">$INPUT_PARA</span><span class="s2"> | grep h`&quot;</span> <span class="o">]</span><span class="p">;</span><span class="k">then</span>
+	print_help
+	<span class="nb">exit</span>
+<span class="k">fi</span>
+
+<span class="k">if</span> <span class="o">[</span> -z <span class="s2">&quot;</span><span class="nv">$INPUT_PARA</span><span class="s2">&quot;</span> <span class="o">]</span><span class="p">;</span><span class="k">then</span>
+	<span class="nb">export</span> <span class="nv">BUILD_ALL</span><span class="o">=</span><span class="nb">true</span>
+<span class="k">else</span>
+	<span class="nb">export</span> <span class="nv">BUILD_ALL</span><span class="o">=</span><span class="nb">false</span>
+<span class="k">fi</span>
+	
+<span class="k">while</span> <span class="o">[</span> <span class="nv">$#</span> -gt <span class="m">0</span> <span class="o">]</span><span class="p">;</span><span class="k">do</span>
+	<span class="k">case</span> <span class="s2">&quot;</span><span class="nv">$1</span><span class="s2">&quot;</span> <span class="k">in</span>
+		<span class="s2">&quot;--xbl&quot;</span><span class="p">|</span><span class="s2">&quot;--abl&quot;</span><span class="p">|</span><span class="s2">&quot;--qssi&quot;</span><span class="p">|</span><span class="s2">&quot;--target&quot;</span><span class="p">|</span><span class="s2">&quot;--super&quot;</span><span class="p">|</span><span class="s2">&quot;--pack&quot;</span><span class="p">|</span><span class="s2">&quot;--clean&quot;</span><span class="o">)</span>
+			<span class="nv">build_type</span><span class="o">=</span><span class="nv">$1</span>
+			<span class="p">;;</span>
+	<span class="k">esac</span>
+	<span class="nb">shift</span>
+<span class="k">done</span>
+
+<span class="nb">echo</span> -e <span class="s2">&quot;</span><span class="si">${</span><span class="nv">ECHO_STYLE_04</span><span class="si">}</span><span class="s2">cpu thread number:</span><span class="nv">$JOB_NUM</span><span class="s2"> </span><span class="si">${</span><span class="nv">ECHO_STYLE_DEFAULT</span><span class="si">}</span><span class="s2">&quot;</span>
+paxmain
+</pre></div>
+</div>
+</section>
+
+
+           </div>
+             <div class="articleComments">
+                <comments>
+  <script src="https://utteranc.es/client.js"
+    repo="iswbm/magic-python"
+    issue-term="pathname"
+    theme="github-light"
+    crossorigin="anonymous"
+    async>
+  </script>
+</comments>
+             </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; 版权所有 2022, wugn.</p>
+  </div>
+
+  利用 <a href="https://www.sphinx-doc.org/">Sphinx</a> 构建，使用了 
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">主题</a>
+    由 <a href="https://readthedocs.org">Read the Docs</a>开发.
+  
+
+<script charset="UTF-8" id="LA_COLLECT" src="//sdk.51.la/js-sdk-pro.min.js"></script>
+<script>LA.init({id: "JoV5csIHTGhHiGQ4",ck: "JoV5csIHTGhHiGQ4"})</script>
+
+<br/>
+<script id="LA-DATA-WIDGET" crossorigin="anonymous" charset="UTF-8" src="https://v6-widget.51.la/v6/JoV5csIHTGhHiGQ4/quote.js?theme=#4C8AC2,#BB2626,#040000,#333333,#AE3535,#1690FF,14&f=14"></script>
+
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

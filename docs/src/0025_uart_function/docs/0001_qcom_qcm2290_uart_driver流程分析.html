@@ -46,6 +46,14 @@
 <li><a class="reference internal" href="#id2">参考</a></li>
 <li><a class="reference internal" href="#kernel-config">kernel config</a></li>
 <li><a class="reference internal" href="#makefile">Makefile</a></li>
+<li><a class="reference internal" href="#dts">dts</a></li>
+<li><a class="reference internal" href="#id3">软件架构</a></li>
+<li><a class="reference internal" href="#tty-serial-driver">tty serial driver平台驱动分析</a></li>
+<li><a class="reference internal" href="#tty">tty 核心层</a></li>
+<li><a class="reference internal" href="#tty-open">tty open调用流程</a></li>
+<li><a class="reference internal" href="#tty-write">tty_write调用流程</a></li>
+<li><a class="reference internal" href="#tty-read">tty_read调用流程</a></li>
+<li><a class="reference internal" href="#io">io流程图</a></li>
 </ul>
 </div>
         </div>
@@ -81,6 +89,9 @@
 </section>
 <section id="id2">
 <h1>参考<a class="headerlink" href="#id2" title="此标题的永久链接"></a></h1>
+<ul class="simple">
+<li><p><a class="reference external" href="https://blog.csdn.net/thisway_diy/article/details/91492053">tty初探 — uart驱动框架分析</a></p></li>
+</ul>
 </section>
 <section id="kernel-config">
 <h1>kernel config<a class="headerlink" href="#kernel-config" title="此标题的永久链接"></a></h1>
@@ -111,6 +122,869 @@ obj-$(CONFIG_SERIAL_MSM_GENI) += msm_geni_serial.o
                    n_null.o
 </pre></div>
 </div>
+</section>
+<section id="dts">
+<h1>dts<a class="headerlink" href="#dts" title="此标题的永久链接"></a></h1>
+<ul class="simple">
+<li><p>驱动中定义了两种串口，普通和流控高速：</p></li>
+</ul>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="k">static</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">of_device_id</span><span class="w"> </span><span class="n">msm_geni_device_tbl</span><span class="p">[]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="cp">#if defined(CONFIG_SERIAL_CORE_CONSOLE) || defined(CONFIG_CONSOLE_POLL)</span>
+<span class="w">	</span><span class="p">{</span><span class="w"> </span><span class="p">.</span><span class="n">compatible</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;qcom,msm-geni-console&quot;</span><span class="p">,</span><span class="w"></span>
+<span class="w">			</span><span class="p">.</span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="kt">void</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="o">&amp;</span><span class="n">msm_geni_console_driver</span><span class="p">},</span><span class="w"></span>
+<span class="cp">#endif</span>
+<span class="w">	</span><span class="p">{</span><span class="w"> </span><span class="p">.</span><span class="n">compatible</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;qcom,msm-geni-serial-hs&quot;</span><span class="p">,</span><span class="w"></span>
+<span class="w">			</span><span class="p">.</span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="kt">void</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="o">&amp;</span><span class="n">msm_geni_serial_hs_driver</span><span class="p">},</span><span class="w"></span>
+<span class="w">	</span><span class="p">{},</span><span class="w"></span>
+<span class="p">};</span><span class="w"></span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">scuba-qupv3.dtsi</span></code>中HS UART表示开了流控的uart:</p></li>
+</ul>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>    /* HS UART Instance */
+    qupv3_se3_4uart: qcom,qup_uart@4a8c000 <span class="o">{</span>
+        <span class="nv">compatible</span> <span class="o">=</span> <span class="s2">&quot;qcom,msm-geni-serial-hs&quot;</span><span class="p">;</span>
+        <span class="nv">reg</span> <span class="o">=</span> &lt;0x4a8c000 0x4000&gt;<span class="p">;</span>
+        reg-names <span class="o">=</span> <span class="s2">&quot;se_phys&quot;</span><span class="p">;</span>
+        interrupts-extended <span class="o">=</span> &lt;<span class="p">&amp;</span>intc GIC_SPI <span class="m">330</span> IRQ_TYPE_LEVEL_HIGH&gt;,
+                &lt;<span class="p">&amp;</span>tlmm <span class="m">11</span> IRQ_TYPE_LEVEL_HIGH&gt;<span class="p">;</span>
+        clock-names <span class="o">=</span> <span class="s2">&quot;se-clk&quot;</span>, <span class="s2">&quot;m-ahb&quot;</span>, <span class="s2">&quot;s-ahb&quot;</span><span class="p">;</span>
+        <span class="nv">clocks</span> <span class="o">=</span> &lt;<span class="p">&amp;</span>gcc GCC_QUPV3_WRAP0_S3_CLK&gt;,
+            &lt;<span class="p">&amp;</span>gcc GCC_QUPV3_WRAP_0_M_AHB_CLK&gt;,
+            &lt;<span class="p">&amp;</span>gcc GCC_QUPV3_WRAP_0_S_AHB_CLK&gt;<span class="p">;</span>
+        pinctrl-names <span class="o">=</span> <span class="s2">&quot;default&quot;</span>, <span class="s2">&quot;active&quot;</span>, <span class="s2">&quot;sleep&quot;</span><span class="p">;</span>
+        pinctrl-0 <span class="o">=</span> &lt;<span class="p">&amp;</span>qupv3_se3_default_ctsrtsrx&gt;,
+                        &lt;<span class="p">&amp;</span>qupv3_se3_default_tx&gt;<span class="p">;</span>
+        pinctrl-1 <span class="o">=</span> &lt;<span class="p">&amp;</span>qupv3_se3_ctsrx&gt;, &lt;<span class="p">&amp;</span>qupv3_se3_rts&gt;,
+                        &lt;<span class="p">&amp;</span>qupv3_se3_tx&gt;<span class="p">;</span>
+        pinctrl-2 <span class="o">=</span> &lt;<span class="p">&amp;</span>qupv3_se3_ctsrx&gt;, &lt;<span class="p">&amp;</span>qupv3_se3_rts&gt;,
+                        &lt;<span class="p">&amp;</span>qupv3_se3_tx&gt;<span class="p">;</span>
+        qcom,wakeup-byte <span class="o">=</span> &lt;0xFD&gt;<span class="p">;</span>
+        qcom,wrapper-core <span class="o">=</span> &lt;<span class="p">&amp;</span>qupv3_0&gt;<span class="p">;</span>
+        <span class="nv">status</span> <span class="o">=</span> <span class="s2">&quot;disabled&quot;</span><span class="p">;</span>
+    <span class="o">}</span><span class="p">;</span>
+
+    //<span class="o">[</span>feature<span class="o">]</span>-add-begin  <span class="m">20220805</span>,for se1 hs uart,tlmm <span class="m">70</span> -&gt; rx
+    /*HS MAIN UART*/
+    qupv3_se1_5uart: qcom,qup_uart@4a84000<span class="o">{</span>
+        <span class="nv">compatible</span> <span class="o">=</span> <span class="s2">&quot;qcom,msm-geni-serial-hs&quot;</span><span class="p">;</span>
+        <span class="nv">reg</span> <span class="o">=</span> &lt;0x4a84000 0x4000&gt;<span class="p">;</span>
+        reg-names <span class="o">=</span> <span class="s2">&quot;se_phys&quot;</span><span class="p">;</span>
+        <span class="nv">interrupts</span> <span class="o">=</span> &lt;GIC_SPI <span class="m">328</span> IRQ_TYPE_LEVEL_HIGH&gt;,
+                     &lt;<span class="p">&amp;</span>tlmm <span class="m">70</span> <span class="m">0</span>&gt;<span class="p">;</span>
+        clock-names <span class="o">=</span> <span class="s2">&quot;se-clk&quot;</span>, <span class="s2">&quot;m-ahb&quot;</span>, <span class="s2">&quot;s-ahb&quot;</span><span class="p">;</span>
+        <span class="nv">clocks</span> <span class="o">=</span>  &lt;<span class="p">&amp;</span>gcc GCC_QUPV3_WRAP0_S1_CLK&gt;,
+                &lt;<span class="p">&amp;</span>gcc GCC_QUPV3_WRAP_0_M_AHB_CLK&gt;,
+                &lt;<span class="p">&amp;</span>gcc GCC_QUPV3_WRAP_0_S_AHB_CLK&gt;<span class="p">;</span>
+        pinctrl-names <span class="o">=</span> <span class="s2">&quot;default&quot;</span>, <span class="s2">&quot;sleep&quot;</span><span class="p">;</span>
+        pinctrl-0 <span class="o">=</span> &lt;<span class="p">&amp;</span>qupv3_se1_ctsrx&gt;, &lt;<span class="p">&amp;</span>qupv3_se1_rts&gt;,
+                &lt;<span class="p">&amp;</span>qupv3_se1_tx&gt;<span class="p">;</span>
+        pinctrl-1 <span class="o">=</span> &lt;<span class="p">&amp;</span>qupv3_se1_ctsrx&gt;, &lt;<span class="p">&amp;</span>qupv3_se1_rts&gt;,
+                &lt;<span class="p">&amp;</span>qupv3_se1_tx&gt;<span class="p">;</span>
+        qcom,wakeup-byte <span class="o">=</span> &lt;0xFD&gt;<span class="p">;</span>
+        qcom,wrapper-core <span class="o">=</span> &lt;<span class="p">&amp;</span>qupv3_0&gt;<span class="p">;</span>
+        <span class="nv">status</span> <span class="o">=</span> <span class="s2">&quot;okay&quot;</span><span class="p">;</span>
+    <span class="o">}</span><span class="p">;</span>
+
+    /* Debug UART Instance */
+    qupv3_se4_2uart: qcom,qup_uart@4a90000 <span class="o">{</span>
+        <span class="nv">compatible</span> <span class="o">=</span> <span class="s2">&quot;qcom,msm-geni-console&quot;</span><span class="p">;</span>
+        <span class="nv">reg</span> <span class="o">=</span> &lt;0x4a90000 0x4000&gt;<span class="p">;</span>
+        reg-names <span class="o">=</span> <span class="s2">&quot;se_phys&quot;</span><span class="p">;</span>
+        <span class="nv">interrupts</span> <span class="o">=</span> &lt;GIC_SPI <span class="m">331</span> IRQ_TYPE_LEVEL_HIGH&gt;<span class="p">;</span>
+        clock-names <span class="o">=</span> <span class="s2">&quot;se-clk&quot;</span>, <span class="s2">&quot;m-ahb&quot;</span>, <span class="s2">&quot;s-ahb&quot;</span><span class="p">;</span>
+        <span class="nv">clocks</span> <span class="o">=</span> &lt;<span class="p">&amp;</span>gcc GCC_QUPV3_WRAP0_S4_CLK&gt;,
+            &lt;<span class="p">&amp;</span>gcc GCC_QUPV3_WRAP_0_M_AHB_CLK&gt;,
+            &lt;<span class="p">&amp;</span>gcc GCC_QUPV3_WRAP_0_S_AHB_CLK&gt;<span class="p">;</span>
+        pinctrl-names <span class="o">=</span> <span class="s2">&quot;default&quot;</span>, <span class="s2">&quot;sleep&quot;</span><span class="p">;</span>
+        pinctrl-0 <span class="o">=</span> &lt;<span class="p">&amp;</span>qupv3_se4_2uart_active&gt;<span class="p">;</span>
+        pinctrl-1 <span class="o">=</span> &lt;<span class="p">&amp;</span>qupv3_se4_2uart_sleep&gt;<span class="p">;</span>
+        qcom,wrapper-core <span class="o">=</span> &lt;<span class="p">&amp;</span>qupv3_0&gt;<span class="p">;</span>
+        <span class="nv">status</span> <span class="o">=</span> <span class="s2">&quot;disabled&quot;</span><span class="p">;</span>
+    <span class="o">}</span><span class="p">;</span>
+</pre></div>
+</div>
+</section>
+<section id="id3">
+<h1>软件架构<a class="headerlink" href="#id3" title="此标题的永久链接"></a></h1>
+<p><img alt="0001_0000.png" src="../../../_images/0001_00006.png" /></p>
+<p>整个uart 框架大概如上图所示，简单来分的话可以说成两层，一层是下层我们的串口驱动层，它直接与硬件接触，我们需要填充一个 struct uart_ops 的结构体，另一层是上层 tty 层，包括 tty 核心以及线路规程，它们各自都有一个 Ops 结构，用户空间通过 tty 注册的字符设备节点来访问，这么说来如上图所示涉及到了4个 ops 结构了，层层跳转。下面，就来分析分析它们的层次结构。</p>
+</section>
+<section id="tty-serial-driver">
+<h1>tty serial driver平台驱动分析<a class="headerlink" href="#tty-serial-driver" title="此标题的永久链接"></a></h1>
+<p>在qcm2290平台，它是这样来注册串口驱动的：分配一个struct uart_driver 简单填充，并调用<code class="docutils literal notranslate"><span class="pre">uart_register_driver</span></code>注册到内核中去，其中console_register接口只是对uart_register_driver的封装，所以qcm注册了高速和低速两个串口driver，名称是<code class="docutils literal notranslate"><span class="pre">/dev/ttyHS*</span></code>和<code class="docutils literal notranslate"><span class="pre">/dev/ttyMSM*</span></code>。</p>
+<p>在注册 driver 时，会根据GENI_UART_NR_PORTS和GENI_UART_CONS_PORTS来申请 nr 个 uart_state 空间，用来存放驱动所支持的串口（端口）的物理信息，HS高速的只有一个。</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="cp">#define GENI_UART_NR_PORTS	(15)</span>
+<span class="cp">#define GENI_UART_CONS_PORTS	(1)</span>
+
+<span class="k">static</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">uart_ops</span><span class="w"> </span><span class="n">msm_geni_console_pops</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">tx_empty</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">msm_geni_serial_tx_empty</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">stop_tx</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">msm_geni_serial_stop_tx</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">start_tx</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">msm_geni_serial_start_tx</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">stop_rx</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">msm_geni_serial_stop_rx</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">set_termios</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">msm_geni_serial_set_termios</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">startup</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">msm_geni_serial_startup</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">config_port</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">msm_geni_serial_config_port</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">shutdown</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">msm_geni_serial_shutdown</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">msm_geni_serial_get_type</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">set_mctrl</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">msm_geni_cons_set_mctrl</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">get_mctrl</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">msm_geni_cons_get_mctrl</span><span class="p">,</span><span class="w"></span>
+<span class="cp">#ifdef CONFIG_CONSOLE_POLL</span>
+<span class="w">	</span><span class="p">.</span><span class="n">poll_get_char</span><span class="w">	</span><span class="o">=</span><span class="w"> </span><span class="n">msm_geni_serial_get_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">poll_put_char</span><span class="w">	</span><span class="o">=</span><span class="w"> </span><span class="n">msm_geni_serial_poll_put_char</span><span class="p">,</span><span class="w"></span>
+<span class="cp">#endif</span>
+<span class="w">	</span><span class="p">.</span><span class="n">pm</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">msm_geni_serial_cons_pm</span><span class="p">,</span><span class="w"></span>
+<span class="p">};</span><span class="w"></span>
+
+<span class="k">static</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">uart_ops</span><span class="w"> </span><span class="n">msm_geni_serial_pops</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">tx_empty</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">msm_geni_serial_tx_empty</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">stop_tx</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">msm_geni_serial_stop_tx</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">start_tx</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">msm_geni_serial_start_tx</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">stop_rx</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">msm_geni_serial_stop_rx</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">set_termios</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">msm_geni_serial_set_termios</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">startup</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">msm_geni_serial_startup</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">config_port</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">msm_geni_serial_config_port</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">shutdown</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">msm_geni_serial_shutdown</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">msm_geni_serial_get_type</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">set_mctrl</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">msm_geni_serial_set_mctrl</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">get_mctrl</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">msm_geni_serial_get_mctrl</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">break_ctl</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">msm_geni_serial_break_ctl</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">flush_buffer</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">NULL</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">ioctl</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">msm_geni_serial_ioctl</span><span class="p">,</span><span class="w"></span>
+<span class="p">};</span><span class="w"></span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">__init</span><span class="w"> </span><span class="nf">msm_geni_serial_init</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="kt">int</span><span class="w"> </span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">	</span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">GENI_UART_NR_PORTS</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="n">msm_geni_serial_ports</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">uport</span><span class="p">.</span><span class="n">iotype</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">UPIO_MEM</span><span class="p">;</span><span class="w"></span>
+<span class="w">		</span><span class="n">msm_geni_serial_ports</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">uport</span><span class="p">.</span><span class="n">ops</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">&amp;</span><span class="n">msm_geni_serial_pops</span><span class="p">;</span><span class="w"></span>
+<span class="w">		</span><span class="n">msm_geni_serial_ports</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">uport</span><span class="p">.</span><span class="n">flags</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">UPF_BOOT_AUTOCONF</span><span class="p">;</span><span class="w"></span>
+<span class="w">		</span><span class="n">msm_geni_serial_ports</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">uport</span><span class="p">.</span><span class="n">line</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">i</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+
+<span class="w">	</span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">GENI_UART_CONS_PORTS</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="n">msm_geni_console_port</span><span class="p">.</span><span class="n">uport</span><span class="p">.</span><span class="n">iotype</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">UPIO_MEM</span><span class="p">;</span><span class="w"></span>
+<span class="w">		</span><span class="n">msm_geni_console_port</span><span class="p">.</span><span class="n">uport</span><span class="p">.</span><span class="n">ops</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">&amp;</span><span class="n">msm_geni_console_pops</span><span class="p">;</span><span class="w"></span>
+<span class="w">		</span><span class="n">msm_geni_console_port</span><span class="p">.</span><span class="n">uport</span><span class="p">.</span><span class="n">flags</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">UPF_BOOT_AUTOCONF</span><span class="p">;</span><span class="w"></span>
+<span class="w">		</span><span class="n">msm_geni_console_port</span><span class="p">.</span><span class="n">uport</span><span class="p">.</span><span class="n">line</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">i</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">console_register</span><span class="p">(</span><span class="o">&amp;</span><span class="n">msm_geni_console_driver</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ret</span><span class="p">)</span><span class="w"></span>
+<span class="w">		</span><span class="k">return</span><span class="w"> </span><span class="n">ret</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">uart_register_driver</span><span class="p">(</span><span class="o">&amp;</span><span class="n">msm_geni_serial_hs_driver</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ret</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="n">uart_unregister_driver</span><span class="p">(</span><span class="o">&amp;</span><span class="n">msm_geni_console_driver</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="k">return</span><span class="w"> </span><span class="n">ret</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">platform_driver_register</span><span class="p">(</span><span class="o">&amp;</span><span class="n">msm_geni_serial_platform_driver</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ret</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="n">console_unregister</span><span class="p">(</span><span class="o">&amp;</span><span class="n">msm_geni_console_driver</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="n">uart_unregister_driver</span><span class="p">(</span><span class="o">&amp;</span><span class="n">msm_geni_serial_hs_driver</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="k">return</span><span class="w"> </span><span class="n">ret</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">pr_info</span><span class="p">(</span><span class="s">&quot;%s: Driver initialized</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">__func__</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">	</span><span class="k">return</span><span class="w"> </span><span class="n">ret</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="k">static</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">uart_driver</span><span class="w"> </span><span class="n">msm_geni_serial_hs_driver</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">owner</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">THIS_MODULE</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">driver_name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;msm_geni_serial_hs&quot;</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">dev_name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;ttyHS&quot;</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">nr</span><span class="w"> </span><span class="o">=</span><span class="w">  </span><span class="n">GENI_UART_NR_PORTS</span><span class="p">,</span><span class="w"></span>
+<span class="p">};</span><span class="w"></span>
+
+<span class="k">static</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">uart_driver</span><span class="w"> </span><span class="n">msm_geni_console_driver</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">owner</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">THIS_MODULE</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">driver_name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;msm_geni_console&quot;</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">dev_name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;ttyMSM&quot;</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">nr</span><span class="w"> </span><span class="o">=</span><span class="w">  </span><span class="n">GENI_UART_CONS_PORTS</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">cons</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">&amp;</span><span class="n">cons_ops</span><span class="p">,</span><span class="w"></span>
+<span class="p">};</span><span class="w"></span>
+</pre></div>
+</div>
+<p>这个结构体，是需要我们自己来填充的，比如qcm2290有3个串口，那么就需要填充3个 uart_port ，并且通过 uart_add_one_port 添加到 uart_driver-&gt;uart_state-&gt;uart_port 中去。当然uart_driver有多个uart_state ，每个uart_state有一个uart_port。其中line表示端口索引，比较常用，比如
+ttyHS1的line就等于1。</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="k">struct</span><span class="w"> </span><span class="nc">uart_port</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="n">spinlock_t</span><span class="w">    </span><span class="n">lock</span><span class="p">;</span><span class="w">      </span><span class="cm">/* port lock */</span><span class="w"></span>
+<span class="w">  </span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">long</span><span class="w">    </span><span class="n">iobase</span><span class="p">;</span><span class="w">      </span><span class="cm">/* io端口基地址（物理） */</span><span class="w"></span>
+<span class="w">  </span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="n">__iomem</span><span class="w">  </span><span class="o">*</span><span class="n">membase</span><span class="p">;</span><span class="w">    </span><span class="cm">/* io内存基地址（虚拟） */</span><span class="w"></span>
+<span class="w">  </span><span class="kt">unsigned</span><span class="w"> </span><span class="nf">int</span><span class="w">    </span><span class="p">(</span><span class="o">*</span><span class="n">serial_in</span><span class="p">)(</span><span class="k">struct</span><span class="w"> </span><span class="nc">uart_port</span><span class="w"> </span><span class="o">*</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="kt">void</span><span class="w">      </span><span class="p">(</span><span class="o">*</span><span class="n">serial_out</span><span class="p">)(</span><span class="k">struct</span><span class="w"> </span><span class="nc">uart_port</span><span class="w"> </span><span class="o">*</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">int</span><span class="w">    </span><span class="n">irq</span><span class="p">;</span><span class="w">      </span><span class="cm">/* 中断号 */</span><span class="w"></span>
+<span class="w">  </span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">long</span><span class="w">    </span><span class="n">irqflags</span><span class="p">;</span><span class="w">    </span><span class="cm">/* 中断标志  */</span><span class="w"></span>
+<span class="w">  </span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">int</span><span class="w">    </span><span class="n">uartclk</span><span class="p">;</span><span class="w">    </span><span class="cm">/* 串口时钟 */</span><span class="w"></span>
+<span class="w">  </span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">int</span><span class="w">    </span><span class="n">fifosize</span><span class="p">;</span><span class="w">    </span><span class="cm">/* 串口缓冲区大小 */</span><span class="w"></span>
+<span class="w">  </span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">char</span><span class="w">    </span><span class="n">x_char</span><span class="p">;</span><span class="w">      </span><span class="cm">/* xon/xoff char */</span><span class="w"></span>
+<span class="w">  </span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">char</span><span class="w">    </span><span class="n">regshift</span><span class="p">;</span><span class="w">    </span><span class="cm">/* 寄存器位移 */</span><span class="w"></span>
+<span class="w">  </span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">char</span><span class="w">    </span><span class="n">iotype</span><span class="p">;</span><span class="w">      </span><span class="cm">/* IO访问方式 */</span><span class="w"></span>
+<span class="w">  </span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">char</span><span class="w">    </span><span class="n">unused1</span><span class="p">;</span><span class="w"></span>
+<span class="w"> </span>
+<span class="w">  </span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">int</span><span class="w">    </span><span class="n">read_status_mask</span><span class="p">;</span><span class="w">  </span><span class="cm">/* 关心 Rx error status */</span><span class="w"></span>
+<span class="w">  </span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">int</span><span class="w">    </span><span class="n">ignore_status_mask</span><span class="p">;</span><span class="w">  </span><span class="cm">/* 忽略 Rx error status */</span><span class="w"></span>
+<span class="w">  </span><span class="k">struct</span><span class="w"> </span><span class="nc">uart_state</span><span class="w">  </span><span class="o">*</span><span class="n">state</span><span class="p">;</span><span class="w">      </span><span class="cm">/* pointer to parent state */</span><span class="w"></span>
+<span class="w">  </span><span class="k">struct</span><span class="w"> </span><span class="nc">uart_icount</span><span class="w">  </span><span class="n">icount</span><span class="p">;</span><span class="w">      </span><span class="cm">/* 串口信息计数器 */</span><span class="w"></span>
+<span class="w"> </span>
+<span class="w">  </span><span class="k">struct</span><span class="w"> </span><span class="nc">console</span><span class="w">    </span><span class="o">*</span><span class="n">cons</span><span class="p">;</span><span class="w">      </span><span class="cm">/* struct console, if any */</span><span class="w"></span>
+<span class="cp">#if defined(CONFIG_SERIAL_CORE_CONSOLE) || defined(SUPPORT_SYSRQ)</span>
+<span class="w">  </span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">long</span><span class="w">    </span><span class="n">sysrq</span><span class="p">;</span><span class="w">      </span><span class="cm">/* sysrq timeout */</span><span class="w"></span>
+<span class="cp">#endif</span>
+<span class="w"> </span>
+<span class="w">  </span><span class="n">upf_t</span><span class="w">      </span><span class="n">flags</span><span class="p">;</span><span class="w"></span>
+<span class="w"> </span>
+<span class="w">  </span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">int</span><span class="w">    </span><span class="n">mctrl</span><span class="p">;</span><span class="w">      </span><span class="cm">/* 当前的Moden 设置 */</span><span class="w"></span>
+<span class="w">  </span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">int</span><span class="w">    </span><span class="n">timeout</span><span class="p">;</span><span class="w">    </span><span class="cm">/* character-based timeout */</span><span class="w"></span>
+<span class="w">  </span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">int</span><span class="w">    </span><span class="n">type</span><span class="p">;</span><span class="w">      </span><span class="cm">/* 端口类型 */</span><span class="w"></span>
+<span class="w">  </span><span class="k">const</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">uart_ops</span><span class="w">  </span><span class="o">*</span><span class="n">ops</span><span class="p">;</span><span class="w">    </span><span class="cm">/* 串口端口操作函数 */</span><span class="w"></span>
+<span class="w">  </span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">int</span><span class="w">    </span><span class="n">custom_divisor</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">int</span><span class="w">    </span><span class="n">line</span><span class="p">;</span><span class="w">      </span><span class="cm">/* 端口索引 */</span><span class="w"></span>
+<span class="w">  </span><span class="n">resource_size_t</span><span class="w">    </span><span class="n">mapbase</span><span class="p">;</span><span class="w">    </span><span class="cm">/* io内存物理基地址 */</span><span class="w"></span>
+<span class="w">  </span><span class="k">struct</span><span class="w"> </span><span class="nc">device</span><span class="w">    </span><span class="o">*</span><span class="n">dev</span><span class="p">;</span><span class="w">      </span><span class="cm">/* 父设备 */</span><span class="w"></span>
+<span class="w">  </span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">char</span><span class="w">    </span><span class="n">hub6</span><span class="p">;</span><span class="w">      </span><span class="cm">/* this should be in the 8250 driver */</span><span class="w"></span>
+<span class="w">  </span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">char</span><span class="w">    </span><span class="n">suspended</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">char</span><span class="w">    </span><span class="n">unused</span><span class="p">[</span><span class="mi">2</span><span class="p">];</span><span class="w"></span>
+<span class="w">  </span><span class="kt">void</span><span class="w">      </span><span class="o">*</span><span class="n">private_data</span><span class="p">;</span><span class="w">    </span><span class="cm">/* generic platform data pointer */</span><span class="w"></span>
+<span class="p">};</span><span class="w"></span>
+
+<span class="k">static</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">msm_geni_serial_port</span><span class="w"> </span><span class="o">*</span><span class="n">get_port_from_line</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">line</span><span class="p">,</span><span class="w"></span>
+<span class="w">						</span><span class="kt">bool</span><span class="w"> </span><span class="n">is_console</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="k">struct</span><span class="w"> </span><span class="nc">msm_geni_serial_port</span><span class="w"> </span><span class="o">*</span><span class="n">port</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">NULL</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">is_console</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="cm">/* Max 1 port supported as of now */</span><span class="w"></span>
+<span class="w">		</span><span class="k">if</span><span class="w"> </span><span class="p">((</span><span class="n">line</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="p">(</span><span class="n">line</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="n">GENI_UART_CONS_PORTS</span><span class="p">))</span><span class="w"></span>
+<span class="w">			</span><span class="k">return</span><span class="w"> </span><span class="n">ERR_PTR</span><span class="p">(</span><span class="o">-</span><span class="n">ENXIO</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="n">port</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">&amp;</span><span class="n">msm_geni_console_port</span><span class="p">;</span><span class="w"> </span><span class="c1">//msm_geni_console_port.uport.ops 比较重要</span>
+<span class="w">	</span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="k">if</span><span class="w"> </span><span class="p">((</span><span class="n">line</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="p">(</span><span class="n">line</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="n">GENI_UART_NR_PORTS</span><span class="p">))</span><span class="w"></span>
+<span class="w">			</span><span class="k">return</span><span class="w"> </span><span class="n">ERR_PTR</span><span class="p">(</span><span class="o">-</span><span class="n">ENXIO</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="n">port</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">&amp;</span><span class="n">msm_geni_serial_ports</span><span class="p">[</span><span class="n">line</span><span class="p">];</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+
+<span class="w">	</span><span class="k">return</span><span class="w"> </span><span class="n">port</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">msm_geni_serial_probe</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">platform_device</span><span class="w"> </span><span class="o">*</span><span class="n">pdev</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="k">struct</span><span class="w"> </span><span class="nc">msm_geni_serial_port</span><span class="w"> </span><span class="o">*</span><span class="n">dev_port</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="k">struct</span><span class="w"> </span><span class="nc">uart_port</span><span class="w"> </span><span class="o">*</span><span class="n">uport</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">dev_port</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">get_port_from_line</span><span class="p">(</span><span class="n">line</span><span class="p">,</span><span class="w"> </span><span class="n">is_console</span><span class="p">);</span><span class="w"> </span><span class="c1">//根据line寻找port，里面有ops硬件操作函数</span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">IS_ERR_OR_NULL</span><span class="p">(</span><span class="n">dev_port</span><span class="p">))</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">PTR_ERR</span><span class="p">(</span><span class="n">dev_port</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="n">dev_err</span><span class="p">(</span><span class="o">&amp;</span><span class="n">pdev</span><span class="o">-&gt;</span><span class="n">dev</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Invalid line %d(%d)</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"></span>
+<span class="w">					</span><span class="n">line</span><span class="p">,</span><span class="w"> </span><span class="n">ret</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="k">goto</span><span class="w"> </span><span class="n">exit_geni_serial_probe</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+<span class="w">	</span><span class="n">dev_port</span><span class="o">-&gt;</span><span class="n">is_console</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">is_console</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">uport</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">&amp;</span><span class="n">dev_port</span><span class="o">-&gt;</span><span class="n">uport</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">	</span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">uart_add_one_port</span><span class="p">(</span><span class="n">drv</span><span class="p">,</span><span class="w"> </span><span class="n">uport</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ret</span><span class="p">)</span><span class="w"></span>
+<span class="w">		</span><span class="k">goto</span><span class="w"> </span><span class="n">exit_workqueue_destroy</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<p>具体的ops释义如下：</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="k">struct</span><span class="w"> </span><span class="nc">uart_ops</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="kt">unsigned</span><span class="w"> </span><span class="nf">int</span><span class="w">  </span><span class="p">(</span><span class="o">*</span><span class="n">tx_empty</span><span class="p">)(</span><span class="k">struct</span><span class="w"> </span><span class="nc">uart_port</span><span class="w"> </span><span class="o">*</span><span class="p">);</span><span class="w">   </span><span class="cm">/* 串口的Tx FIFO缓存是否为空 */</span><span class="w"></span>
+<span class="w">  </span><span class="kt">void</span><span class="w">    </span><span class="p">(</span><span class="o">*</span><span class="n">set_mctrl</span><span class="p">)(</span><span class="k">struct</span><span class="w"> </span><span class="nc">uart_port</span><span class="w"> </span><span class="o">*</span><span class="p">,</span><span class="w"> </span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">mctrl</span><span class="p">);</span><span class="w">  </span><span class="cm">/* 设置串口modem控制 */</span><span class="w"></span>
+<span class="w">  </span><span class="kt">unsigned</span><span class="w"> </span><span class="nf">int</span><span class="w">  </span><span class="p">(</span><span class="o">*</span><span class="n">get_mctrl</span><span class="p">)(</span><span class="k">struct</span><span class="w"> </span><span class="nc">uart_port</span><span class="w"> </span><span class="o">*</span><span class="p">);</span><span class="w">  </span><span class="cm">/* 获取串口modem控制 */</span><span class="w"></span>
+<span class="w">  </span><span class="kt">void</span><span class="w">    </span><span class="p">(</span><span class="o">*</span><span class="n">stop_tx</span><span class="p">)(</span><span class="k">struct</span><span class="w"> </span><span class="nc">uart_port</span><span class="w"> </span><span class="o">*</span><span class="p">);</span><span class="w">    </span><span class="cm">/* 禁止串口发送数据 */</span><span class="w"></span>
+<span class="w">  </span><span class="kt">void</span><span class="w">    </span><span class="p">(</span><span class="o">*</span><span class="n">start_tx</span><span class="p">)(</span><span class="k">struct</span><span class="w"> </span><span class="nc">uart_port</span><span class="w"> </span><span class="o">*</span><span class="p">);</span><span class="w">  </span><span class="cm">/* 使能串口发送数据 */</span><span class="w">  </span>
+<span class="w">  </span><span class="kt">void</span><span class="w">    </span><span class="p">(</span><span class="o">*</span><span class="n">send_xchar</span><span class="p">)(</span><span class="k">struct</span><span class="w"> </span><span class="nc">uart_port</span><span class="w"> </span><span class="o">*</span><span class="p">,</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="n">ch</span><span class="p">);</span><span class="w">  </span><span class="cm">/* 发送xChar */</span><span class="w"></span>
+<span class="w">  </span><span class="kt">void</span><span class="w">    </span><span class="p">(</span><span class="o">*</span><span class="n">stop_rx</span><span class="p">)(</span><span class="k">struct</span><span class="w"> </span><span class="nc">uart_port</span><span class="w"> </span><span class="o">*</span><span class="p">);</span><span class="w">    </span><span class="cm">/* 禁止串口接收数据 */</span><span class="w"></span>
+<span class="w">  </span><span class="kt">void</span><span class="w">    </span><span class="p">(</span><span class="o">*</span><span class="n">enable_ms</span><span class="p">)(</span><span class="k">struct</span><span class="w"> </span><span class="nc">uart_port</span><span class="w"> </span><span class="o">*</span><span class="p">);</span><span class="w">  </span><span class="cm">/* 使能modem的状态信号 */</span><span class="w"></span>
+<span class="w">  </span><span class="kt">void</span><span class="w">    </span><span class="p">(</span><span class="o">*</span><span class="n">break_ctl</span><span class="p">)(</span><span class="k">struct</span><span class="w"> </span><span class="nc">uart_port</span><span class="w"> </span><span class="o">*</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">ctl</span><span class="p">);</span><span class="w">  </span><span class="cm">/* 设置break信号 */</span><span class="w"></span>
+<span class="w">  </span><span class="kt">int</span><span class="w">      </span><span class="p">(</span><span class="o">*</span><span class="n">startup</span><span class="p">)(</span><span class="k">struct</span><span class="w"> </span><span class="nc">uart_port</span><span class="w"> </span><span class="o">*</span><span class="p">);</span><span class="w">    </span><span class="cm">/* 启动串口,应用程序打开串口设备文件时,该函数会被调用 */</span><span class="w"></span>
+<span class="w">  </span><span class="kt">void</span><span class="w">    </span><span class="p">(</span><span class="o">*</span><span class="n">shutdown</span><span class="p">)(</span><span class="k">struct</span><span class="w"> </span><span class="nc">uart_port</span><span class="w"> </span><span class="o">*</span><span class="p">);</span><span class="cm">/* 关闭串口,应用程序关闭串口设备文件时,该函数会被调用 */</span><span class="w"></span>
+<span class="w">  </span><span class="kt">void</span><span class="w">    </span><span class="p">(</span><span class="o">*</span><span class="n">flush_buffer</span><span class="p">)(</span><span class="k">struct</span><span class="w"> </span><span class="nc">uart_port</span><span class="w"> </span><span class="o">*</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="kt">void</span><span class="w">    </span><span class="p">(</span><span class="o">*</span><span class="n">set_termios</span><span class="p">)(</span><span class="k">struct</span><span class="w"> </span><span class="nc">uart_port</span><span class="w"> </span><span class="o">*</span><span class="p">,</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">ktermios</span><span class="w"> </span><span class="o">*</span><span class="n">new</span><span class="p">,</span><span class="w"></span>
+<span class="w">               </span><span class="k">struct</span><span class="w"> </span><span class="nc">ktermios</span><span class="w"> </span><span class="o">*</span><span class="n">old</span><span class="p">);</span><span class="w">  </span><span class="cm">/* 设置串口参数 */</span><span class="w"></span>
+<span class="w">  </span><span class="kt">void</span><span class="w">    </span><span class="p">(</span><span class="o">*</span><span class="n">set_ldisc</span><span class="p">)(</span><span class="k">struct</span><span class="w"> </span><span class="nc">uart_port</span><span class="w"> </span><span class="o">*</span><span class="p">);</span><span class="cm">/* 设置线路规程 */</span><span class="w"></span>
+<span class="w">  </span><span class="kt">void</span><span class="w">    </span><span class="p">(</span><span class="o">*</span><span class="n">pm</span><span class="p">)(</span><span class="k">struct</span><span class="w"> </span><span class="nc">uart_port</span><span class="w"> </span><span class="o">*</span><span class="p">,</span><span class="w"> </span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">state</span><span class="p">,</span><span class="w"></span>
+<span class="w">            </span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">oldstate</span><span class="p">);</span><span class="w">  </span><span class="cm">/* 串口电源管理 */</span><span class="w"></span>
+<span class="w">  </span><span class="kt">int</span><span class="w">    </span><span class="p">(</span><span class="o">*</span><span class="n">set_wake</span><span class="p">)(</span><span class="k">struct</span><span class="w"> </span><span class="nc">uart_port</span><span class="w"> </span><span class="o">*</span><span class="p">,</span><span class="w"> </span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">state</span><span class="p">);</span><span class="w"></span>
+<span class="w"> </span>
+<span class="w">  </span><span class="cm">/*</span>
+<span class="cm">   * Return a string describing the type of the port</span>
+<span class="cm">   */</span><span class="w"></span>
+<span class="w">  </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="p">(</span><span class="o">*</span><span class="n">type</span><span class="p">)(</span><span class="k">struct</span><span class="w"> </span><span class="nc">uart_port</span><span class="w"> </span><span class="o">*</span><span class="p">);</span><span class="w"></span>
+<span class="w"> </span>
+<span class="w">  </span><span class="cm">/*</span>
+<span class="cm">   * Release IO and memory resources used by the port.</span>
+<span class="cm">   * This includes iounmap if necessary.</span>
+<span class="cm">   */</span><span class="w"></span>
+<span class="w">  </span><span class="kt">void</span><span class="w">    </span><span class="p">(</span><span class="o">*</span><span class="n">release_port</span><span class="p">)(</span><span class="k">struct</span><span class="w"> </span><span class="nc">uart_port</span><span class="w"> </span><span class="o">*</span><span class="p">);</span><span class="w"></span>
+<span class="w"> </span>
+<span class="w">  </span><span class="cm">/*</span>
+<span class="cm">   * Request IO and memory resources used by the port.</span>
+<span class="cm">   * This includes iomapping the port if necessary.</span>
+<span class="cm">   */</span><span class="w"></span>
+<span class="w">  </span><span class="kt">int</span><span class="w">    </span><span class="p">(</span><span class="o">*</span><span class="n">request_port</span><span class="p">)(</span><span class="k">struct</span><span class="w"> </span><span class="nc">uart_port</span><span class="w"> </span><span class="o">*</span><span class="p">);</span><span class="w">  </span><span class="cm">/* 申请必要的IO端口/IO内存资源,必要时还可以重新映射串口端口 */</span><span class="w"></span>
+<span class="w">  </span><span class="kt">void</span><span class="w">    </span><span class="p">(</span><span class="o">*</span><span class="n">config_port</span><span class="p">)(</span><span class="k">struct</span><span class="w"> </span><span class="nc">uart_port</span><span class="w"> </span><span class="o">*</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="p">);</span><span class="w"> </span><span class="cm">/* 执行串口所需的自动配置 */</span><span class="w"></span>
+<span class="w">  </span><span class="kt">int</span><span class="w">    </span><span class="p">(</span><span class="o">*</span><span class="n">verify_port</span><span class="p">)(</span><span class="k">struct</span><span class="w"> </span><span class="nc">uart_port</span><span class="w"> </span><span class="o">*</span><span class="p">,</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">serial_struct</span><span class="w"> </span><span class="o">*</span><span class="p">);</span><span class="w"> </span><span class="cm">/* 核实新串口的信息 */</span><span class="w"></span>
+<span class="w">  </span><span class="kt">int</span><span class="w">    </span><span class="p">(</span><span class="o">*</span><span class="n">ioctl</span><span class="p">)(</span><span class="k">struct</span><span class="w"> </span><span class="nc">uart_port</span><span class="w"> </span><span class="o">*</span><span class="p">,</span><span class="w"> </span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">int</span><span class="p">,</span><span class="w"> </span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">long</span><span class="p">);</span><span class="w"></span>
+<span class="cp">#ifdef CONFIG_CONSOLE_POLL</span>
+<span class="w">  </span><span class="kt">void</span><span class="w">  </span><span class="p">(</span><span class="o">*</span><span class="n">poll_put_char</span><span class="p">)(</span><span class="k">struct</span><span class="w"> </span><span class="nc">uart_port</span><span class="w"> </span><span class="o">*</span><span class="p">,</span><span class="w"> </span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">char</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="kt">int</span><span class="w">    </span><span class="p">(</span><span class="o">*</span><span class="n">poll_get_char</span><span class="p">)(</span><span class="k">struct</span><span class="w"> </span><span class="nc">uart_port</span><span class="w"> </span><span class="o">*</span><span class="p">);</span><span class="w"></span>
+<span class="cp">#endif</span>
+<span class="p">};</span><span class="w"></span>
+</pre></div>
+</div>
+</section>
+<section id="tty">
+<h1>tty 核心层<a class="headerlink" href="#tty" title="此标题的永久链接"></a></h1>
+<p>tty 层要从 uart_register_driver来看起了，因为tty_driver是在注册过程中构建的，我们也顺便了解注册过程。</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">serial_core.c</span></code></p></li>
+</ul>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="kt">int</span><span class="w"> </span><span class="nf">uart_register_driver</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">uart_driver</span><span class="w"> </span><span class="o">*</span><span class="n">drv</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="k">struct</span><span class="w"> </span><span class="nc">tty_driver</span><span class="w"> </span><span class="o">*</span><span class="n">normal</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">NULL</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">retval</span><span class="p">;</span><span class="w"></span>
+<span class="w"> </span>
+<span class="w">  </span><span class="cm">/* 根据driver支持的最大设备数，申请n个 uart_state 空间，每一个 uart_state 都有一个uart_port */</span><span class="w"></span>
+<span class="w">  </span><span class="n">drv</span><span class="o">-&gt;</span><span class="n">state</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">kzalloc</span><span class="p">(</span><span class="k">sizeof</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">uart_state</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">drv</span><span class="o">-&gt;</span><span class="n">nr</span><span class="p">,</span><span class="w"> </span><span class="n">GFP_KERNEL</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span>
+<span class="w">  </span><span class="cm">/* tty层：分配一个 tty_driver ，并将drv-&gt;tty_driver 指向它 */</span><span class="w"></span>
+<span class="w">  </span><span class="n">normal</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="n">alloc_tty_driver</span><span class="p">(</span><span class="n">drv</span><span class="o">-&gt;</span><span class="n">nr</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="n">drv</span><span class="o">-&gt;</span><span class="n">tty_driver</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">normal</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span>
+<span class="w">  </span><span class="cm">/* 对 tty_driver 进行设置 */</span><span class="w"></span>
+<span class="w">  </span><span class="n">normal</span><span class="o">-&gt;</span><span class="n">owner</span><span class="w">    </span><span class="o">=</span><span class="w"> </span><span class="n">drv</span><span class="o">-&gt;</span><span class="n">owner</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="n">normal</span><span class="o">-&gt;</span><span class="n">driver_name</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="n">drv</span><span class="o">-&gt;</span><span class="n">driver_name</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="n">normal</span><span class="o">-&gt;</span><span class="n">name</span><span class="w">    </span><span class="o">=</span><span class="w"> </span><span class="n">drv</span><span class="o">-&gt;</span><span class="n">dev_name</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="n">normal</span><span class="o">-&gt;</span><span class="n">major</span><span class="w">    </span><span class="o">=</span><span class="w"> </span><span class="n">drv</span><span class="o">-&gt;</span><span class="n">major</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="n">normal</span><span class="o">-&gt;</span><span class="n">minor_start</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="n">drv</span><span class="o">-&gt;</span><span class="n">minor</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="n">normal</span><span class="o">-&gt;</span><span class="n">type</span><span class="w">    </span><span class="o">=</span><span class="w"> </span><span class="n">TTY_DRIVER_TYPE_SERIAL</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="n">normal</span><span class="o">-&gt;</span><span class="n">subtype</span><span class="w">    </span><span class="o">=</span><span class="w"> </span><span class="n">SERIAL_TYPE_NORMAL</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="n">normal</span><span class="o">-&gt;</span><span class="n">init_termios</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="n">tty_std_termios</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="n">normal</span><span class="o">-&gt;</span><span class="n">init_termios</span><span class="p">.</span><span class="n">c_cflag</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">B9600</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">CS8</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">CREAD</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">HUPCL</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">CLOCAL</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="n">normal</span><span class="o">-&gt;</span><span class="n">init_termios</span><span class="p">.</span><span class="n">c_ispeed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">normal</span><span class="o">-&gt;</span><span class="n">init_termios</span><span class="p">.</span><span class="n">c_ospeed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">9600</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="n">normal</span><span class="o">-&gt;</span><span class="n">flags</span><span class="w">    </span><span class="o">=</span><span class="w"> </span><span class="n">TTY_DRIVER_REAL_RAW</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">TTY_DRIVER_DYNAMIC_DEV</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="n">normal</span><span class="o">-&gt;</span><span class="n">driver_state</span><span class="w">    </span><span class="o">=</span><span class="w"> </span><span class="n">drv</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span>
+<span class="w">  </span><span class="n">tty_set_operations</span><span class="p">(</span><span class="n">normal</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">uart_ops</span><span class="p">);</span><span class="w"></span>
+<span class="w"> </span>
+<span class="w">  </span><span class="cm">/*</span>
+<span class="cm">   * Initialise the UART state(s).</span>
+<span class="cm">   */</span><span class="w"></span>
+<span class="w">  </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">drv</span><span class="o">-&gt;</span><span class="n">nr</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="k">struct</span><span class="w"> </span><span class="nc">uart_state</span><span class="w"> </span><span class="o">*</span><span class="n">state</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">drv</span><span class="o">-&gt;</span><span class="n">state</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">i</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="k">struct</span><span class="w"> </span><span class="nc">tty_port</span><span class="w"> </span><span class="o">*</span><span class="n">port</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">&amp;</span><span class="n">state</span><span class="o">-&gt;</span><span class="n">port</span><span class="p">;</span><span class="w">  </span><span class="cm">/* driver-&gt;state-&gt;tty_port */</span><span class="w"></span>
+<span class="w"> </span>
+<span class="w">    </span><span class="n">tty_port_init</span><span class="p">(</span><span class="n">port</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="n">port</span><span class="o">-&gt;</span><span class="n">close_delay</span><span class="w">     </span><span class="o">=</span><span class="w"> </span><span class="mi">500</span><span class="p">;</span><span class="w">  </span><span class="cm">/* .5 seconds */</span><span class="w"></span>
+<span class="w">    </span><span class="n">port</span><span class="o">-&gt;</span><span class="n">closing_wait</span><span class="w">    </span><span class="o">=</span><span class="w"> </span><span class="mi">30000</span><span class="p">;</span><span class="w">  </span><span class="cm">/* 30 seconds */</span><span class="w"></span>
+<span class="w">    </span><span class="cm">/* 初始化 tasklet */</span><span class="w"></span>
+<span class="w">    </span><span class="n">tasklet_init</span><span class="p">(</span><span class="o">&amp;</span><span class="n">state</span><span class="o">-&gt;</span><span class="n">tlet</span><span class="p">,</span><span class="w"> </span><span class="n">uart_tasklet_action</span><span class="p">,</span><span class="w"></span>
+<span class="w">           </span><span class="p">(</span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">long</span><span class="p">)</span><span class="n">state</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
+<span class="w">  </span>
+<span class="w">  </span><span class="cm">/* tty层：注册 driver-&gt;tty_driver */</span><span class="w"></span>
+<span class="w">  </span><span class="n">retval</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tty_register_driver</span><span class="p">(</span><span class="n">normal</span><span class="p">);</span><span class="w"></span>
+<span class="w"> </span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<p>注册过程干了哪些事：</p>
+<ol class="arabic simple">
+<li><p>根据driver支持的最大设备数，申请n个 uart_state 空间，每一个 uart_state 都有一个 uart_port 。</p></li>
+<li><p>分配一个 tty_driver ，并将drv-&gt;tty_driver 指向它。</p></li>
+<li><p>对 tty_driver 进行设置，其中包括默认波特率、校验方式等，还有一个重要的Ops ，uart_ops ，它是tty核心与我们串口驱动通信的接口。</p></li>
+<li><p>初始化每一个 uart_state 的 tasklet 。</p></li>
+<li><p>注册 tty_driver 。
+注册 uart_driver 实际上是注册 tty_driver，因此与用户空间打交道的工作完全交给了 tty_driver ，而且这一部分都是内核实现好的，我们不需要修改，了解一下工作原理即可。</p></li>
+</ol>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="k">static</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">tty_operations</span><span class="w"> </span><span class="n">uart_ops</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="p">.</span><span class="n">open</span><span class="w">    </span><span class="o">=</span><span class="w"> </span><span class="n">uart_open</span><span class="p">,</span><span class="w"></span>
+<span class="w">  </span><span class="p">.</span><span class="n">close</span><span class="w">    </span><span class="o">=</span><span class="w"> </span><span class="n">uart_close</span><span class="p">,</span><span class="w"></span>
+<span class="w">  </span><span class="p">.</span><span class="n">write</span><span class="w">    </span><span class="o">=</span><span class="w"> </span><span class="n">uart_write</span><span class="p">,</span><span class="w"></span>
+<span class="w">  </span><span class="p">.</span><span class="n">put_char</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="n">uart_put_char</span><span class="p">,</span><span class="w">    </span><span class="c1">// 单字节写函数</span>
+<span class="w">  </span><span class="p">.</span><span class="n">flush_chars</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="n">uart_flush_chars</span><span class="p">,</span><span class="w">  </span><span class="c1">// 刷新数据到硬件函数</span>
+<span class="w">  </span><span class="p">.</span><span class="n">write_room</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="n">uart_write_room</span><span class="p">,</span><span class="w">    </span><span class="c1">// 指示多少缓冲空闲的函数</span>
+<span class="w">  </span><span class="p">.</span><span class="n">chars_in_buffer</span><span class="o">=</span><span class="w"> </span><span class="n">uart_chars_in_buffer</span><span class="p">,</span><span class="w">  </span><span class="c1">// 只是多少缓冲满的函数</span>
+<span class="w">  </span><span class="p">.</span><span class="n">flush_buffer</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="n">uart_flush_buffer</span><span class="p">,</span><span class="w">  </span><span class="c1">// 刷新数据到硬件</span>
+<span class="w">  </span><span class="p">.</span><span class="n">ioctl</span><span class="w">    </span><span class="o">=</span><span class="w"> </span><span class="n">uart_ioctl</span><span class="p">,</span><span class="w"></span>
+<span class="w">  </span><span class="p">.</span><span class="n">throttle</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="n">uart_throttle</span><span class="p">,</span><span class="w"></span>
+<span class="w">  </span><span class="p">.</span><span class="n">unthrottle</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="n">uart_unthrottle</span><span class="p">,</span><span class="w"></span>
+<span class="w">  </span><span class="p">.</span><span class="n">send_xchar</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="n">uart_send_xchar</span><span class="p">,</span><span class="w"></span>
+<span class="w">  </span><span class="p">.</span><span class="n">set_termios</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="n">uart_set_termios</span><span class="p">,</span><span class="w">  </span><span class="c1">// 当termios设置被改变时又tty核心调用</span>
+<span class="w">  </span><span class="p">.</span><span class="n">set_ldisc</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="n">uart_set_ldisc</span><span class="p">,</span><span class="w">    </span><span class="c1">// 设置线路规程函数</span>
+<span class="w">  </span><span class="p">.</span><span class="n">stop</span><span class="w">    </span><span class="o">=</span><span class="w"> </span><span class="n">uart_stop</span><span class="p">,</span><span class="w">  </span>
+<span class="w">  </span><span class="p">.</span><span class="n">start</span><span class="w">    </span><span class="o">=</span><span class="w"> </span><span class="n">uart_start</span><span class="p">,</span><span class="w"></span>
+<span class="w">  </span><span class="p">.</span><span class="n">hangup</span><span class="w">    </span><span class="o">=</span><span class="w"> </span><span class="n">uart_hangup</span><span class="p">,</span><span class="w">    </span><span class="c1">// 挂起函数，当驱动挂起tty设备时调用</span>
+<span class="w">  </span><span class="p">.</span><span class="n">break_ctl</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="n">uart_break_ctl</span><span class="p">,</span><span class="w">  </span><span class="c1">// 线路中断控制函数</span>
+<span class="w">  </span><span class="p">.</span><span class="n">wait_until_sent</span><span class="o">=</span><span class="w"> </span><span class="n">uart_wait_until_sent</span><span class="p">,</span><span class="w"></span>
+<span class="cp">#ifdef CONFIG_PROC_FS</span>
+<span class="w">  </span><span class="p">.</span><span class="n">proc_fops</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="o">&amp;</span><span class="n">uart_proc_fops</span><span class="p">,</span><span class="w"></span>
+<span class="cp">#endif</span>
+<span class="w">  </span><span class="p">.</span><span class="n">tiocmget</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="n">uart_tiocmget</span><span class="p">,</span><span class="w">  </span><span class="c1">// 获得当前tty的线路规程的设置</span>
+<span class="w">  </span><span class="p">.</span><span class="n">tiocmset</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="n">uart_tiocmset</span><span class="p">,</span><span class="w">  </span><span class="c1">// 设置当前tty线路规程的设置</span>
+<span class="cp">#ifdef CONFIG_CONSOLE_POLL</span>
+<span class="w">  </span><span class="p">.</span><span class="n">poll_init</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="n">uart_poll_init</span><span class="p">,</span><span class="w"></span>
+<span class="w">  </span><span class="p">.</span><span class="n">poll_get_char</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="n">uart_poll_get_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">  </span><span class="p">.</span><span class="n">poll_put_char</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="n">uart_poll_put_char</span><span class="p">,</span><span class="w"></span>
+<span class="cp">#endif</span>
+<span class="p">};</span><span class="w"></span>
+</pre></div>
+</div>
+<p>这个是 tty 核心的 Ops ，简单看看，等后面分析调用关系时，在来细看，下面来看 tty_driver 的注册。</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">tty_cdev_add</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">tty_driver</span><span class="w"> </span><span class="o">*</span><span class="n">driver</span><span class="p">,</span><span class="w"> </span><span class="kt">dev_t</span><span class="w"> </span><span class="n">dev</span><span class="p">,</span><span class="w"></span>
+<span class="w">		</span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">index</span><span class="p">,</span><span class="w"> </span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">count</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="kt">int</span><span class="w"> </span><span class="n">err</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">	</span><span class="cm">/* init here, since reused cdevs cause crashes */</span><span class="w"></span>
+<span class="w">	</span><span class="n">driver</span><span class="o">-&gt;</span><span class="n">cdevs</span><span class="p">[</span><span class="n">index</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cdev_alloc</span><span class="p">();</span><span class="w"></span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">driver</span><span class="o">-&gt;</span><span class="n">cdevs</span><span class="p">[</span><span class="n">index</span><span class="p">])</span><span class="w"></span>
+<span class="w">		</span><span class="k">return</span><span class="w"> </span><span class="o">-</span><span class="n">ENOMEM</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="n">driver</span><span class="o">-&gt;</span><span class="n">cdevs</span><span class="p">[</span><span class="n">index</span><span class="p">]</span><span class="o">-&gt;</span><span class="n">ops</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">&amp;</span><span class="n">tty_fops</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="n">driver</span><span class="o">-&gt;</span><span class="n">cdevs</span><span class="p">[</span><span class="n">index</span><span class="p">]</span><span class="o">-&gt;</span><span class="n">owner</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">driver</span><span class="o">-&gt;</span><span class="n">owner</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="n">err</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cdev_add</span><span class="p">(</span><span class="n">driver</span><span class="o">-&gt;</span><span class="n">cdevs</span><span class="p">[</span><span class="n">index</span><span class="p">],</span><span class="w"> </span><span class="n">dev</span><span class="p">,</span><span class="w"> </span><span class="n">count</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">err</span><span class="p">)</span><span class="w"></span>
+<span class="w">		</span><span class="n">kobject_put</span><span class="p">(</span><span class="o">&amp;</span><span class="n">driver</span><span class="o">-&gt;</span><span class="n">cdevs</span><span class="p">[</span><span class="n">index</span><span class="p">]</span><span class="o">-&gt;</span><span class="n">kobj</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="k">return</span><span class="w"> </span><span class="n">err</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="kt">int</span><span class="w"> </span><span class="nf">tty_register_driver</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">tty_driver</span><span class="w"> </span><span class="o">*</span><span class="n">driver</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="kt">int</span><span class="w"> </span><span class="n">error</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="kt">dev_t</span><span class="w"> </span><span class="n">dev</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="o">**</span><span class="n">p</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">NULL</span><span class="p">;</span><span class="w"></span>
+<span class="w"> </span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="p">(</span><span class="n">driver</span><span class="o">-&gt;</span><span class="n">flags</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="n">TTY_DRIVER_DEVPTS_MEM</span><span class="p">)</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">driver</span><span class="o">-&gt;</span><span class="n">num</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">p</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">kzalloc</span><span class="p">(</span><span class="n">driver</span><span class="o">-&gt;</span><span class="n">num</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">sizeof</span><span class="p">(</span><span class="kt">void</span><span class="w"> </span><span class="o">*</span><span class="p">),</span><span class="w"> </span><span class="n">GFP_KERNEL</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
+<span class="w">  </span>
+<span class="w">  </span><span class="cm">/* 如果没有主设备号则申请 */</span><span class="w"></span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">driver</span><span class="o">-&gt;</span><span class="n">major</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">error</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">alloc_chrdev_region</span><span class="p">(</span><span class="o">&amp;</span><span class="n">dev</span><span class="p">,</span><span class="w"> </span><span class="n">driver</span><span class="o">-&gt;</span><span class="n">minor_start</span><span class="p">,</span><span class="w"></span>
+<span class="w">            </span><span class="n">driver</span><span class="o">-&gt;</span><span class="n">num</span><span class="p">,</span><span class="w"> </span><span class="n">driver</span><span class="o">-&gt;</span><span class="n">name</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">dev</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">MKDEV</span><span class="p">(</span><span class="n">driver</span><span class="o">-&gt;</span><span class="n">major</span><span class="p">,</span><span class="w"> </span><span class="n">driver</span><span class="o">-&gt;</span><span class="n">minor_start</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="n">error</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">register_chrdev_region</span><span class="p">(</span><span class="n">dev</span><span class="p">,</span><span class="w"> </span><span class="n">driver</span><span class="o">-&gt;</span><span class="n">num</span><span class="p">,</span><span class="w"> </span><span class="n">driver</span><span class="o">-&gt;</span><span class="n">name</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
+<span class="w"> </span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">p</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="cm">/* 为线路规程和termios分配空间 */</span><span class="w"></span>
+<span class="w">    </span><span class="n">driver</span><span class="o">-&gt;</span><span class="n">ttys</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">tty_struct</span><span class="w"> </span><span class="o">**</span><span class="p">)</span><span class="n">p</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="n">driver</span><span class="o">-&gt;</span><span class="n">termios</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">ktermios</span><span class="w"> </span><span class="o">**</span><span class="p">)(</span><span class="n">p</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">driver</span><span class="o">-&gt;</span><span class="n">num</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">driver</span><span class="o">-&gt;</span><span class="n">ttys</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">NULL</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="n">driver</span><span class="o">-&gt;</span><span class="n">termios</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">NULL</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
+<span class="w"> </span>
+<span class="w">  </span><span class="cm">/* 创建字符设备，使用 tty_fops */</span><span class="w"></span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">driver</span><span class="o">-&gt;</span><span class="n">flags</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="n">TTY_DRIVER_DYNAMIC_ALLOC</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="n">error</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tty_cdev_add</span><span class="p">(</span><span class="n">driver</span><span class="p">,</span><span class="w"> </span><span class="n">dev</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">driver</span><span class="o">-&gt;</span><span class="n">num</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">error</span><span class="p">)</span><span class="w"></span>
+<span class="w">			</span><span class="k">goto</span><span class="w"> </span><span class="n">err_unreg_char</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+<span class="w"> </span>
+<span class="w">  </span><span class="n">mutex_lock</span><span class="p">(</span><span class="o">&amp;</span><span class="n">tty_mutex</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span>
+<span class="w">  </span><span class="cm">/* 将该 driver-&gt;tty_drivers 添加到全局链表 tty_drivers */</span><span class="w"></span>
+<span class="w">  </span><span class="n">list_add</span><span class="p">(</span><span class="o">&amp;</span><span class="n">driver</span><span class="o">-&gt;</span><span class="n">tty_drivers</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">tty_drivers</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="n">mutex_unlock</span><span class="p">(</span><span class="o">&amp;</span><span class="n">tty_mutex</span><span class="p">);</span><span class="w"></span>
+<span class="w"> </span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="p">(</span><span class="n">driver</span><span class="o">-&gt;</span><span class="n">flags</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="n">TTY_DRIVER_DYNAMIC_DEV</span><span class="p">))</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">driver</span><span class="o">-&gt;</span><span class="n">num</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="o">++</span><span class="p">)</span><span class="w"></span>
+<span class="w">        </span><span class="n">tty_register_device</span><span class="p">(</span><span class="n">driver</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="nb">NULL</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
+<span class="w">  </span>
+<span class="w">  </span><span class="cm">/* proc 文件系统注册driver */</span><span class="w"></span>
+<span class="w">  </span><span class="n">proc_tty_register_driver</span><span class="p">(</span><span class="n">driver</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="n">driver</span><span class="o">-&gt;</span><span class="n">flags</span><span class="w"> </span><span class="o">|=</span><span class="w"> </span><span class="n">TTY_DRIVER_INSTALLED</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<p>tty_driver 注册过程干了哪些事：</p>
+<ol class="arabic simple">
+<li><p>为线路规程和termios分配空间，并使 tty_driver 相应的成员指向它们。</p></li>
+<li><p>注册字符设备，名字是 uart_driver-&gt;name 我们这里是“ttySAC”,文件操作函数集是 tty_fops。</p></li>
+<li><p>将该 uart_driver-&gt;tty_drivers 添加到全局链表 tty_drivers 。</p></li>
+<li><p>向 proc 文件系统添加 driver ，这个暂时不了解。
+至此，文章起初的结构图中的4个ops已经出现了3个，另一个关于线路规程的在哪？继续往下看。</p></li>
+</ol>
+</section>
+<section id="tty-open">
+<h1>tty open调用流程<a class="headerlink" href="#tty-open" title="此标题的永久链接"></a></h1>
+<p>tty_driver 不是注册了一个字符设备么，那我们就以它的 tty_fops 入手，以 open、read、write 为例，看看用户空间是如何访问到最底层的硬件操作函数的。</p>
+<ul class="simple">
+<li><p>整体流程如下：</p></li>
+</ul>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="o">*</span><span class="w"> </span><span class="n">tty_open</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">inode</span><span class="w"> </span><span class="o">*</span><span class="n">inode</span><span class="p">,</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">file</span><span class="w"> </span><span class="o">*</span><span class="n">filp</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="o">*</span><span class="w"> </span><span class="n">__tty_open</span><span class="p">(</span><span class="n">inode</span><span class="p">,</span><span class="w"> </span><span class="n">filp</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="o">*</span><span class="w"> </span><span class="n">tty</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tty_open_by_driver</span><span class="p">(</span><span class="n">device</span><span class="p">,</span><span class="w"> </span><span class="n">inode</span><span class="p">,</span><span class="w"> </span><span class="n">filp</span><span class="p">);</span><span class="w"></span>
+<span class="w">      </span><span class="o">*</span><span class="w"> </span><span class="n">tty</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tty_init_dev</span><span class="p">(</span><span class="n">driver</span><span class="p">,</span><span class="w"> </span><span class="n">index</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="o">*</span><span class="w"> </span><span class="n">tty</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">alloc_tty_struct</span><span class="p">();</span><span class="w"></span>
+<span class="w">          </span><span class="o">*</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">tty_ldisc_init</span><span class="p">(</span><span class="n">tty</span><span class="p">))</span><span class="cm">/* 设置线路规程为 N_TTY */</span><span class="w"></span>
+<span class="w">        </span><span class="o">*</span><span class="w"> </span><span class="n">tty_ldisc_setup</span><span class="p">(</span><span class="n">tty</span><span class="p">,</span><span class="w"> </span><span class="n">tty</span><span class="o">-&gt;</span><span class="n">link</span><span class="p">);</span><span class="w">  </span>
+<span class="w">          </span><span class="o">*</span><span class="w"> </span><span class="n">retval</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tty_ldisc_open</span><span class="p">(</span><span class="n">o_tty</span><span class="p">,</span><span class="w"> </span><span class="n">o_tty</span><span class="o">-&gt;</span><span class="n">ldisc</span><span class="p">);</span><span class="w"></span>
+<span class="w">            </span><span class="o">*</span><span class="w"> </span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ld</span><span class="o">-&gt;</span><span class="n">ops</span><span class="o">-&gt;</span><span class="n">open</span><span class="p">(</span><span class="n">tty</span><span class="p">);</span><span class="w"> </span><span class="c1">//在 tty_ldisc_setup 函数中调用到线路规程的open函数,显然是uart_open</span>
+<span class="w">    </span><span class="o">*</span><span class="w"> </span><span class="n">retval</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tty</span><span class="o">-&gt;</span><span class="n">ops</span><span class="o">-&gt;</span><span class="n">open</span><span class="p">(</span><span class="n">tty</span><span class="p">,</span><span class="w"> </span><span class="n">filp</span><span class="p">);</span><span class="w"></span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">tty_io.c</span></code>:</p></li>
+</ul>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">tty_open</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">inode</span><span class="w"> </span><span class="o">*</span><span class="n">inode</span><span class="p">,</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">file</span><span class="w"> </span><span class="o">*</span><span class="n">filp</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="kt">int</span><span class="w"> </span><span class="n">ret</span><span class="p">;</span><span class="w"></span>
+<span class="w"> </span>
+<span class="w">  </span><span class="n">lock_kernel</span><span class="p">();</span><span class="w"></span>
+<span class="w">  </span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">__tty_open</span><span class="p">(</span><span class="n">inode</span><span class="p">,</span><span class="w"> </span><span class="n">filp</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="n">unlock_kernel</span><span class="p">();</span><span class="w"></span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">ret</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="c1">//为了方便分析，我把看不懂的代码都删掉了。</span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">__tty_open</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">inode</span><span class="w"> </span><span class="o">*</span><span class="n">inode</span><span class="p">,</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">file</span><span class="w"> </span><span class="o">*</span><span class="n">filp</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="k">struct</span><span class="w"> </span><span class="nc">tty_struct</span><span class="w"> </span><span class="o">*</span><span class="n">tty</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">NULL</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="kt">int</span><span class="w"> </span><span class="n">noctty</span><span class="p">,</span><span class="w"> </span><span class="n">retval</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="k">struct</span><span class="w"> </span><span class="nc">tty_driver</span><span class="w"> </span><span class="o">*</span><span class="n">driver</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="kt">int</span><span class="w"> </span><span class="n">index</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="kt">dev_t</span><span class="w"> </span><span class="n">device</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">inode</span><span class="o">-&gt;</span><span class="n">i_rdev</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="kt">unsigned</span><span class="w"> </span><span class="n">saved_flags</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">filp</span><span class="o">-&gt;</span><span class="n">f_flags</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="p">...</span><span class="w">  </span>
+<span class="w">  </span><span class="c1">//在全局tty_drivers链表中获取Core注册的tty_driver</span>
+<span class="w">  	</span><span class="n">tty</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tty_open_current_tty</span><span class="p">(</span><span class="n">device</span><span class="p">,</span><span class="w"> </span><span class="n">filp</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">tty</span><span class="p">)</span><span class="w"></span>
+<span class="w">		</span><span class="n">tty</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tty_open_by_driver</span><span class="p">(</span><span class="n">device</span><span class="p">,</span><span class="w"> </span><span class="n">inode</span><span class="p">,</span><span class="w"> </span><span class="n">filp</span><span class="p">);</span><span class="w"></span>
+
+<span class="w"> </span>
+<span class="w">  </span><span class="n">filp</span><span class="o">-&gt;</span><span class="n">private_data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tty</span><span class="p">;</span><span class="w"></span>
+<span class="w"> </span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">tty</span><span class="o">-&gt;</span><span class="n">ops</span><span class="o">-&gt;</span><span class="n">open</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="cm">/* 调用tty_driver-&gt;tty_foperation-&gt;open */</span><span class="w"></span>
+<span class="w">    </span><span class="n">retval</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tty</span><span class="o">-&gt;</span><span class="n">ops</span><span class="o">-&gt;</span><span class="n">open</span><span class="p">(</span><span class="n">tty</span><span class="p">,</span><span class="w"> </span><span class="n">filp</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="k">static</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">tty_struct</span><span class="w"> </span><span class="o">*</span><span class="n">tty_open_by_driver</span><span class="p">(</span><span class="kt">dev_t</span><span class="w"> </span><span class="n">device</span><span class="p">,</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">inode</span><span class="w"> </span><span class="o">*</span><span class="n">inode</span><span class="p">,</span><span class="w"></span>
+<span class="w">					     </span><span class="k">struct</span><span class="w"> </span><span class="nc">file</span><span class="w"> </span><span class="o">*</span><span class="n">filp</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="cm">/* check whether we&#39;re reopening an existing tty */</span><span class="w"></span>
+<span class="w">	</span><span class="n">tty</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tty_driver_lookup_tty</span><span class="p">(</span><span class="n">driver</span><span class="p">,</span><span class="w"> </span><span class="n">filp</span><span class="p">,</span><span class="w"> </span><span class="n">index</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">IS_ERR</span><span class="p">(</span><span class="n">tty</span><span class="p">))</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="n">mutex_unlock</span><span class="p">(</span><span class="o">&amp;</span><span class="n">tty_mutex</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="k">goto</span><span class="w"> </span><span class="n">out</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">tty</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+
+<span class="w">    </span><span class="p">}</span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="cm">/* Returns with the tty_lock held for now */</span><span class="w"></span>
+<span class="w">		</span><span class="n">tty</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tty_init_dev</span><span class="p">(</span><span class="n">driver</span><span class="p">,</span><span class="w"> </span><span class="n">index</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="n">mutex_unlock</span><span class="p">(</span><span class="o">&amp;</span><span class="n">tty_mutex</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+
+<span class="p">}</span><span class="w"></span>
+
+<span class="c1">//从 tty_drivers 全局链表获取到前边我们注册进去的 tty_driver ，然后分配设置一个 struct tty_struct 的东西，最后调用 tty_struct-&gt;ops-&gt;open 函数，其实 tty_struct-&gt;ops == tty_driver-&gt;ops 。</span>
+
+<span class="k">struct</span><span class="w"> </span><span class="nc">tty_struct</span><span class="w"> </span><span class="o">*</span><span class="n">tty_init_dev</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">tty_driver</span><span class="w"> </span><span class="o">*</span><span class="n">driver</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">idx</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">first_ok</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="k">struct</span><span class="w"> </span><span class="nc">tty_struct</span><span class="w"> </span><span class="o">*</span><span class="n">tty</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="kt">int</span><span class="w"> </span><span class="n">retval</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="cm">/* 分配一个 tty_struct */</span><span class="w"></span>
+<span class="w">  </span><span class="n">tty</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">alloc_tty_struct</span><span class="p">();</span><span class="w"></span>
+<span class="w">  </span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">tty</span><span class="o">-&gt;</span><span class="n">port</span><span class="p">)</span><span class="w"></span>
+<span class="w">	</span><span class="n">tty</span><span class="o">-&gt;</span><span class="n">port</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">driver</span><span class="o">-&gt;</span><span class="n">ports</span><span class="p">[</span><span class="n">idx</span><span class="p">];</span><span class="w"></span>
+
+<span class="w">  </span><span class="c1">//tty_ldisc_open(tty, ld)-&gt; return ld-&gt;ops-&gt;open(tty) -&gt; n_tty_open</span>
+<span class="w">  </span><span class="n">retval</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tty_ldisc_setup</span><span class="p">(</span><span class="n">tty</span><span class="p">,</span><span class="w"> </span><span class="n">tty</span><span class="o">-&gt;</span><span class="n">link</span><span class="p">);</span><span class="w">  </span>
+<span class="w">  </span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">tty</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="k">struct</span><span class="w"> </span><span class="nc">tty_struct</span><span class="w"> </span><span class="o">*</span><span class="n">alloc_tty_struct</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">tty_driver</span><span class="w"> </span><span class="o">*</span><span class="n">driver</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">idx</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="cm">/* 设置线路规程为 N_TTY */</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">tty_ldisc_init</span><span class="p">(</span><span class="n">tty</span><span class="p">))</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="n">kfree</span><span class="p">(</span><span class="n">tty</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="k">return</span><span class="w"> </span><span class="nb">NULL</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="kt">int</span><span class="w"> </span><span class="n">tty_ldisc_setup</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">tty_struct</span><span class="w"> </span><span class="o">*</span><span class="n">tty</span><span class="p">,</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">tty_struct</span><span class="w"> </span><span class="o">*</span><span class="n">o_tty</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="kt">int</span><span class="w"> </span><span class="n">retval</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tty_ldisc_open</span><span class="p">(</span><span class="n">tty</span><span class="p">,</span><span class="w"> </span><span class="n">tty</span><span class="o">-&gt;</span><span class="n">ldisc</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">retval</span><span class="p">)</span><span class="w"></span>
+<span class="w">		</span><span class="k">return</span><span class="w"> </span><span class="n">retval</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">o_tty</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="n">retval</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tty_ldisc_open</span><span class="p">(</span><span class="n">o_tty</span><span class="p">,</span><span class="w"> </span><span class="n">o_tty</span><span class="o">-&gt;</span><span class="n">ldisc</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">retval</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">			</span><span class="n">tty_ldisc_close</span><span class="p">(</span><span class="n">tty</span><span class="p">,</span><span class="w"> </span><span class="n">tty</span><span class="o">-&gt;</span><span class="n">ldisc</span><span class="p">);</span><span class="w"></span>
+<span class="w">			</span><span class="k">return</span><span class="w"> </span><span class="n">retval</span><span class="p">;</span><span class="w"></span>
+<span class="w">		</span><span class="p">}</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+<span class="w">	</span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">tty_ldisc_open</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">tty_struct</span><span class="w"> </span><span class="o">*</span><span class="n">tty</span><span class="p">,</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">tty_ldisc</span><span class="w"> </span><span class="o">*</span><span class="n">ld</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="n">WARN_ON</span><span class="p">(</span><span class="n">test_and_set_bit</span><span class="p">(</span><span class="n">TTY_LDISC_OPEN</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">tty</span><span class="o">-&gt;</span><span class="n">flags</span><span class="p">));</span><span class="w"></span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ld</span><span class="o">-&gt;</span><span class="n">ops</span><span class="o">-&gt;</span><span class="n">open</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="kt">int</span><span class="w"> </span><span class="n">ret</span><span class="p">;</span><span class="w"></span>
+<span class="w">                </span><span class="cm">/* BTM here locks versus a hangup event */</span><span class="w"></span>
+<span class="w">		</span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ld</span><span class="o">-&gt;</span><span class="n">ops</span><span class="o">-&gt;</span><span class="n">open</span><span class="p">(</span><span class="n">tty</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ret</span><span class="p">)</span><span class="w"></span>
+<span class="w">			</span><span class="n">clear_bit</span><span class="p">(</span><span class="n">TTY_LDISC_OPEN</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">tty</span><span class="o">-&gt;</span><span class="n">flags</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">		</span><span class="n">tty_ldisc_debug</span><span class="p">(</span><span class="n">tty</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;%p: opened</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">ld</span><span class="p">);</span><span class="w"></span>
+<span class="w">		</span><span class="k">return</span><span class="w"> </span><span class="n">ret</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="p">}</span><span class="w"></span>
+<span class="w">	</span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<p>整个 tty_open 的工作：
+1、获取 tty_driver
+2、根据 tty_driver 初始化一个 tty_struct
+2.1 设置 tty_struct 的线路规程为 N_TTY (不同类型的线路规程有不同的 ops)
+2.2 调用flush_to_ldisc ，读函数时我们需要分析它。
+2.3 初始化 tty_struct 里的两个等待队列头。
+2.4 设置 tty_struct-&gt;ops == tty_driver-&gt;ops 。
+3、在 tty_ldisc_setup 函数中调用到线路规程的open函数，对于 N_TTY 来说是 n_tty_open 。
+4、如果 tty_struct-&gt;ops 也就是 tty_driver-&gt;ops 定义了 open 函数则调用，显然是有的 uart_open 。</p>
+<p>对于 n_tty_open ，它应该是对线路规程如何“格式化数据”进行设置，太复杂了，忽略掉吧，跟我们没多大关系。对于 uart_open 还是有必要贴下代码。</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">tty_port.c</span></code></p></li>
+</ul>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="o">*</span><span class="w"> </span><span class="n">uart_open</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">tty_struct</span><span class="w"> </span><span class="o">*</span><span class="n">tty</span><span class="p">,</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">file</span><span class="w"> </span><span class="o">*</span><span class="n">filp</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="o">*</span><span class="w"> </span><span class="n">tty_port_open</span><span class="p">(</span><span class="o">&amp;</span><span class="n">state</span><span class="o">-&gt;</span><span class="n">port</span><span class="p">,</span><span class="w"> </span><span class="n">tty</span><span class="p">,</span><span class="w"> </span><span class="n">filp</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="o">*</span><span class="w"> </span><span class="n">port</span><span class="o">-&gt;</span><span class="n">ops</span><span class="o">-&gt;</span><span class="n">activate</span><span class="p">(</span><span class="n">port</span><span class="p">,</span><span class="w"> </span><span class="n">tty</span><span class="p">)</span><span class="w"></span>
+<span class="w">      </span><span class="o">*</span><span class="w"> </span><span class="k">static</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">tty_port_operations</span><span class="w"> </span><span class="n">uart_port_ops</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{.</span><span class="n">activate</span><span class="w">	</span><span class="o">=</span><span class="w"> </span><span class="n">uart_port_activate</span><span class="p">,</span><span class="w">  </span><span class="c1">//serial_core.c</span>
+<span class="w">        </span><span class="o">*</span><span class="w"> </span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">uart_startup</span><span class="p">(</span><span class="n">tty</span><span class="p">,</span><span class="w"> </span><span class="n">state</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span><span class="w"></span>
+<span class="w">          </span><span class="o">*</span><span class="w"> </span><span class="n">retval</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">uart_port_startup</span><span class="p">(</span><span class="n">tty</span><span class="p">,</span><span class="w"> </span><span class="n">state</span><span class="p">,</span><span class="w"> </span><span class="n">init_hw</span><span class="p">);</span><span class="w"></span>
+<span class="w">            </span><span class="o">*</span><span class="w"> </span><span class="n">retval</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">uport</span><span class="o">-&gt;</span><span class="n">ops</span><span class="o">-&gt;</span><span class="n">startup</span><span class="p">(</span><span class="n">uport</span><span class="p">);</span><span class="w"></span>
+</pre></div>
+</div>
+<p>根据 tty_struct 获取到 uart_driver ，再由 uart_driver 获取到里面 的uart_state-&gt;uart_port-&gt;ops-&gt;startup 并调用它。至此，open函数分析完毕，它不是简单的 “打开”，还有大量的初始化工作，最终调用到最底层的 startup 函数。</p>
+</section>
+<section id="tty-write">
+<h1>tty_write调用流程<a class="headerlink" href="#tty-write" title="此标题的永久链接"></a></h1>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">tty_io.c</span></code>:</p></li>
+</ul>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span>* static ssize_t tty_write(struct file *file, const char __user *buf,
+  ├── ld = tty_ldisc_ref_wait(tty); //获取线路规程
+  └── ret = do_tty_write(ld-&gt;ops-&gt;write, tty, file, buf, count); /* 调用 线路规程 n_tty_write 函数 */
+      └── ret = write(tty, file, tty-&gt;write_buf, size);
+          └── static ssize_t n_tty_write(struct tty_struct *tty, struct file *file, //N_tty.c
+              └── c = tty-&gt;ops-&gt;write(tty, b, nr);/* 调用到 uart_write */
+                  └── static int uart_write(struct tty_struct *tty, //serial_core.c
+                      └── __uart_start(tty);
+                          └── port-&gt;ops-&gt;start_tx(port);
+</pre></div>
+</div>
+<p>uart_write 又调用到了最底层的 uart_port-&gt;ops-&gt;start_tx 函数。
+猜测一下，大概“写”的思路：</p>
+<ol class="arabic simple">
+<li><p>将当前进程加入到等待队列</p></li>
+<li><p>设置当前进程为可打断的</p></li>
+<li><p>层层调用最终调用到底层的 start_tx 函数，将要发送的数据存入 DATA 寄存器，由硬件自动发送。</p></li>
+<li><p>进程调度，当前进程进入休眠。</p></li>
+<li><p>硬件发送完成，进入中断处理函数，唤醒对面队列。</p></li>
+</ol>
+</section>
+<section id="tty-read">
+<h1>tty_read调用流程<a class="headerlink" href="#tty-read" title="此标题的永久链接"></a></h1>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="k">static</span><span class="w"> </span><span class="kt">ssize_t</span><span class="w"> </span><span class="nf">tty_read</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">file</span><span class="w"> </span><span class="o">*</span><span class="n">file</span><span class="p">,</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="n">__user</span><span class="w"> </span><span class="o">*</span><span class="n">buf</span><span class="p">,</span><span class="w"> </span><span class="kt">size_t</span><span class="w"> </span><span class="n">count</span><span class="p">,</span><span class="w"></span>
+<span class="w">      </span><span class="n">loff_t</span><span class="w"> </span><span class="o">*</span><span class="n">ppos</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="k">struct</span><span class="w"> </span><span class="nc">tty_struct</span><span class="w"> </span><span class="o">*</span><span class="n">tty</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="k">struct</span><span class="w"> </span><span class="nc">inode</span><span class="w"> </span><span class="o">*</span><span class="n">inode</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="k">struct</span><span class="w"> </span><span class="nc">tty_ldisc</span><span class="w"> </span><span class="o">*</span><span class="n">ld</span><span class="p">;</span><span class="w"></span>
+<span class="w"> </span>
+<span class="w">  </span><span class="n">tty</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">tty_struct</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="n">file</span><span class="o">-&gt;</span><span class="n">private_data</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="n">inode</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">file</span><span class="o">-&gt;</span><span class="n">f_path</span><span class="p">.</span><span class="n">dentry</span><span class="o">-&gt;</span><span class="n">d_inode</span><span class="p">;</span><span class="w"></span>
+<span class="w"> </span>
+<span class="w">  </span>
+<span class="w">  </span><span class="n">ld</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tty_ldisc_ref_wait</span><span class="p">(</span><span class="n">tty</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="cm">/* 调用线路规程 n_tty_read */</span><span class="w"></span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ld</span><span class="o">-&gt;</span><span class="n">ops</span><span class="o">-&gt;</span><span class="n">read</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">ld</span><span class="o">-&gt;</span><span class="n">ops</span><span class="o">-&gt;</span><span class="n">read</span><span class="p">)(</span><span class="n">tty</span><span class="p">,</span><span class="w"> </span><span class="n">file</span><span class="p">,</span><span class="w"> </span><span class="n">buf</span><span class="p">,</span><span class="w"> </span><span class="n">count</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="k">else</span><span class="w"></span>
+<span class="w">    </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">-</span><span class="n">EIO</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="n">tty_ldisc_deref</span><span class="p">(</span><span class="n">ld</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="n">inode</span><span class="o">-&gt;</span><span class="n">i_atime</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">current_fs_time</span><span class="p">(</span><span class="n">inode</span><span class="o">-&gt;</span><span class="n">i_sb</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">i</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<p>调用线路规程的 read 函数，对于 N_TTY 来说是 n_tty_read (删掉了一堆看不懂的代码，还是有很多)</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="k">static</span><span class="w"> </span><span class="kt">ssize_t</span><span class="w"> </span><span class="nf">n_tty_read</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">tty_struct</span><span class="w"> </span><span class="o">*</span><span class="n">tty</span><span class="p">,</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">file</span><span class="w"> </span><span class="o">*</span><span class="n">file</span><span class="p">,</span><span class="w"></span>
+<span class="w">       </span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="n">__user</span><span class="w"> </span><span class="o">*</span><span class="n">buf</span><span class="p">,</span><span class="w"> </span><span class="kt">size_t</span><span class="w"> </span><span class="n">nr</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="n">__user</span><span class="w"> </span><span class="o">*</span><span class="n">b</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">buf</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="n">DECLARE_WAITQUEUE</span><span class="p">(</span><span class="n">wait</span><span class="p">,</span><span class="w"> </span><span class="n">current</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="kt">int</span><span class="w"> </span><span class="n">c</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="kt">int</span><span class="w"> </span><span class="n">minimum</span><span class="p">,</span><span class="w"> </span><span class="n">time</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="kt">ssize_t</span><span class="w"> </span><span class="n">retval</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="kt">ssize_t</span><span class="w"> </span><span class="n">size</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="kt">long</span><span class="w"> </span><span class="n">timeout</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">long</span><span class="w"> </span><span class="n">flags</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="kt">int</span><span class="w"> </span><span class="n">packet</span><span class="p">;</span><span class="w"></span>
+<span class="w"> </span>
+<span class="nl">do_it_again</span><span class="p">:</span><span class="w"></span>
+<span class="w"> </span>
+<span class="w">  </span><span class="n">BUG_ON</span><span class="p">(</span><span class="o">!</span><span class="n">tty</span><span class="o">-&gt;</span><span class="n">read_buf</span><span class="p">);</span><span class="w"></span>
+<span class="w"> </span>
+<span class="w">  </span><span class="n">c</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">job_control</span><span class="p">(</span><span class="n">tty</span><span class="p">,</span><span class="w"> </span><span class="n">file</span><span class="p">);</span><span class="w"></span>
+<span class="w"> </span>
+<span class="w">  </span><span class="n">minimum</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">time</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="n">timeout</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">MAX_SCHEDULE_TIMEOUT</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="cm">/* 如果是非标准模式 */</span><span class="w"></span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">tty</span><span class="o">-&gt;</span><span class="n">icanon</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="p">...</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
+<span class="w"> </span>
+<span class="w">  </span><span class="n">packet</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tty</span><span class="o">-&gt;</span><span class="n">packet</span><span class="p">;</span><span class="w"></span>
+<span class="w"> </span>
+<span class="w">  </span><span class="n">add_wait_queue</span><span class="p">(</span><span class="o">&amp;</span><span class="n">tty</span><span class="o">-&gt;</span><span class="n">read_wait</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">wait</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="k">while</span><span class="w"> </span><span class="p">(</span><span class="n">nr</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="cm">/* First test for status change. */</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">packet</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">tty</span><span class="o">-&gt;</span><span class="n">link</span><span class="o">-&gt;</span><span class="n">ctrl_status</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">      </span><span class="cm">/* 看不懂的都删掉 */</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="cm">/* This statement must be first before checking for input</span>
+<span class="cm">       so that any interrupt will set the state back to</span>
+<span class="cm">       TASK_RUNNING. */</span><span class="w"></span>
+<span class="w">    </span><span class="n">set_current_state</span><span class="p">(</span><span class="n">TASK_INTERRUPTIBLE</span><span class="p">);</span><span class="w"></span>
+<span class="w"> </span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(((</span><span class="n">minimum</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="p">(</span><span class="n">b</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">buf</span><span class="p">))</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">tty</span><span class="o">-&gt;</span><span class="n">minimum_to_wake</span><span class="p">)</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"></span>
+<span class="w">        </span><span class="p">((</span><span class="n">minimum</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="p">(</span><span class="n">b</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">buf</span><span class="p">))</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="mi">1</span><span class="p">))</span><span class="w"></span>
+<span class="w">      </span><span class="n">tty</span><span class="o">-&gt;</span><span class="n">minimum_to_wake</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">minimum</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="p">(</span><span class="n">b</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">buf</span><span class="p">));</span><span class="w"></span>
+<span class="w"> </span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">input_available_p</span><span class="p">(</span><span class="n">tty</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">))</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">      </span><span class="cm">/* 看不懂的都删掉 */</span><span class="w"></span>
+<span class="w">      </span>
+<span class="w">      </span><span class="cm">/* FIXME: does n_tty_set_room need locking ? */</span><span class="w"></span>
+<span class="w">      </span><span class="n">n_tty_set_room</span><span class="p">(</span><span class="n">tty</span><span class="p">);</span><span class="w"></span>
+<span class="w">      </span><span class="cm">/* 进程调度 休眠 */</span><span class="w"></span>
+<span class="w">      </span><span class="n">timeout</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">schedule_timeout</span><span class="p">(</span><span class="n">timeout</span><span class="p">);</span><span class="w"></span>
+<span class="w">      </span><span class="k">continue</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="n">__set_current_state</span><span class="p">(</span><span class="n">TASK_RUNNING</span><span class="p">);</span><span class="w"></span>
+<span class="w"> </span>
+<span class="w">    </span><span class="cm">/* Deal with packet mode. */</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">packet</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">buf</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">      </span><span class="cm">/* 看不懂的都删掉 */</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span>
+<span class="w">    </span><span class="cm">/* 如果是标准模式 */</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">tty</span><span class="o">-&gt;</span><span class="n">icanon</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">      </span><span class="cm">/* N.B. avoid overrun if nr == 0 */</span><span class="w"></span>
+<span class="w">      </span><span class="k">while</span><span class="w"> </span><span class="p">(</span><span class="n">nr</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">tty</span><span class="o">-&gt;</span><span class="n">read_cnt</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="n">eol</span><span class="p">;</span><span class="w"></span>
+<span class="w"> </span>
+<span class="w">        </span><span class="n">eol</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">test_and_clear_bit</span><span class="p">(</span><span class="n">tty</span><span class="o">-&gt;</span><span class="n">read_tail</span><span class="p">,</span><span class="w"></span>
+<span class="w">            </span><span class="n">tty</span><span class="o">-&gt;</span><span class="n">read_flags</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span>
+<span class="w">        </span><span class="cm">/* 从tty-&gt;read_buf 获取数据 */</span><span class="w"></span>
+<span class="w">        </span><span class="n">c</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tty</span><span class="o">-&gt;</span><span class="n">read_buf</span><span class="p">[</span><span class="n">tty</span><span class="o">-&gt;</span><span class="n">read_tail</span><span class="p">];</span><span class="w"></span>
+<span class="w">        </span><span class="n">spin_lock_irqsave</span><span class="p">(</span><span class="o">&amp;</span><span class="n">tty</span><span class="o">-&gt;</span><span class="n">read_lock</span><span class="p">,</span><span class="w"> </span><span class="n">flags</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="n">tty</span><span class="o">-&gt;</span><span class="n">read_tail</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">((</span><span class="n">tty</span><span class="o">-&gt;</span><span class="n">read_tail</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="o">&amp;</span><span class="w"></span>
+<span class="w">              </span><span class="p">(</span><span class="n">N_TTY_BUF_SIZE</span><span class="mi">-1</span><span class="p">));</span><span class="w"></span>
+<span class="w">        </span><span class="n">tty</span><span class="o">-&gt;</span><span class="n">read_cnt</span><span class="o">--</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">eol</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">          </span><span class="cm">/* this test should be redundant:</span>
+<span class="cm">           * we shouldn&#39;t be reading data if</span>
+<span class="cm">           * canon_data is 0</span>
+<span class="cm">           */</span><span class="w"></span>
+<span class="w">          </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">--</span><span class="n">tty</span><span class="o">-&gt;</span><span class="n">canon_data</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"></span>
+<span class="w">            </span><span class="n">tty</span><span class="o">-&gt;</span><span class="n">canon_data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="n">spin_unlock_irqrestore</span><span class="p">(</span><span class="o">&amp;</span><span class="n">tty</span><span class="o">-&gt;</span><span class="n">read_lock</span><span class="p">,</span><span class="w"> </span><span class="n">flags</span><span class="p">);</span><span class="w"></span>
+<span class="w"> </span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">eol</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="p">(</span><span class="n">c</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">__DISABLED_CHAR</span><span class="p">))</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">          </span><span class="cm">/* 将数据拷贝到用户空间 */</span><span class="w"></span>
+<span class="w">          </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">tty_put_user</span><span class="p">(</span><span class="n">tty</span><span class="p">,</span><span class="w"> </span><span class="n">c</span><span class="p">,</span><span class="w"> </span><span class="n">b</span><span class="o">++</span><span class="p">))</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">            </span><span class="n">retval</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">-</span><span class="n">EFAULT</span><span class="p">;</span><span class="w"></span>
+<span class="w">            </span><span class="n">b</span><span class="o">--</span><span class="p">;</span><span class="w"></span>
+<span class="w">            </span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+<span class="w">          </span><span class="p">}</span><span class="w"></span>
+<span class="w">          </span><span class="n">nr</span><span class="o">--</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">eol</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">          </span><span class="n">tty_audit_push</span><span class="p">(</span><span class="n">tty</span><span class="p">);</span><span class="w"></span>
+<span class="w">          </span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">      </span><span class="p">}</span><span class="w"></span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">retval</span><span class="p">)</span><span class="w"></span>
+<span class="w">        </span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">      </span><span class="cm">/* 非标准模式不关心删掉 */</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="p">....</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
+<span class="w">  </span><span class="n">mutex_unlock</span><span class="p">(</span><span class="o">&amp;</span><span class="n">tty</span><span class="o">-&gt;</span><span class="n">atomic_read_lock</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="n">remove_wait_queue</span><span class="p">(</span><span class="o">&amp;</span><span class="n">tty</span><span class="o">-&gt;</span><span class="n">read_wait</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">wait</span><span class="p">);</span><span class="w"></span>
+<span class="w"> </span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">waitqueue_active</span><span class="p">(</span><span class="o">&amp;</span><span class="n">tty</span><span class="o">-&gt;</span><span class="n">read_wait</span><span class="p">))</span><span class="w"></span>
+<span class="w">    </span><span class="n">tty</span><span class="o">-&gt;</span><span class="n">minimum_to_wake</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">minimum</span><span class="p">;</span><span class="w"></span>
+<span class="w"> </span>
+<span class="w">  </span><span class="n">__set_current_state</span><span class="p">(</span><span class="n">TASK_RUNNING</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="p">...</span><span class="w"></span>
+<span class="w">  </span><span class="n">n_tty_set_room</span><span class="p">(</span><span class="n">tty</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">retval</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<p>“读”过程干了哪些事：</p>
+<ol class="arabic simple">
+<li><p>将当前进程加入等待队列</p></li>
+<li><p>设置当前进程可中断</p></li>
+<li><p>进程调度，当前进程进入休眠</p></li>
+<li><p>在某处被唤醒</p></li>
+<li><p>从 tty-&gt;read_buf 取出数据，通过 tty_put_user 拷贝到用户空间。</p></li>
+</ol>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span><span class="w"> </span><span class="nf">tty_flip_buffer_push</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">tty_struct</span><span class="w"> </span><span class="o">*</span><span class="n">tty</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">long</span><span class="w"> </span><span class="n">flags</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="n">spin_lock_irqsave</span><span class="p">(</span><span class="o">&amp;</span><span class="n">tty</span><span class="o">-&gt;</span><span class="n">buf</span><span class="p">.</span><span class="n">lock</span><span class="p">,</span><span class="w"> </span><span class="n">flags</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">tty</span><span class="o">-&gt;</span><span class="n">buf</span><span class="p">.</span><span class="n">tail</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="nb">NULL</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="n">tty</span><span class="o">-&gt;</span><span class="n">buf</span><span class="p">.</span><span class="n">tail</span><span class="o">-&gt;</span><span class="n">commit</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tty</span><span class="o">-&gt;</span><span class="n">buf</span><span class="p">.</span><span class="n">tail</span><span class="o">-&gt;</span><span class="n">used</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="n">spin_unlock_irqrestore</span><span class="p">(</span><span class="o">&amp;</span><span class="n">tty</span><span class="o">-&gt;</span><span class="n">buf</span><span class="p">.</span><span class="n">lock</span><span class="p">,</span><span class="w"> </span><span class="n">flags</span><span class="p">);</span><span class="w"></span>
+<span class="w"> </span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">tty</span><span class="o">-&gt;</span><span class="n">low_latency</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="n">flush_to_ldisc</span><span class="p">(</span><span class="o">&amp;</span><span class="n">tty</span><span class="o">-&gt;</span><span class="n">buf</span><span class="p">.</span><span class="n">work</span><span class="p">.</span><span class="n">work</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="k">else</span><span class="w"></span>
+<span class="w">    </span><span class="n">schedule_delayed_work</span><span class="p">(</span><span class="o">&amp;</span><span class="n">tty</span><span class="o">-&gt;</span><span class="n">buf</span><span class="p">.</span><span class="n">work</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<p>tty_flip_buffer_push 有两种方式调用到 flush_to_ldisc ，一种直接调用，另一种使用延时工作队列，在很久很久以前，我们初始化了这么一个工作队列~（tty_open 初始化 tty_struct 时前面有提到）。</p>
+<p>在flush_to_ldisc 会调用到 disc-&gt;ops-&gt;receive_buf ，对于 N_TTY 来说是 n_tty_receive_buf ，在 n_tty_receive_buf 中，将数据拷贝到 tty-&gt;read_buf ,然后 wake_up_interruptible(&amp;tty-&gt;read_wait) 唤醒休眠队列。</p>
+<p>然后就是前面提到的，在n_tty_read 函数中 从 tty-&gt;read_buf 里取出数据拷贝到用户空间了。</p>
+<p>那么，在何处唤醒，猜测应该是在中断处理函数中，当DATA寄存器满，触发中断，中断处理函数中调用 tty_flip_buffer_push 。</p>
+</section>
+<section id="io">
+<h1>io流程图<a class="headerlink" href="#io" title="此标题的永久链接"></a></h1>
+<p>io操作流程图如下：</p>
+<p><img alt="0001_0001.png" src="../../../_images/0001_00017.png" /></p>
+<p>至此，关于 uart 的框架分析基本就结束了, 对于 tty 以及线路规程是什么东西，大概了解是个什么东西。虽然大部分东西都不需要我们自己实现，但是了解它们有益无害。</p>
 </section>
 
 

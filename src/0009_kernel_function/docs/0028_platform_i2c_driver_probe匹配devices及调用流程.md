@@ -125,8 +125,41 @@ struct device_driver {
 之后我们初始化时会调用函数platform_driver_register进行注册，把platform的函数指针传入了driver结构体中。这样device_driver和platform_driver都有了具体的值,但是好像还是不知道如何执行到我们定义的probe函数。
 到现在为止，仅仅是设备加入到了系统中，设备还没有与驱动联系到一起。下面分析驱动的加载过程，就可以看到驱动是怎么样和设备关联到一起的。
 
+# i2c驱动架构
+
+```
+i2c driver：从设备驱动层
+需要和应用进行交互，封装数据。
+————————————————————————————————————————
+
+i2c core：i2c核心层
+维护i2c总线（bus），其中包括：i2c driver、i2c device链表
+————————————————————————————————————————
+
+i2c device：i2c控制层、初始化i2c控制器
+完成从设备将数据写入和读取。
+————————————————
+```
+
+![0028_0000.png](images/0028_0000.png)
+
 # i2c_add_driver绑定device全过程
 
+我们一般写i2c驱动都是通过`i2c_add_driver`接口新增i2c_client，然后i2c-core-base(i2c总线)去执行匹配流程：
+```c
+static int __init cw2017_init(void)
+{
+	int ret = 0;
+
+	pr_err("enter\n");
+	ret = i2c_add_driver(&cw2017_i2c_driver);
+
+	return ret;
+}
+module_init(cw2017_init);
+```
+
+具体driver和devices匹配流程如下：
 * `drivers/i2c/i2c-core-base.c`:
 ```C++
 * i2c_add_driver(driver)

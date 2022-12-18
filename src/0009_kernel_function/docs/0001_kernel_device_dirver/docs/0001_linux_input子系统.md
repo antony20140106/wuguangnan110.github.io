@@ -1,6 +1,6 @@
 # README
 
-linux input子系统介绍。
+以qcm2290平台为例，linux input子系统介绍。
 
 # refers
 

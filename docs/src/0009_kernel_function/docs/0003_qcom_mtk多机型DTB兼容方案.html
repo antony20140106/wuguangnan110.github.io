@@ -48,9 +48,11 @@
 <li><a class="reference internal" href="#id4">设备树的作用</a></li>
 <li><a class="reference internal" href="#id5">设备树解耦目标</a></li>
 <li><a class="reference internal" href="#id6">设备树解耦框架设计</a></li>
+<li><a class="reference internal" href="#android-8dtb">Android 8以后dtb存放位置</a></li>
+<li><a class="reference internal" href="#android-11-kernel-5-4dtb">Android 11以上+kernel-5.4以上dtb存放位置</a></li>
 <li><a class="reference internal" href="#qcm2290">QCM2290</a><ul>
 <li><a class="reference internal" href="#abldtbo">ABL加载dtbo</a></li>
-<li><a class="reference internal" href="#header-versiondtbo">header_version版本决定dtbo存储位置</a></li>
+<li><a class="reference internal" href="#header-versiondtb">header_version版本决定dtb存储位置</a></li>
 <li><a class="reference internal" href="#dt">分割DT</a></li>
 </ul>
 </li>
@@ -117,6 +119,7 @@
 <li><p><a class="reference external" href="https://blog.csdn.net/zhangdaxia2/article/details/100109684/">Android DTO和dtbo简介</a></p></li>
 <li><p><a class="reference external" href="https://deepinout.com/android-system-analysis/android-kernel-related/easy-to-understand-linux-dts.html">深入浅出理解Linux设备树(DTS)</a></p></li>
 <li><p><a class="reference external" href="https://blog.csdn.net/u013463707/article/details/119459687">MTK平台DTBO如何生成的以及DWS生成DTS</a></p></li>
+<li><p><a class="reference external" href="http://codingsky.com/doc/2022/1/11/919.html">Android 设备树的匹配流程</a></p></li>
 <li><p>Dts：DTS即Device Tree Source，是一个文本形式的文件，用于描述硬件信息。一般都是固定信息，无法变更，无法overlay。</p></li>
 <li><p>Dtsi：可以理解为dts的公共部分，添加、变更非常灵活。Dtsi包含在dts中。</p></li>
 <li><p>Dtb：Dtb编译出来的二进制</p></li>
@@ -150,6 +153,16 @@
 <section id="id6">
 <h1>设备树解耦框架设计<a class="headerlink" href="#id6" title="此标题的永久链接"></a></h1>
 <p><img alt="0003_0001.png" src="../../../_images/0003_00011.png" /></p>
+</section>
+<section id="android-8dtb">
+<h1>Android 8以后dtb存放位置<a class="headerlink" href="#android-8dtb" title="此标题的永久链接"></a></h1>
+<p>Android 8之后为了更好的解耦与升级，google引入了DTO，将DTS分成两部分，一部分是平台相关的DTS，仍是编译成dtb.img打包至boot.img，一部分是ODM/OEM根据硬件客制化修改的DTS，编译的产物放到dtbo分区。</p>
+<p><img alt="0003_0004.png" src="../../../_images/0003_00045.png" /></p>
+</section>
+<section id="android-11-kernel-5-4dtb">
+<h1>Android 11以上+kernel-5.4以上dtb存放位置<a class="headerlink" href="#android-11-kernel-5-4dtb" title="此标题的永久链接"></a></h1>
+<p>Kernel-5.4以上由于GKI问题，dtb.img不再打包到boot.img，而是放入vendor_boot.img，加入vendor_boot分区，需要BOARD_BOOT_HEADER_VERSION等于3，bootloader加载也会使用到这个值。</p>
+<p><img alt="0003_0005.png" src="../../../_images/0003_00055.png" /></p>
 </section>
 <section id="qcm2290">
 <h1>QCM2290<a class="headerlink" href="#qcm2290" title="此标题的永久链接"></a></h1>
@@ -206,37 +219,45 @@ m9200-scuba-iot-idp.dts
 <span class="o">}</span><span class="p">;</span>
 </pre></div>
 </div>
-<p>流程如下：</p>
-<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="o">*</span><span class="w"> </span><span class="n">LinuxLoaderEntry</span><span class="w"> </span><span class="c1">//ABL入口函数</span>
-<span class="w">  </span><span class="o">*</span><span class="w"> </span><span class="n">BootLinux</span><span class="w"> </span><span class="p">(</span><span class="o">&amp;</span><span class="n">Info</span><span class="p">);</span><span class="w"></span>
-<span class="w">    </span><span class="o">*</span><span class="w"> </span><span class="n">Status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">DTBImgCheckAndAppendDT</span><span class="w"> </span><span class="p">(</span><span class="n">Info</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">BootParamlistPtr</span><span class="p">);</span><span class="w"></span>
-<span class="w">      </span><span class="o">*</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">HeaderVersion</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">BOOT_HEADER_VERSION_ONE</span><span class="p">)</span><span class="w"></span>
-<span class="w">        </span><span class="o">*</span><span class="w"> </span><span class="n">NumKernelPages</span><span class="w"> </span><span class="o">=</span><span class="n">GetNumberOfPages</span><span class="w"> </span><span class="p">(</span><span class="n">BootParamlistPtr</span><span class="o">-&gt;</span><span class="n">KernelSize</span><span class="p">,</span><span class="n">BootParamlistPtr</span><span class="o">-&gt;</span><span class="n">PageSize</span><span class="p">);</span><span class="w"> </span><span class="c1">//从boot.img中获取</span>
-<span class="w">          </span><span class="o">*</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">HeaderVersion</span><span class="w">  </span><span class="o">==</span><span class="w"> </span><span class="n">BOOT_HEADER_VERSION_TWO</span><span class="p">)</span><span class="w"></span>
-<span class="w">            </span><span class="o">*</span><span class="w"> </span><span class="n">ImageBuffer</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">BootParamlistPtr</span><span class="o">-&gt;</span><span class="n">ImageBuffer</span><span class="p">;</span><span class="w"></span>
-<span class="w">          </span><span class="o">*</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">HeaderVersion</span><span class="w">  </span><span class="o">==</span><span class="w"> </span><span class="n">BOOT_HEADER_VERSION_THREE</span><span class="p">)</span><span class="w"></span>
-<span class="w">            </span><span class="o">*</span><span class="w"> </span><span class="n">ImageBuffer</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">BootParamlistPtr</span><span class="o">-&gt;</span><span class="n">VendorImageBuffer</span><span class="p">;</span><span class="w"> </span><span class="c1">//从vendor_boot.img中获取</span>
-<span class="w">      </span><span class="o">*</span><span class="w"> </span><span class="n">SocDtb</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">GetSocDtb</span><span class="w"> </span><span class="p">(</span><span class="n">ImageBuffer</span><span class="p">,</span><span class="n">ImageSize</span><span class="p">,</span><span class="n">BootParamlistPtr</span><span class="o">-&gt;</span><span class="n">DtbOffset</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">VOID</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="n">BootParamlistPtr</span><span class="o">-&gt;</span><span class="n">DeviceTreeLoadAddr</span><span class="p">);</span><span class="w"> </span><span class="c1">//获取dtb</span>
-<span class="w">        </span><span class="o">*</span><span class="w"> </span><span class="n">ReadDtbFindMatch</span><span class="w"> </span><span class="p">(</span><span class="o">&amp;</span><span class="n">CurDtbInfo</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">BestDtbInfo</span><span class="p">,</span><span class="w"> </span><span class="n">BIT</span><span class="p">(</span><span class="n">SOC_MATCH</span><span class="p">)</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">BIT</span><span class="p">(</span><span class="n">PAX_BOARD_INFO_MATCH</span><span class="p">)</span><span class="w"> </span><span class="c1">//匹配dtb</span>
-<span class="w">          </span><span class="o">*</span><span class="w"> </span><span class="n">PlatProp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">CONST</span><span class="w"> </span><span class="n">CHAR8</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="n">fdt_getprop</span><span class="w"> </span><span class="p">(</span><span class="n">Dtb</span><span class="p">,</span><span class="w"> </span><span class="n">RootOffset</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;qcom,msm-id&quot;</span><span class="p">,</span><span class="o">&amp;</span><span class="n">LenPlatId</span><span class="p">);</span><span class="w"> </span><span class="c1">//读取dtb中的qcom,msm-id</span>
-<span class="w">          </span><span class="o">*</span><span class="w"> </span><span class="n">BoardProp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">CONST</span><span class="w"> </span><span class="n">CHAR8</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="n">fdt_getprop</span><span class="w"> </span><span class="p">(</span><span class="n">Dtb</span><span class="p">,</span><span class="w"> </span><span class="n">RootOffset</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;qcom,board-id&quot;</span><span class="p">,</span><span class="o">&amp;</span><span class="n">LenBoardId</span><span class="p">);</span><span class="c1">//读取dtb中的qcom,board-id</span>
-<span class="w">          </span><span class="o">*</span><span class="w"> </span><span class="n">GetBoardMatchDtb</span><span class="w"> </span><span class="p">(</span><span class="n">CurDtbInfo</span><span class="p">,</span><span class="w"> </span><span class="n">BoardProp</span><span class="p">,</span><span class="w"> </span><span class="n">LenBoardId</span><span class="p">);</span><span class="w"> </span><span class="c1">//和xbl中读出来的对比，Get the properties like variant id, subtype from Dtb then compare the dtb vs Board</span>
-<span class="w">          </span><span class="o">*</span><span class="w"> </span><span class="p">(</span><span class="n">CONST</span><span class="w"> </span><span class="n">CHAR8</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="n">fdt_getprop</span><span class="w"> </span><span class="p">(</span><span class="n">Dtb</span><span class="p">,</span><span class="w"> </span><span class="n">RootOffset</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;qcom,pmic-id&quot;</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">LenPmicId</span><span class="p">);</span><span class="w"></span>
-<span class="w">          </span><span class="o">*</span><span class="w"> </span><span class="n">ReadBestPmicMatch</span><span class="w"> </span><span class="p">(</span><span class="n">PmicProp</span><span class="p">,</span><span class="w"> </span><span class="n">PmicMaxIdx</span><span class="p">,</span><span class="w"> </span><span class="n">PmicEntCount</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">BestPmicInfo</span><span class="p">);</span><span class="c1">// 对比qcom,pmic-id，dts中没这个</span>
-<span class="w">          </span><span class="o">*</span><span class="w"> </span><span class="n">GetPaxBoardInfoMatchDtb</span><span class="p">(</span><span class="n">CurDtbInfo</span><span class="p">);</span><span class="w"> </span><span class="c1">//pax加的</span>
-<span class="w">            </span><span class="o">*</span><span class="w"> </span><span class="n">RootOffset</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fdt_path_offset</span><span class="p">(</span><span class="n">Dtb</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/soc/pax_board_info&quot;</span><span class="p">);</span><span class="w"> </span><span class="c1">//找到soc=pax_board_info的dtb</span>
-<span class="w">            </span><span class="o">*</span><span class="w"> </span><span class="n">MainBoardProp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">CONST</span><span class="w"> </span><span class="n">CHAR8</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="n">fdt_getprop</span><span class="p">(</span><span class="n">Dtb</span><span class="p">,</span><span class="w"> </span><span class="n">RootOffset</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;pax,main_board&quot;</span><span class="p">,</span><span class="w"></span>
-<span class="w">            </span><span class="o">*</span><span class="w"> </span><span class="n">PortBoardProp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">CONST</span><span class="w"> </span><span class="n">CHAR8</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="n">fdt_getprop</span><span class="p">(</span><span class="n">Dtb</span><span class="p">,</span><span class="w"> </span><span class="n">RootOffset</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;pax,port_board&quot;</span><span class="p">,</span><span class="w"></span>
-<span class="w">            </span><span class="o">*</span><span class="w"> </span><span class="n">TerminalNameProp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">CONST</span><span class="w"> </span><span class="n">CHAR8</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="n">fdt_getprop</span><span class="p">(</span><span class="n">Dtb</span><span class="p">,</span><span class="w"> </span><span class="n">RootOffset</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;pax,terminal_name&quot;</span><span class="p">,</span><span class="w"> </span><span class="c1">//读取三个dtb属性</span>
-<span class="w">            </span><span class="o">*</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">getCfgTermialName</span><span class="p">(</span><span class="n">Buff</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"></span>
-<span class="w">              </span><span class="o">*</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="n">getCfgItemValStr</span><span class="p">(</span><span class="s">&quot;TERMINAL_NAME&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">buf</span><span class="p">);</span><span class="w"> </span><span class="c1">//pax_lib.c 我们terminal_name、port_board、main_board都是从sp配置文件中获取的</span>
-<span class="w">              </span><span class="o">*</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">AsciiStrnCmp</span><span class="p">(</span><span class="n">Buff</span><span class="p">,</span><span class="w"> </span><span class="n">TerminalName</span><span class="p">,</span><span class="w"> </span><span class="n">TerminalNamePropLen</span><span class="p">))</span><span class="w"></span>
-<span class="w">        </span><span class="o">*</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="n">BestDtbInfo</span><span class="p">.</span><span class="n">Dtb</span><span class="p">;</span><span class="w"> </span><span class="c1">//</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>
+</pre></div>
+</div>
+<p>ABL匹配dtbo和dtb流程如下：</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span>* LinuxLoaderEntry //ABL入口函数
+  └── BootLinux (&amp;Info);
+      └── Status = DTBImgCheckAndAppendDT (Info, &amp;BootParamlistPtr);
+          ├── if (HeaderVersion &gt; BOOT_HEADER_VERSION_ONE)
+          │   └── NumKernelPages =GetNumberOfPages (BootParamlistPtr-&gt;KernelSize,BootParamlistPtr-&gt;PageSize); //从boot.img中获取dtb
+          │       ├── if (HeaderVersion  == BOOT_HEADER_VERSION_TWO)
+          │       │   └── ImageBuffer = BootParamlistPtr-&gt;ImageBuffer;
+          │       └── if (HeaderVersion  == BOOT_HEADER_VERSION_THREE)
+          │           └── ImageBuffer = BootParamlistPtr-&gt;VendorImageBuffer; //从vendor_boot.img中获取dtb
+          └── SocDtb = GetSocDtb (ImageBuffer,ImageSize,BootParamlistPtr-&gt;DtbOffset, (VOID *)BootParamlistPtr-&gt;DeviceTreeLoadAddr); //获取dtb
+              ├── ReadDtbFindMatch (&amp;CurDtbInfo, &amp;BestDtbInfo, BIT(SOC_MATCH) | BIT(PAX_BOARD_INFO_MATCH) //匹配dtb
+              │   ├── PlatProp = (CONST CHAR8 *)fdt_getprop (Dtb, RootOffset, &quot;qcom,msm-id&quot;,&amp;LenPlatId); //读取dtb中的qcom,msm-id
+              │   ├── BoardProp = (CONST CHAR8 *)fdt_getprop (Dtb, RootOffset, &quot;qcom,board-id&quot;,&amp;LenBoardId);//读取dtb中的qcom,board-id
+              │   ├── GetBoardMatchDtb (CurDtbInfo, BoardProp, LenBoardId); //和xbl中读出来的对比，Get the properties like variant id, subtype from Dtb then compare the dtb vs Board
+              │   ├── (CONST CHAR8 *)fdt_getprop (Dtb, RootOffset, &quot;qcom,pmic-id&quot;, &amp;LenPmicId);
+              │   ├── ReadBestPmicMatch (PmicProp, PmicMaxIdx, PmicEntCount, &amp;BestPmicInfo);// 对比qcom,pmic-id，dts中没这个
+              │   └── GetPaxBoardInfoMatchDtb(CurDtbInfo); //pax加的
+              │       ├── RootOffset = fdt_path_offset(Dtb, &quot;/soc/pax_board_info&quot;); //找到soc=pax_board_info的dtb
+              │       ├── MainBoardProp = (CONST CHAR8 *)fdt_getprop(Dtb, RootOffset, &quot;pax,main_board&quot;,
+              │       ├── PortBoardProp = (CONST CHAR8 *)fdt_getprop(Dtb, RootOffset, &quot;pax,port_board&quot;,
+              │       ├── TerminalNameProp = (CONST CHAR8 *)fdt_getprop(Dtb, RootOffset, &quot;pax,terminal_name&quot;, //读取dts中三个dtb属性
+              │       ├── if (getCfgTermialName(Buff) &lt; 0) //对比terminal_name
+              │       │   └── return getCfgItemValStr(&quot;TERMINAL_NAME&quot;, buf); //pax_lib.c 我们terminal_name、port_board、main_board都是从sp配置文件中获取的
+              │       ├── if (AsciiStrnCmp(Buff, TerminalName, TerminalNamePropLen))
+              │       │   └── return EFI_NOT_FOUND;
+              │       ├── if (getCfgMainBoard(Buff) &lt; 0)
+              │       ├── if (AsciiStrnCmp(Buff, MainBoard, MainBoardPropLen)) //对比main_board
+              │       ├── if (getCfgPortBoard(Buff) &lt; 0)
+              │       └── if (AsciiStrnCmp(Buff, PortBoard, PortBoardPropLen)) //对比port_board
+              └── return BestDtbInfo.Dtb; //
 </pre></div>
 </div>
 </section>
-<section id="header-versiondtbo">
-<h2>header_version版本决定dtbo存储位置<a class="headerlink" href="#header-versiondtbo" title="此标题的永久链接"></a></h2>
+<section id="header-versiondtb">
+<h2>header_version版本决定dtb存储位置<a class="headerlink" href="#header-versiondtb" title="此标题的永久链接"></a></h2>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">BootImage.h</span></code>解释：</p></li>
 </ul>
@@ -370,13 +391,32 @@ m9200-scuba-iot-idp.dts
 <span class="cm"> */</span><span class="w"></span>
 </pre></div>
 </div>
-<p>可以看到当<code class="docutils literal notranslate"><span class="pre">BOOT_HEADER_VERSION_THREE</span> <span class="pre">3</span></code>时，dtb.img不再打包到boot.img，而是放入vendor_boot.img，加入vendor_boot分区，bootloader加载也会使用到这个值。</p>
+<p>可以看到当<code class="docutils literal notranslate"><span class="pre">BOOT_HEADER_VERSION_THREE</span> <span class="pre">3</span></code>时，表示内核版本是Kernel-5.4以上，由于GKI问题，dtb.img不再打包到boot.img，而是放入vendor_boot.img，加入vendor_boot分区，ABL加载也会使用到这个值，目前qcm2290没有这个分区，所有dtb还是放在boot.img，可见还是由内核版本决定的。</p>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">HEADER_VERSION</span></code>获取方式：</p></li>
+<li><p>目前ABL中<code class="docutils literal notranslate"><span class="pre">HEADER_VERSION</span></code>获取方式是从boot.img镜像中获取：</p></li>
 </ul>
 <div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="n">EFI_STATUS</span><span class="w"></span>
 <span class="nf">BootLinux</span><span class="w"> </span><span class="p">(</span><span class="n">BootInfo</span><span class="w"> </span><span class="o">*</span><span class="n">Info</span><span class="p">)</span><span class="w"></span>
 <span class="p">{</span><span class="w"></span>
+
+<span class="w">  </span><span class="n">Status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">GetImage</span><span class="w"> </span><span class="p">(</span><span class="n">Info</span><span class="p">,</span><span class="w"></span>
+<span class="w">                     </span><span class="o">&amp;</span><span class="n">BootParamlistPtr</span><span class="p">.</span><span class="n">ImageBuffer</span><span class="p">,</span><span class="w"></span>
+<span class="w">                     </span><span class="p">(</span><span class="n">UINTN</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="o">&amp;</span><span class="n">BootParamlistPtr</span><span class="p">.</span><span class="n">ImageSize</span><span class="p">,</span><span class="w"></span>
+<span class="w">                     </span><span class="p">((</span><span class="o">!</span><span class="n">Info</span><span class="o">-&gt;</span><span class="n">MultiSlotBoot</span><span class="w"> </span><span class="o">||</span><span class="w"></span>
+<span class="w">                        </span><span class="n">IsDynamicPartitionSupport</span><span class="w"> </span><span class="p">())</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"></span>
+<span class="w">                        </span><span class="p">(</span><span class="n">Recovery</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"></span>
+<span class="w">                        </span><span class="o">!</span><span class="n">IsBuildUseRecoveryAsBoot</span><span class="w"> </span><span class="p">()))</span><span class="o">?</span><span class="w"></span>
+<span class="w">                        </span><span class="s">&quot;recovery&quot;</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="s">&quot;boot&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">Status</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">EFI_SUCCESS</span><span class="w"> </span><span class="o">||</span><span class="w"></span>
+<span class="w">      </span><span class="n">BootParamlistPtr</span><span class="p">.</span><span class="n">ImageBuffer</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="nb">NULL</span><span class="w"> </span><span class="o">||</span><span class="w"></span>
+<span class="w">      </span><span class="n">BootParamlistPtr</span><span class="p">.</span><span class="n">ImageSize</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">DEBUG</span><span class="w"> </span><span class="p">((</span><span class="n">EFI_D_ERROR</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;BootLinux: Get%aImage failed!</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"></span>
+<span class="w">            </span><span class="p">(</span><span class="o">!</span><span class="n">Info</span><span class="o">-&gt;</span><span class="n">MultiSlotBoot</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"></span>
+<span class="w">             </span><span class="p">(</span><span class="n">Recovery</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"></span>
+<span class="w">             </span><span class="o">!</span><span class="n">IsBuildUseRecoveryAsBoot</span><span class="w"> </span><span class="p">()))</span><span class="o">?</span><span class="w"> </span><span class="s">&quot;Recovery&quot;</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="s">&quot;Boot&quot;</span><span class="p">));</span><span class="w"></span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">EFI_NOT_STARTED</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
+
 <span class="w">  </span><span class="n">Info</span><span class="o">-&gt;</span><span class="n">HeaderVersion</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">((</span><span class="n">boot_img_hdr</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"></span>
 <span class="w">                         </span><span class="p">(</span><span class="n">BootParamlistPtr</span><span class="p">.</span><span class="n">ImageBuffer</span><span class="p">))</span><span class="o">-&gt;</span><span class="n">header_version</span><span class="p">;</span><span class="w"></span>
 <span class="p">}</span><span class="w"></span>
