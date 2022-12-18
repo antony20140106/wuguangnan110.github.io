@@ -236,16 +236,49 @@ IINDPM_STAT 或 VINDPM_STAT 状态位分别在 IINDPM 或 VINDPM 期间设置。
 
 * 最终跟到代码，dts里面有一个bool可以关闭配置gpio:
 ```diff
+--- a/UM.9.15/kernel/msm-4.19/drivers/i2c/busses/i2c-qcom-geni.c
++++ b/UM.9.15/kernel/msm-4.19/drivers/i2c/busses/i2c-qcom-geni.c
+@@ -126,6 +126,7 @@ struct geni_i2c_dev {
+        enum i2c_se_mode se_mode;
+        bool cmd_done;
+        bool is_shared;
++       bool is_i2cpin_suspend;
+        u32 dbg_num;
+        struct dbg_buf_ctxt *dbg_buf_ptr;
+ };
+@@ -1028,6 +1029,12 @@ static int geni_i2c_probe(struct platform_device *pdev)
+                dev_info(&pdev->dev, "Multi-EE usecase\n");
+        }
+
++       if (of_property_read_bool(pdev->dev.of_node, "qcom,i2c-pin-suspend")) {
++               gi2c->is_i2cpin_suspend = true;
++               dev_info(&pdev->dev, "i2c suspend by cfg gpio mode\n");
++       }
++
+        if (of_property_read_u32(pdev->dev.of_node, "qcom,clk-freq-out",
+                                &gi2c->i2c_rsc.clk_freq_out)) {
+                gi2c->i2c_rsc.clk_freq_out = KHz(400);
+@@ -1116,9 +1123,10 @@ static int geni_i2c_runtime_suspend(struct device *dev)
+        if (gi2c->se_mode == FIFO_SE_DMA)
+                disable_irq(gi2c->irq);
+
+-       if (gi2c->is_shared) {
++       if (gi2c->is_shared || gi2c->is_i2cpin_suspend) {
+                /* Do not unconfigure GPIOs if shared se */
+                se_geni_clks_off(&gi2c->i2c_rsc);
+        } else {
+                se_geni_resources_off(&gi2c->i2c_rsc);
+        }
+
 --- a/UM.9.15/vendor/qcom/proprietary/devicetree-4.19/qcom/m9200/m9200-scuba-iot-idp-overlay.dts
 +++ b/UM.9.15/vendor/qcom/proprietary/devicetree-4.19/qcom/m9200/m9200-scuba-iot-idp-overlay.dts
-@@ -96,6 +96,7 @@
+@@ -96,7 +96,8 @@
  };
  &qupv3_se0_i2c {
         status = "okay";
-+    qcom,shared;
-        sgm41528@6b {
-                compatible = "pax,sgm41528";
-                reg = <0x6b>;
+-       sgm41528@6b {
++    qcom,i2c-pin-suspend;
++    sgm41528@6b {
 ```
 
 rumtime PM电源管理机制请参考：

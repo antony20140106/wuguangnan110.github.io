@@ -326,16 +326,49 @@ IINDPM_STAT 或 VINDPM_STAT 状态位分别在 IINDPM 或 VINDPM 期间设置。
 <ul class="simple">
 <li><p>最终跟到代码，dts里面有一个bool可以关闭配置gpio:</p></li>
 </ul>
-<div class="highlight-diff notranslate"><div class="highlight"><pre><span></span><span class="gd">--- a/UM.9.15/vendor/qcom/proprietary/devicetree-4.19/qcom/m9200/m9200-scuba-iot-idp-overlay.dts</span><span class="w"></span>
+<div class="highlight-diff notranslate"><div class="highlight"><pre><span></span><span class="gd">--- a/UM.9.15/kernel/msm-4.19/drivers/i2c/busses/i2c-qcom-geni.c</span><span class="w"></span>
+<span class="gi">+++ b/UM.9.15/kernel/msm-4.19/drivers/i2c/busses/i2c-qcom-geni.c</span><span class="w"></span>
+<span class="gu">@@ -126,6 +126,7 @@ struct geni_i2c_dev {</span><span class="w"></span>
+<span class="w"> </span>       enum i2c_se_mode se_mode;<span class="w"></span>
+<span class="w"> </span>       bool cmd_done;<span class="w"></span>
+<span class="w"> </span>       bool is_shared;<span class="w"></span>
+<span class="gi">+       bool is_i2cpin_suspend;</span><span class="w"></span>
+<span class="w"> </span>       u32 dbg_num;<span class="w"></span>
+<span class="w"> </span>       struct dbg_buf_ctxt *dbg_buf_ptr;<span class="w"></span>
+<span class="w"> </span>};<span class="w"></span>
+<span class="gu">@@ -1028,6 +1029,12 @@ static int geni_i2c_probe(struct platform_device *pdev)</span><span class="w"></span>
+<span class="w"> </span>               dev_info(&amp;pdev-&gt;dev, &quot;Multi-EE usecase\n&quot;);<span class="w"></span>
+<span class="w"> </span>       }<span class="w"></span>
+
+<span class="gi">+       if (of_property_read_bool(pdev-&gt;dev.of_node, &quot;qcom,i2c-pin-suspend&quot;)) {</span><span class="w"></span>
+<span class="gi">+               gi2c-&gt;is_i2cpin_suspend = true;</span><span class="w"></span>
+<span class="gi">+               dev_info(&amp;pdev-&gt;dev, &quot;i2c suspend by cfg gpio mode\n&quot;);</span><span class="w"></span>
+<span class="gi">+       }</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="w"> </span>       if (of_property_read_u32(pdev-&gt;dev.of_node, &quot;qcom,clk-freq-out&quot;,<span class="w"></span>
+<span class="w"> </span>                               &amp;gi2c-&gt;i2c_rsc.clk_freq_out)) {<span class="w"></span>
+<span class="w"> </span>               gi2c-&gt;i2c_rsc.clk_freq_out = KHz(400);<span class="w"></span>
+<span class="gu">@@ -1116,9 +1123,10 @@ static int geni_i2c_runtime_suspend(struct device *dev)</span><span class="w"></span>
+<span class="w"> </span>       if (gi2c-&gt;se_mode == FIFO_SE_DMA)<span class="w"></span>
+<span class="w"> </span>               disable_irq(gi2c-&gt;irq);<span class="w"></span>
+
+<span class="gd">-       if (gi2c-&gt;is_shared) {</span><span class="w"></span>
+<span class="gi">+       if (gi2c-&gt;is_shared || gi2c-&gt;is_i2cpin_suspend) {</span><span class="w"></span>
+<span class="w"> </span>               /* Do not unconfigure GPIOs if shared se */<span class="w"></span>
+<span class="w"> </span>               se_geni_clks_off(&amp;gi2c-&gt;i2c_rsc);<span class="w"></span>
+<span class="w"> </span>       } else {<span class="w"></span>
+<span class="w"> </span>               se_geni_resources_off(&amp;gi2c-&gt;i2c_rsc);<span class="w"></span>
+<span class="w"> </span>       }<span class="w"></span>
+
+<span class="gd">--- a/UM.9.15/vendor/qcom/proprietary/devicetree-4.19/qcom/m9200/m9200-scuba-iot-idp-overlay.dts</span><span class="w"></span>
 <span class="gi">+++ b/UM.9.15/vendor/qcom/proprietary/devicetree-4.19/qcom/m9200/m9200-scuba-iot-idp-overlay.dts</span><span class="w"></span>
-<span class="gu">@@ -96,6 +96,7 @@</span><span class="w"></span>
+<span class="gu">@@ -96,7 +96,8 @@</span><span class="w"></span>
 <span class="w"> </span>};<span class="w"></span>
 <span class="w"> </span>&amp;qupv3_se0_i2c {<span class="w"></span>
 <span class="w"> </span>       status = &quot;okay&quot;;<span class="w"></span>
-<span class="gi">+    qcom,shared;</span><span class="w"></span>
-<span class="w"> </span>       sgm41528@6b {<span class="w"></span>
-<span class="w"> </span>               compatible = &quot;pax,sgm41528&quot;;<span class="w"></span>
-<span class="w"> </span>               reg = &lt;0x6b&gt;;<span class="w"></span>
+<span class="gd">-       sgm41528@6b {</span><span class="w"></span>
+<span class="gi">+    qcom,i2c-pin-suspend;</span><span class="w"></span>
+<span class="gi">+    sgm41528@6b {</span><span class="w"></span>
 </pre></div>
 </div>
 <p>rumtime PM电源管理机制请参考：</p>

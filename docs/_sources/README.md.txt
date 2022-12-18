@@ -19,6 +19,7 @@
 
 NO.|文件名称|摘要
 :--:|:--|:--
+0026| [kernel_device_dirver](src/0026_kernel_device_dirver/README.md) | 总结一下linux平台各种设备驱动。
 0025| [uart_function](src/0025_uart_function/README.md) | android uart驱动分析
 0024| [NFC_function](src/0024_NFC_function/README.md) | Android系统NFC系统学习
 0023| [hardware_function](src/0023_hardware_function/README.md) | 驱动工程师必备的硬件知识，储备起来
