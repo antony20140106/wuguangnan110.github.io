@@ -444,3 +444,79 @@ PD充电大概流程如下：
 188902: 11-02 12:28:40.454 D/PaxBatteryManagerService( 1052): onReceive action = android.intent.action.BATTERY_CHANGED
 188903: 11-02 12:28:40.454 D/PaxBatteryManagerService( 1052): onReceive bms_switch = 1
 ```
+
+# 100%电量立即停止充电
+
+目前发现电量到达100%时立即断开了充电power_path，这样会使机器充电没有到达满充就停止充电了，需要增加判断条件，让bms判断100%电量并且充电状态为满充了，才停止充电，修改如下：
+```diff
+--- a/QSSI.12/frameworks/base/services/core/java/com/pax/server/PaxBatteryManagerService.java
++++ b/QSSI.12/frameworks/base/services/core/java/com/pax/server/PaxBatteryManagerService.java
+@@ -561,7 +561,8 @@ public final class PaxBatteryManagerService extends SystemService {
+                                int total=intent.getIntExtra(BatteryManager.EXTRA_SCALE,1);
+                                int PLUG =intent.getIntExtra(BatteryManager.EXTRA_PLUGGED, -1);
+                                mBatteryLevel=currLevel*100/total;//计算电量
+-                               if(status==BatteryManager.BATTERY_STATUS_CHARGING)
++                               if(status==BatteryManager.BATTERY_STATUS_CHARGING ||
++                                       status == BatteryManager.BATTERY_STATUS_FULL)
+                                {
+                                        chargeState = CHARGEING;
+                                }
+@@ -580,12 +581,17 @@ public final class PaxBatteryManagerService extends SystemService {
+                                if(DEBUG) Log.d(TAG,"batteryTermInfo.getFullcharge() = "+batteryTermInfo.getFullcharge());
+                                if(DEBUG) Log.d(TAG,"batteryTermInfo.getRecharge() = "+batteryTermInfo.getRecharge());
+                                if(PLUG > 0 && mBatteryLevel >= batteryTermInfo.getFullcharge() && chargeState == CHARGEING){
++                                       if (mBatteryLevel == MOBILE_MODE_FULLCHARGE &&
++                                               status != BatteryManager.BATTERY_STATUS_FULL) {
++                                               Log.d(TAG,"charge not full,chargeState = "+chargeState);
++                                               return;
++                                       }
+```
+
+* 打印如下：
+```log
+Charging:
+01-31 15:32:00.928 E/PAX_BAT (    0): [status:Charging, health:Good, present:1, tech:Li-ion, capcity:100,cap_rm:5108 mah, vol:4339 mv, temp:28, curr:251 ma, ui_soc:100]
+01-31 15:32:00.936 W/healthd (    0): battery l=100 v=4339 t=28.0 h=2 st=2 c=251000 fc=5108000 cc=6 chg=u
+01-31 15:32:00.944 I/        (    0): ///PD dbg info 126d
+01-31 15:32:00.944 I/<62770.434>TCPC-TCPC(    0): bat_update_work_func battery update soc = 100
+01-31 15:32:00.944 I/<62770.434>TCPC-TCPC(    0): bat_update_work_func Battery Charging
+01-31 15:32:00.953 D/QtiCarrierConfigHelper( 2501): WARNING, no carrier configs on phone Id: 0
+01-31 15:32:00.953 D/QtiCarrierConfigHelper( 2501): WARNING, no carrier configs on phone Id: 1
+01-31 15:32:00.954 D/PaxBatteryManagerService( 1669): onReceive action = android.intent.action.BATTERY_CHANGED
+01-31 15:32:00.954 D/PaxBatteryManagerService( 1669): onReceive bms_switch = 1
+01-31 15:32:00.954 D/PaxBatteryManagerService( 1669): mode = 0
+01-31 15:32:00.954 D/PaxBatteryManagerService( 1669): chargeState = 1
+01-31 15:32:00.954 D/PaxBatteryManagerService( 1669): getInitcurMode = 0
+01-31 15:32:00.954 D/PaxBatteryManagerService( 1669): batteryTermInfo.getCurmode() = 1
+01-31 15:32:00.954 D/PaxBatteryManagerService( 1669): mBatteryLevel = 100
+01-31 15:32:00.954 D/PaxBatteryManagerService( 1669): batteryTermInfo.getFullcharge() = 100
+01-31 15:32:00.954 D/PaxBatteryManagerService( 1669): batteryTermInfo.getRecharge() = 85
+01-31 15:32:00.954 D/PaxBatteryManagerService( 1669): charge not full,chargeState = 1
+
+Full:
+01-31 15:32:50.078 E/PAX_BAT (    0): [status:Full, health:Good, present:1, tech:Li-ion, capcity:100,cap_rm:5108 mah, vol:4318 mv, temp:28, curr:-3 ma, ui_soc:100]
+01-31 15:32:50.086 W/healthd (    0): battery l=100 v=4318 t=28.0 h=2 st=5 c=-3000 fc=5108000 cc=6 chg=u
+01-31 15:32:50.107 I/PAX_BMS (    0): SET_CHG_EN: 0
+01-31 15:32:50.107 E/        (    0): bms_notify_call_chain
+01-31 15:32:50.107 E/PAX_CHG (    0): bms_notify_event evt = SET_CHG_EN en:0
+01-31 15:32:50.106 D/PaxBatteryManagerService( 1669): onReceive action = android.intent.action.BATTERY_CHANGED
+01-31 15:32:50.106 D/PaxBatteryManagerService( 1669): onReceive bms_switch = 1
+01-31 15:32:50.106 D/PaxBatteryManagerService( 1669): mode = 0
+01-31 15:32:50.106 D/PaxBatteryManagerService( 1669): chargeState = 1
+01-31 15:32:50.106 D/PaxBatteryManagerService( 1669): getInitcurMode = 0
+01-31 15:32:50.106 D/PaxBatteryManagerService( 1669): batteryTermInfo.getCurmode() = 1
+01-31 15:32:50.106 D/PaxBatteryManagerService( 1669): mBatteryLevel = 100
+01-31 15:32:50.106 D/PaxBatteryManagerService( 1669): batteryTermInfo.getFullcharge() = 100
+01-31 15:32:50.106 D/PaxBatteryManagerService( 1669): batteryTermInfo.getRecharge() = 85
+01-31 15:32:50.106 D/PaxBatteryManagerService( 1669): discharge
+01-31 15:32:50.106 D/PaxBatteryManagerService( 1669): setChargeState: 0
+01-31 15:32:50.106 D/PaxBMSManager( 1669): disableCharge
+01-31 15:32:50.106 D/PaxBMSService( 1669): disableCharge 
+01-31 15:32:50.107 V/DeviceStatisticsService( 2558): chargerType=2 batteryLevel=100 totalBatteryCapacity=5108000
+01-31 15:32:50.115 D/KeyguardUpdateMonitor( 2245): received broadcast android.intent.action.BATTERY_CHANGED
+01-31 15:32:50.123 D/PaxBMSService( 1669): ioctl->SET_CHG_EN open success
+01-31 15:32:50.123 D/PaxBatteryManagerService( 1669): setChargeState over
+01-31 15:32:50.123 D/PaxBatteryManagerService( 1669): disablePowerPath
+01-31 15:32:50.123 D/PaxBMSManager( 1669): disablePowerPath
+01-31 15:32:50.123 D/PaxBMSService( 1669): disablePowerPath
+```

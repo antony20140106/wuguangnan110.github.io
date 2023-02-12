@@ -6,6 +6,8 @@
 
 NO.|文件名称|摘要
 :--:|:--|:--
+0010| [mark](docs/0010_mark.md) | 记录一些gms杂项问题。
+0009| [GMS环境配置及测试方法文档](docs/0009_GMS环境配置及测试方法文档.md) | GMS环境配置及测试方法文档
 0008| [TEE启动流程](docs/0008_TEE启动流程.md) | 从MTK"开机流程"中可以看到，TEE启动是从pl-atf-tee-lk顺序进行的。
 0007| [豆荚TEE兼容方案实现](docs/0007_豆荚TEE兼容方案实现.md) | 由于M50/M8项目需要更换TEE，从瓶钵换成豆荚，需要重新做兼容。
 0006| [google_keybox_M8写入实验](docs/0006_google_keybox_M8写入实验.md) | 由于M50项目的key用完了，只能用M8的key。

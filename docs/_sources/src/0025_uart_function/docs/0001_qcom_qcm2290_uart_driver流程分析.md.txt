@@ -535,15 +535,15 @@ tty_driver 不是注册了一个字符设备么，那我们就以它的 tty_fops
 * 整体流程如下：
 ```c
 * tty_open(struct inode *inode, struct file *filp)
-  * __tty_open(inode, filp);
-    * tty = tty_open_by_driver(device, inode, filp);
-      * tty = tty_init_dev(driver, index);
-        * tty = alloc_tty_struct();
-          * if (tty_ldisc_init(tty))/* 设置线路规程为 N_TTY */
-        * tty_ldisc_setup(tty, tty->link);  
-          * retval = tty_ldisc_open(o_tty, o_tty->ldisc);
-            * ret = ld->ops->open(tty); //在 tty_ldisc_setup 函数中调用到线路规程的open函数,显然是uart_open
-    * retval = tty->ops->open(tty, filp);
+  └── __tty_open(inode, filp);
+      ├── tty = tty_open_by_driver(device, inode, filp);
+      │   └── tty = tty_init_dev(driver, index);
+      │       ├── tty = alloc_tty_struct();
+      │       │   └── if (tty_ldisc_init(tty))/* 设置线路规程为 N_TTY */
+      │       └── tty_ldisc_setup(tty, tty->link);  
+      │           └── retval = tty_ldisc_open(o_tty, o_tty->ldisc);
+      │               └── ret = ld->ops->open(tty); //在 tty_ldisc_setup 函数中调用到线路规程的open函数,显然是uart_open
+      └── retval = tty->ops->open(tty, filp);
 ```
 
 * `tty_io.c`:
@@ -677,12 +677,12 @@ static int tty_ldisc_open(struct tty_struct *tty, struct tty_ldisc *ld)
 * `tty_port.c`
 ```c
 * uart_open(struct tty_struct *tty, struct file *filp)
-  * tty_port_open(&state->port, tty, filp);
-    * port->ops->activate(port, tty)
-      * static const struct tty_port_operations uart_port_ops = {.activate	= uart_port_activate,  //serial_core.c
-        * ret = uart_startup(tty, state, 0);
-          * retval = uart_port_startup(tty, state, init_hw);
-            * retval = uport->ops->startup(uport);
+  └── tty_port_open(&state->port, tty, filp);
+      └── port->ops->activate(port, tty)
+          └── static const struct tty_port_operations uart_port_ops = {.activate	= uart_port_activate,  //serial_core.c
+              └── ret = uart_startup(tty, state, 0);
+                  └── retval = uart_port_startup(tty, state, init_hw);
+                      └── retval = uport->ops->startup(uport);
 ```
 根据 tty_struct 获取到 uart_driver ，再由 uart_driver 获取到里面 的uart_state->uart_port->ops->startup 并调用它。至此，open函数分析完毕，它不是简单的 “打开”，还有大量的初始化工作，最终调用到最底层的 startup 函数。
 

@@ -42,22 +42,19 @@
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <!-- Local TOC -->
               <div class="local-toc"><ul>
-<li><a class="reference internal" href="#">概述</a><ul>
+<li><a class="reference internal" href="#">概述</a></li>
 <li><a class="reference internal" href="#id2">原理</a></li>
 <li><a class="reference internal" href="#id3">参考</a></li>
 <li><a class="reference internal" href="#id4">校准流程</a></li>
 <li><a class="reference internal" href="#id5">流程图</a></li>
 <li><a class="reference internal" href="#id6">程序流程图</a></li>
-<li><a class="reference internal" href="#id7">问题分习</a><ul>
+<li><a class="reference internal" href="#id7">问题分析</a><ul>
 <li><a class="reference internal" href="#sensorhub">1.sensorhub方式无法进行校准</a></li>
-<li><a class="reference internal" href="#gyro0">2.gyro校准数据都是0</a><ul>
-<li><a class="reference internal" href="#id8">2.静态校准参数误差大</a></li>
+<li><a class="reference internal" href="#gyro0">2.gyro校准数据都是0</a></li>
+<li><a class="reference internal" href="#id8">3.静态校准参数误差大</a></li>
 </ul>
 </li>
-</ul>
-</li>
-</ul>
-</li>
+<li><a class="reference internal" href="#g-sensor-z29">g-sensor Z轴数据全部为29</a></li>
 </ul>
 </div>
         </div>
@@ -90,8 +87,9 @@
   <section id="id1">
 <h1>概述<a class="headerlink" href="#id1" title="此标题的永久链接"></a></h1>
 <p>SensorHub工厂模式下校准流程分析。</p>
+</section>
 <section id="id2">
-<h2>原理<a class="headerlink" href="#id2" title="此标题的永久链接"></a></h2>
+<h1>原理<a class="headerlink" href="#id2" title="此标题的永久链接"></a></h1>
 <ul class="simple">
 <li><p>重力传感器acc：</p></li>
 <li><p>平放取20次平均，（{0,0,9.8}-平均值）=校准值 (float型)</p>
@@ -113,7 +111,7 @@
 <p>注：写入Nvram的校准值都是3个INT型的，重力传感器和陀螺仪都是</p>
 </section>
 <section id="id3">
-<h2>参考<a class="headerlink" href="#id3" title="此标题的永久链接"></a></h2>
+<h1>参考<a class="headerlink" href="#id3" title="此标题的永久链接"></a></h1>
 <div class="highlight-log notranslate"><div class="highlight"><pre><span></span>陀螺仪选型相关参数
 陀螺仪选型需要主要两个主要的参数，一个是角度随机游走，另外一个是零偏不稳定性。
 陀螺仪手册说明：
@@ -133,7 +131,7 @@
 </div>
 </section>
 <section id="id4">
-<h2>校准流程<a class="headerlink" href="#id4" title="此标题的永久链接"></a></h2>
+<h1>校准流程<a class="headerlink" href="#id4" title="此标题的永久链接"></a></h1>
 <ul class="simple">
 <li><p>根据打印，因为只有acc校准，所以只做了acc的<code class="docutils literal notranslate"><span class="pre">sensorCaliAcc</span></code>函数，其他的都未执行，先了解一下acc校准方法：</p></li>
 </ul>
@@ -171,14 +169,14 @@
 </div>
 </section>
 <section id="id5">
-<h2>流程图<a class="headerlink" href="#id5" title="此标题的永久链接"></a></h2>
+<h1>流程图<a class="headerlink" href="#id5" title="此标题的永久链接"></a></h1>
 <ul class="simple">
 <li><p>简易流程图如下：</p></li>
 </ul>
 <p><img alt="123123.png" src="../../../_images/123123.png" /></p>
 </section>
 <section id="id6">
-<h2>程序流程图<a class="headerlink" href="#id6" title="此标题的永久链接"></a></h2>
+<h1>程序流程图<a class="headerlink" href="#id6" title="此标题的永久链接"></a></h1>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">factory/src/test/ftm_gyro_cali.c</span></code>以陀螺仪为例:</p></li>
 </ul>
@@ -206,38 +204,38 @@
 pthread_create(&amp;dat-&gt;update_thd, NULL, gyro_cali_update_iv_thread, priv);
 </pre></div>
 </div>
-<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="o">*</span><span class="w"> </span><span class="n">程序流程</span><span class="w"></span>
-<span class="w">  </span><span class="o">*</span><span class="w"> </span><span class="n">gyroscope_calibration</span><span class="p">(</span><span class="n">gyroc</span><span class="o">-&gt;</span><span class="n">fd</span><span class="p">,</span><span class="w"> </span><span class="n">dat</span><span class="o">-&gt;</span><span class="n">gyroc</span><span class="p">.</span><span class="n">cali_delay</span><span class="p">,</span><span class="w"> </span><span class="n">dat</span><span class="o">-&gt;</span><span class="n">gyroc</span><span class="p">.</span><span class="n">cali_num</span><span class="p">,</span><span class="n">dat</span><span class="o">-&gt;</span><span class="n">gyroc</span><span class="p">.</span><span class="n">cali_tolerance</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">cali</span><span class="p">)</span><span class="w"> </span><span class="c1">//执行校准</span>
-<span class="w">    </span><span class="o">*</span><span class="w"> </span><span class="n">external</span><span class="o">/</span><span class="n">sensor</span><span class="o">-</span><span class="n">tools</span><span class="o">/</span><span class="n">libhwm</span><span class="p">.</span><span class="n">c</span><span class="w"></span>
-<span class="w">    </span><span class="o">*</span><span class="w"> </span><span class="n">gyroscope_read</span><span class="p">(</span><span class="n">fd</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">dat</span><span class="p">);</span><span class="w"> </span><span class="c1">//手机放平，读取20次xyz数据平均值</span>
-<span class="w">    </span><span class="o">*</span><span class="w"> </span><span class="n">checkGyroscopeData</span><span class="p">(</span><span class="n">item</span><span class="p">,</span><span class="w"> </span><span class="n">count</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">avg</span><span class="p">,</span><span class="w"> </span><span class="n">tolerance</span><span class="p">)</span><span class="w"> </span><span class="c1">//检测是否符合宽容度要求，应该是偏差不能太大</span>
-<span class="w">  </span><span class="o">*</span><span class="w"> </span><span class="n">gyroscope_set_cali</span><span class="p">(</span><span class="n">gyroc</span><span class="o">-&gt;</span><span class="n">fd</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">cali</span><span class="p">)</span><span class="w"> </span><span class="c1">//设置校准参数</span>
-<span class="w">    </span><span class="o">*</span><span class="w"> </span><span class="n">kernel</span><span class="mf">-4.19</span><span class="o">/</span><span class="n">drivers</span><span class="o">/</span><span class="n">misc</span><span class="o">/</span><span class="n">mediatek</span><span class="o">/</span><span class="n">sensors</span><span class="mf">-1.0</span><span class="o">/</span><span class="n">gyroscope</span><span class="o">/</span><span class="n">gyro_factory</span><span class="p">.</span><span class="n">c</span><span class="w"></span>
-<span class="w">    </span><span class="o">*</span><span class="w">  </span><span class="n">gyro_factory_unlocked_ioctl</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">file</span><span class="w"> </span><span class="o">*</span><span class="n">file</span><span class="p">,</span><span class="w"> </span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">cmd</span><span class="p">,</span><span class="w"> </span><span class="c1">// /dev/gyroscope节点GYROSCOPE_IOCTL_SET_CALI指令</span>
-<span class="w">      </span><span class="o">*</span><span class="w"> </span><span class="n">gyro_factory</span><span class="p">.</span><span class="n">fops</span><span class="o">-&gt;</span><span class="n">set_cali</span><span class="p">(</span><span class="n">data_buf</span><span class="p">);</span><span class="w"></span>
-<span class="w">        </span><span class="o">*</span><span class="w"> </span><span class="n">gyrohub</span><span class="p">.</span><span class="n">c</span><span class="w"> </span><span class="c1">//.set_cali = gyrohub_factory_set_cali, </span>
-<span class="w">        </span><span class="o">*</span><span class="w"> </span><span class="n">gyrohub_WriteCalibration</span><span class="p">(</span><span class="n">data</span><span class="p">);</span><span class="w"></span>
-<span class="w">          </span><span class="o">*</span><span class="w"> </span><span class="n">gyrohub_WriteCalibration_scp</span><span class="p">(</span><span class="n">dat</span><span class="p">);</span><span class="w"></span>
-<span class="w">            </span><span class="o">*</span><span class="w"> </span><span class="n">sensor_set_cmd_to_hub</span><span class="p">(</span><span class="n">ID_GYROSCOPE</span><span class="p">,</span><span class="w"> </span><span class="n">CUST_ACTION_SET_CALI</span><span class="p">,</span><span class="w"> </span><span class="n">dat</span><span class="p">);</span><span class="w"></span>
-<span class="w">              </span><span class="o">*</span><span class="w"> </span><span class="n">req</span><span class="p">.</span><span class="n">set_cust_req</span><span class="p">.</span><span class="n">setCali</span><span class="p">.</span><span class="n">action</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">CUST_ACTION_SET_CALI</span><span class="p">;</span><span class="w"> </span><span class="c1">//IPI通信数据类型</span>
-<span class="w">              </span><span class="o">*</span><span class="w"> </span><span class="n">offsetof</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">SCP_SENSOR_HUB_SET_CUST_REQ</span><span class="p">,</span><span class="n">custData</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="k">sizeof</span><span class="p">(</span><span class="n">req</span><span class="p">.</span><span class="n">set_cust_req</span><span class="p">.</span><span class="n">setCali</span><span class="p">);</span><span class="w"> </span><span class="c1">//将校准数据填充到SCP_SENSOR_HUB_SET_CUST_REQ数据结构custData[11]成员</span>
-<span class="w">                </span><span class="o">*</span><span class="w"> </span><span class="n">scp_sensorHub_req_send</span><span class="p">(</span><span class="o">&amp;</span><span class="n">req</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">len</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span><span class="w"> </span><span class="c1">//kernel IPI通信统一发送接口</span>
-<span class="w">                </span><span class="o">*</span><span class="w"> </span><span class="n">contextHubHandleIpiRxEvent</span><span class="p">();</span><span class="w"> </span><span class="c1">//scp IPI统一接收处理接口</span>
-<span class="w">                  </span><span class="o">*</span><span class="w"> </span><span class="n">contextHubFindCmd</span><span class="p">(</span><span class="n">mTask</span><span class="p">.</span><span class="n">ipi_req</span><span class="p">.</span><span class="n">action</span><span class="p">);</span><span class="w"></span>
-<span class="w">                    </span><span class="o">*</span><span class="w"> </span><span class="n">CONTEXTHUB_CMD</span><span class="p">(</span><span class="n">SENSOR_HUB_SET_CUST</span><span class="p">,</span><span class="n">contextHubFwSetCust</span><span class="p">,</span><span class="w"> </span><span class="n">contextHubFwSetCustAck</span><span class="p">),</span><span class="w"> </span><span class="c1">//此条是SENSOR_HUB_SET_CUST数据格式</span>
-<span class="w">                      </span><span class="o">*</span><span class="w"> </span><span class="n">contextHubDispatchCust</span><span class="p">(</span><span class="n">mtkTypeToChreType</span><span class="p">(</span><span class="n">mtkType</span><span class="p">),</span><span class="w"> </span><span class="n">set_cust_req</span><span class="p">);</span><span class="w"> </span><span class="c1">//寻找SENSOR_HUB_SET_CUST action执行操作</span>
-<span class="w">                        </span><span class="o">*</span><span class="w"> </span><span class="k">case</span><span class="w"> </span><span class="no">CUST_ACTION_SET_CALI</span><span class="p">:</span><span class="w"></span>
-<span class="w">                        </span><span class="o">*</span><span class="w"> </span><span class="n">sensorCoreWriteCalibration</span><span class="p">(</span><span class="n">sensType</span><span class="p">,</span><span class="w"> </span><span class="n">cust_req</span><span class="o">-&gt;</span><span class="n">setCali</span><span class="p">.</span><span class="n">int32_data</span><span class="p">);</span><span class="w"></span>
-<span class="w">                          </span><span class="o">*</span><span class="w"> </span><span class="n">mCoreInfo</span><span class="o">-&gt;</span><span class="n">setCalibration</span><span class="p">(</span><span class="n">cali_sw</span><span class="p">,</span><span class="w"> </span><span class="n">AXES_NUM</span><span class="p">);</span><span class="w"> </span><span class="c1">//调用具体实例驱动setCalibration函数</span>
-<span class="w">                            </span><span class="o">*</span><span class="w"> </span><span class="n">mInfo</span><span class="p">.</span><span class="n">setCalibration</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">accSetCalibration</span><span class="p">;</span><span class="w"> </span><span class="c1">//qmi8656_i2c.c</span>
-<span class="w">                              </span><span class="o">*</span><span class="w"> </span><span class="n">mQmi8658</span><span class="p">.</span><span class="n">accSwCali</span><span class="p">[</span><span class="n">AXIS_X</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cali</span><span class="p">[</span><span class="n">AXIS_X</span><span class="p">];</span><span class="w"></span>
-<span class="w">        </span><span class="o">*</span><span class="w"> </span><span class="n">qmi8658gy</span><span class="p">.</span><span class="n">c</span><span class="w"> </span><span class="c1">//kernel驱动方式 .set_cali = qmi8658gy_factory_set_cali,</span>
-<span class="w">        </span><span class="o">*</span><span class="w"> </span><span class="n">qmi8658gy_factory_set_cali</span><span class="p">(</span><span class="kt">int32_t</span><span class="w"> </span><span class="n">data</span><span class="p">[</span><span class="mi">3</span><span class="p">])</span><span class="w">  </span>
-<span class="w">          </span><span class="o">*</span><span class="w"> </span><span class="n">qmi8658gy_WriteCalibration</span><span class="p">(</span><span class="n">qmi8658gy_i2c_client</span><span class="p">,</span><span class="w"> </span><span class="n">cali</span><span class="p">);</span><span class="w"></span>
-<span class="w">            </span><span class="o">*</span><span class="w"> </span><span class="n">obj</span><span class="o">-&gt;</span><span class="n">cali_sw</span><span class="p">[</span><span class="n">QMI8658_AXIS_X</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">obj</span><span class="o">-&gt;</span><span class="n">cvt</span><span class="p">.</span><span class="n">sign</span><span class="p">[</span><span class="n">QMI8658_AXIS_X</span><span class="p">]</span><span class="o">*</span><span class="p">(</span><span class="n">cali</span><span class="p">[</span><span class="n">obj</span><span class="o">-&gt;</span><span class="n">cvt</span><span class="p">.</span><span class="n">map</span><span class="p">[</span><span class="n">QMI8658_AXIS_X</span><span class="p">]]);</span><span class="w">  </span><span class="c1">//赋值驱动cali数组</span>
-<span class="w">  </span><span class="o">*</span><span class="w"> </span><span class="n">gyroscope_get_cali</span><span class="p">(</span><span class="n">gyroc</span><span class="o">-&gt;</span><span class="n">fd</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">cali</span><span class="p">)</span><span class="w"> </span><span class="c1">//读回并显示</span>
-<span class="w">  </span><span class="o">*</span><span class="w"> </span><span class="n">gyroscope_write_nvram</span><span class="p">(</span><span class="o">&amp;</span><span class="n">cali</span><span class="p">)</span><span class="w"> </span><span class="c1">//写入NV</span>
-<span class="w">  </span><span class="o">*</span><span class="w"> </span><span class="n">dat</span><span class="o">-&gt;</span><span class="n">gyroc</span><span class="p">.</span><span class="n">pending_op</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">GYRO_OP_NONE</span><span class="p">;</span><span class="w"></span>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span>* 程序流程
+  ├── gyroscope_calibration(gyroc-&gt;fd, dat-&gt;gyroc.cali_delay, dat-&gt;gyroc.cali_num,dat-&gt;gyroc.cali_tolerance, &amp;cali) //执行校准
+  │   ├── external/sensor-tools/libhwm.c
+  │   ├── gyroscope_read(fd, &amp;dat); //手机放平，读取20次xyz数据平均值
+  │   └── checkGyroscopeData(item, count, &amp;avg, tolerance) //检测是否符合宽容度要求，应该是偏差不能太大
+  ├── gyroscope_set_cali(gyroc-&gt;fd, &amp;cali) //设置校准参数
+  │   ├── kernel-4.19/drivers/misc/mediatek/sensors-1.0/gyroscope/gyro_factory.c
+  │   └──  gyro_factory_unlocked_ioctl(struct file *file, unsigned int cmd, // /dev/gyroscope节点GYROSCOPE_IOCTL_SET_CALI指令
+  │       └── gyro_factory.fops-&gt;set_cali(data_buf);
+  │           ├── gyrohub.c //.set_cali = gyrohub_factory_set_cali, 
+  │           ├── gyrohub_WriteCalibration(data);
+  │           │   └── gyrohub_WriteCalibration_scp(dat);
+  │           │       └── sensor_set_cmd_to_hub(ID_GYROSCOPE, CUST_ACTION_SET_CALI, dat);
+  │           │           ├── req.set_cust_req.setCali.action = CUST_ACTION_SET_CALI; //IPI通信数据类型
+  │           │           └── offsetof(struct SCP_SENSOR_HUB_SET_CUST_REQ,custData) + sizeof(req.set_cust_req.setCali); //将校准数据填充到SCP_SENSOR_HUB_SET_CUST_REQ数据结构custData[11]成员
+  │           │               ├── scp_sensorHub_req_send(&amp;req, &amp;len, 1); //kernel IPI通信统一发送接口
+  │           │               └── contextHubHandleIpiRxEvent(); //scp IPI统一接收处理接口
+  │           │                   └── contextHubFindCmd(mTask.ipi_req.action);
+  │           │                       └── CONTEXTHUB_CMD(SENSOR_HUB_SET_CUST,contextHubFwSetCust, contextHubFwSetCustAck), //此条是SENSOR_HUB_SET_CUST数据格式
+  │           │                           └── contextHubDispatchCust(mtkTypeToChreType(mtkType), set_cust_req); //寻找SENSOR_HUB_SET_CUST action执行操作
+  │           │                               ├── case CUST_ACTION_SET_CALI:
+  │           │                               └── sensorCoreWriteCalibration(sensType, cust_req-&gt;setCali.int32_data);
+  │           │                                   └── mCoreInfo-&gt;setCalibration(cali_sw, AXES_NUM); //调用具体实例驱动setCalibration函数
+  │           │                                       └── mInfo.setCalibration = accSetCalibration; //qmi8656_i2c.c
+  │           │                                           └── mQmi8658.accSwCali[AXIS_X] = cali[AXIS_X];
+  │           ├── qmi8658gy.c //kernel驱动方式 .set_cali = qmi8658gy_factory_set_cali,
+  │           └── qmi8658gy_factory_set_cali(int32_t data[3])  
+  │               └── qmi8658gy_WriteCalibration(qmi8658gy_i2c_client, cali);
+  │                   └── obj-&gt;cali_sw[QMI8658_AXIS_X] = obj-&gt;cvt.sign[QMI8658_AXIS_X]*(cali[obj-&gt;cvt.map[QMI8658_AXIS_X]]);  //赋值驱动cali数组
+  ├── gyroscope_get_cali(gyroc-&gt;fd, &amp;cali) //读回并显示
+  ├── gyroscope_write_nvram(&amp;cali) //写入NV
+  └── dat-&gt;gyroc.pending_op = GYRO_OP_NONE;
 </pre></div>
 </div>
 <ul class="simple">
@@ -258,9 +256,9 @@ pthread_create(&amp;dat-&gt;update_thd, NULL, gyro_cali_update_iv_thread, priv);
 </div>
 </section>
 <section id="id7">
-<h2>问题分习<a class="headerlink" href="#id7" title="此标题的永久链接"></a></h2>
+<h1>问题分析<a class="headerlink" href="#id7" title="此标题的永久链接"></a></h1>
 <section id="sensorhub">
-<h3>1.sensorhub方式无法进行校准<a class="headerlink" href="#sensorhub" title="此标题的永久链接"></a></h3>
+<h2>1.sensorhub方式无法进行校准<a class="headerlink" href="#sensorhub" title="此标题的永久链接"></a></h2>
 <ul class="simple">
 <li><p>工厂模式校准失败，根据错误打印<code class="docutils literal notranslate"><span class="pre">gsensor_get_cali:</span> <span class="pre">get_cali</span> <span class="pre">err:</span> <span class="pre">-1</span></code>，看看是什么问题：</p></li>
 </ul>
@@ -361,7 +359,7 @@ main log：
 </div>
 </section>
 <section id="gyro0">
-<h3>2.gyro校准数据都是0<a class="headerlink" href="#gyro0" title="此标题的永久链接"></a></h3>
+<h2>2.gyro校准数据都是0<a class="headerlink" href="#gyro0" title="此标题的永久链接"></a></h2>
 <ul class="simple">
 <li><p>打印如下：</p></li>
 </ul>
@@ -659,8 +657,9 @@ static int qmi8658gy_factory_set_cali(int32_t data[3])
 <span class="w"> </span>       mInfo.sensitivity = mQmi8658.config.g_sensitivity;<span class="w"></span>
 </pre></div>
 </div>
+</section>
 <section id="id8">
-<h4>2.静态校准参数误差大<a class="headerlink" href="#id8" title="此标题的永久链接"></a></h4>
+<h2>3.静态校准参数误差大<a class="headerlink" href="#id8" title="此标题的永久链接"></a></h2>
 <p>目前发现这种写死的办法，局限性太大了，不同的设备差别比较大，写死的话在其他机器上可能不适用，供应商建议在工厂测试程序时加入校准流程，以下是修改：</p>
 <div class="highlight-diff notranslate"><div class="highlight"><pre><span></span><span class="w"> </span>   [Title]:gyro支持MTK ATA工厂测试工具进行gyroscope测试时自动校准<span class="w"></span>
 
@@ -827,7 +826,159 @@ static int qmi8658gy_factory_set_cali(int32_t data[3])
 <p><img alt="0014_0000.png" src="../../../_images/0014_00001.png" /></p>
 </section>
 </section>
-</section>
+<section id="g-sensor-z29">
+<h1>g-sensor Z轴数据全部为29<a class="headerlink" href="#g-sensor-z29" title="此标题的永久链接"></a></h1>
+<p>工厂发现生产的机器Z轴数据全部都为29，自动旋转和抬起亮屏功能失效，如下图：</p>
+<p><img alt="0014_0001.png" src="../../../_images/0014_00012.png" /></p>
+<p>经过试验，发现是单板测试时写了一个不正常的值下来，没有进行错误拦截：</p>
+<div class="highlight-log notranslate"><div class="highlight"><pre><span></span>----- timezone:Asia/Shanghai
+fore sc7a20ResetWrite
+
+[0.030]sc7a20DeviceId
+
+[0.030]sc7a20 acc reso: 0, sensitivity: 1024
+
+[0.030]sc7a20RegisterCore deviceId 0x11
+
+
+[0.030]accGyro: init done
+
+[0.031]alsPs: init done
+
+[0.520]initSensors: alloc blocks number:264
+
+[0.522]Set Terminal_Type = 2 boardid = 16
+
+[0.522]get dram phy addr=0x8d000000,size=1048520, maxEventNumber:23830
+
+[0.522]get dram phy rp=0,wp=0
+
+[2.024]frequency request: 65535 MHz =&gt; 250 MHz
+
+[2.824]sync time scp:2824126160, ap:4316094384, offset:1492434531
+
+[6.264]sc7a20 accGetCalibration cali x:0, y:0, z:0
+
+[6.264]read calibration (0, 0, 0) (-34, 56, 19623)
+
+[6.264]sensitivity:1024.000000, gain:9807
+
+[6.264]write calibration (-5, 3, -2048)//Z轴错误写了个2048
+
+[6.264]sc7a20 accSetCalibration cali x:-5, y:3, z:-2048 
+</pre></div>
+</div>
+<p>经过试验发现，当板子正面对地进行校准时，Z轴会累加19.6，也就是双倍的9.8，因为正面是+9.8，反面是-9.8，如果需要支持正反都能校准，那需要对Z轴原始数据求绝对值，得知工厂校准流程如下：</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">vendor/mediatek/proprietary/factory/src/test/ftm_gsensor.c</span></code>:</p></li>
+</ul>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span>* ftm_gsensor_init
+  └── ret = ftm_register(mod, gsensor_entry, (void*)dat);
+      └── gsensor_entry(struct ftm_param *param, void *priv)
+          └── pthread_create(&amp;dat-&gt;update_thd, NULL, gsensor_update_iv_thread, priv);
+              └── err = gsensor_cali_before_read(acc-&gt;fd, CALI_DELAY, CALI_NUM, CALI_TOLERANCE, dat);
+                  ├── gsensor_calibration(fd, cali_delay, cali_num, cali_tolerance, &amp;cali)) != 0)
+                  │   ├── while(num &lt; count) err = gsensor_read(fd, &amp;dat); //libhwm.c
+                  │   ├── avg.z += item[num].dat.z; 
+                  │   ├── avg.z /= count; //可以在这里求绝对值
+                  │   └── err = calculateStandardCalibration(&amp;avg, cali)
+                  ├── err = gsensor_set_cali(fd, &amp;cali)) != 0
+                  └── err = gsensor_write_nvram(&amp;cali)) != 0
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>修改方案如下：</p></li>
+</ul>
+<div class="highlight-diff notranslate"><div class="highlight"><pre><span></span><span class="gd">--- a/vendor/mediatek/proprietary/external/sensor-tools/libhwm.c</span><span class="w"></span>
+<span class="gi">+++ b/vendor/mediatek/proprietary/external/sensor-tools/libhwm.c</span><span class="w"></span>
+<span class="gu">@@ -851,6 +851,7 @@ int gsensor_calibration(int fd, int period, int count, int tolerance, HwmData *c</span><span class="w"></span>
+<span class="w"> </span>       avg.x /= count;<span class="w"></span>
+<span class="w"> </span>       avg.y /= count;<span class="w"></span>
+<span class="w"> </span>       avg.z /= count;<span class="w"></span>
+<span class="gi">+       avg.z = abs(avg.z);</span><span class="w"></span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>同时，我们也需要在接收端控制错误数据：</p></li>
+</ul>
+<div class="highlight-diff notranslate"><div class="highlight"><pre><span></span><span class="gd">--- a/vendor/mediatek/proprietary/tinysys/freertos/source/middleware/contexthub/contexthub_core.c</span><span class="w"></span>
+<span class="gi">+++ b/vendor/mediatek/proprietary/tinysys/freertos/source/middleware/contexthub/contexthub_core.c</span><span class="w"></span>
+<span class="gu">@@ -29,6 +29,7 @@</span><span class="w"></span>
+<span class="w"> </span>#include &lt;sensors.h&gt;<span class="w"></span>
+<span class="w"> </span>#include &lt;contexthub_core.h&gt;<span class="w"></span>
+<span class="w"> </span>#include &lt;contexthub_fw.h&gt;<span class="w"></span>
+<span class="gi">+#include &lt;math.h&gt;</span><span class="w"></span>
+
+<span class="w"> </span>struct sensorCoreInfo mInfoCoreList[MAX_REGISTERED_SENSORS];<span class="w"></span>
+<span class="w"> </span>static uint8_t mSensorCoreList[SENS_TYPE_LAST_USER];<span class="w"></span>
+<span class="gu">@@ -82,6 +83,21 @@ int sensorCoreWriteCalibration(uint8_t sensType, int32_t *data)</span><span class="w"></span>
+<span class="w"> </span>    cali_sw[AXIS_Y] = mCoreInfo-&gt;cvt.sign[AXIS_Y] * cali[mCoreInfo-&gt;cvt.map[AXIS_Y]];<span class="w"></span>
+<span class="w"> </span>    cali_sw[AXIS_Z] = mCoreInfo-&gt;cvt.sign[AXIS_Z] * cali[mCoreInfo-&gt;cvt.map[AXIS_Z]];<span class="w"></span>
+
+<span class="gi">+       // [NEW FEATURE]-BEGIN by wugangnan@paxsz.com 2023-01-06, add g-sensor calibration data fault-tolerant processing mechanism</span><span class="w"></span>
+<span class="gi">+       if (abs(cali_sw[AXIS_X]) &gt; AXIS_TOLERANCE) {</span><span class="w"></span>
+<span class="gi">+           osLog(LOG_INFO, &quot;AXIS_X = %ld ,calibration data over tolerance range \n&quot;,cali_sw[AXIS_X]);</span><span class="w"></span>
+<span class="gi">+               cali_sw[AXIS_X] = 0;</span><span class="w"></span>
+<span class="gi">+       }</span><span class="w"></span>
+<span class="gi">+       if (abs(cali_sw[AXIS_Y]) &gt; AXIS_TOLERANCE) {</span><span class="w"></span>
+<span class="gi">+           osLog(LOG_INFO, &quot;AXIS_Y = %ld ,calibration data over tolerance range \n&quot;,cali_sw[AXIS_Y]);</span><span class="w"></span>
+<span class="gi">+               cali_sw[AXIS_Y] = 0;</span><span class="w"></span>
+<span class="gi">+       }</span><span class="w"></span>
+<span class="gi">+       if (abs(cali_sw[AXIS_Z]) &gt; AXIS_TOLERANCE) {</span><span class="w"></span>
+<span class="gi">+           osLog(LOG_INFO, &quot;AXIS_Z = %ld ,calibration data over tolerance range \n&quot;,cali_sw[AXIS_Z]);</span><span class="w"></span>
+<span class="gi">+               cali_sw[AXIS_Z] = 0;</span><span class="w"></span>
+<span class="gi">+       }</span><span class="w"></span>
+<span class="gi">+       // [NEW FEATURE]-END by wugangnan@paxsz.com 2023-01-06, add g-sensor calibration data fault-tolerant processing mechanism</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="w"> </span>    osLog(LOG_INFO, &quot;write calibration (%ld, %ld, %ld)\n&quot;,<span class="w"></span>
+<span class="w"> </span>          cali_sw[AXIS_X], cali_sw[AXIS_Y], cali_sw[AXIS_Z]);<span class="w"></span>
+<span class="w"> </span>    if (!mCoreInfo-&gt;setCalibration)<span class="w"></span>
+<span class="gh">diff --git a/vendor/mediatek/proprietary/tinysys/freertos/source/middleware/contexthub/contexthub_core.h b/vendor/mediatek/proprietary/tinysys/freertos/source/middleware/contexthub/contexthub_core.h</span><span class="w"></span>
+<span class="w">old mode 100644</span>
+<span class="w">new mode 100755</span>
+<span class="gh">index dd0b55b63cc..f787e58453e</span><span class="w"></span>
+<span class="gd">--- a/vendor/mediatek/proprietary/tinysys/freertos/source/middleware/contexthub/contexthub_core.h</span><span class="w"></span>
+<span class="gi">+++ b/vendor/mediatek/proprietary/tinysys/freertos/source/middleware/contexthub/contexthub_core.h</span><span class="w"></span>
+<span class="gu">@@ -36,6 +36,7 @@</span><span class="w"></span>
+<span class="w"> </span>#define AXIS_Y             1<span class="w"></span>
+<span class="w"> </span>#define AXIS_Z             2<span class="w"></span>
+<span class="w"> </span>#define AXES_NUM           3<span class="w"></span>
+<span class="gi">+#define AXIS_TOLERANCE     300</span><span class="w"></span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>错误数据过滤打印如下：</p></li>
+</ul>
+<div class="highlight-log notranslate"><div class="highlight"><pre><span></span>----- timezone:Asia/Shanghai
+1024.000000, gain:9807
+
+[6.022]AXIS_X = 145 ,calibration data over range 
+
+[6.022]AXIS_Z = -8108 ,calibration data over range 
+
+[6.022]wugn test write calibration (0, 24, 0)
+
+[6.022]sc7a20 accSetCalibration cali x:0, y:24, z:0
+
+[6.939]hostintf: 6939317708, chreType:1, rate:0, latency:0, cmd:3!
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>当板子反面面对地进行校准时，错误数据过滤如下：</p></li>
+</ul>
+<div class="highlight-log notranslate"><div class="highlight"><pre><span></span>[6.048]sc7a20 accGetCalibration cali x:0, y:0, z:0
+
+[6.048]read calibration (0, 0, 0) (-59, 30, 19625)
+
+[6.048]sensitivity:1024.000000, gain:9807
+
+[6.048]AXIS_Z = -2049 ,calibration data over tolerance range 
+
+[6.048]write calibration (-3, 6, 0)
+
+[6.048]sc7a20 accSetCalibration cali x:-3, y:6, z:0
+</pre></div>
+</div>
 </section>
 
 

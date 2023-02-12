@@ -324,3 +324,23 @@ g_vote: 0x0, notify_code: 0x0],
 [Tue Dec 13 01:19:12 2022] healthd: battery l=96 v=4331 t=27.0 h=2 st=5 c=0 fc=5600000 cc=1 chg=u
 ```
 这个应该是电池电量曲线要更新，供应商尽快提供正确的电量曲线。
+
+# OTG功能调试
+
+OTG目前发现插入U盘会识别到充电
+
+```log
+[ 1009.620521] bms_notify_call_chain
+[ 1009.623893] PAX_CHG: bms_notify_event evt = SET_OTG_EN en:1
+[ 1009.631688] PAX_CHG: _set_otg_enable now_status:0 set_status:1
+[ 1009.638037] PAX_CHG: _set_otg_enable en:1
+[ 1009.641285] healthd: battery l=98 v=4266 t=25.0 h=2 st=3 c=34000 fc=5600000 cc=1 chg=
+[ 1009.671833] healthd: battery l=98 v=4266 t=25.0 h=2 st=3 c=34000 fc=5600000 cc=1 chg=
+[ 1009.806991] PAX_CHG: set charge_type: SDP info->attach = 1
+[ 1009.812668] PAX_CHG: pax_is_charger_on chr_type = [SDP] last_chr_type = [Unknown]
+[ 1009.822961] PAX_CHG: pax_charger_plug_in
+[ 1009.829468] PAX_CHG: _set_otg_enable now_status:1 set_status:0
+[ 1009.835657] PAX_CHG: _set_otg_enable en:0
+[ 1009.841769] PAX_CHG: sgm41528_enable_charger last: 0 en: 1
+[ 1009.848996] PAX_CHG: enable_charging en: 1 last_en: 0
+```

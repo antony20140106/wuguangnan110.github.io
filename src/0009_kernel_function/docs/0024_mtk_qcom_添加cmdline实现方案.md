@@ -84,7 +84,7 @@ void update_bootargs(char *cmdline)
     char cfginfo_bak[1024] = {0};
 
 	memset(cfginfo, 0, sizeof(cfginfo));
-	update_cfg_info(cfginfo);
+	update_cfg_info(cfginfo); //将配置文件cfg全部追加到cmdline
 	ptr = AsciiStrStr(cfginfo, "SN=");
 	if (ptr != NULL) {
         int len = ptr - cfginfo -1; //decrease one blank
@@ -171,6 +171,15 @@ void update_bootargs(char *cmdline)
 	}
 	//[FEATURE]-END by (wugangnan@paxsz.com), 2022/09/08 for Turn off power off charging mode when no-battery-startup
 //[FEATURE]-Add-END by xielianxiong@paxsz.com, 2021/12/13, for init other cmdline property
+}
+
+int update_cfg_info(char *cfginfo)
+{     
+    int len = AsciiStrLen((void*)g_cfg_info.cfgContent);
+    cfginfo[0] = ' ';
+    AsciiStrnCpy(cfginfo+1, (void*)g_cfg_info.cfgContent, len);
+
+    return len;
 }
 ```
 

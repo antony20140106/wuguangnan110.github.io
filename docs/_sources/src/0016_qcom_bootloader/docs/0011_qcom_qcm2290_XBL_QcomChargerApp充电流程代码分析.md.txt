@@ -1784,3 +1784,55 @@ QcomChargerDxe:: ChargerPlatform_GetChargingAction ErrorType = 11.
 QcomChargerDxe:: ChargerPlatform_GetChargingAction Battery Profile Loading Not Required
 QcomChargerDxe:: ChargerPlatform_GetChargingAction ErrorType = 11 PrevChargerAction =3
 ```
+
+# 低电量后提示图片但是没关机
+
+电池电量低于3.45v时，xbl阶段提示低电量图标，但是不关机，最后电池小于3.2v才关机，打印如下：
+```log
+QcomChargerApp:: QcomChargerApp_Entry QcomChargerApp_Entry = Success
+ChargerLib:: ChargerLib_GetBatteryVoltageStatus Battery voltage = 3200 mV
+QcomChargerDxe:: ChargerPlatform_GetChargingAction Battery Profile Loading Not Required
+QcomChargerDxe:: ChargerPlatform_CheckIfOkToBoot NOT Enough BatteryVoltage To Boot = 3200 gThresholdVbatt = 3450
+QcomChargerDxe:: ChargerPlatform_GetChargingAction Action Returned = 1
+QcomChargerDxe::ChargerPlatform_TakeAction ChargingAction = 1
+Pax_ChargerEnable:0x1
+Read addr:0x1 data:0x13
+Read addr:0x2 data:0xD6
+Read addr:0x9 data:0x53
+ChargerLib:: ChargerLib_GetBatteryVoltageStatus Battery voltage = 3199 mV
+QcomChargerDxe:: ChargerPlatform_CheckIfOkToBoot NOT Enough BatteryVoltage To Boot = 3199 gThresholdVbatt = 3450
+QcomChargerDxe:: ChargerPlatform_GetChargingAction Action Returned = 0
+QcomChargerDxe::ChargerPlatform_TakeAction ChargingAction = 0
+ChargerLib:: ChargerLib_GetBatteryVoltageStatus Battery voltage = 3199 mV
+QcomChargerDxe:: ChargerPlatform_CheckIfOkToBoot NOT Enough BatteryVoltage To Boot = 3199 gThresholdVbatt = 3450
+QcomChargerDxe:: ChargerPlatform_GetChargingAction Action Returned = 0
+QcomChargerDxe::ChargerPlatform_TakeAction ChargingAction = 0
+ChargerLib:: ChargerLib_GetBatteryVoltageStatus Battery voltage = 3210 mV
+QcomChargerDxe:: ChargerPlatform_CheckIfOkToBoot NOT Enough BatteryVoltage To Boot = 3210 gThresholdVbatt = 3450
+QcomChargerDxe:: ChargerPlatform_GetChargingAction Action Returned = 0
+QcomChargerDxe::ChargerPlatform_TakeAction ChargingAction = 0
+ChargerLib:: ChargerLib_GetBatteryVoltageStatus Battery voltage = 3206 mV
+QcomChargerDxe:: ChargerPlatform_CheckIfOkToBoot NOT Enough BatteryVoltage To Boot = 3206 gThresholdVbatt = 3450
+QcomChargerDxe:: ChargerPlatform_GetChargingAction Action Returned = 0
+QcomChargerDxe::ChargerPlatform_TakeAction ChargingAction = 0
+ChargerLib:: ChargerLib_GetBatteryVoltageStatus Battery voltage = 3192 mV
+QcomChargerDxe:: ChargerPlatform_CheckIfOkToBoot NOT Enough BatteryVoltage To Boot = 3192 gThresholdVbatt = 3450
+QcomChargerDxe:: ChargerPlatform_GetChargingAction Action Returned = 0
+QcomChargerDxe::ChargerPlatform_TakeAction ChargingAction = 0
+ChargerLib:: ChargerLib_GetBatteryVoltageStatus Battery voltage = 3199 mV
+QcomChargerDxe:: ChargerPlatform_CheckIfOkToBoot NOT Enough BatteryVoltage To Boot = 3199 gThresholdVbatt = 3450
+QcomChargerDxe:: ChargerPlatform_GetChargingAction Action Returned = 0
+QcomChargerDxe::ChargerPlatform_TakeAction ChargingAction = 0
+ChargerLib:: ChargerLib_GetBatteryVoltageStatus Battery voltage = 3197 mV
+QcomChargerDxe:: ChargerPlatform_CheckIfOkToBoot NOT Enough BatteryVoltage To Boot = 3196 gThresholdVbatt = 3450
+QcomChargerDxe:: ChargerPlatform_GetChargingAction Action Returned = 0
+QcomChargerDxe::ChargerPlatform_TakeAction ChargingAction = 0
+ChargerLib:: ChargerLib_GetBatteryVoltageStatus Battery voltage = 3194 mV
+QcomChargerDxe:: ChargerPlatform_GetChargingAction ErrorType = 14 PrevChargerAction =8
+QcomChargerApp:: QcomChargerAppEvent_HandleDispBattSymbol GetDisplayImageType = Success DispImageType = 5
+QcomChargerDxe::ChargerPlatform_TakeAction ChargingAction = 8
+Start EBS        [42983]
+BDS: LogFs sync skipped, Unsupported
+App Log Flush : 0 ms
+Exit EBS        [43001] UEFI End
+```

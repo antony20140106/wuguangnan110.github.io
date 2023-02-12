@@ -197,3 +197,49 @@ static const struct of_device_id pm8xxx_id_table[] = {
 };
 MODULE_DEVICE_TABLE(of, pm8xxx_id_table);
 ```
+
+# 拔除LCD休眠功耗减小6ma
+
+目前A6650项目发现底电流一共有24ma，LCD被拔除后减小6ma，那肯定是lcd的电没关，经fae确认是LCD偏置电压没关，偏置电压控制的是+-5.4V(AVDD/AVEE),A6650项目如下图：
+
+![0004_0005.png](images/0004_0005.png)
+
+* M9200项目如下图：
+
+![0004_0007.png](images/0004_0007.png)
+![0004_0006.png](images/0004_0006.png)
+
+# M9200耗电因素
+
+## TP+SENSOR供电增加2ma
+
+以下这个电会导致底电流增加2ma，但是不能去掉，tp和sensor共电，需要双击唤醒和抬起亮屏功能。
+
+![0004_0008.png](images/0004_0008.png)
+
+# A6650反复等待IMEI写入，阻止休眠
+
+* cat节点/d/wake_sources没找到阻止进休眠的kernel wakelock，但是看bugreport就一个ril层的wakelock：
+
+![0004_0010.png](images/0004_0010.png)
+![0004_0009.png](images/0004_0009.png)
+
+* 查看logcat发现一直在等待imei，导致没休眠：
+```log
+02-06 08:02:23.832  2404  2404 D QtiImsExtConnector: onNullBinding componentName ComponentInfo{org.codeaurora.ims/org.codeaurora.ims.QtiImsExtService}
+02-06 08:02:23.863  1355  2169 W PlatformGinkgo: PlatformGinkgo getImei():null
+02-06 08:02:23.864  1355  2169 W PlatformGinkgo: wait for setImeiProp
+02-06 08:02:24.280  1355  2168 W PlatformGinkgo: PlatformGinkgo getImei():null
+02-06 08:02:24.280  1355  2168 W PlatformGinkgo: wait for setImeiProp
+02-06 08:02:24.353  1355  2777 D CompatibilityInfo: mCompatibilityFlags - 0
+02-06 08:02:24.353  1355  2777 D CompatibilityInfo: applicationDensity - 480
+02-06 08:02:24.353  1355  2777 D CompatibilityInfo: applicationScale - 1.0
+02-06 08:02:24.355  2534  2534 I QImsService: QtiImsExtService : QtiImsExtService created!
+02-06 08:02:24.356  2534  2534 E QImsService: QtiImsExtService : QtiImsExtService, ImsService is not yet started retry.
+02-06 08:02:24.356  2534  2534 E QImsService: QtiImsExtService : QtiImsExtService, ImsService is not yet started retry.
+02-06 08:02:24.356  2534  2534 W QImsService: QtiImsExtService : onBind returned null
+02-06 08:02:24.359  2404  2404 D QtiImsExtConnector: Attempt to bind QtiImsExt service returned with: true
+02-06 08:02:24.359  2404  2404 D QtiImsExtConnector: onNullBinding componentName ComponentInfo{org.codeaurora.ims/org.codeaurora.ims.QtiImsExtService}
+02-06 08:02:24.368  1355  2169 W PlatformGinkgo: PlatformGinkgo getImei():null
+02-06 08:02:24.368  1355  2169 W PlatformGinkgo: wait for setImeiProp
+```

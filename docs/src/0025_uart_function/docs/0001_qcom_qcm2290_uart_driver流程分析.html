@@ -626,16 +626,16 @@ ttyHS1的line就等于1。</p>
 <ul class="simple">
 <li><p>整体流程如下：</p></li>
 </ul>
-<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="o">*</span><span class="w"> </span><span class="n">tty_open</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">inode</span><span class="w"> </span><span class="o">*</span><span class="n">inode</span><span class="p">,</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">file</span><span class="w"> </span><span class="o">*</span><span class="n">filp</span><span class="p">)</span><span class="w"></span>
-<span class="w">  </span><span class="o">*</span><span class="w"> </span><span class="n">__tty_open</span><span class="p">(</span><span class="n">inode</span><span class="p">,</span><span class="w"> </span><span class="n">filp</span><span class="p">);</span><span class="w"></span>
-<span class="w">    </span><span class="o">*</span><span class="w"> </span><span class="n">tty</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tty_open_by_driver</span><span class="p">(</span><span class="n">device</span><span class="p">,</span><span class="w"> </span><span class="n">inode</span><span class="p">,</span><span class="w"> </span><span class="n">filp</span><span class="p">);</span><span class="w"></span>
-<span class="w">      </span><span class="o">*</span><span class="w"> </span><span class="n">tty</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tty_init_dev</span><span class="p">(</span><span class="n">driver</span><span class="p">,</span><span class="w"> </span><span class="n">index</span><span class="p">);</span><span class="w"></span>
-<span class="w">        </span><span class="o">*</span><span class="w"> </span><span class="n">tty</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">alloc_tty_struct</span><span class="p">();</span><span class="w"></span>
-<span class="w">          </span><span class="o">*</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">tty_ldisc_init</span><span class="p">(</span><span class="n">tty</span><span class="p">))</span><span class="cm">/* 设置线路规程为 N_TTY */</span><span class="w"></span>
-<span class="w">        </span><span class="o">*</span><span class="w"> </span><span class="n">tty_ldisc_setup</span><span class="p">(</span><span class="n">tty</span><span class="p">,</span><span class="w"> </span><span class="n">tty</span><span class="o">-&gt;</span><span class="n">link</span><span class="p">);</span><span class="w">  </span>
-<span class="w">          </span><span class="o">*</span><span class="w"> </span><span class="n">retval</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tty_ldisc_open</span><span class="p">(</span><span class="n">o_tty</span><span class="p">,</span><span class="w"> </span><span class="n">o_tty</span><span class="o">-&gt;</span><span class="n">ldisc</span><span class="p">);</span><span class="w"></span>
-<span class="w">            </span><span class="o">*</span><span class="w"> </span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ld</span><span class="o">-&gt;</span><span class="n">ops</span><span class="o">-&gt;</span><span class="n">open</span><span class="p">(</span><span class="n">tty</span><span class="p">);</span><span class="w"> </span><span class="c1">//在 tty_ldisc_setup 函数中调用到线路规程的open函数,显然是uart_open</span>
-<span class="w">    </span><span class="o">*</span><span class="w"> </span><span class="n">retval</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tty</span><span class="o">-&gt;</span><span class="n">ops</span><span class="o">-&gt;</span><span class="n">open</span><span class="p">(</span><span class="n">tty</span><span class="p">,</span><span class="w"> </span><span class="n">filp</span><span class="p">);</span><span class="w"></span>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span>* tty_open(struct inode *inode, struct file *filp)
+  └── __tty_open(inode, filp);
+      ├── tty = tty_open_by_driver(device, inode, filp);
+      │   └── tty = tty_init_dev(driver, index);
+      │       ├── tty = alloc_tty_struct();
+      │       │   └── if (tty_ldisc_init(tty))/* 设置线路规程为 N_TTY */
+      │       └── tty_ldisc_setup(tty, tty-&gt;link);  
+      │           └── retval = tty_ldisc_open(o_tty, o_tty-&gt;ldisc);
+      │               └── ret = ld-&gt;ops-&gt;open(tty); //在 tty_ldisc_setup 函数中调用到线路规程的open函数,显然是uart_open
+      └── retval = tty-&gt;ops-&gt;open(tty, filp);
 </pre></div>
 </div>
 <ul class="simple">
@@ -769,13 +769,13 @@ ttyHS1的line就等于1。</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">tty_port.c</span></code></p></li>
 </ul>
-<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="o">*</span><span class="w"> </span><span class="n">uart_open</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">tty_struct</span><span class="w"> </span><span class="o">*</span><span class="n">tty</span><span class="p">,</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">file</span><span class="w"> </span><span class="o">*</span><span class="n">filp</span><span class="p">)</span><span class="w"></span>
-<span class="w">  </span><span class="o">*</span><span class="w"> </span><span class="n">tty_port_open</span><span class="p">(</span><span class="o">&amp;</span><span class="n">state</span><span class="o">-&gt;</span><span class="n">port</span><span class="p">,</span><span class="w"> </span><span class="n">tty</span><span class="p">,</span><span class="w"> </span><span class="n">filp</span><span class="p">);</span><span class="w"></span>
-<span class="w">    </span><span class="o">*</span><span class="w"> </span><span class="n">port</span><span class="o">-&gt;</span><span class="n">ops</span><span class="o">-&gt;</span><span class="n">activate</span><span class="p">(</span><span class="n">port</span><span class="p">,</span><span class="w"> </span><span class="n">tty</span><span class="p">)</span><span class="w"></span>
-<span class="w">      </span><span class="o">*</span><span class="w"> </span><span class="k">static</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">tty_port_operations</span><span class="w"> </span><span class="n">uart_port_ops</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{.</span><span class="n">activate</span><span class="w">	</span><span class="o">=</span><span class="w"> </span><span class="n">uart_port_activate</span><span class="p">,</span><span class="w">  </span><span class="c1">//serial_core.c</span>
-<span class="w">        </span><span class="o">*</span><span class="w"> </span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">uart_startup</span><span class="p">(</span><span class="n">tty</span><span class="p">,</span><span class="w"> </span><span class="n">state</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span><span class="w"></span>
-<span class="w">          </span><span class="o">*</span><span class="w"> </span><span class="n">retval</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">uart_port_startup</span><span class="p">(</span><span class="n">tty</span><span class="p">,</span><span class="w"> </span><span class="n">state</span><span class="p">,</span><span class="w"> </span><span class="n">init_hw</span><span class="p">);</span><span class="w"></span>
-<span class="w">            </span><span class="o">*</span><span class="w"> </span><span class="n">retval</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">uport</span><span class="o">-&gt;</span><span class="n">ops</span><span class="o">-&gt;</span><span class="n">startup</span><span class="p">(</span><span class="n">uport</span><span class="p">);</span><span class="w"></span>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span>* uart_open(struct tty_struct *tty, struct file *filp)
+  └── tty_port_open(&amp;state-&gt;port, tty, filp);
+      └── port-&gt;ops-&gt;activate(port, tty)
+          └── static const struct tty_port_operations uart_port_ops = {.activate	= uart_port_activate,  //serial_core.c
+              └── ret = uart_startup(tty, state, 0);
+                  └── retval = uart_port_startup(tty, state, init_hw);
+                      └── retval = uport-&gt;ops-&gt;startup(uport);
 </pre></div>
 </div>
 <p>根据 tty_struct 获取到 uart_driver ，再由 uart_driver 获取到里面 的uart_state-&gt;uart_port-&gt;ops-&gt;startup 并调用它。至此，open函数分析完毕，它不是简单的 “打开”，还有大量的初始化工作，最终调用到最底层的 startup 函数。</p>

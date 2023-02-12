@@ -68,6 +68,8 @@
 <li><a class="reference internal" href="#android-audit2allow">android audit2allow工具使用步骤</a></li>
 <li><a class="reference internal" href="#android-mk">Android.mk中打印输出信息</a></li>
 <li><a class="reference internal" href="#user">如何打开user调试串口</a></li>
+<li><a class="reference internal" href="#sp-monitor">sp monitor软件签名失败</a></li>
+<li><a class="reference internal" href="#qcom-camera">qcom camera参数编译</a></li>
 </ul>
 </div>
         </div>
@@ -717,6 +719,85 @@ FAILED: ninja: &#39;out/target/product/bengal_32go/obj/SHARED_LIBRARIES/android.
 <span class="w"> </span>CONFIG_SERIAL_MSM_GENI_HALF_SAMPLING=y<span class="w"></span>
 <span class="gi">+CONFIG_SERIAL_MSM_GENI_CONSOLE=y</span><span class="w"></span>
 <span class="w"> </span>CONFIG_HW_RANDOM=y<span class="w"></span>
+</pre></div>
+</div>
+</section>
+<section id="sp-monitor">
+<h1>sp monitor软件签名失败<a class="headerlink" href="#sp-monitor" title="此标题的永久链接"></a></h1>
+<p>发现在编译时，报错monitor软件签名失败，log如下：</p>
+<div class="highlight-log notranslate"><div class="highlight"><pre><span></span>00:26:51 to sign: /home/jenkins/workspace/M9200_pax_branch_userdebug/QSSI.12/vendor/paxsz/paxsp/M9200/runthos-sp-qingming-1.0.00.7304ca8fR.bin
+00:26:52 No handlers could be found for logger &quot;paramiko.transport&quot;
+00:26:52 [&#39;sign_file.py&#39;, &#39;/home/jenkins/workspace/M9200_pax_branch_userdebug/QSSI.12/vendor/paxsz/paxsp/M9200/runthos-sp-qingming-1.0.00.7304ca8fR.bin&#39;]
+00:26:52 ��V}0?@B�twS��-d���sw_}���Ԋ�w
+00:26:52 2.7.17 (default, Jul  1 2022, 15:56:32) 
+00:26:52 [GCC 7.5.0]
+00:26:52 connect error
+00:26:52 Traceback (most recent call last):
+00:26:52   File &quot;sign_file.py&quot;, line 153, in &lt;module&gt;
+00:26:52     pack_and_sign_file(input_file)
+00:26:52   File &quot;sign_file.py&quot;, line 93, in pack_and_sign_file
+00:26:52     sign_file(tmp_file,tmp_sign_file)
+00:26:52   File &quot;sign_file.py&quot;, line 83, in sign_file
+00:26:52     ssh.put_file(src_file,ftp_src_file)
+00:26:52   File &quot;sign_file.py&quot;, line 137, in put_file
+00:26:52     self.sftp.put(local_file, remote_file)
+00:26:52 AttributeError: &#39;NoneType&#39; object has no attribute &#39;put&#39;
+00:26:52 sign /home/jenkins/workspace/M9200_pax_branch_userdebug/QSSI.12/vendor/paxsz/paxsp/M9200/runthos-sp-qingming-1.0.00.7304ca8fR.bin done 
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>解决方案：</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip2</span> <span class="n">install</span> <span class="n">paramiko</span>
+</pre></div>
+</div>
+</section>
+<section id="qcom-camera">
+<h1>qcom camera参数编译<a class="headerlink" href="#qcom-camera" title="此标题的永久链接"></a></h1>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">UM.9.15/vendor/qcom/proprietary/chi-cdk/oem/qcom/module/altek_gc030a_module.xml</span></code>参数修改：</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">vendor/qcom/proprietary/chi-cdk/tools/buildbins/buildbins_bengal.py</span></code>：</p></li>
+</ul>
+<div class="highlight-log notranslate"><div class="highlight"><pre><span></span>Generating makefiles for the auto-generated code.
+All targets are up-to-date.
+
+Generating auto-generated code.
+All targets are up-to-date.
+
+Generating default tuning project.
+All targets are up-to-date.
+
+Generating output folders.
+All targets are up-to-date.
+
+Generating binaries.
+( 1/22 ) Build com.qti.sensormodule.altek_gc030a ...  Done
+( 2/22 ) Build com.qti.sensormodule.sunny_gc02m1 ...  Done
+( 3/22 ) Build com.qti.sensormodule.sunny_gc02m1b ...  Done
+( 4/22 ) Build com.qti.tuned.truly_imx476 ...  Done
+( 5/22 ) Build com.qti.tuned.lce_s5k5e9yx04 ...  Done
+( 6/22 ) Build com.qti.tuned.agatti_truly_imx476 ...  Done
+( 7/22 ) Build com.qti.tuned.agatti_lce_s5k4h7 ...  Done
+( 8/22 ) Build com.qti.tuned.agatti_lce_s5k3p9 ...  Done
+( 9/22 ) Build com.qti.tuned.agatti_no_mfnr_lce_s5k3p9 ...  Done
+( 10/22 ) Build com.qti.tuned.agatti_lce_s5k5e9yx04 ...  Done
+( 11/22 ) Build com.qti.tuned.divar_truly_imx476 ...  Done
+( 12/22 ) Build com.qti.tuned.divar_lce_s5k4h7 ...  Done
+( 13/22 ) Build com.qti.tuned.semco_imx586 ...  Done
+( 14/22 ) Build com.qti.tuned.divar_lce_s5k3p9 ...  Done
+( 15/22 ) Build com.qti.tuned.divar_lce_s5k5e9yx04 ...  Done
+( 16/22 ) Build com.qti.tuned.sunny_ov2680 ...  Done
+( 17/22 ) Build com.qti.tuned.altek_gc030a ...  Done
+( 18/22 ) Build com.qti.tuned.sunny_gc02m1 ...  Done
+( 19/22 ) Build com.qti.tuned.sunny_gc02m1b ...  Done
+( 20/22 ) Build Kamorta ...  Done
+( 21/22 ) Build KamortaP ...  Done
+( 22/22 ) Build Agatti ...  Done
 </pre></div>
 </div>
 </section>

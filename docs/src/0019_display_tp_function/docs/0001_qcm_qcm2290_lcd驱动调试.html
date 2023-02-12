@@ -905,11 +905,12 @@ QcomPkg/Drivers/DisplayDxe/DisplayDxe.inf：
       │   └── MDPDetectPanel(eDisplayId, pDisplayInfo) //Panel detection code, via XML, I2C or EDID
       │       └── pDisplayInfo-&gt;bDetected  = TRUE; //暂时不做分析
       └── Display_Utils_SetPanelConfiguration(eSelectedPanel); //Update ABL with selected panel info 
-          └── panelConfigOutput(pDisplayParams-&gt;sPrimary.psDTInfo, 1, pDisplayParams-&gt;sPrimary.eTopologyCfg, pDisplayParams-&gt;sPrimary.eTimingCfg, &amp;pStr);
-              └── if (primary)
-                  ├── #define DISPLAY_CMDLINE_DSI_PRIMARY           &quot; msm_drm.dsi_display0=&quot;   // Panel config prefix
-                  ├── LocalAsciiStrnCat(*ppStr, PANEL_CONFIG_STR_LEN_MAX, DISPLAY_CMDLINE_DSI_PRIMARY); // 设置display cmdline 重要
-                  └── (*ppStr) += AsciiStrLen(DISPLAY_CMDLINE_DSI_PRIMARY);
+          └── UpdatePanelConfiguration(eSelected, pConfigStr);
+              └── panelConfigOutput(pDisplayParams-&gt;sPrimary.psDTInfo, 1, pDisplayParams-&gt;sPrimary.eTopologyCfg, pDisplayParams-&gt;sPrimary.eTimingCfg, &amp;pStr);
+                  └── if (primary)
+                      ├── #define DISPLAY_CMDLINE_DSI_PRIMARY           &quot; msm_drm.dsi_display0=&quot;   // Panel config prefix
+                      ├── LocalAsciiStrnCat(*ppStr, PANEL_CONFIG_STR_LEN_MAX, DISPLAY_CMDLINE_DSI_PRIMARY); // 设置display cmdline 重要
+                      └── (*ppStr) += AsciiStrLen(DISPLAY_CMDLINE_DSI_PRIMARY);
 </pre></div>
 </div>
 </section>
@@ -1224,6 +1225,102 @@ FindPanelIndex: Panel Id=29 found
 </ul>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="mh">0x00D8</span>   <span class="mh">0x00000000</span> <span class="mh">0x00000000</span> <span class="mh">0x00000033</span> <span class="mh">0x000000CD</span>
 <span class="mh">0x00DC</span>   <span class="mh">0x00000004</span> <span class="mh">0x00000000</span> <span class="mh">0x00000000</span> <span class="mh">0x00000000</span>
+</pre></div>
+</div>
+<p>代码中只要读到一个寄存器匹配上就直接跳出了，修改需要3个寄存器同时满足匹配才算match ok：</p>
+<div class="highlight-diff notranslate"><div class="highlight"><pre><span></span><span class="gd">--- a/A6650_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/SocPkg/AgattiPkg/Library/MDPPlatformLib/MDPPlatformLib.c</span><span class="w"></span>
+<span class="gi">+++ b/A6650_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/SocPkg/AgattiPkg/Library/MDPPlatformLib/MDPPlatformLib.c</span><span class="w"></span>
+<span class="gu">@@ -178,40 +178,38 @@ static PlatformDSIDetectParams uefiPanelList[] = {</span><span class="w"></span>
+<span class="w"> </span>      0                                                      // uFlags<span class="w"></span>
+<span class="w"> </span>    },<span class="w"></span>
+<span class="w"> </span>    //[M9200]modified by tfl for tfl for LCD bringup  20221108 --end<span class="w"></span>
+<span class="gd">-  */  {</span><span class="w"></span>
+<span class="gd">-      0x06,                                                  // uCmdType</span><span class="w"></span>
+<span class="gd">-      0x05,                                                  // total number of retry on failures</span><span class="w"></span>
+<span class="gi">+    {</span><span class="w"></span>
+<span class="gi">+    0x06,                                                                                               // uCmdType</span><span class="w"></span>
+<span class="gi">+    0x05,                                                                                               // total number of retry on failures</span><span class="w"></span>
+<span class="w"> </span>      {<span class="w"></span>
+<span class="gd">-       {{0xDA, 0x00},                                                                           // address to read ID1</span><span class="w"></span>
+<span class="gd">-       {0x98, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}         // expected readback</span><span class="w"></span>
+<span class="gd">-       }</span><span class="w"></span>
+<span class="gd">-      },</span><span class="w"></span>
+<span class="gd">-      0,                                                     // Lane remap order {0, 1, 2, 3}</span><span class="w"></span>
+<span class="gd">-      NULL,                     // psPanelCfg (panel configuration)</span><span class="w"></span>
+<span class="gd">-      0,             // uPanelCfgSize</span><span class="w"></span>
+<span class="gd">-      MDPPLATFORM_PANEL_ILI9881D_720P_VIDEO,                 // eSelectedPanel</span><span class="w"></span>
+<span class="gd">-      0                                                      // uFlags</span><span class="w"></span>
+<span class="gi">+        {{0xDA, 0x00},                                       // address to read ID1</span><span class="w"></span>
+<span class="gi">+          {0x2E, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}     // expected readback</span><span class="w"></span>
+<span class="gi">+        },</span><span class="w"></span>
+<span class="gi">+        {{0xDB, 0x00},                                       // address to read ID2</span><span class="w"></span>
+<span class="gi">+          {0xB9, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}     // expected readback</span><span class="w"></span>
+<span class="gi">+        },</span><span class="w"></span>
+<span class="gi">+        {{0xDC, 0x00},                                       // address to read ID3</span><span class="w"></span>
+<span class="gi">+          {0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}     // expected readback</span><span class="w"></span>
+<span class="gi">+        }</span><span class="w"></span>
+<span class="gi">+     },</span><span class="w"></span>
+<span class="gi">+      0,                                                                                                        // Lane remap order {0, 1, 2, 3}</span><span class="w"></span>
+<span class="gi">+      NULL,                                    // psPanelCfg (panel configuration)</span><span class="w"></span>
+<span class="gi">+      0,                        // uPanelCfgSize</span><span class="w"></span>
+<span class="gi">+      MDPPLATFORM_PANEL_ILI7807S_1080P_VIDEO,                            // eSelectedPanel</span><span class="w"></span>
+<span class="gi">+      0                                                                                                         // uFlags</span><span class="w"></span>
+<span class="w"> </span>    },<span class="w"></span>
+
+<span class="gu">@@ -433,6 +421,7 @@ static MDP_Status DynamicDSIPanelDetection(MDPPlatformPanelInfo *pPlatformPanel,</span><span class="w"></span>
+<span class="w"> </span>      uint8     readback[DSI_READ_READBACK_SIZE];<span class="w"></span>
+<span class="w"> </span>      uint32    readSize                          = sizeof(readback);<span class="w"></span>
+<span class="w"> </span>      int       iCommandIndex                     = 0;<span class="w"></span>
+<span class="gi">+      int       id_num                     = 0;</span><span class="w"></span>
+<span class="w"> </span>      uint32    uClkConfig                        = (MDPPLATFORM_PANEL_DETECT_FLAG_CLOCK_FORCEHS &amp;<span class="w"></span>
+<span class="w"> </span>                                                     pPanelList[uPanelIndex].uFlags);<span class="w"></span>
+
+<span class="gu">@@ -463,6 +452,7 @@ static MDP_Status DynamicDSIPanelDetection(MDPPlatformPanelInfo *pPlatformPanel,</span><span class="w"></span>
+
+<span class="w"> </span>      // clear the panel ID<span class="w"></span>
+<span class="w"> </span>      MDP_OSAL_MEMZERO(panelID, PLATFORM_PANEL_ID_MAX_COMMANDS);<span class="w"></span>
+<span class="gi">+      id_num = 0;</span><span class="w"></span>
+
+<span class="w"> </span>      // for each possible panel ID read<span class="w"></span>
+<span class="w"> </span>      for(iCommandIndex = 0; iCommandIndex&lt;PLATFORM_PANEL_ID_MAX_COMMANDS; iCommandIndex++)<span class="w"></span>
+<span class="gu">@@ -489,10 +479,9 @@ static MDP_Status DynamicDSIPanelDetection(MDPPlatformPanelInfo *pPlatformPanel,</span><span class="w"></span>
+<span class="w"> </span>                                  sizeof(pPanelList[uPanelIndex].panelIdCommands[iCommandIndex].address),<span class="w"></span>
+<span class="w"> </span>                                  readback,<span class="w"></span>
+<span class="w"> </span>                                  &amp;readSize);<span class="w"></span>
+<span class="gd">-</span><span class="w"></span>
+<span class="w"> </span>                 DEBUG((EFI_D_ERROR, &quot;address:%08x readback[%d]:%08x\n&quot;,<span class="w"></span>
+<span class="w"> </span>            pPanelList[uPanelIndex].panelIdCommands[iCommandIndex].address[0],<span class="w"></span>
+<span class="gd">-            iCommandIndex, readback[iCommandIndex]));</span><span class="w"></span>
+<span class="gi">+            iCommandIndex, readback[0]));</span><span class="w"></span>
+
+<span class="w"> </span>          uRetryCount++;<span class="w"></span>
+<span class="w"> </span>        } while((uRetryCount &lt; pPanelList[uPanelIndex].uTotalRetry) &amp;&amp;<span class="w"></span>
+<span class="gu">@@ -507,19 +496,24 @@ static MDP_Status DynamicDSIPanelDetection(MDPPlatformPanelInfo *pPlatformPanel,</span><span class="w"></span>
+<span class="w"> </span>          {<span class="w"></span>
+<span class="w"> </span>            //panelID[iCommandIndex] = readback[0];    // store the first byte of readback as panel ID<span class="w"></span>
+<span class="w"> </span>            bMatch                 = TRUE;                       // mark one panel ID matched<span class="w"></span>
+<span class="gi">+           id_num++;</span><span class="w"></span>
+<span class="w"> </span>                       DEBUG((EFI_D_ERROR, &quot;bMatch OK\n&quot;));<span class="w"></span>
+<span class="gd">-                 }</span><span class="w"></span>
+<span class="gi">+         }</span><span class="w"></span>
+<span class="gi">+         else</span><span class="w"></span>
+<span class="gi">+         {</span><span class="w"></span>
+<span class="gi">+            id_num = 0;</span><span class="w"></span>
+<span class="gi">+         }</span><span class="w"></span>
+<span class="w"> </span>        }<span class="w"></span>
+
+<span class="w"> </span>        // if any panel ID is not matched, then go to detect next panel in the list<span class="w"></span>
+<span class="gd">-        if(FALSE == bMatch)</span><span class="w"></span>
+<span class="gi">+        if(id_num == 3)</span><span class="w"></span>
+<span class="w"> </span>        {<span class="w"></span>
+<span class="w"> </span>          break;<span class="w"></span>
+<span class="w"> </span>        }<span class="w"></span>
+<span class="w"> </span>      }<span class="w"></span>
+
+<span class="w"> </span>      // if all panel IDs are matched for a specific panel, store settings and stop<span class="w"></span>
+<span class="gd">-      if(TRUE == bMatch)</span><span class="w"></span>
+<span class="gi">+      if(TRUE == bMatch &amp;&amp; id_num == 3)</span><span class="w"></span>
+<span class="w"> </span>      {<span class="w"></span>
 </pre></div>
 </div>
 </section>

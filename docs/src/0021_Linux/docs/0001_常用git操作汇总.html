@@ -49,6 +49,7 @@
 <li><a class="reference internal" href="#git-stash">git stash</a></li>
 <li><a class="reference internal" href="#git-clean">git clean使用总结</a></li>
 <li><a class="reference internal" href="#git-diff">git diff原理</a></li>
+<li><a class="reference internal" href="#git-branch">git branch操作</a></li>
 </ul>
 </div>
         </div>
@@ -214,7 +215,7 @@ wugn@jcrj-tf-compile:M8-project$ git commit
 <li><p>B库： 通过<code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">log</span> <span class="pre">devorigin/gms_branch_m9200</span></code>获取A库gms_branch_m9200分支提交。</p></li>
 <li><p>完成 fetch 就已经可以开始cherry-pick操作了,B库:</p></li>
 </ul>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">cherry</span><span class="o">-</span><span class="n">pick</span> <span class="n">fa25a2a43d3f82870b68883645fd7442412ab40c</span><span class="p">(</span><span class="n">首</span><span class="p">)</span><span class="o">..</span><span class="n">bff5dcedbb046aeb30ad070632e3d7bd8d5690b9</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">cherry</span><span class="o">-</span><span class="n">pick</span> <span class="n">fa25a2a43d3f82870b68883645fd7442412ab40c</span><span class="p">(</span><span class="n">首</span><span class="p">,</span><span class="n">不包括</span><span class="p">)</span><span class="o">..</span><span class="n">bff5dcedbb046aeb30ad070632e3d7bd8d5690b9</span>
 </pre></div>
 </div>
 </section>
@@ -228,6 +229,19 @@ git stash pop：将stash缓存堆栈中第一个stash也就是stash&#64;{0}删�
 git stash apply:  将stash缓存堆栈中第一个stash应用到当前的工作目录下，但是不会删除缓存堆栈中的缓存，默认使用第一个存储,即stash&#64;{0}，应用某个stash后面加stash id。
 git stash drop stash&#64;{$num} ：删除stash&#64;{$num}存储，从列表中删除这个存储，默认删除第一个。
 git stash clear:  删除缓存堆栈中所有存储。</p>
+<ul class="simple">
+<li><p>碰到apply时有冲突如下：</p></li>
+</ul>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>wugn@jcrj-tf-compile:A6650-project$ git stash apply <span class="m">0</span>
+Auto-merging selfbuild_32go_userdebug
+CONFLICT <span class="o">(</span>content<span class="o">)</span>: Merge conflict <span class="k">in</span> selfbuild_32go_userdebug
+Auto-merging selfbuild_32go_user
+CONFLICT <span class="o">(</span>modify/delete<span class="o">)</span>: 
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>解决方案是首先vim将冲突HEAD解决并用git add把所有的改动加到staging area。然后继续执行<code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">stash</span> <span class="pre">apply</span> <span class="pre">0</span></code>把这些改动搁置。</p></li>
+</ul>
 </section>
 <section id="git-clean">
 <h1>git clean使用总结<a class="headerlink" href="#git-clean" title="此标题的永久链接"></a></h1>
@@ -246,6 +260,15 @@ git stash clear:  删除缓存堆栈中所有存储。</p>
 git diff的比较是从右向左。
 git diff 比较暂存区与工作区文件的区别。
 git diff –cached 比较仓库与暂存区文件的区别。</p>
+</section>
+<section id="git-branch">
+<h1>git branch操作<a class="headerlink" href="#git-branch" title="此标题的永久链接"></a></h1>
+<ul class="simple">
+<li><p>使用以下命令删除远程服务器上带有cherry-pick前缀的所有分支。
+# git branch -r | awk -F/ ‘//cherry-pick/{print $2}’ | xargs -I {} git push origin :{}</p></li>
+<li><p>如果您喜欢更简单的方法，例如删除3或4个分支：
+# git push origin –delete wugn_product laiqx_develop</p></li>
+</ul>
 </section>
 
 

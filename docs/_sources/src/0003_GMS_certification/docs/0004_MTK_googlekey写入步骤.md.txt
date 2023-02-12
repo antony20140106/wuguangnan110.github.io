@@ -82,6 +82,14 @@ unsigned char Ekkb_pub[] = {
 };
 ```
 
+# mtk方案概要
+
+* 将Attestation Key信息拆分为多个kb_xxx.bin，每个bin对应一组key
+* 随机生成aes密钥kkb，加密kb_xxx.bin，获得密文kb_xxx.bin.cipher。
+* 使用rsa私钥kkb_priv加密kkb，获得ekkb。
+* 使用rsa私钥kkb_priv对kb_xxx.bin.cipher签名。
+* 随机生成aes密钥pkkb，加密rsa公钥kkb_pub，获得ekkb_pub。
+
 # 公司流程
 
 ![0004_0006.png](images/0004_0006.png)

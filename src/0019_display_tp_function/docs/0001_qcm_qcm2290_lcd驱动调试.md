@@ -787,11 +787,12 @@ QcomPkg/Drivers/DisplayDxe/DisplayDxe.inf：
       │   └── MDPDetectPanel(eDisplayId, pDisplayInfo) //Panel detection code, via XML, I2C or EDID
       │       └── pDisplayInfo->bDetected  = TRUE; //暂时不做分析
       └── Display_Utils_SetPanelConfiguration(eSelectedPanel); //Update ABL with selected panel info 
-          └── panelConfigOutput(pDisplayParams->sPrimary.psDTInfo, 1, pDisplayParams->sPrimary.eTopologyCfg, pDisplayParams->sPrimary.eTimingCfg, &pStr);
-              └── if (primary)
-                  ├── #define DISPLAY_CMDLINE_DSI_PRIMARY           " msm_drm.dsi_display0="   // Panel config prefix
-                  ├── LocalAsciiStrnCat(*ppStr, PANEL_CONFIG_STR_LEN_MAX, DISPLAY_CMDLINE_DSI_PRIMARY); // 设置display cmdline 重要
-                  └── (*ppStr) += AsciiStrLen(DISPLAY_CMDLINE_DSI_PRIMARY);
+          └── UpdatePanelConfiguration(eSelected, pConfigStr);
+              └── panelConfigOutput(pDisplayParams->sPrimary.psDTInfo, 1, pDisplayParams->sPrimary.eTopologyCfg, pDisplayParams->sPrimary.eTimingCfg, &pStr);
+                  └── if (primary)
+                      ├── #define DISPLAY_CMDLINE_DSI_PRIMARY           " msm_drm.dsi_display0="   // Panel config prefix
+                      ├── LocalAsciiStrnCat(*ppStr, PANEL_CONFIG_STR_LEN_MAX, DISPLAY_CMDLINE_DSI_PRIMARY); // 设置display cmdline 重要
+                      └── (*ppStr) += AsciiStrLen(DISPLAY_CMDLINE_DSI_PRIMARY);
 ```
 
 
@@ -1105,4 +1106,101 @@ FindPanelIndex: Panel Id=29 found
 ```
 0x00D8   0x00000000 0x00000000 0x00000033 0x000000CD
 0x00DC   0x00000004 0x00000000 0x00000000 0x00000000
+```
+
+代码中只要读到一个寄存器匹配上就直接跳出了，修改需要3个寄存器同时满足匹配才算match ok：
+```diff
+--- a/A6650_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/SocPkg/AgattiPkg/Library/MDPPlatformLib/MDPPlatformLib.c
++++ b/A6650_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/SocPkg/AgattiPkg/Library/MDPPlatformLib/MDPPlatformLib.c
+@@ -178,40 +178,38 @@ static PlatformDSIDetectParams uefiPanelList[] = {
+       0                                                      // uFlags
+     },
+     //[M9200]modified by tfl for tfl for LCD bringup  20221108 --end
+-  */  {
+-      0x06,                                                  // uCmdType
+-      0x05,                                                  // total number of retry on failures
++    {
++    0x06,                                                                                               // uCmdType
++    0x05,                                                                                               // total number of retry on failures
+       {
+-       {{0xDA, 0x00},                                                                           // address to read ID1
+-       {0x98, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}         // expected readback
+-       }
+-      },
+-      0,                                                     // Lane remap order {0, 1, 2, 3}
+-      NULL,                     // psPanelCfg (panel configuration)
+-      0,             // uPanelCfgSize
+-      MDPPLATFORM_PANEL_ILI9881D_720P_VIDEO,                 // eSelectedPanel
+-      0                                                      // uFlags
++        {{0xDA, 0x00},                                       // address to read ID1
++          {0x2E, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}     // expected readback
++        },
++        {{0xDB, 0x00},                                       // address to read ID2
++          {0xB9, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}     // expected readback
++        },
++        {{0xDC, 0x00},                                       // address to read ID3
++          {0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}     // expected readback
++        }
++     },
++      0,                                                                                                        // Lane remap order {0, 1, 2, 3}
++      NULL,                                    // psPanelCfg (panel configuration)
++      0,                        // uPanelCfgSize
++      MDPPLATFORM_PANEL_ILI7807S_1080P_VIDEO,                            // eSelectedPanel
++      0                                                                                                         // uFlags
+     },
+
+@@ -433,6 +421,7 @@ static MDP_Status DynamicDSIPanelDetection(MDPPlatformPanelInfo *pPlatformPanel,
+       uint8     readback[DSI_READ_READBACK_SIZE];
+       uint32    readSize                          = sizeof(readback);
+       int       iCommandIndex                     = 0;
++      int       id_num                     = 0;
+       uint32    uClkConfig                        = (MDPPLATFORM_PANEL_DETECT_FLAG_CLOCK_FORCEHS &
+                                                      pPanelList[uPanelIndex].uFlags);
+
+@@ -463,6 +452,7 @@ static MDP_Status DynamicDSIPanelDetection(MDPPlatformPanelInfo *pPlatformPanel,
+
+       // clear the panel ID
+       MDP_OSAL_MEMZERO(panelID, PLATFORM_PANEL_ID_MAX_COMMANDS);
++      id_num = 0;
+
+       // for each possible panel ID read
+       for(iCommandIndex = 0; iCommandIndex<PLATFORM_PANEL_ID_MAX_COMMANDS; iCommandIndex++)
+@@ -489,10 +479,9 @@ static MDP_Status DynamicDSIPanelDetection(MDPPlatformPanelInfo *pPlatformPanel,
+                                   sizeof(pPanelList[uPanelIndex].panelIdCommands[iCommandIndex].address),
+                                   readback,
+                                   &readSize);
+-
+                  DEBUG((EFI_D_ERROR, "address:%08x readback[%d]:%08x\n",
+             pPanelList[uPanelIndex].panelIdCommands[iCommandIndex].address[0],
+-            iCommandIndex, readback[iCommandIndex]));
++            iCommandIndex, readback[0]));
+
+           uRetryCount++;
+         } while((uRetryCount < pPanelList[uPanelIndex].uTotalRetry) &&
+@@ -507,19 +496,24 @@ static MDP_Status DynamicDSIPanelDetection(MDPPlatformPanelInfo *pPlatformPanel,
+           {
+             //panelID[iCommandIndex] = readback[0];    // store the first byte of readback as panel ID
+             bMatch                 = TRUE;                       // mark one panel ID matched
++           id_num++;
+                        DEBUG((EFI_D_ERROR, "bMatch OK\n"));
+-                 }
++         }
++         else
++         {
++            id_num = 0;
++         }
+         }
+
+         // if any panel ID is not matched, then go to detect next panel in the list
+-        if(FALSE == bMatch)
++        if(id_num == 3)
+         {
+           break;
+         }
+       }
+
+       // if all panel IDs are matched for a specific panel, store settings and stop
+-      if(TRUE == bMatch)
++      if(TRUE == bMatch && id_num == 3)
+       {
 ```

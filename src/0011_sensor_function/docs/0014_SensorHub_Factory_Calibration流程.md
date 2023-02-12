@@ -2,7 +2,7 @@
 
 SensorHub工厂模式下校准流程分析。
 
-## 原理
+# 原理
 
 
 * 重力传感器acc：
@@ -28,7 +28,7 @@ SensorHub工厂模式下校准流程分析。
  
 注：写入Nvram的校准值都是3个INT型的，重力传感器和陀螺仪都是
 
-## 参考
+# 参考
 
 ```log
 陀螺仪选型相关参数
@@ -48,7 +48,7 @@ SensorHub工厂模式下校准流程分析。
 速率噪声密度谱，感觉是角度随机游走相关的参数
 ```
 
-## 校准流程
+# 校准流程
 
 * 根据打印，因为只有acc校准，所以只做了acc的`sensorCaliAcc`函数，其他的都未执行，先了解一下acc校准方法：
 
@@ -91,13 +91,13 @@ SensorHub工厂模式下校准流程分析。
     ]
 ```
 
-## 流程图
+# 流程图
 
 * 简易流程图如下：
 
 ![123123.png](images/123123.png)
 
-## 程序流程图
+# 程序流程图
 
 * `factory/src/test/ftm_gyro_cali.c`以陀螺仪为例:
 ```C++
@@ -127,37 +127,37 @@ pthread_create(&dat->update_thd, NULL, gyro_cali_update_iv_thread, priv);
 
 ```C++
 * 程序流程
-  * gyroscope_calibration(gyroc->fd, dat->gyroc.cali_delay, dat->gyroc.cali_num,dat->gyroc.cali_tolerance, &cali) //执行校准
-    * external/sensor-tools/libhwm.c
-    * gyroscope_read(fd, &dat); //手机放平，读取20次xyz数据平均值
-    * checkGyroscopeData(item, count, &avg, tolerance) //检测是否符合宽容度要求，应该是偏差不能太大
-  * gyroscope_set_cali(gyroc->fd, &cali) //设置校准参数
-    * kernel-4.19/drivers/misc/mediatek/sensors-1.0/gyroscope/gyro_factory.c
-    *  gyro_factory_unlocked_ioctl(struct file *file, unsigned int cmd, // /dev/gyroscope节点GYROSCOPE_IOCTL_SET_CALI指令
-      * gyro_factory.fops->set_cali(data_buf);
-        * gyrohub.c //.set_cali = gyrohub_factory_set_cali, 
-        * gyrohub_WriteCalibration(data);
-          * gyrohub_WriteCalibration_scp(dat);
-            * sensor_set_cmd_to_hub(ID_GYROSCOPE, CUST_ACTION_SET_CALI, dat);
-              * req.set_cust_req.setCali.action = CUST_ACTION_SET_CALI; //IPI通信数据类型
-              * offsetof(struct SCP_SENSOR_HUB_SET_CUST_REQ,custData) + sizeof(req.set_cust_req.setCali); //将校准数据填充到SCP_SENSOR_HUB_SET_CUST_REQ数据结构custData[11]成员
-                * scp_sensorHub_req_send(&req, &len, 1); //kernel IPI通信统一发送接口
-                * contextHubHandleIpiRxEvent(); //scp IPI统一接收处理接口
-                  * contextHubFindCmd(mTask.ipi_req.action);
-                    * CONTEXTHUB_CMD(SENSOR_HUB_SET_CUST,contextHubFwSetCust, contextHubFwSetCustAck), //此条是SENSOR_HUB_SET_CUST数据格式
-                      * contextHubDispatchCust(mtkTypeToChreType(mtkType), set_cust_req); //寻找SENSOR_HUB_SET_CUST action执行操作
-                        * case CUST_ACTION_SET_CALI:
-                        * sensorCoreWriteCalibration(sensType, cust_req->setCali.int32_data);
-                          * mCoreInfo->setCalibration(cali_sw, AXES_NUM); //调用具体实例驱动setCalibration函数
-                            * mInfo.setCalibration = accSetCalibration; //qmi8656_i2c.c
-                              * mQmi8658.accSwCali[AXIS_X] = cali[AXIS_X];
-        * qmi8658gy.c //kernel驱动方式 .set_cali = qmi8658gy_factory_set_cali,
-        * qmi8658gy_factory_set_cali(int32_t data[3])  
-          * qmi8658gy_WriteCalibration(qmi8658gy_i2c_client, cali);
-            * obj->cali_sw[QMI8658_AXIS_X] = obj->cvt.sign[QMI8658_AXIS_X]*(cali[obj->cvt.map[QMI8658_AXIS_X]]);  //赋值驱动cali数组
-  * gyroscope_get_cali(gyroc->fd, &cali) //读回并显示
-  * gyroscope_write_nvram(&cali) //写入NV
-  * dat->gyroc.pending_op = GYRO_OP_NONE;
+  ├── gyroscope_calibration(gyroc->fd, dat->gyroc.cali_delay, dat->gyroc.cali_num,dat->gyroc.cali_tolerance, &cali) //执行校准
+  │   ├── external/sensor-tools/libhwm.c
+  │   ├── gyroscope_read(fd, &dat); //手机放平，读取20次xyz数据平均值
+  │   └── checkGyroscopeData(item, count, &avg, tolerance) //检测是否符合宽容度要求，应该是偏差不能太大
+  ├── gyroscope_set_cali(gyroc->fd, &cali) //设置校准参数
+  │   ├── kernel-4.19/drivers/misc/mediatek/sensors-1.0/gyroscope/gyro_factory.c
+  │   └──  gyro_factory_unlocked_ioctl(struct file *file, unsigned int cmd, // /dev/gyroscope节点GYROSCOPE_IOCTL_SET_CALI指令
+  │       └── gyro_factory.fops->set_cali(data_buf);
+  │           ├── gyrohub.c //.set_cali = gyrohub_factory_set_cali, 
+  │           ├── gyrohub_WriteCalibration(data);
+  │           │   └── gyrohub_WriteCalibration_scp(dat);
+  │           │       └── sensor_set_cmd_to_hub(ID_GYROSCOPE, CUST_ACTION_SET_CALI, dat);
+  │           │           ├── req.set_cust_req.setCali.action = CUST_ACTION_SET_CALI; //IPI通信数据类型
+  │           │           └── offsetof(struct SCP_SENSOR_HUB_SET_CUST_REQ,custData) + sizeof(req.set_cust_req.setCali); //将校准数据填充到SCP_SENSOR_HUB_SET_CUST_REQ数据结构custData[11]成员
+  │           │               ├── scp_sensorHub_req_send(&req, &len, 1); //kernel IPI通信统一发送接口
+  │           │               └── contextHubHandleIpiRxEvent(); //scp IPI统一接收处理接口
+  │           │                   └── contextHubFindCmd(mTask.ipi_req.action);
+  │           │                       └── CONTEXTHUB_CMD(SENSOR_HUB_SET_CUST,contextHubFwSetCust, contextHubFwSetCustAck), //此条是SENSOR_HUB_SET_CUST数据格式
+  │           │                           └── contextHubDispatchCust(mtkTypeToChreType(mtkType), set_cust_req); //寻找SENSOR_HUB_SET_CUST action执行操作
+  │           │                               ├── case CUST_ACTION_SET_CALI:
+  │           │                               └── sensorCoreWriteCalibration(sensType, cust_req->setCali.int32_data);
+  │           │                                   └── mCoreInfo->setCalibration(cali_sw, AXES_NUM); //调用具体实例驱动setCalibration函数
+  │           │                                       └── mInfo.setCalibration = accSetCalibration; //qmi8656_i2c.c
+  │           │                                           └── mQmi8658.accSwCali[AXIS_X] = cali[AXIS_X];
+  │           ├── qmi8658gy.c //kernel驱动方式 .set_cali = qmi8658gy_factory_set_cali,
+  │           └── qmi8658gy_factory_set_cali(int32_t data[3])  
+  │               └── qmi8658gy_WriteCalibration(qmi8658gy_i2c_client, cali);
+  │                   └── obj->cali_sw[QMI8658_AXIS_X] = obj->cvt.sign[QMI8658_AXIS_X]*(cali[obj->cvt.map[QMI8658_AXIS_X]]);  //赋值驱动cali数组
+  ├── gyroscope_get_cali(gyroc->fd, &cali) //读回并显示
+  ├── gyroscope_write_nvram(&cali) //写入NV
+  └── dat->gyroc.pending_op = GYRO_OP_NONE;
 ```
 
 * log打印：
@@ -176,9 +176,9 @@ sensorhub acc:
 ```
 
 
-## 问题分习
+# 问题分析
 
-### 1.sensorhub方式无法进行校准
+## 1.sensorhub方式无法进行校准
 
 * 工厂模式校准失败，根据错误打印`gsensor_get_cali: get_cali err: -1`，看看是什么问题：
 
@@ -278,7 +278,7 @@ static int gyrohub_factory_set_cali(int32_t data[3])
 +#define MTK_OLD_FACTORY_CALIBRATION
 ```
 
-### 2.gyro校准数据都是0
+## 2.gyro校准数据都是0
 
 * 打印如下：
 
@@ -577,7 +577,7 @@ static void Qmi8658SensorCoreRegistration(void)
         mInfo.sensitivity = mQmi8658.config.g_sensitivity;
 ```
 
-#### 2.静态校准参数误差大
+## 3.静态校准参数误差大
 
 目前发现这种写死的办法，局限性太大了，不同的设备差别比较大，写死的话在其他机器上可能不适用，供应商建议在工厂测试程序时加入校准流程，以下是修改：
 
@@ -745,3 +745,154 @@ index bd59b71e895..745d329fdfa
 * factory校准原理：
 
 ![0014_0000.png](images/0014_0000.png)
+
+# g-sensor Z轴数据全部为29
+
+工厂发现生产的机器Z轴数据全部都为29，自动旋转和抬起亮屏功能失效，如下图：
+
+![0014_0001.png](images/0014_0001.png)
+
+经过试验，发现是单板测试时写了一个不正常的值下来，没有进行错误拦截：
+```log
+----- timezone:Asia/Shanghai
+fore sc7a20ResetWrite
+
+[0.030]sc7a20DeviceId
+
+[0.030]sc7a20 acc reso: 0, sensitivity: 1024
+
+[0.030]sc7a20RegisterCore deviceId 0x11
+
+
+[0.030]accGyro: init done
+
+[0.031]alsPs: init done
+
+[0.520]initSensors: alloc blocks number:264
+
+[0.522]Set Terminal_Type = 2 boardid = 16
+
+[0.522]get dram phy addr=0x8d000000,size=1048520, maxEventNumber:23830
+
+[0.522]get dram phy rp=0,wp=0
+
+[2.024]frequency request: 65535 MHz => 250 MHz
+
+[2.824]sync time scp:2824126160, ap:4316094384, offset:1492434531
+
+[6.264]sc7a20 accGetCalibration cali x:0, y:0, z:0
+
+[6.264]read calibration (0, 0, 0) (-34, 56, 19623)
+
+[6.264]sensitivity:1024.000000, gain:9807
+
+[6.264]write calibration (-5, 3, -2048)//Z轴错误写了个2048
+
+[6.264]sc7a20 accSetCalibration cali x:-5, y:3, z:-2048 
+```
+
+经过试验发现，当板子正面对地进行校准时，Z轴会累加19.6，也就是双倍的9.8，因为正面是+9.8，反面是-9.8，如果需要支持正反都能校准，那需要对Z轴原始数据求绝对值，得知工厂校准流程如下：
+* `vendor/mediatek/proprietary/factory/src/test/ftm_gsensor.c`:
+```c
+* ftm_gsensor_init
+  └── ret = ftm_register(mod, gsensor_entry, (void*)dat);
+      └── gsensor_entry(struct ftm_param *param, void *priv)
+          └── pthread_create(&dat->update_thd, NULL, gsensor_update_iv_thread, priv);
+              └── err = gsensor_cali_before_read(acc->fd, CALI_DELAY, CALI_NUM, CALI_TOLERANCE, dat);
+                  ├── gsensor_calibration(fd, cali_delay, cali_num, cali_tolerance, &cali)) != 0)
+                  │   ├── while(num < count) err = gsensor_read(fd, &dat); //libhwm.c
+                  │   ├── avg.z += item[num].dat.z; 
+                  │   ├── avg.z /= count; //可以在这里求绝对值
+                  │   └── err = calculateStandardCalibration(&avg, cali)
+                  ├── err = gsensor_set_cali(fd, &cali)) != 0
+                  └── err = gsensor_write_nvram(&cali)) != 0
+```
+
+* 修改方案如下：
+```diff
+--- a/vendor/mediatek/proprietary/external/sensor-tools/libhwm.c
++++ b/vendor/mediatek/proprietary/external/sensor-tools/libhwm.c
+@@ -851,6 +851,7 @@ int gsensor_calibration(int fd, int period, int count, int tolerance, HwmData *c
+        avg.x /= count;
+        avg.y /= count;
+        avg.z /= count;
++       avg.z = abs(avg.z);
+```
+
+* 同时，我们也需要在接收端控制错误数据：
+```diff
+--- a/vendor/mediatek/proprietary/tinysys/freertos/source/middleware/contexthub/contexthub_core.c
++++ b/vendor/mediatek/proprietary/tinysys/freertos/source/middleware/contexthub/contexthub_core.c
+@@ -29,6 +29,7 @@
+ #include <sensors.h>
+ #include <contexthub_core.h>
+ #include <contexthub_fw.h>
++#include <math.h>
+
+ struct sensorCoreInfo mInfoCoreList[MAX_REGISTERED_SENSORS];
+ static uint8_t mSensorCoreList[SENS_TYPE_LAST_USER];
+@@ -82,6 +83,21 @@ int sensorCoreWriteCalibration(uint8_t sensType, int32_t *data)
+     cali_sw[AXIS_Y] = mCoreInfo->cvt.sign[AXIS_Y] * cali[mCoreInfo->cvt.map[AXIS_Y]];
+     cali_sw[AXIS_Z] = mCoreInfo->cvt.sign[AXIS_Z] * cali[mCoreInfo->cvt.map[AXIS_Z]];
+
++       // [NEW FEATURE]-BEGIN by wugangnan@paxsz.com 2023-01-06, add g-sensor calibration data fault-tolerant processing mechanism
++       if (abs(cali_sw[AXIS_X]) > AXIS_TOLERANCE) {
++           osLog(LOG_INFO, "AXIS_X = %ld ,calibration data over tolerance range \n",cali_sw[AXIS_X]);
++               cali_sw[AXIS_X] = 0;
++       }
++       if (abs(cali_sw[AXIS_Y]) > AXIS_TOLERANCE) {
++           osLog(LOG_INFO, "AXIS_Y = %ld ,calibration data over tolerance range \n",cali_sw[AXIS_Y]);
++               cali_sw[AXIS_Y] = 0;
++       }
++       if (abs(cali_sw[AXIS_Z]) > AXIS_TOLERANCE) {
++           osLog(LOG_INFO, "AXIS_Z = %ld ,calibration data over tolerance range \n",cali_sw[AXIS_Z]);
++               cali_sw[AXIS_Z] = 0;
++       }
++       // [NEW FEATURE]-END by wugangnan@paxsz.com 2023-01-06, add g-sensor calibration data fault-tolerant processing mechanism
++
+     osLog(LOG_INFO, "write calibration (%ld, %ld, %ld)\n",
+           cali_sw[AXIS_X], cali_sw[AXIS_Y], cali_sw[AXIS_Z]);
+     if (!mCoreInfo->setCalibration)
+diff --git a/vendor/mediatek/proprietary/tinysys/freertos/source/middleware/contexthub/contexthub_core.h b/vendor/mediatek/proprietary/tinysys/freertos/source/middleware/contexthub/contexthub_core.h
+old mode 100644
+new mode 100755
+index dd0b55b63cc..f787e58453e
+--- a/vendor/mediatek/proprietary/tinysys/freertos/source/middleware/contexthub/contexthub_core.h
++++ b/vendor/mediatek/proprietary/tinysys/freertos/source/middleware/contexthub/contexthub_core.h
+@@ -36,6 +36,7 @@
+ #define AXIS_Y             1
+ #define AXIS_Z             2
+ #define AXES_NUM           3
++#define AXIS_TOLERANCE     300
+```
+
+* 错误数据过滤打印如下：
+```log
+----- timezone:Asia/Shanghai
+1024.000000, gain:9807
+
+[6.022]AXIS_X = 145 ,calibration data over range 
+
+[6.022]AXIS_Z = -8108 ,calibration data over range 
+
+[6.022]wugn test write calibration (0, 24, 0)
+
+[6.022]sc7a20 accSetCalibration cali x:0, y:24, z:0
+
+[6.939]hostintf: 6939317708, chreType:1, rate:0, latency:0, cmd:3!
+```
+
+* 当板子反面面对地进行校准时，错误数据过滤如下：
+```log
+[6.048]sc7a20 accGetCalibration cali x:0, y:0, z:0
+
+[6.048]read calibration (0, 0, 0) (-59, 30, 19625)
+
+[6.048]sensitivity:1024.000000, gain:9807
+
+[6.048]AXIS_Z = -2049 ,calibration data over tolerance range 
+
+[6.048]write calibration (-3, 6, 0)
+
+[6.048]sc7a20 accSetCalibration cali x:-3, y:6, z:0
+```

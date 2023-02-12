@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="zh-CN" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>wugn</title>
+
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script src="../../../_static/translations.js"></script>
+        <script src="../../../_static/js/baidutongji.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="索引" href="../../../genindex.html" />
+    <link rel="search" title="搜索" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../index.html" class="icon icon-home"> wugn_note
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="在文档中搜索" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">概述</a></li>
+<li><a class="reference internal" href="#id2">参考</a></li>
+<li><a class="reference internal" href="#id3">测试方案</a></li>
+<li><a class="reference internal" href="#id4">软件流程</a></li>
+<li><a class="reference internal" href="#id5">验证结论</a></li>
+<li><a class="reference internal" href="#id6">打印机调试</a></li>
+</ul>
+</div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">wugn_note</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs"> 
+<li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+<li>概述</li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.forward()">Forward</a></li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.back()">Go Back</a> | </li>
+<li style="float: right;margin-left: 10px;"><a href="/index.html">Home</a> | </li>
+
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="id1">
+<h1>概述<a class="headerlink" href="#id1" title="此标题的永久链接"></a></h1>
+<p>kernel阶段串口无法设置750k波特率问题分析。</p>
+</section>
+<section id="id2">
+<h1>参考<a class="headerlink" href="#id2" title="此标题的永久链接"></a></h1>
+<ul class="simple">
+<li><p><a class="reference external" href="https://www.jianshu.com/p/58b79a01680a">Linux C 配置串口</a></p></li>
+</ul>
+</section>
+<section id="id3">
+<h1>测试方案<a class="headerlink" href="#id3" title="此标题的永久链接"></a></h1>
+<p>由于该项目使用了流控，需要将microcom增加流控属性，修改如下：</p>
+<div class="highlight-diff notranslate"><div class="highlight"><pre><span></span><span class="gd">--- a/QSSI.12/external/toybox/lib/tty.c</span><span class="w"></span>
+<span class="gi">+++ b/QSSI.12/external/toybox/lib/tty.c</span><span class="w"></span>
+<span class="gu">@@ -65,7 +65,7 @@ void xsetspeed(struct termios *tio, int speed)</span><span class="w"></span>
+<span class="w"> </span>{<span class="w"></span>
+<span class="w"> </span>  int i, speeds[] = {50, 75, 110, 134, 150, 200, 300, 600, 1200, 1800, 2400,<span class="w"></span>
+<span class="w"> </span>                    4800, 9600, 19200, 38400, 57600, 115200, 230400, 460800,<span class="w"></span>
+<span class="gd">-                    500000, 576000, 921600, 1000000, 1152000, 1500000, 2000000,</span><span class="w"></span>
+<span class="gi">+                    500000, 576000, 750000, 921600, 1000000, 1152000, 1500000, 2000000,</span><span class="w"></span>
+<span class="w"> </span>                    2500000, 3000000, 3500000, 4000000};<span class="w"></span>
+
+<span class="w"> </span>  // Find speed in table, adjust to constant<span class="w"></span>
+<span class="gu">@@ -95,6 +95,9 @@ int set_terminal(int fd, int raw, int speed, struct termios *old)</span><span class="w"></span>
+
+<span class="w"> </span>  // Output appends CR to NL, does magic undocumented postprocessing<span class="w"></span>
+<span class="w"> </span>  termio.c_oflag = ONLCR|OPOST;<span class="w"></span>
+<span class="gi">+  termio.c_oflag &amp;= ~ IXON;</span><span class="w"></span>
+<span class="gi">+  termio.c_oflag &amp;= ~ IXOFF;</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+
+<span class="w"> </span>  // Leave serial port speed alone<span class="w"></span>
+<span class="w"> </span>  // termio.c_cflag = C_READ|CS8|EXTB;<span class="w"></span>
+<span class="gu">@@ -104,14 +107,15 @@ int set_terminal(int fd, int raw, int speed, struct termios *old)</span><span class="w"></span>
+<span class="w"> </span>  // erase line char at a time<span class="w"></span>
+<span class="w"> </span>  // &quot;extended&quot; behavior: ctrl-V quotes next char, ctrl-R reprints unread chars,<span class="w"></span>
+<span class="w"> </span>  // ctrl-W erases word<span class="w"></span>
+<span class="gd">-  termio.c_lflag = ISIG|ICANON|ECHO|ECHOE|ECHOK|ECHOCTL|ECHOKE|IEXTEN;</span><span class="w"></span>
+<span class="gi">+  //termio.c_lflag = ISIG|ICANON|ECHO|ECHOE|ECHOK|ECHOCTL|ECHOKE|IEXTEN;</span><span class="w"></span>
+<span class="gi">+  termio.c_lflag =     CRTSCTS;</span><span class="w"></span>
+
+<span class="w"> </span>  if (raw) cfmakeraw(&amp;termio);<span class="w"></span>
+
+<span class="w"> </span>  if (speed) {<span class="w"></span>
+<span class="w"> </span>    int i, speeds[] = {50, 75, 110, 134, 150, 200, 300, 600, 1200, 1800, 2400,<span class="w"></span>
+<span class="w"> </span>                    4800, 9600, 19200, 38400, 57600, 115200, 230400, 460800,<span class="w"></span>
+<span class="gd">-                    500000, 576000, 921600, 1000000, 1152000, 1500000, 2000000,</span><span class="w"></span>
+<span class="gi">+                    500000, 576000, 750000, 921600, 1000000, 1152000, 1500000, 2000000,</span><span class="w"></span>
+<span class="w"> </span>                    2500000, 3000000, 3500000, 4000000};<span class="w"></span>
+
+<span class="w"> </span>    // Find speed in table, adjust to constant<span class="w"></span>
+<span class="gh">diff --git a/QSSI.12/external/toybox/toys/net/microcom.c b/QSSI.12/external/toybox/toys/net/microcom.c</span><span class="w"></span>
+<span class="w">old mode 100644</span>
+<span class="w">new mode 100755</span>
+<span class="gd">--- a/QSSI.12/external/toybox/toys/net/microcom.c</span><span class="w"></span>
+<span class="gi">+++ b/QSSI.12/external/toybox/toys/net/microcom.c</span><span class="w"></span>
+<span class="gu">@@ -33,6 +33,8 @@ static void restore_states(int i)</span><span class="w"></span>
+<span class="w"> </span>  tcsetattr(TT.fd, TCSAFLUSH, &amp;TT.old_fd);<span class="w"></span>
+<span class="w"> </span>}<span class="w"></span>
+
+<span class="gi">+char tips_begin[] = &quot;read data from connection begin\n&quot;;</span><span class="w"></span>
+<span class="gi">+char tips_end[] = &quot;\nread data from connection end\n&quot;;</span><span class="w"></span>
+<span class="w"> </span>void microcom_main(void)<span class="w"></span>
+<span class="w"> </span>{<span class="w"></span>
+<span class="w"> </span>  struct termios tio;<span class="w"></span>
+<span class="gu">@@ -62,7 +64,11 @@ void microcom_main(void)</span><span class="w"></span>
+
+<span class="w"> </span>    // Read from connection, write to stdout.<span class="w"></span>
+<span class="w"> </span>    if (fds[0].revents) {<span class="w"></span>
+<span class="gd">-      if (0 &lt; (i = read(TT.fd, toybuf, sizeof(toybuf)))) xwrite(0, toybuf, i);</span><span class="w"></span>
+<span class="gi">+      if (0 &lt; (i = read(TT.fd, toybuf, sizeof(toybuf)))) {</span><span class="w"></span>
+<span class="gi">+                 xwrite(1, tips_begin, sizeof(tips_begin));</span><span class="w"></span>
+<span class="gi">+                 xwrite(1, toybuf, i);</span><span class="w"></span>
+<span class="gi">+                 xwrite(1, tips_end, sizeof(tips_end));</span><span class="w"></span>
+<span class="gi">+         }</span><span class="w"></span>
+<span class="w"> </span>      else break;<span class="w"></span>
+<span class="w"> </span>    }<span class="w"></span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">microcom</span>&#160; <span class="pre">-s</span> <span class="pre">750000</span> <span class="pre">/dev/ttyHS1</span></code>设置750k波特率后另外开个串口进行写数据操作:</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">M9200</span><span class="p">:</span><span class="o">/</span> <span class="c1"># echo T &gt; /dev/ttyHS1</span>
+<span class="n">M9200</span><span class="p">:</span><span class="o">/</span> <span class="c1"># echo T &gt; /dev/ttyHS1</span>
+<span class="n">M9200</span><span class="p">:</span><span class="o">/</span> <span class="c1"># echo T &gt; /dev/ttyHS1</span>
+</pre></div>
+</div>
+<p>收到数据有问题，逻辑分析仪解析出错：</p>
+<p><img alt="0009_0003.png" src="../../../_images/0009_00031.png" /></p>
+<p>根据单bit周期算出波特率为909K：</p>
+<p><img alt="0009_0000.png" src="../../../_images/0009_00002.png" /></p>
+<p>将波特率配置为921600后数据正常显示：</p>
+<p><img alt="0009_0002.png" src="../../../_images/0009_0002.png" /></p>
+</section>
+<section id="id4">
+<h1>软件流程<a class="headerlink" href="#id4" title="此标题的永久链接"></a></h1>
+<p>microcom中设置波特率软件流程如下：</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">QSSI.12/external/toybox/toys/net/microcom.c</span></code>:</p></li>
+</ul>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="o">*</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">microcom_main</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="o">*</span><span class="w"> </span><span class="n">xsetspeed</span><span class="p">(</span><span class="o">&amp;</span><span class="n">tio</span><span class="p">,</span><span class="w"> </span><span class="n">TT</span><span class="p">.</span><span class="n">s</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="o">*</span><span class="w"> </span><span class="n">speeds</span><span class="p">[]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="mi">50</span><span class="p">,</span><span class="w"> </span><span class="mi">75</span><span class="p">,</span><span class="w"> </span><span class="mi">110</span><span class="p">,</span><span class="w"> </span><span class="mi">134</span><span class="p">,</span><span class="w"> </span><span class="mi">150</span><span class="p">,</span><span class="w"> </span><span class="mi">200</span><span class="p">,</span><span class="w"> </span><span class="mi">300</span><span class="p">,</span><span class="w"> </span><span class="mi">600</span><span class="p">,</span><span class="w"> </span><span class="mi">1200</span><span class="p">,</span><span class="w"> </span><span class="mi">1800</span><span class="p">,</span><span class="w"> </span><span class="mi">2400</span><span class="p">,</span><span class="w"></span>
+<span class="w">    </span><span class="o">*</span><span class="w"> </span><span class="n">cfsetspeed</span><span class="p">(</span><span class="n">tio</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="o">+</span><span class="mi">4081</span><span class="o">*</span><span class="p">(</span><span class="n">i</span><span class="o">&gt;</span><span class="mi">15</span><span class="p">));</span><span class="w"></span>
+</pre></div>
+</div>
+<p>cfsetspeed() 函数扩展为同时设置输入和输出波特率。</p>
+<p>跳过tty operation函数直接看一下驱动中设置波特率的函数：</p>
+<ul class="simple">
+<li><p>``:</p></li>
+</ul>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="k">static</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">uart_ops</span><span class="w"> </span><span class="n">msm_geni_console_pops</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">tx_empty</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">msm_geni_serial_tx_empty</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">stop_tx</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">msm_geni_serial_stop_tx</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">start_tx</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">msm_geni_serial_start_tx</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">stop_rx</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">msm_geni_serial_stop_rx</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">set_termios</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">msm_geni_serial_set_termios</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">startup</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">msm_geni_serial_startup</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">config_port</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">msm_geni_serial_config_port</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">shutdown</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">msm_geni_serial_shutdown</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">msm_geni_serial_get_type</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">set_mctrl</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">msm_geni_cons_set_mctrl</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">get_mctrl</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">msm_geni_cons_get_mctrl</span><span class="p">,</span><span class="w"></span>
+<span class="cp">#ifdef CONFIG_CONSOLE_POLL</span>
+<span class="w">	</span><span class="p">.</span><span class="n">poll_get_char</span><span class="w">	</span><span class="o">=</span><span class="w"> </span><span class="n">msm_geni_serial_get_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">poll_put_char</span><span class="w">	</span><span class="o">=</span><span class="w"> </span><span class="n">msm_geni_serial_poll_put_char</span><span class="p">,</span><span class="w"></span>
+<span class="cp">#endif</span>
+<span class="w">	</span><span class="p">.</span><span class="n">pm</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">msm_geni_serial_cons_pm</span><span class="p">,</span><span class="w"></span>
+<span class="p">};</span><span class="w"></span>
+
+<span class="k">static</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">uart_ops</span><span class="w"> </span><span class="n">msm_geni_serial_pops</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">tx_empty</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">msm_geni_serial_tx_empty</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">stop_tx</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">msm_geni_serial_stop_tx</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">start_tx</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">msm_geni_serial_start_tx</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">stop_rx</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">msm_geni_serial_stop_rx</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">set_termios</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">msm_geni_serial_set_termios</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">startup</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">msm_geni_serial_startup</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">config_port</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">msm_geni_serial_config_port</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">shutdown</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">msm_geni_serial_shutdown</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">msm_geni_serial_get_type</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">set_mctrl</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">msm_geni_serial_set_mctrl</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">get_mctrl</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">msm_geni_serial_get_mctrl</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">break_ctl</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">msm_geni_serial_break_ctl</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">flush_buffer</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">NULL</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="p">.</span><span class="n">ioctl</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">msm_geni_serial_ioctl</span><span class="p">,</span><span class="w"></span>
+<span class="p">};</span><span class="w"></span>
+</pre></div>
+</div>
+<p>其中msm_geni_serial_set_termios就是设置波特率的函数，其中有个比较重要的函数uart_get_baud_rate：</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="k">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">msm_geni_serial_set_termios</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">uart_port</span><span class="w"> </span><span class="o">*</span><span class="n">uport</span><span class="p">,</span><span class="w"></span>
+<span class="w">				</span><span class="k">struct</span><span class="w"> </span><span class="nc">ktermios</span><span class="w"> </span><span class="o">*</span><span class="n">termios</span><span class="p">,</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">ktermios</span><span class="w"> </span><span class="o">*</span><span class="n">old</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="cm">/* baud rate */</span><span class="w"></span>
+<span class="w">	</span><span class="n">baud</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">uart_get_baud_rate</span><span class="p">(</span><span class="n">uport</span><span class="p">,</span><span class="w"> </span><span class="n">termios</span><span class="p">,</span><span class="w"> </span><span class="n">old</span><span class="p">,</span><span class="w"> </span><span class="mi">300</span><span class="p">,</span><span class="w"> </span><span class="mi">4000000</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="n">port</span><span class="o">-&gt;</span><span class="n">cur_baud</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">baud</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<p>软件流程：</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span>* uart_get_baud_rate(struct uart_port *port, struct ktermios *termios,
+  └── baud = tty_termios_baud_rate(termios);
+      └── return cbaud &gt;= n_baud_table ? 0 : baud_table[cbaud];
+</pre></div>
+</div>
+<p>其中baud_table为所有波特率支持列表，在这里面添加750000就能够配置了：</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="k">static</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">speed_t</span><span class="w"> </span><span class="n">baud_table</span><span class="p">[]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">50</span><span class="p">,</span><span class="w"> </span><span class="mi">75</span><span class="p">,</span><span class="w"> </span><span class="mi">110</span><span class="p">,</span><span class="w"> </span><span class="mi">134</span><span class="p">,</span><span class="w"> </span><span class="mi">150</span><span class="p">,</span><span class="w"> </span><span class="mi">200</span><span class="p">,</span><span class="w"> </span><span class="mi">300</span><span class="p">,</span><span class="w"> </span><span class="mi">600</span><span class="p">,</span><span class="w"> </span><span class="mi">1200</span><span class="p">,</span><span class="w"> </span><span class="mi">1800</span><span class="p">,</span><span class="w"> </span><span class="mi">2400</span><span class="p">,</span><span class="w"> </span><span class="mi">4800</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="mi">9600</span><span class="p">,</span><span class="w"> </span><span class="mi">19200</span><span class="p">,</span><span class="w"> </span><span class="mi">38400</span><span class="p">,</span><span class="w"> </span><span class="mi">57600</span><span class="p">,</span><span class="w"> </span><span class="mi">115200</span><span class="p">,</span><span class="w"> </span><span class="mi">230400</span><span class="p">,</span><span class="w"> </span><span class="mi">460800</span><span class="p">,</span><span class="w"></span>
+<span class="cp">#ifdef __sparc__</span>
+<span class="w">	</span><span class="mi">76800</span><span class="p">,</span><span class="w"> </span><span class="mi">153600</span><span class="p">,</span><span class="w"> </span><span class="mi">307200</span><span class="p">,</span><span class="w"> </span><span class="mi">614400</span><span class="p">,</span><span class="w"> </span><span class="mi">750000</span><span class="p">,</span><span class="w"> </span><span class="mi">921600</span><span class="w"> </span><span class="c1">//这里添加</span>
+<span class="cp">#else</span>
+<span class="w">	</span><span class="mi">500000</span><span class="p">,</span><span class="w"> </span><span class="mi">576000</span><span class="p">,</span><span class="w"> </span><span class="mi">750000</span><span class="p">,</span><span class="w"> </span><span class="mi">921600</span><span class="p">,</span><span class="w"> </span><span class="mi">1000000</span><span class="p">,</span><span class="w"> </span><span class="mi">1152000</span><span class="p">,</span><span class="w"> </span><span class="mi">1500000</span><span class="p">,</span><span class="w"> </span><span class="mi">2000000</span><span class="p">,</span><span class="w"></span>
+<span class="w">	</span><span class="mi">2500000</span><span class="p">,</span><span class="w"> </span><span class="mi">3000000</span><span class="p">,</span><span class="w"> </span><span class="mi">3500000</span><span class="p">,</span><span class="w"> </span><span class="mi">4000000</span><span class="w"></span>
+<span class="cp">#endif</span>
+<span class="p">};</span><span class="w"></span>
+</pre></div>
+</div>
+</section>
+<section id="id5">
+<h1>验证结论<a class="headerlink" href="#id5" title="此标题的永久链接"></a></h1>
+<p>可以看到波特率和发送接收的数据已经没问题了。</p>
+<p><img alt="0009_0004.png" src="../../../_images/0009_00041.png" /></p>
+</section>
+<section id="id6">
+<h1>打印机调试<a class="headerlink" href="#id6" title="此标题的永久链接"></a></h1>
+<ul class="simple">
+<li><p>ftest打开不支持打印机：</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>2022-12-26 22:15:53.025 4122-5107/com.pax.ft E/PrintManager: NO SUPPORT ERROR:0x60000201
+2022-12-26 22:15:53.026 4122-5107/com.pax.ft E/DBG: PrnTest-&gt; PrintException:
+    com.pax.api.PrintException: Not Support for this device
+        at com.pax.api.PrintManager.prnInitEx(PrintManager.java:196)
+        at com.pax.api.PrintManager.prnInit(PrintManager.java:209)
+        at com.pax.ft.module.PrnTest.test(PrnTest.java:235)
+        at com.pax.ft.module.PrnTest.access$000(PrnTest.java:49)
+        at com.pax.ft.module.PrnTest$2.dox(PrnTest.java:78)
+        at com.pax.ft.tools.BaseTest.lambda$execute$0$BaseTest(BaseTest.java:542)
+        at com.pax.ft.tools.-$$Lambda$BaseTest$U9HGJDwDf8wlpZP9XWVZ0ca-85Q.run(Unknown Source:6)
+        at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1167)
+        at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:641)
+        at java.lang.Thread.run(Thread.java:920)
+</pre></div>
+</div>
+<p>继续报错<code class="docutils literal notranslate"><span class="pre">open</span> <span class="pre">sys</span> <span class="pre">class</span> <span class="pre">error</span></code>：</p>
+<div class="highlight-log notranslate"><div class="highlight"><pre><span></span>2022-12-27 12:39:30.286 8576-8576/? E/PAXSVR: ++++++  Start  PaxApiService ++++++
+2022-12-27 12:39:30.286 8576-8576/? E/PAXSVR: The current series : ATM, The current model : M9200
+2022-12-27 12:39:30.286 8576-8576/? E/PAXSVR: initDevConfig
+2022-12-27 12:39:30.286 8576-8576/? E/PAXSVR: initDevConfig model = M9200
+2022-12-27 12:39:30.286 8576-8576/? E/PAXSVR: ++++++  Create M9200 Config success  ++++++
+2022-12-27 12:39:30.298 8576-8576/? W/libc: Unable to set property &quot;ro.auth.baudrate&quot; to &quot;3000000&quot;: error code: 0xb
+2022-12-27 12:39:30.311 8576-8576/? W/libc: Unable to set property &quot;ro.rpc.baudrate&quot; to &quot;3000000&quot;: error code: 0xb
+2022-12-27 12:39:30.311 8576-8576/? E/PAXSVR: ++++++  dumpDevConfig start  ++++++
+2022-12-27 12:39:30.311 8576-8576/? E/PAXSVR: SPDevConfig : spDevName /dev/paxPortRPC, rate 750000
+2022-12-27 12:39:30.311 8576-8576/? E/PAXSVR: MagConfig : magType 1, magReaderCombined 0
+2022-12-27 12:39:30.311 8576-8576/? E/PAXSVR: IccConfig : iccType 1
+2022-12-27 12:39:30.311 8576-8576/? E/PAXSVR: PiccConfig : piccType 2, isSupportPiccLight 0
+2022-12-27 12:39:30.311 8576-8576/? E/PAXSVR: PrnConfig : prnType 1
+2022-12-27 12:39:30.311 8576-8576/? E/PAXSVR: PedConfig : pedType 1, isSMSupport 1, isSupportKeyBorad 2, isPCISecSupport 1
+2022-12-27 12:39:30.311 8576-8576/? E/PAXSVR: BaseDeviceConfig : baseDeviceType 0
+2022-12-27 12:39:30.311 8576-8576/? E/PAXSVR: CashBoxConfig : isCashBoxSupport 0, cashBoxType 0
+2022-12-27 12:39:30.311 8576-8576/? E/PAXSVR: ++++++  dumpDevConfig end    ++++++
+2022-12-27 12:39:30.311 8576-8576/? E/PAXSVR: ++++++ initDevice  ++++++
+2022-12-27 12:39:30.311 8576-8576/? E/ATM: PaxApiServiceATM initGlobalFuncs
+2022-12-27 12:39:30.311 8576-8576/? E/ATM: initSpdev
+2022-12-27 12:39:30.312 8576-8576/? E/pax-Spdev: [ SpdevPowerSwitch   443] ERROR: open sys class error
+2022-12-27 12:39:30.322 8576-8576/? E/pax-Spdev: [ SpdevPowerSwitch   443] ERROR: open sys class error
+2022-12-27 12:39:30.323 8576-8576/? A/libc: Fatal signal 11 (SIGSEGV), code 2 (SEGV_ACCERR), fault addr 0xa5df9488 in tid 8576 (paxservice), pid 8576 (paxservice)
+2022-12-27 12:39:30.365 8580-8580/? I/crash_dump32: obtaining output fd from tombstoned, type: kDebuggerdTombstoneProto
+2022-12-27 12:39:30.367 510-510/? I/tombstoned: received crash request for pid 8576
+2022-12-27 12:39:30.368 8580-8580/? I/crash_dump32: performing dump of process 8576 (target tid = 8576)
+2022-12-27 12:39:30.373 8580-8580/? E/DEBUG: failed to read /proc/uptime: Permission denied
+2022-12-27 12:39:30.710 8580-8580/? A/DEBUG: *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** ***
+2022-12-27 12:39:30.710 8580-8580/? A/DEBUG: Build fingerprint: &#39;PAX/M9200/M9200:12/SKQ1.220119.001/eng.pax.20221226.220310:userdebug/release-keys&#39;
+2022-12-27 12:39:30.710 8580-8580/? A/DEBUG: Revision: &#39;0&#39;
+2022-12-27 12:39:30.710 8580-8580/? A/DEBUG: ABI: &#39;arm&#39;
+2022-12-27 12:39:30.710 8580-8580/? A/DEBUG: Timestamp: 2022-12-27 12:39:30.372272711+0800
+2022-12-27 12:39:30.710 8580-8580/? A/DEBUG: Process uptime: 0s
+2022-12-27 12:39:30.710 8580-8580/? A/DEBUG: Cmdline: /system/bin/paxservice
+2022-12-27 12:39:30.710 8580-8580/? A/DEBUG: pid: 8576, tid: 8576, name: paxservice  &gt;&gt;&gt; /system/bin/paxservice &lt;&lt;&lt;
+2022-12-27 12:39:30.710 8580-8580/? A/DEBUG: uid: 0
+2022-12-27 12:39:30.710 8580-8580/? A/DEBUG: signal 11 (SIGSEGV), code 2 (SEGV_ACCERR), fault addr 0xa5df9488
+2022-12-27 12:39:30.710 8580-8580/? A/DEBUG:     r0  a5de7e51  r1  00000000  r2  00000000  r3  00000000
+2022-12-27 12:39:30.710 8580-8580/? A/DEBUG:     r4  00000003  r5  a5e0334c  r6  a5e03270  r7  00000008
+2022-12-27 12:39:30.710 8580-8580/? A/DEBUG:     r8  a55532cc  r9  a5e03024  r10 a5dfcc19  r11 a5e03184
+2022-12-27 12:39:30.710 8580-8580/? A/DEBUG:     ip  a5e01de4  sp  beb33170  lr  a5de7d7f  pc  a5df9488
+2022-12-27 12:39:30.710 8580-8580/? A/DEBUG: backtrace:
+2022-12-27 12:39:30.710 8580-8580/? A/DEBUG:       #00 pc 0002f488  /system/lib/libpaxspdev.so!libpaxspdev.so (__ThumbV7PILongThunk_trans_init+0) (BuildId: f140034a4622694890bac8acf94e5252)
+2022-12-27 12:39:30.735 1296-2478/system_process W/NativeCrashListener: Couldn&#39;t find ProcessRecord for pid 8576
+2022-12-27 12:39:30.736 8580-8580/? E/crash_dump32: AM data write failed: Broken pipe
+2022-12-27 12:39:30.737 510-510/? E/tombstoned: Tombstone written to: tombstone_03
+2022-12-27 12:39:30.745 1296-1988/system_process I/BootReceiver: Copying /data/tombstones/tombstone_03 to DropBox (SYSTEM_TOMBSTONE)
+2022-12-27 12:39:30.745 1296-1988/system_process I/DropBoxManagerService: add tag=SYSTEM_TOMBSTONE isTagEnabled=true flags=0x6
+2022-12-27 12:39:30.770 1296-1988/system_process E/NativeTombstoneManager: Tombstone&#39;s UID (0) not an app, ignoring
+2022-12-27 12:39:30.771 1296-1988/system_process I/DropBoxManagerService: add tag=SYSTEM_TOMBSTONE_PROTO isTagEnabled=true flags=0x4
+2022-12-27 12:39:31.350 8344-8396/com.pax.ft E/DBG: Shell-&gt; exec.size:5
+2022-12-27 12:39:31.833 8563-8563/? W/ServiceManager: Service PaxApiService didn&#39;t start. Returning NULL
+2022-12-27 12:39:31.836 8563-8563/? I/ServiceManager: Waiting for service &#39;PaxApiService&#39; on &#39;/dev/binder&#39;...
+2022-12-27 12:39:33.756 8344-8468/com.pax.ft W/ServiceManager: Service PaxApiService didn&#39;t start. Returning NULL
+2022-12-27 12:39:33.757 8344-8468/com.pax.ft E/RpcClient: open rpc failure:other,-1
+2022-12-27 12:39:33.757 8344-8468/com.pax.ft W/System.err: com.pax.api.PosSideException: ERROR_DATA_CONNECT
+2022-12-27 12:39:33.757 8344-8468/com.pax.ft W/System.err:     at pax.util.RpcClient.open_rpc(RpcClient.java:64)
+2022-12-27 12:39:33.757 8344-8468/com.pax.ft W/System.err:     at pax.util.RpcClient.&lt;init&gt;(RpcClient.java:32)
+2022-12-27 12:39:33.757 8344-8468/com.pax.ft W/System.err:     at pax.util.RpcClient.getInstance(RpcClient.java:37)
+2022-12-27 12:39:33.757 8344-8468/com.pax.ft W/System.err:     at com.pax.api.BaseSystemManager.&lt;init&gt;(BaseSystemManager.java:38)
+2022-12-27 12:39:33.757 8344-8468/com.pax.ft W/System.err:     at com.pax.api.BaseSystemManager.getInstance(BaseSystemManager.java:56)
+2022-12-27 12:39:33.758 8344-8468/com.pax.ft W/System.err:     at com.pax.ft.WelcomeActivity.lambda$onCreate$2$WelcomeActivity(WelcomeActivity.java:190)
+2022-12-27 12:39:33.758 8344-8468/com.pax.ft W/System.err:     at com.pax.ft.-$$Lambda$WelcomeActivity$eOBZ2GPpXhTUbsVMKm3t7Yw14D4.run(Unknown Source:2)
+2022-12-27 12:39:33.758 8344-8468/com.pax.ft W/System.err:     at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1167)
+2022-12-27 12:39:33.758 8344-8458/com.pax.ft W/com.pax.ft: Long monitor contention with owner pool-2-thread-3 (8468) at pax.util.RpcClient pax.util.RpcClient.getInstance()(RpcClient.java:39) waiters=2 in pax.util.RpcClient pax.util.RpcClient.getInstance() for 24.170s
+2022-12-27 12:39:33.759 8344-8468/com.pax.ft W/System.err:     at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:641)
+2022-12-27 12:39:33.759 8344-8468/com.pax.ft W/System.err:     at java.lang.Thread.run(Thread.java:920)
+2022-12-27 12:39:33.759 8344-8458/com.pax.ft I/System.out: RpcClient open rpc
+2022-12-27 12:39:33.759 8344-8468/com.pax.ft I/DBG: WelcomeActivity-&gt; BaseSystemException = 99
+2022-12-27 12:39:33.759 8344-8468/com.pax.ft E/DBG: WelcomeActivity-&gt; Properties(pax.ctrl.spver)=10(R)20221226
+2022-12-27 12:39:33.759 8344-8468/com.pax.ft E/DBG: WelcomeActivity-&gt; Properties(pax.sp.MONITOR)=10(R)20221226
+2022-12-27 12:39:33.760 8344-8458/com.pax.ft I/ServiceManager: Waiting for service &#39;PaxApiService&#39; on &#39;/dev/binder&#39;...
+2022-12-27 12:39:35.284 8585-8585/? E/linker: &quot;/system/lib/libpaxspdev.so&quot;: ignoring DT_PREINIT_ARRAY in shared library!
+2022-12-27 12:39:35.286 8585-8585/? E/PAXSVR: getpriority ret 0 pid 8585
+2022-12-27 12:39:35.286 8585-8585/? E/PAXSVR: setpriority return 0
+2022-12-27 12:39:35.287 8585-8585/? E/PAXSVR: nice return -20
+2022-12-27 12:39:35.287 8585-8585/? E/PAXSVR: getpriority2 ret -20 pid 8585
+2022-12-27 12:39:35.295 8585-8585/? D/ProcessState: Binder ioctl to enable oneway spam detection failed: Invalid argument
+</pre></div>
+</div>
+<p>解决权限报错后，还是跑不起来：</p>
+<div class="highlight-log notranslate"><div class="highlight"><pre><span></span>2022-12-27 22:24:43.608 7140-7140/? E/linker: &quot;/system/lib/libpaxspdev.so&quot;: ignoring DT_PREINIT_ARRAY in shared library!
+2022-12-27 22:24:43.610 7140-7140/? E/PAXSVR: getpriority ret 0 pid 7140
+2022-12-27 22:24:43.610 7140-7140/? E/PAXSVR: setpriority return 0
+2022-12-27 22:24:43.610 7140-7140/? E/PAXSVR: nice return -20
+2022-12-27 22:24:43.610 7140-7140/? E/PAXSVR: getpriority2 ret -20 pid 7140
+2022-12-27 22:24:43.618 7140-7140/? D/ProcessState: Binder ioctl to enable oneway spam detection failed: Invalid argument
+2022-12-27 22:24:43.620 7140-7140/? E/PAXSVR: ++++++  Start  PaxApiService ++++++
+2022-12-27 22:24:43.620 7140-7140/? E/PAXSVR: The current series : ATM, The current model : M9200
+2022-12-27 22:24:43.620 7140-7140/? E/PAXSVR: initDevConfig
+2022-12-27 22:24:43.620 7140-7140/? E/PAXSVR: initDevConfig model = M9200
+2022-12-27 22:24:43.620 7140-7140/? E/PAXSVR: ++++++  Create M9200 Config success  ++++++
+2022-12-27 22:24:43.632 7140-7140/? W/libc: Unable to set property &quot;ro.auth.baudrate&quot; to &quot;750000&quot;: error code: 0xb
+2022-12-27 22:24:43.644 7140-7140/? W/libc: Unable to set property &quot;ro.rpc.baudrate&quot; to &quot;750000&quot;: error code: 0xb
+2022-12-27 22:24:43.645 7140-7140/? E/PAXSVR: ++++++  dumpDevConfig start  ++++++
+2022-12-27 22:24:43.645 7140-7140/? E/PAXSVR: SPDevConfig : spDevName /dev/paxPortRPC, rate 750000
+2022-12-27 22:24:43.645 7140-7140/? E/PAXSVR: MagConfig : magType 1, magReaderCombined 0
+2022-12-27 22:24:43.645 7140-7140/? E/PAXSVR: IccConfig : iccType 1
+2022-12-27 22:24:43.645 7140-7140/? E/PAXSVR: PiccConfig : piccType 2, isSupportPiccLight 0
+2022-12-27 22:24:43.645 7140-7140/? E/PAXSVR: PrnConfig : prnType 1
+2022-12-27 22:24:43.645 7140-7140/? E/PAXSVR: PedConfig : pedType 1, isSMSupport 1, isSupportKeyBorad 2, isPCISecSupport 1
+2022-12-27 22:24:43.645 7140-7140/? E/PAXSVR: BaseDeviceConfig : baseDeviceType 0
+2022-12-27 22:24:43.645 7140-7140/? E/PAXSVR: CashBoxConfig : isCashBoxSupport 0, cashBoxType 0
+2022-12-27 22:24:43.645 7140-7140/? E/PAXSVR: ++++++  dumpDevConfig end    ++++++
+2022-12-27 22:24:43.645 7140-7140/? E/PAXSVR: ++++++ initDevice  ++++++
+2022-12-27 22:24:43.645 7140-7140/? E/ATM: PaxApiServiceATM initGlobalFuncs
+2022-12-27 22:24:43.645 7140-7140/? E/ATM: initSpdev
+    
+    --------- beginning of crash
+2022-12-27 22:24:43.645 7140-7140/? A/libc: Fatal signal 11 (SIGSEGV), code 2 (SEGV_ACCERR), fault addr 0xa85b2070 in tid 7140 (paxservice), pid 7140 (paxservice)
+2022-12-27 22:24:43.683 7143-7143/? I/crash_dump32: obtaining output fd from tombstoned, type: kDebuggerdTombstoneProto
+2022-12-27 22:24:43.684 508-508/? I/tombstoned: received crash request for pid 7140
+2022-12-27 22:24:43.685 7143-7143/? I/crash_dump32: performing dump of process 7140 (target tid = 7140)
+2022-12-27 22:24:43.690 7143-7143/? E/DEBUG: failed to read /proc/uptime: Permission denied
+2022-12-27 22:24:43.799 7143-7143/? A/DEBUG: *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** ***
+2022-12-27 22:24:43.799 7143-7143/? A/DEBUG: Build fingerprint: &#39;PAX/M9200/M9200:12/SKQ1.220119.001/eng.pax.20221227.220344:userdebug/release-keys&#39;
+2022-12-27 22:24:43.799 7143-7143/? A/DEBUG: Revision: &#39;0&#39;
+2022-12-27 22:24:43.799 7143-7143/? A/DEBUG: ABI: &#39;arm&#39;
+2022-12-27 22:24:43.799 7143-7143/? A/DEBUG: Timestamp: 2022-12-27 22:24:43.689095882+0800
+2022-12-27 22:24:43.799 7143-7143/? A/DEBUG: Process uptime: 0s
+2022-12-27 22:24:43.799 7143-7143/? A/DEBUG: Cmdline: /system/bin/paxservice
+2022-12-27 22:24:43.800 7143-7143/? A/DEBUG: pid: 7140, tid: 7140, name: paxservice  &gt;&gt;&gt; /system/bin/paxservice &lt;&lt;&lt;
+2022-12-27 22:24:43.800 7143-7143/? A/DEBUG: uid: 0
+2022-12-27 22:24:43.800 7143-7143/? A/DEBUG: signal 11 (SIGSEGV), code 2 (SEGV_ACCERR), fault addr 0xa85b2070
+2022-12-27 22:24:43.800 7143-7143/? A/DEBUG:     r0  beb4a0a0  r1  00000100  r2  00000010  r3  0000000f
+2022-12-27 22:24:43.800 7143-7143/? A/DEBUG:     r4  00000000  r5  beb4a0a0  r6  a77e32cc  r7  01eeb310
+2022-12-27 22:24:43.800 7143-7143/? A/DEBUG:     r8  a77e32cc  r9  01ee0ac0  r10 01ee0a58  r11 00000000
+2022-12-27 22:24:43.800 7143-7143/? A/DEBUG:     ip  a85bb710  sp  beb4a098  lr  a8593f5d  pc  a85b2070
+2022-12-27 22:24:43.800 7143-7143/? A/DEBUG: backtrace:
+2022-12-27 22:24:43.800 7143-7143/? A/DEBUG:       #00 pc 0002f070  /system/lib/libpaxspdev.so!libpaxspdev.so (__aeabi_memclr8+0) (BuildId: 4b747bf781d52bd11e01c2d48efc95b1)
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>注释掉<code class="docutils literal notranslate"><span class="pre">nrf_rpc_os_init</span></code>函数后，发现后面的<code class="docutils literal notranslate"><span class="pre">nrf_rpc_tr_init</span></code>函数报错<code class="docutils literal notranslate"><span class="pre">__ThumbV7PILongThunk_trans_init</span></code>:</p></li>
+</ul>
+<div class="highlight-log notranslate"><div class="highlight"><pre><span></span>2023-01-01 02:30:46.412 7918-7918/? E/PAXSVR: ++++++  dumpDevConfig start  ++++++
+2023-01-01 02:30:46.412 7918-7918/? E/PAXSVR: SPDevConfig : spDevName /dev/paxPortRPC, rate 750000
+2023-01-01 02:30:46.412 7918-7918/? E/PAXSVR: MagConfig : magType 1, magReaderCombined 0
+2023-01-01 02:30:46.412 7918-7918/? E/PAXSVR: IccConfig : iccType 1
+2023-01-01 02:30:46.412 7918-7918/? E/PAXSVR: PiccConfig : piccType 2, isSupportPiccLight 0
+2023-01-01 02:30:46.412 7918-7918/? E/PAXSVR: PrnConfig : prnType 1
+2023-01-01 02:30:46.412 7918-7918/? E/PAXSVR: PedConfig : pedType 1, isSMSupport 1, isSupportKeyBorad 2, isPCISecSupport 1
+2023-01-01 02:30:46.412 7918-7918/? E/PAXSVR: BaseDeviceConfig : baseDeviceType 0
+2023-01-01 02:30:46.412 7918-7918/? E/PAXSVR: CashBoxConfig : isCashBoxSupport 0, cashBoxType 0
+2023-01-01 02:30:46.412 7918-7918/? E/PAXSVR: ++++++  dumpDevConfig end    ++++++
+2023-01-01 02:30:46.412 7918-7918/? E/PAXSVR: ++++++ initDevice  ++++++
+2023-01-01 02:30:46.412 7918-7918/? E/ATM: PaxApiServiceATM initGlobalFuncs
+2023-01-01 02:30:46.412 7918-7918/? E/ATM: initSpdev
+2023-01-01 02:30:46.412 7918-7918/? E/spc: wugn test step 11
+2023-01-01 02:30:46.412 7918-7918/? E/ddd: wugn test start
+2023-01-01 02:30:46.412 7918-7918/? E/ddd: wugn test start 222
+2023-01-01 02:30:46.412 7918-7918/? E/pax-Spdev: [ SpdevPowerSwitch   464] ERROR: open sys class error
+2023-01-01 02:30:46.423 7918-7918/? E/spc: wugn test step 222
+2023-01-01 02:30:46.423 7918-7918/? E/ddd: wugn test start
+2023-01-01 02:30:46.423 7918-7918/? E/ddd: wugn test start 222
+2023-01-01 02:30:46.423 7918-7918/? E/pax-Spdev: [ SpdevPowerSwitch   464] ERROR: open sys class error
+2023-01-01 02:30:46.423 7918-7918/? E/spc: wugn test step 22
+2023-01-01 02:30:46.423 7918-7918/? E/spc: wugn test step 11111
+2023-01-01 02:30:46.423 7918-7918/? E/spc: wugn test step 2222
+2023-01-01 02:30:46.423 7918-7918/? E/spc: wugn test step 3333
+2023-01-01 02:30:46.423 7918-7918/? E/spc: wugn test step 4444
+2023-01-01 02:30:46.423 7918-7918/? E/spc: wugn test step 55555
+2023-01-01 02:30:46.423 7918-7918/? E/rpc: wugn test step 1
+2023-01-01 02:30:46.423 7918-7918/? E/rpc: wugn test step 2 
+2023-01-01 02:30:46.423 7918-7918/? E/rpc: wugn test step 2 
+2023-01-01 02:30:46.423 7918-7918/? E/rpc: wugn test step 2 
+2023-01-01 02:30:46.423 7918-7918/? E/rpc: wugn test step 3
+2023-01-01 02:30:46.423 7918-7918/? E/rpc: wugn test step 44
+2023-01-01 02:30:46.423 7918-7918/? E/rpc: wugn test step 5
+2023-01-01 02:30:46.423 7918-7918/? E/rpc: wugn test step 6
+2023-01-01 02:30:46.423 7918-7918/? E/rpc: wugn test step 7
+2023-01-01 02:30:46.423 7918-7918/? A/libc: Fatal signal 11 (SIGSEGV), code 2 (SEGV_ACCERR), fault addr 0xb5134950 in tid 7918 (paxservice), pid 7918 (paxservice)
+2023-01-01 02:30:46.466 7921-7921/? I/crash_dump32: obtaining output fd from tombstoned, type: kDebuggerdTombstoneProto
+2023-01-01 02:30:46.467 509-509/? I/tombstoned: received crash request for pid 7918
+2023-01-01 02:30:46.468 7921-7921/? I/crash_dump32: performing dump of process 7918 (target tid = 7918)
+2023-01-01 02:30:46.473 7921-7921/? E/DEBUG: failed to read /proc/uptime: Permission denied
+2023-01-01 02:30:46.663 7921-7921/? A/DEBUG: *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** ***
+2023-01-01 02:30:46.663 7921-7921/? A/DEBUG: Build fingerprint: &#39;PAX/M9200/M9200:12/SKQ1.220119.001/eng.pax.20230101.020412:userdebug/release-keys&#39;
+2023-01-01 02:30:46.663 7921-7921/? A/DEBUG: Revision: &#39;0&#39;
+2023-01-01 02:30:46.663 7921-7921/? A/DEBUG: ABI: &#39;arm&#39;
+2023-01-01 02:30:46.663 7921-7921/? A/DEBUG: Timestamp: 2023-01-01 02:30:46.472517630+0800
+2023-01-01 02:30:46.663 7921-7921/? A/DEBUG: Process uptime: 0s
+2023-01-01 02:30:46.663 7921-7921/? A/DEBUG: Cmdline: /system/bin/paxservice
+2023-01-01 02:30:46.663 7921-7921/? A/DEBUG: pid: 7918, tid: 7918, name: paxservice  &gt;&gt;&gt; /system/bin/paxservice &lt;&lt;&lt;
+2023-01-01 02:30:46.663 7921-7921/? A/DEBUG: uid: 0
+2023-01-01 02:30:46.663 7921-7921/? A/DEBUG: signal 11 (SIGSEGV), code 2 (SEGV_ACCERR), fault addr 0xb5134950
+2023-01-01 02:30:46.663 7921-7921/? A/DEBUG:     r0  b51232ad  r1  ca7ae792  r2  ca7ae792  r3  bec6ac48
+2023-01-01 02:30:46.663 7921-7921/? A/DEBUG:     r4  b51382bd  r5  b513f348  r6  b513f270  r7  00000008
+2023-01-01 02:30:46.664 7921-7921/? A/DEBUG:     r8  b5138df8  r9  b513f024  r10 b51382c1  r11 b513f184
+2023-01-01 02:30:46.664 7921-7921/? A/DEBUG:     ip  b513dde8  sp  bec6b170  lr  b5123197  pc  b5134950
+2023-01-01 02:30:46.664 7921-7921/? A/DEBUG: backtrace:
+2023-01-01 02:30:46.664 7921-7921/? A/DEBUG:       #00 pc 0002f950  /system/lib/libpaxspdev.so!libpaxspdev.so (__ThumbV7PILongThunk_trans_init+0) (BuildId: 55777879ca294e557c826d30bbd0d23c)
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>继续注释掉<code class="docutils literal notranslate"><span class="pre">nrf_rpc_tr_init</span></code>函数后，继续报错<code class="docutils literal notranslate"><span class="pre">nrf_rpc_tr_send</span></code>：</p></li>
+</ul>
+<div class="highlight-log notranslate"><div class="highlight"><pre><span></span>2023-01-01 02:03:29.241 4505-4505/? E/rpc: wugn test step 8
+2023-01-01 02:03:29.241 4505-4505/? A/libc: Fatal signal 11 (SIGSEGV), code 2 (SEGV_ACCERR), fault addr 0xac9f646c in tid 4505 (paxservice), pid 4505 (paxservice)
+2023-01-01 02:03:29.282 4508-4508/? I/crash_dump32: obtaining output fd from tombstoned, type: kDebuggerdTombstoneProto
+2023-01-01 02:03:29.283 505-505/? I/tombstoned: received crash request for pid 4505
+2023-01-01 02:03:29.284 4508-4508/? I/crash_dump32: performing dump of process 4505 (target tid = 4505)
+2023-01-01 02:03:29.289 4508-4508/? E/DEBUG: failed to read /proc/uptime: Permission denied
+2023-01-01 02:03:29.447 4508-4508/? A/DEBUG: *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** ***
+2023-01-01 02:03:29.447 4508-4508/? A/DEBUG: Build fingerprint: &#39;PAX/M9200/M9200:12/SKQ1.220119.001/eng.pax.20230101.020412:userdebug/release-keys&#39;
+2023-01-01 02:03:29.447 4508-4508/? A/DEBUG: Revision: &#39;0&#39;
+2023-01-01 02:03:29.447 4508-4508/? A/DEBUG: ABI: &#39;arm&#39;
+2023-01-01 02:03:29.447 4508-4508/? A/DEBUG: Timestamp: 2023-01-01 02:03:29.288116380+0800
+2023-01-01 02:03:29.447 4508-4508/? A/DEBUG: Process uptime: 0s
+2023-01-01 02:03:29.447 4508-4508/? A/DEBUG: Cmdline: /system/bin/paxservice
+2023-01-01 02:03:29.447 4508-4508/? A/DEBUG: pid: 4505, tid: 4505, name: paxservice  &gt;&gt;&gt; /system/bin/paxservice &lt;&lt;&lt;
+2023-01-01 02:03:29.447 4508-4508/? A/DEBUG: uid: 0
+2023-01-01 02:03:29.447 4508-4508/? A/DEBUG: signal 11 (SIGSEGV), code 2 (SEGV_ACCERR), fault addr 0xac9f646c
+2023-01-01 02:03:29.447 4508-4508/? A/DEBUG:     r0  becef190  r1  00000008  r2  48c3ca10  r3  beceec48
+2023-01-01 02:03:29.447 4508-4508/? A/DEBUG:     r4  ac9f9cca  r5  becef170  r6  aca01270  r7  00000008
+2023-01-01 02:03:29.447 4508-4508/? A/DEBUG:     r8  ac9fa7a1  r9  aca01024  r10 ac9f9cce  r11 aca01184
+2023-01-01 02:03:29.447 4508-4508/? A/DEBUG:     ip  ac9ffdc0  sp  becef170  lr  ac9e513d  pc  ac9f646c
+2023-01-01 02:03:29.447 4508-4508/? A/DEBUG: backtrace:
+2023-01-01 02:03:29.448 4508-4508/? A/DEBUG:       #00 pc 0002f46c  /system/lib/libpaxspdev.so!libpaxspdev.so (__ThumbV7PILongThunk_trans_send+0) (BuildId: 1c1916df16514d8f7eb435337635b0c8)
+</pre></div>
+</div>
+</section>
+
+
+           </div>
+             <div class="articleComments">
+                <comments>
+  <script src="https://utteranc.es/client.js"
+    repo="iswbm/magic-python"
+    issue-term="pathname"
+    theme="github-light"
+    crossorigin="anonymous"
+    async>
+  </script>
+</comments>
+             </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; 版权所有 2022, wugn.</p>
+  </div>
+
+  利用 <a href="https://www.sphinx-doc.org/">Sphinx</a> 构建，使用了 
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">主题</a>
+    由 <a href="https://readthedocs.org">Read the Docs</a>开发.
+  
+
+<script charset="UTF-8" id="LA_COLLECT" src="//sdk.51.la/js-sdk-pro.min.js"></script>
+<script>LA.init({id: "JoV5csIHTGhHiGQ4",ck: "JoV5csIHTGhHiGQ4"})</script>
+
+<br/>
+<script id="LA-DATA-WIDGET" crossorigin="anonymous" charset="UTF-8" src="https://v6-widget.51.la/v6/JoV5csIHTGhHiGQ4/quote.js?theme=#4C8AC2,#BB2626,#040000,#333333,#AE3535,#1690FF,14&f=14"></script>
+
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

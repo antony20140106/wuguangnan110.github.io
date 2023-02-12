@@ -132,7 +132,7 @@ git remote add devorigin git@172.16.2.83:sc200e/A6650-project.git
 
 * 完成 fetch 就已经可以开始cherry-pick操作了,B库:
 ```
-git cherry-pick fa25a2a43d3f82870b68883645fd7442412ab40c(首)..bff5dcedbb046aeb30ad070632e3d7bd8d5690b9
+git cherry-pick fa25a2a43d3f82870b68883645fd7442412ab40c(首,不包括)..bff5dcedbb046aeb30ad070632e3d7bd8d5690b9
 ```
 
 # git stash
@@ -146,6 +146,17 @@ git stash pop：将stash缓存堆栈中第一个stash也就是stash@{0}删除，
 git stash apply:  将stash缓存堆栈中第一个stash应用到当前的工作目录下，但是不会删除缓存堆栈中的缓存，默认使用第一个存储,即stash@{0}，应用某个stash后面加stash id。
 git stash drop stash@{$num} ：删除stash@{$num}存储，从列表中删除这个存储，默认删除第一个。
 git stash clear:  删除缓存堆栈中所有存储。
+
+* 碰到apply时有冲突如下：
+```shell
+wugn@jcrj-tf-compile:A6650-project$ git stash apply 0
+Auto-merging selfbuild_32go_userdebug
+CONFLICT (content): Merge conflict in selfbuild_32go_userdebug
+Auto-merging selfbuild_32go_user
+CONFLICT (modify/delete): 
+```
+
+* 解决方案是首先vim将冲突HEAD解决并用git add把所有的改动加到staging area。然后继续执行`git stash apply 0`把这些改动搁置。
 
 # git clean使用总结
 
@@ -169,3 +180,11 @@ git clean移除工作区中untracked的文件(即：需要先add)。一直都是
 git diff的比较是从右向左。
 git diff 比较暂存区与工作区文件的区别。
 git diff --cached 比较仓库与暂存区文件的区别。
+
+# git branch操作
+
+* 使用以下命令删除远程服务器上带有cherry-pick前缀的所有分支。
+\# git branch -r | awk -F/ '/\/cherry-pick/{print $2}' | xargs -I {} git push origin :{} 
+
+* 如果您喜欢更简单的方法，例如删除3或4个分支：
+\# git push origin --delete wugn_product laiqx_develop

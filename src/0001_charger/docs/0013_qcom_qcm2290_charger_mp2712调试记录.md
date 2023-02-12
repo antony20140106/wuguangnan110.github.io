@@ -2118,3 +2118,51 @@ VIN_UV和VIN_OV对应关系如下：
 +               val->intval = pax_charger_dev_is_online(info->chg1_dev) | (info->attach ? 1 : 0);
                 break;
 ```
+
+# 充电状态不对
+
+异常寄存器如下：
+```log
+[Thu Feb  2 01:08:18 2023] PAX_CHG: pax_is_charger_on chr_type = [SDP] last_chr_type = [SDP]
+[Thu Feb  2 01:08:18 2023] PAX_CHG: [SW_JEITA] Battery Normal Temperature between 15 and 45 !!
+[Thu Feb  2 01:08:18 2023] PAX_CHG: [SW_JEITA]preState:3 newState:3 tmp:25 cv:0
+[Thu Feb  2 01:08:18 2023] PAX_CHG: tmp:25 (jeita:1 sm:3 cv:0 en:1) thm_sm:1 en:1 can_en:1
+[Thu Feb  2 01:08:18 2023] PAX_CHG: chg:-1,-1,500,500 type:4:1 aicl:-1 bootmode:0 pd:0
+[Thu Feb  2 01:08:18 2023] PAX_CHG: do_algorithm input_current_limit:500 charging_current_limit:500
+[Thu Feb  2 01:08:18 2023] PAX_CHG: CHG [online: 0, type: SDP, status: Not charging, fault: 0x0, ICHG = 480mA, AICR = 500mA, MIVR = 4200mV, IEOC = 240mA, CV = 4375mV]
+
+Charger IC:
+Reg[0x00] = 0x0b
+Reg[0x01] = 0x04
+Reg[0x02] = 0xc6
+Reg[0x03] = 0xa7
+Reg[0x04] = 0xf4
+Reg[0x05] = 0x1f
+Reg[0x06] = 0xa4
+Reg[0x07] = 0x0b
+Reg[0x08] = 0x27
+Reg[0x09] = 0x57
+Reg[0x0a] = 0x23
+Reg[0x0b] = 0x10
+Reg[0x0c] = 0x11
+Reg[0x0d] = 0x60
+Reg[0x0e] = 0x99
+Reg[0x0f] = 0x00
+Reg[0x10] = 0x44
+Reg[0x11] = 0x00
+Reg[0x12] = 0x04
+Reg[0x13] = 0x00
+Reg[0x14] = 0x00
+Reg[0x15] = 0x00
+Reg[0x16] = 0x20
+```
+
+发现09和11寄存器异常，OTG打开了，online状态就变成0了
+
+![0013_0051.png](images/0013_0051.png)
+![0013_0050.png](images/0013_0050.png)
+
+* 规避方案：
+```diff
+
+```
