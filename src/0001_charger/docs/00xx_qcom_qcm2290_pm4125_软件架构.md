@@ -1,6 +1,6 @@
 # 概述
 
-高通A6650 charger mp2250架构理解。 
+高通A665x charger mp2250架构理解。 
 
 # 参考
 
@@ -128,24 +128,24 @@ obj-$(CONFIG_SMB1398_CHARGER)           += smb1398-charger.o pmic-voter.oschgm-f
 * dts中匹配到的文件如下:
 ```log
 qpnp-smb5.c:未添加
-wugn@jcrj-tf-compile:a6650$ ack qcom,qpnp-smb5
+wugn@jcrj-tf-compile:a665x$ ack qcom,qpnp-smb5
 
 qpnp-smblite.c:已添加
-wugn@jcrj-tf-compile:a6650$ ack qcom,qpnp-smb
+wugn@jcrj-tf-compile:a665x$ ack qcom,qpnp-smb
 pm2250.dtsi
 227:            pm2250_charger: qcom,qpnp-smblite {
 228:                    compatible = "qcom,qpnp-smblite";
 
 smb1398-charger.c:未添加
-wugn@jcrj-tf-compile:a6650$ ack qcom,smb1398-charger
+wugn@jcrj-tf-compile:a665x$ ack qcom,smb1398-charger
 smb1355-charger.c：未添加
-wugn@jcrj-tf-compile:a6650$ ack parallel
+wugn@jcrj-tf-compile:a665x$ ack parallel
 
 qpnp-qg.c:添加了qcom,qpnp-qg-lite驱动：
-wugn@jcrj-tf-compile:a6650$ ack qcom,qpnp-qg
+wugn@jcrj-tf-compile:a665x$ ack qcom,qpnp-qg
 pm2250.dtsi
 193:                    compatible = "qcom,qpnp-qg-lite";
-wugn@jcrj-tf-compile:a6650$
+wugn@jcrj-tf-compile:a665x$
 ```
 
 也就是说目前qcm2290中用到如下文件：

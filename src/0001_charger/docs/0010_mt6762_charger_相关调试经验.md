@@ -12,34 +12,34 @@ nafg_zcv表示电池曲线里面的ocv开路电压。
 --- a/kernel-4.19/drivers/power/supply/mtk_battery.c
 +++ b/kernel-4.19/drivers/power/supply/mtk_battery.c
 @@ -276,6 +276,9 @@ static enum power_supply_property battery_props[] = {
-        // [FEATURE]-ADD-BEGIN by shanliangliang@paxsz.com 2021-09-17,  for battery serial number
+        // [FEATURE]-ADD-BEGIN by xxx@xxxxx.com 2021-09-17,  for battery serial number
         POWER_SUPPLY_PROP_SERIAL_NUMBER,
-        // [FEATURE]-ADD-END by shanliangliang@paxsz.com 2021-09-17,    for battery serial number
-+       // [FEATURE]-ADD-BEGIN by shanliangliang@paxsz.com 2021-10-03,  for battery ocv
+        // [FEATURE]-ADD-END by xxx@xxxxx.com 2021-09-17,    for battery serial number
++       // [FEATURE]-ADD-BEGIN by xxx@xxxxx.com 2021-10-03,  for battery ocv
 +       POWER_SUPPLY_PROP_VOLTAGE_OCV,
-+       // [FEATURE]-ADD-END by shanliangliang@paxsz.com 2021-10-03,    for battery ocv
++       // [FEATURE]-ADD-END by xxx@xxxxx.com 2021-10-03,    for battery ocv
  };
 
  static int battery_psy_get_property(struct power_supply *psy,
 @@ -416,6 +419,11 @@ static int battery_psy_get_property(struct power_supply *psy,
                 }
                 break;
-        // [FEATURE]-ADD-END by shanliangliang@paxsz.com 2021-09-17,    for battery serial number
-+       // [FEATURE]-ADD-BEGIN by shanliangliang@paxsz.com 2021-10-03,  for battery ocv
+        // [FEATURE]-ADD-END by xxx@xxxxx.com 2021-09-17,    for battery serial number
++       // [FEATURE]-ADD-BEGIN by xxx@xxxxx.com 2021-10-03,  for battery ocv
 +       case POWER_SUPPLY_PROP_VOLTAGE_OCV:
 +               val->intval = gm->gauge->hw_status.nafg_zcv * 100;
 +               break;
-+       // [FEATURE]-ADD-END by shanliangliang@paxsz.com 2021-10-03,    for battery ocv
++       // [FEATURE]-ADD-END by xxx@xxxxx.com 2021-10-03,    for battery ocv
         default:
                 ret = -EINVAL;
                 break;
 
---- a/kernel-4.19/drivers/misc/pax/power/bms/bms.c
-+++ b/kernel-4.19/drivers/misc/pax/power/bms/bms.c
+--- a/kernel-4.19/drivers/misc/xxxxx/power/bms/bms.c
++++ b/kernel-4.19/drivers/misc/xxxxx/power/bms/bms.c
 @@ -25,9 +25,10 @@
  #include "bms_notify.h"
 
- extern struct class *g_class_pax;
+ extern struct class *g_class_xxxxx;
 -
  struct bms_data g_bms_data;
 
@@ -88,7 +88,7 @@ OCV 	VC	mAh	R(battery)	DOD	R(x1000)
 
 ```diff
 From a14fd9f446d4f0041493db683e8c0b988d1da98f Mon Sep 17 00:00:00 2001
-From: shanliangliang <shanliangliang@paxsz.com>
+From: xxx <xxx@xxxxx.com>
 Date: Tue, 31 May 2022 17:53:51 +0800
 Subject: [PATCH] =?UTF-8?q?[Title]:=20M8=E5=85=B3=E6=9C=BA=E7=94=B5?=
  =?UTF-8?q?=E6=B1=A0=E5=AE=B9=E9=87=8F=E4=BD=99=E9=87=8F=E5=A2=9E=E5=8A=A0?=
@@ -105,7 +105,7 @@ Content-Transfer-Encoding: 8bit
 
 [Model]: M8
 
-[author]: shanliangliang@paxsz.com
+[author]: xxx@xxxxx.com
 
 [date]: 2022-05-31
 ---
@@ -168,7 +168,7 @@ index c67c7e746f9..331fdd8a686 100755
 +int g_shutdown_gauge0_voltage[] = {3400, 3400, 3700, 3400};
 +
  #define M8_PCB_RESISTANCE 600
- // [FEATURE]-ADD-BEGIN by shanliangliang@paxsz.com 2021-09-17, 	for battery serial number
+ // [FEATURE]-ADD-BEGIN by xxx@xxxxx.com 2021-09-17, 	for battery serial number
  const char *g_serial_number[TOTAL_BATTERY_NUMBER] = {
 @@ -301,11 +307,11 @@ const char *g_serial_number[TOTAL_BATTERY_NUMBER] = {
  /* Qmax for battery  */
@@ -1275,13 +1275,13 @@ index c67c7e746f9..331fdd8a686 100755
 
 参考log：
 
-* [kernel_log_2022_0608_220236修改关机电压成功.curf](H:/wugn/md/pax_kearning_doc/docs/0001_charger/docs/refers/kernel_log_2022_0608_220236修改关机电压成功.curf)
+* [kernel_log_2022_0608_220236修改关机电压成功.curf](H:/wugn/md/xxxxx_kearning_doc/docs/0001_charger/docs/refers/kernel_log_2022_0608_220236修改关机电压成功.curf)
 
 主要是gauge关机，需要修改gauge相关的最低开路及闭路电压，开路3550，闭路3700。
 
 ```C++
 From 4719cdfaf03092738038e5db51e5a77c6c47e223 Mon Sep 17 00:00:00 2001
-From: shanliangliang <shanliangliang@paxsz.com>
+From: xxx <xxx@xxxxx.com>
 Date: Wed, 8 Jun 2022 09:51:45 +0800
 Subject: [PATCH] =?UTF-8?q?[Title]:=20=E6=9B=B4=E6=96=B0M8=E7=94=B5?=
  =?UTF-8?q?=E6=B1=A0=E5=85=B3=E6=9C=BA=E5=8F=82=E6=95=B0?=
@@ -1297,12 +1297,12 @@ Content-Transfer-Encoding: 8bit
 
 [Model]: M8
 
-[author]: shanliangliang@paxsz.com
+[author]: xxx@xxxxx.com
 
 [date]: 2022-06-08
 ---
  .../arch/arm64/boot/dts/mediatek/M8.dts       |  2 +-
- kernel-4.19/drivers/misc/pax/power/bms/bms.c  |  4 +-
+ kernel-4.19/drivers/misc/xxxxx/power/bms/bms.c  |  4 +-
  .../drivers/power/supply/mtk_battery.c        | 23 ++++++
  .../drivers/power/supply/mtk_battery_table.h  | 76 ++++++++++++++-----
  4 files changed, 85 insertions(+), 20 deletions(-)
@@ -1320,10 +1320,10 @@ index 52aa868490a..5f0a387d7df 100755
  	max_bat_temp = <450>;			//degree * 10
  	min_bat_temp = <0>;				//degree * 10
  	max_bat_cur = <6000000>;		//uA
-diff --git a/kernel-4.19/drivers/misc/pax/power/bms/bms.c b/kernel-4.19/drivers/misc/pax/power/bms/bms.c
+diff --git a/kernel-4.19/drivers/misc/xxxxx/power/bms/bms.c b/kernel-4.19/drivers/misc/xxxxx/power/bms/bms.c
 index 3071c267333..c6bdd7d7d70 100644
---- a/kernel-4.19/drivers/misc/pax/power/bms/bms.c
-+++ b/kernel-4.19/drivers/misc/pax/power/bms/bms.c
+--- a/kernel-4.19/drivers/misc/xxxxx/power/bms/bms.c
++++ b/kernel-4.19/drivers/misc/xxxxx/power/bms/bms.c
 @@ -179,7 +179,7 @@ static void bms_bat_vol_check()
  	}
  	else if (g_bms_data.bat_info.vol < g_bms_data.min_bat_vol) {
@@ -1444,7 +1444,7 @@ index 331fdd8a686..ce1648b9c27 100755
 +};
 +
  #define M8_PCB_RESISTANCE 600
- // [FEATURE]-ADD-BEGIN by shanliangliang@paxsz.com 2021-09-17, 	for battery serial number
+ // [FEATURE]-ADD-BEGIN by xxx@xxxxx.com 2021-09-17, 	for battery serial number
  const char *g_serial_number[TOTAL_BATTERY_NUMBER] = {
 @@ -342,11 +384,11 @@ int g_battery_id_voltage[TOTAL_BATTERY_NUMBER] = {
  

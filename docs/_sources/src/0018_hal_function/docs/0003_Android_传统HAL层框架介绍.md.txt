@@ -105,29 +105,29 @@ bms hal层如下：
 ```C++
 ├── 1.0
 │   └── default
-│       ├── android.hardware.pax_bms@1.0-service-lazy.rc
-│       ├── android.hardware.pax_bms@1.0-service.rc
+│       ├── android.hardware.xxx_bms@1.0-service-lazy.rc
+│       ├── android.hardware.xxx_bms@1.0-service.rc
 │       ├── Android.mk
 │       ├── PaxBMS.cpp  //hw_device_t 具体硬件
 │       ├── PaxBMS.h
 │       ├── service.cpp
 │       └── serviceLazy.cpp
 ├── Android.mk
-├── pax_bms.c // hw_module_t
-└── pax_bms_test.c
+├── xxx_bms.c // hw_module_t
+└── xxx_bms_test.c
 
 PaxBMS.cpp构造函数中直接获取模块的接口：
 1.module 封装起来，供System以上的服务进行调用。
-pax_bms_dev_t* getPaxBMSDevice() {
-    pax_bms_dev_t* pax_bmsDevice = NULL;
+xxx_bms_dev_t* getPaxBMSDevice() {
+    xxx_bms_dev_t* xxx_bmsDevice = NULL;
     const hw_module_t* hwModule = NULL;
 
-    int ret = hw_get_module (PAX_BMS_HARDWARE_MODULE_ID, &hwModule);
+    int ret = hw_get_module (xxx_BMS_HARDWARE_MODULE_ID, &hwModule);
     if (ret == 0) {
-        ret = hwModule->methods->open(hwModule, PAX_BMS_HARDWARE_MODULE_ID,
-            reinterpret_cast<hw_device_t**>(&pax_bmsDevice));
+        ret = hwModule->methods->open(hwModule, xxx_BMS_HARDWARE_MODULE_ID,
+            reinterpret_cast<hw_device_t**>(&xxx_bmsDevice));
         if (ret != 0) {
-            ALOGE("pax_bms_open %s failed: %d", PAX_BMS_HARDWARE_MODULE_ID, ret);
+            ALOGE("xxx_bms_open %s failed: %d", xxx_BMS_HARDWARE_MODULE_ID, ret);
         }
 }
 
@@ -137,7 +137,7 @@ PaxBMS::PaxBMS()
 }
 
 封装接口：
-// Methods from ::android::hardware::pax_bms::V1_0::IPaxBMS follow.
+// Methods from ::android::hardware::xxx_bms::V1_0::IPaxBMS follow.
 Return<int32_t> PaxBMS::EnableCharge() {
         int ret = 0;
         int en = 1;
@@ -150,17 +150,17 @@ Return<int32_t> PaxBMS::EnableCharge() {
 }
 
 
-pax_bms.c：
+xxx_bms.c：
 /** Open a new instance of a device using name */
-static int open_pax_bms(const struct hw_module_t* module, char const* name,
+static int open_xxx_bms(const struct hw_module_t* module, char const* name,
         struct hw_device_t** device)
 {
     pthread_once(&g_init, init_globals);
 
-        if (strcmp(PAX_BMS_HARDWARE_MODULE_ID, name) != 0)
+        if (strcmp(xxx_BMS_HARDWARE_MODULE_ID, name) != 0)
                 return -1;
 
-    struct pax_bms_dev_t *dev = malloc(sizeof(struct pax_bms_dev_t));
+    struct xxx_bms_dev_t *dev = malloc(sizeof(struct xxx_bms_dev_t));
     if (!dev)
         return -ENOMEM;
 
@@ -169,36 +169,36 @@ static int open_pax_bms(const struct hw_module_t* module, char const* name,
     dev->common.tag = HARDWARE_DEVICE_TAG;
     dev->common.version = 0;
     dev->common.module = (struct hw_module_t*)module;
-    dev->common.close = (int (*)(struct hw_device_t*))close_pax_bms;
-    dev->bms_ctl = pax_bms_ctl;
+    dev->common.close = (int (*)(struct hw_device_t*))close_xxx_bms;
+    dev->bms_ctl = xxx_bms_ctl;
 
     *device = (struct hw_device_t*)dev;
     return 0;
 }
 
 
-static struct hw_module_methods_t pax_bms_module_methods = {
-    .open =  open_pax_bms,
+static struct hw_module_methods_t xxx_bms_module_methods = {
+    .open =  open_xxx_bms,
 };
 
 /*
- * The pax bms Module
+ * The xxx bms Module
  */
 struct hw_module_t HAL_MODULE_INFO_SYM = {
     .tag = HARDWARE_MODULE_TAG,
     //.version_major = 1,
     //.version_minor = 0,
-    .id = PAX_BMS_HARDWARE_MODULE_ID,
-    .name = "pax_bms Module",
-    .author = "pax",
-    .methods = &pax_bms_module_methods,
+    .id = xxx_BMS_HARDWARE_MODULE_ID,
+    .name = "xxx_bms Module",
+    .author = "xxx",
+    .methods = &xxx_bms_module_methods,
 };
 ```
 
 `1.0/default/service.cpp`通过 defaultPassthroughServiceImplementation 的调用来注册服务即绑定+直通式binder:
 
 ```c
-using android::hardware::pax_bms::V1_0::IPaxBMS;
+using android::hardware::xxx_bms::V1_0::IPaxBMS;
 using android::hardware::defaultPassthroughServiceImplementation;
 
 int main() {

@@ -239,7 +239,7 @@ static int mp2721_charger_probe(struct i2c_client *client,
 		}
 	}
 
-	/* class/pax */
+	/* class/xxx */
 	{
 		chg_class = class_create(THIS_MODULE, "chg_info");
 

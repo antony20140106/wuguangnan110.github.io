@@ -4,7 +4,7 @@
 
 # 制作静态logo
 
-* `A6650-project\UM.9.15\device\qcom\common\display\logo\readme.txt`只需要执行`python ./logo_gen.py xxx.bmp`会生成`splash.img`，然后烧录就可以了：
+* `A665x-project\UM.9.15\device\qcom\common\display\logo\readme.txt`只需要执行`python ./logo_gen.py xxx.bmp`会生成`splash.img`，然后烧录就可以了：
 ```
 The steps to generate a splash.img:
 1 sudo apt-get install python-imaging
@@ -13,11 +13,11 @@ The steps to generate a splash.img:
 
 # 动态logo适配
 
-目前M9200使用1440x720分辨率，可以直接用M50项目的，主要讲一下适配原理：
+目前M92xx使用1440x720分辨率，可以直接用M5x项目的，主要讲一下适配原理：
 * `QSSI.12/frameworks/base/cmds/bootanimation/BootAnimation.cpp`:
 ```C++
 bool BootAnimation::findBootAnimationFileInternal(const std::vector<std::string> &files) {
-//[FEATURE]-Add-BEGIN by xielianxiong@paxsz.com 2022-10-06,for find boot animation file through w and h
+//[FEATURE]-Add-BEGIN by xielianxiong@xxxxx.com 2022-10-06,for find boot animation file through w and h
     ui::Size resolution(0, 0);
     sp<IBinder>mToken = SurfaceComposerClient::getInternalDisplayToken();
     if (mToken != nullptr){
@@ -27,26 +27,26 @@ bool BootAnimation::findBootAnimationFileInternal(const std::vector<std::string>
             resolution = displayMode.resolution;
         }
     }
-//[FEATURE]-Add-end by xielianxiong@paxsz.com 2022-10-06,for find boot animation file through w and h
+//[FEATURE]-Add-end by xielianxiong@xxxxx.com 2022-10-06,for find boot animation file through w and h
     for (const std::string& f : files) {
-//[FEATURE]-Add-BEGIN by (xielianxiong@paxsz.com), 2022/7/12, for TERMINAL_NAME bootanimation
+//[FEATURE]-Add-BEGIN by (xielianxiong@xxxxx.com), 2022/7/12, for TERMINAL_NAME bootanimation
         if (!mShuttingDown && strcmp(f.c_str(), SYSTEM_BOOTANIMATION_FILE) == 0) {
             char product[PROPERTY_VALUE_MAX];
-            sprintf(pax_boot_file, "system/media/bootanimation_%dx%d.zip", resolution.width,resolution.height);
-            ALOGD("bootanimation width:%d,height:%d,path:%s",mWidth,mHeight,pax_boot_file);
-            if (access(pax_boot_file, R_OK) == 0) {
-                mZipFileName = pax_boot_file;
+            sprintf(xxxxx_boot_file, "system/media/bootanimation_%dx%d.zip", resolution.width,resolution.height);
+            ALOGD("bootanimation width:%d,height:%d,path:%s",mWidth,mHeight,xxxxx_boot_file);
+            if (access(xxxxx_boot_file, R_OK) == 0) {
+                mZipFileName = xxxxx_boot_file;
                 return true;
             }
-            property_get("ro.fac.cfg.TERMINAL_NAME", product, "A6650");
-            sprintf(pax_boot_file, "system/media/bootanimation_%s.zip", product);
-            ALOGD("bootanimation : path:%s",pax_boot_file);
-            if (access(pax_boot_file, R_OK) == 0) {
-                mZipFileName = pax_boot_file;
+            property_get("ro.fac.cfg.TERMINAL_NAME", product, "A665x");
+            sprintf(xxxxx_boot_file, "system/media/bootanimation_%s.zip", product);
+            ALOGD("bootanimation : path:%s",xxxxx_boot_file);
+            if (access(xxxxx_boot_file, R_OK) == 0) {
+                mZipFileName = xxxxx_boot_file;
                 return true;
             }
         }
-//[FEATURE]-Add-end by (xielianxiong@paxsz.com), 2022/7/12, for TERMINAL_NAME bootanimation
+//[FEATURE]-Add-end by (xielianxiong@xxxxx.com), 2022/7/12, for TERMINAL_NAME bootanimation
         if (access(f.c_str(), R_OK) == 0) {
             mZipFileName = f.c_str();
             return true;
@@ -56,7 +56,7 @@ bool BootAnimation::findBootAnimationFileInternal(const std::vector<std::string>
 }
 ```
 
-以上，首先按照分辨率匹配，没有匹配成功,就按照原来的,匹配机型号,例如bootanimation_A6650.zip
+以上，首先按照分辨率匹配，没有匹配成功,就按照原来的,匹配机型号,例如bootanimation_A665x.zip
 
 # sp boot/os镜像获取方式
 
@@ -137,7 +137,7 @@ export ECHO_STYLE_08="\033[49;31;25m"  #
 export QSSI_PRODUCT=qssi_32go
 export TARGET_PRODUCT=bengal_32go
 export TARGET_BUILD_VARIANT=userdebug
-export PRODUCT_NAME=M9200
+export PRODUCT_NAME=M92xx
 export PRODUCT_ALIAS=Kapok
 
 export ANDROID_DIR=${PWD}
@@ -145,24 +145,24 @@ export TARGET_DIR=${ANDROID_DIR}/UM.9.15
 export QSSI_DIR=${ANDROID_DIR}/QSSI.12
 export TARGET_OUT_DIR=${TARGET_DIR}/out/target/product/${TARGET_PRODUCT}
 export QSSI_OUT_DIR=${QSSI_DIR}/out/target/product/${QSSI_PRODUCT}
-export PAYDROID_SCATTER_DIR=${QSSI_DIR}/vendor/paxsz/PayDroid/$PRODUCT_NAME
-export VERSION_FILE_PATH=${QSSI_DIR}/vendor/paxsz/version_${PRODUCT_ALIAS}.mk
+export PAYDROID_SCATTER_DIR=${QSSI_DIR}/vendor/xxxxx/PayDroid/$PRODUCT_NAME
+export VERSION_FILE_PATH=${QSSI_DIR}/vendor/xxxxx/version_${PRODUCT_ALIAS}.mk
 export ANDROID_VERSION=`grep ^PAYDROID_ANDROID_VERSION= ${VERSION_FILE_PATH} | sed 's/PAYDROID_ANDROID_VERSION=//g'`
 export PLATFORM_NAME=`grep ^PAYDROID_PLATFORM_NAME= ${VERSION_FILE_PATH} | sed 's/PAYDROID_PLATFORM_NAME=//g'`
-export PAX_PLATFORM_VERSION=`grep ^PAYDROID_PLATFORM_ID= ${VERSION_FILE_PATH} | sed 's/PAYDROID_PLATFORM_ID=//g'`
+export xxx_PLATFORM_VERSION=`grep ^PAYDROID_PLATFORM_ID= ${VERSION_FILE_PATH} | sed 's/PAYDROID_PLATFORM_ID=//g'`
 export SOFTWARE_VERSION=`grep ^VERSION_NUMBER= ${VERSION_FILE_PATH} | sed 's/VERSION_NUMBER=//g'`
 export TODAY=$(date +%Y%m%d)
-export OTA_COMPRESS_NAME=Uniphiz_${ANDROID_VERSION}_${PLATFORM_NAME}_V${PAX_PLATFORM_VERSION}.${SOFTWARE_VERSION}_${TODAY}
-export COMPRESS_NAME=Uniphiz_${ANDROID_VERSION}_${PLATFORM_NAME}_V${PAX_PLATFORM_VERSION}.${SOFTWARE_VERSION}_${TODAY}_Release
+export OTA_COMPRESS_NAME=Uniphiz_${ANDROID_VERSION}_${PLATFORM_NAME}_V${xxx_PLATFORM_VERSION}.${SOFTWARE_VERSION}_${TODAY}
+export COMPRESS_NAME=Uniphiz_${ANDROID_VERSION}_${PLATFORM_NAME}_V${xxx_PLATFORM_VERSION}.${SOFTWARE_VERSION}_${TODAY}_Release
 export OTA_PACKAGE_NAME=${OTA_COMPRESS_NAME}_OTA.zip
 export OTA_TARGET_FILE_NAME=${COMPRESS_NAME}_TARGET.zip
 export QFIL_COMPRESS_NAME=${COMPRESS_NAME}_Fac.zip
 export UNIPHIZ_COMPRESS_NAME=${COMPRESS_NAME}.uniphiz
 
-export LOGO_SRC_DIR="${QSSI_DIR}/vendor/paxsz/bootanimation"
-export SP_SRC_DIR="$ANDROID_DIR/QSSI.12/vendor/paxsz/paxsp/$PRODUCT_NAME"
+export LOGO_SRC_DIR="${QSSI_DIR}/vendor/xxxxx/bootanimation"
+export SP_SRC_DIR="$ANDROID_DIR/QSSI.12/vendor/xxxxx/xxxxxsp/$PRODUCT_NAME"
 
-export UNPACK_TOOL_SRC_DIR=${ANDROID_DIR}/A6650_Unpacking_Tool
+export UNPACK_TOOL_SRC_DIR=${ANDROID_DIR}/A665x_Unpacking_Tool
 export UNPACK_TOOL_DEST_DIR=${ANDROID_DIR}/Unpacking_Tool
 export XBL_DIR=${ANDROID_DIR}/Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/SocPkg/AgattiPkg
 export ANDROID_OUTPUT_DIR=${ANDROID_DIR}/android_image_${TARGET_PRODUCT}_${TARGET_BUILD_VARIANT}
@@ -177,7 +177,7 @@ fi
 set -e
 TOP=$(pwd)
 
-paxlogo(){
+xxxxxlogo(){
 
 	echo -e "${ECHO_STYLE_02}**********************************${ECHO_STYLE_DEFAULT}"
 	echo -e "${ECHO_STYLE_02}**********************************${ECHO_STYLE_DEFAULT}"
@@ -257,7 +257,7 @@ popd
 	cp $XBL_DIR/Bin/LAA/RELEASE/xbl*  ${ANDROID_OUTPUT_DIR}
 	cp ${PAYDROID_SCATTER_DIR}/Kapok_Release_Android_scatter.txt ${ANDROID_OUTPUT_DIR}
 	cp ${PAYDROID_SCATTER_DIR}/rawprogram_unsparse.xml ${ANDROID_OUTPUT_DIR}
-	cp ${PAYDROID_SCATTER_DIR}/rawprogram0_update_unsparse_m9200.xml ${ANDROID_OUTPUT_DIR}
+	cp ${PAYDROID_SCATTER_DIR}/rawprogram0_update_unsparse_m92xx.xml ${ANDROID_OUTPUT_DIR}
 	cp ${PAYDROID_SCATTER_DIR}/patch0.xml ${ANDROID_OUTPUT_DIR}
 	cp ${PAYDROID_SCATTER_DIR}/prog_firehose_ddr.elf ${ANDROID_OUTPUT_DIR}
 	cp ${PAYDROID_SCATTER_DIR}/empty_misc.img  ${ANDROID_OUTPUT_DIR}
@@ -303,8 +303,8 @@ pushd $ANDROID_OUTPUT_DIR
 	runthos-sp-qingming.bin \
 	vmlinux
 	echo -e "${ECHO_STYLE_04}rar android image finish!!!!  ${ECHO_STYLE_DEFAULT}"
-	python checksparse.py -i rawprogram0_update_unsparse_m9200.xml -s . -o rawprogram_unsparse.xml
-	rm ${ANDROID_OUTPUT_DIR}/rawprogram0_update_unsparse_m9200*
+	python checksparse.py -i rawprogram0_update_unsparse_m92xx.xml -s . -o rawprogram_unsparse.xml
+	rm ${ANDROID_OUTPUT_DIR}/rawprogram0_update_unsparse_m92xx*
 popd
 	echo -e "${ECHO_STYLE_04}#### pack all completed successfully ####${ECHO_STYLE_DEFAULT}"
 )
@@ -315,7 +315,7 @@ function build_qssi()
 (
 	./paydroidbuild.sh
 	if [ $? -ne 0 ];then
-		echo ---Get paxdroid or libspc project error!!!---
+		echo ---Get xxxxxdroid or libspc project error!!!---
 		exit 1
 	fi
 
@@ -411,7 +411,7 @@ buildclean(){
 	esac  
 }
 
-paxmain(){
+xxxxxmain(){
 
 	if [ ! -d $LOG_DIR ];then
 		mkdir -p $LOG_DIR
@@ -421,7 +421,7 @@ paxmain(){
 		mkdir -p -m 777 ${ANDROID_OUTPUT_DIR}  
 	fi
 
-	paxlogo
+	xxxxxlogo
 	if [ ! -z "`echo $BUILD_ALL | grep true`" ];then
 		buildclean
 		build_xbl
@@ -498,5 +498,5 @@ while [ $# -gt 0 ];do
 done
 
 echo -e "${ECHO_STYLE_04}cpu thread number:$JOB_NUM ${ECHO_STYLE_DEFAULT}"
-paxmain
+xxxxxmain
 ```

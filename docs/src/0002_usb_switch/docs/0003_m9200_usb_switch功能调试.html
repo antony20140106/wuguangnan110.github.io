@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="zh-CN" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>wugn</title>
+
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script src="../../../_static/translations.js"></script>
+        <script src="../../../_static/js/baidutongji.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="索引" href="../../../genindex.html" />
+    <link rel="search" title="搜索" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../index.html" class="icon icon-home"> wugn_note
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="在文档中搜索" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">m92xx usb switch功能调试</a></li>
+<li><a class="reference internal" href="#id1">硬件原理</a></li>
+<li><a class="reference internal" href="#id2">问题点</a></li>
+<li><a class="reference internal" href="#otg">插入OTG不能及时关闭导致识别到充电状态</a></li>
+<li><a class="reference internal" href="#otg20s">接OTG开机卡住20s才启动</a></li>
+</ul>
+</div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">wugn_note</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs"> 
+<li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+<li>m92xx usb switch功能调试</li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.forward()">Forward</a></li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.back()">Go Back</a> | </li>
+<li style="float: right;margin-left: 10px;"><a href="/index.html">Home</a> | </li>
+
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="m92xx-usb-switch">
+<h1>m92xx usb switch功能调试<a class="headerlink" href="#m92xx-usb-switch" title="此标题的永久链接"></a></h1>
+<p>m92xx存在底座充电和typec充电功能，有一定能过逻辑。</p>
+</section>
+<section id="id1">
+<h1>硬件原理<a class="headerlink" href="#id1" title="此标题的永久链接"></a></h1>
+<ul class="simple">
+<li><p>TIP：</p>
+<ul>
+<li><p>对mos管1高电平关闭。</p></li>
+<li><p>对mos管2为硬件延迟电路，默认关闭，只有pogo pin插入才导通，延迟电路功能是防止pogo pin插入充电时，反向给pm4125充电。</p></li>
+<li><p>底座只保留充电功能，当底座充电时，typec口依旧保留功能，不确定当接入OTG时，充电状态会不会变？</p></li>
+</ul>
+</li>
+<li><p>该电路主要实现以下三种情况：</p>
+<ul>
+<li><ol class="arabic simple">
+<li><p>当插入OTG设备，使能OTG_EN脚关闭对mos管1，由pm4125识别cc切换host，并进行对外供电。</p></li>
+</ol>
+</li>
+<li><ol class="arabic simple" start="2">
+<li><p>typec充电，pm4125检测到输入，切换device，Type-C给电池充电。</p></li>
+</ol>
+</li>
+<li><ol class="arabic simple" start="3">
+<li><p>POGO PIN插入时，对mos管2导通，对mos管1关闭，相当于关闭Type-C充电，POGO PIN给电池充电，Type-C可作host/device功能。</p></li>
+</ol>
+</li>
+</ul>
+</li>
+</ul>
+<p><img alt="0003_0000.png" src="../../../_images/0003_00007.png" /></p>
+<ul class="simple">
+<li><p>mos管硬件原理图：</p></li>
+</ul>
+<p><img alt="0003_0001.png" src="../../../_images/0003_00015.png" /></p>
+</section>
+<section id="id2">
+<h1>问题点<a class="headerlink" href="#id2" title="此标题的永久链接"></a></h1>
+</section>
+<section id="otg">
+<h1>插入OTG不能及时关闭导致识别到充电状态<a class="headerlink" href="#otg" title="此标题的永久链接"></a></h1>
+<p>正常情况，当插入OTG设备，使能OTG_EN脚关闭对mos管1，由pm4125识别cc切换host，并进行对外供电，但是实际关闭对mos管1有2s延迟，导致pm4125对charger V_CHG_IN也供电了，就识别到充电。</p>
+<p>目前临时解决方案是，默认使能OTG_EN，mos管1默认关闭，当接入typec充电时OTG_EN拉低，关闭充电再拉高。</p>
+</section>
+<section id="otg20s">
+<h1>接OTG开机卡住20s才启动<a class="headerlink" href="#otg20s" title="此标题的永久链接"></a></h1>
+<p>将otg线插在机器上开机会卡住，查看打印如下：</p>
+<div class="highlight-log notranslate"><div class="highlight"><pre><span></span>D -     10460 - sbl1_do_ddr_training
+D -         2 - sbl1_hand_control_to_devprog_ddr_or_ddi
+B -    474152 - Pimem init cmd, entry
+D -      9924 - Pimem init cmd, exit
+D -     15624 - sbl1_post_ddr_init
+D -         8 - sbl1_hw_init_secondary
+B -    496343 - APDP Image Loaded, Start
+D -      2649 - APDP Image Loaded, Delta - (0 Bytes)
+D -         4 - boot_dload_dump_security_regions
+B -    507354 - usb: Serial - 19226eaa
+B -   1663061 - usb: charger type INVALID prim:  , 0x1
+                ...重复打印100次...
+B - 114994081 - usb: charger type INVALID prim:  , 0x1
+B - 114999170 - usb phy: chgr -  INVALID
+B - 114999200 - usb: fedl, chgr_det_timeout
+D - 114495527 - boot_dload_check
+D -         2 - boot_cache_set_memory_barrier
+D -         3 - boot_smem_debug_init
+D -       331 - boot_smem_init
+D -         4 - boot_smem_alloc_for_minidump
+D -        47 - boot_smem_store_pon_status
+D -        12 - sbl1_hw_platform_smem
+D -       114 - boot_clock_init_rpm
+D -         1 - boot_vsense_copy_to_smem
+D -         2 - boot_share_flash_data
+D -         7 - boot_populate_ram_partition_table
+D -         7 - boot_populate_ddr_details_shared_table
+D -         5 - sbl1_tlmm_init
+</pre></div>
+</div>
+<p>原因是，开机时otg enble脚没被使能，mos管1是导通的，当otg插入时模块vbus接入charger ic上就识别成充电了，而一直识别不到充电类型，轮询了100次很耗时。</p>
+<ul class="simple">
+<li><p>修改方案：</p></li>
+</ul>
+<div class="highlight-diff notranslate"><div class="highlight"><pre><span></span><span class="gd">--- a/A665x_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/SocPkg/AgattiPkg/Library/QusbLdrLib/qusb_ldr_utils.c</span><span class="w"></span>
+<span class="gi">+++ b/A665x_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/SocPkg/AgattiPkg/Library/QusbLdrLib/qusb_ldr_utils.c</span><span class="w"></span>
+<span class="gu">@@ -72,8 +72,13 @@</span><span class="w"></span>
+<span class="w"> </span>#define QUSB_LINESTATE_CHECK_RETRY_CNT            (10000)  //50msec is the total wait time to deal with a bad cable<span class="w"></span>
+
+<span class="w"> </span>#define QUSB_DCI_PM_AGATTI_INDEX                 (0)<span class="w"></span>
+<span class="gi">+#ifdef M92xx</span><span class="w"></span>
+<span class="gi">+//[BUGFIX]-BEGIN by (xxx@xxxxx.com), 2023/02/13 When restarting, inserting otg is recognized as charging when otg enable otg is off</span><span class="w"></span>
+<span class="gi">+#define QUSB_CHARGER_DETECT_RETRY_CNT             (3) //(100)</span><span class="w"></span>
+<span class="gi">+//[BUGFIX]-END by (xxx@xxxxx.com), 2023/02/13 When restarting, inserting otg is recognized as charging when otg enable otg is off</span><span class="w"></span>
+<span class="gi">+#else</span><span class="w"></span>
+<span class="w"> </span>#define QUSB_CHARGER_DETECT_RETRY_CNT             (100)<span class="w"></span>
+<span class="gd">-</span><span class="w"></span>
+<span class="gi">+#endif</span><span class="w"></span>
+</pre></div>
+</div>
+<p>修改后只轮询了2次：</p>
+<div class="highlight-log notranslate"><div class="highlight"><pre><span></span>D -     15625 - sbl1_post_ddr_init
+D -         8 - sbl1_hw_init_secondary
+B -    496018 - APDP Image Loaded, Start
+D -      2665 - APDP Image Loaded, Delta - (0 Bytes)
+D -         4 - boot_dload_dump_security_regions
+B -    507046 - usb: Serial - 19226eaa
+B -   1662753 - usb: charger type INVALID prim:  , 0x1
+B -   2819195 - usb: charger type INVALID prim:  , 0x1
+B -   2824284 - usb phy: chgr -  INVALID
+B -   2824315 - usb: fedl, chgr_det_timeout
+</pre></div>
+</div>
+</section>
+
+
+           </div>
+             <div class="articleComments">
+                <comments>
+  <script src="https://utteranc.es/client.js"
+    repo="iswbm/magic-python"
+    issue-term="pathname"
+    theme="github-light"
+    crossorigin="anonymous"
+    async>
+  </script>
+</comments>
+             </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; 版权所有 2022, wugn.</p>
+  </div>
+
+  利用 <a href="https://www.sphinx-doc.org/">Sphinx</a> 构建，使用了 
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">主题</a>
+    由 <a href="https://readthedocs.org">Read the Docs</a>开发.
+  
+
+<script charset="UTF-8" id="LA_COLLECT" src="//sdk.51.la/js-sdk-pro.min.js"></script>
+<script>LA.init({id: "JoV5csIHTGhHiGQ4",ck: "JoV5csIHTGhHiGQ4"})</script>
+
+<br/>
+<script id="LA-DATA-WIDGET" crossorigin="anonymous" charset="UTF-8" src="https://v6-widget.51.la/v6/JoV5csIHTGhHiGQ4/quote.js?theme=#4C8AC2,#BB2626,#040000,#333333,#AE3535,#1690FF,14&f=14"></script>
+
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -317,7 +317,7 @@ static void suspend_finish(void)
 原来PM notifier是在设备模型的框架外，开了一个后门，那些比较特殊的driver，可以绕过设备模型，直接接收PM发送的suspend信息，以便执行自身的suspend动作。特别是resume时，可以在其它进程都正好工作的时候，只让suspend进程等待driver的resume。
 
 感兴趣的读者，可以围观一下下面这个活生生的例子:
-* [0017_qcom_pax_charger架构.md](/0001_charger/docs/0017_qcom_pax_charger架构.md)
+* [0017_qcom_xxx_charger架构.md](/0001_charger/docs/0017_qcom_xxx_charger架构.md)
 
 # 驱动实例
 
@@ -359,25 +359,25 @@ struct dev_pm_domain {
 ```
 
 ```C++
-static const struct dev_pm_ops pax_bat_pm_ops = {
-        .suspend  = pax_battery_suspend,
-        .resume   = pax_battery_resume,
+static const struct dev_pm_ops xxx_bat_pm_ops = {
+        .suspend  = xxx_battery_suspend,
+        .resume   = xxx_battery_resume,
 };
 
-static struct platform_driver pax_battery_driver = {
-	.probe = pax_battery_probe,
-	.remove = pax_battery_remove,
+static struct platform_driver xxx_battery_driver = {
+	.probe = xxx_battery_probe,
+	.remove = xxx_battery_remove,
 	.driver = {
 		   .name = "battery",
-		   .of_match_table = pax_battery_of_match,
+		   .of_match_table = xxx_battery_of_match,
 #ifdef CONFIG_PM
-			.pm = &pax_bat_pm_ops,
+			.pm = &xxx_bat_pm_ops,
 #endif
 	},
 };
 
-static int __init pax_battery_init(void)
+static int __init xxx_battery_init(void)
 {
-	return platform_driver_register(&pax_battery_driver);
+	return platform_driver_register(&xxx_battery_driver);
 }
 ```

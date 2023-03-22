@@ -24,12 +24,12 @@
 #include "tcpm.h"
 #include "charger_class.h"
 
-#ifdef CONFIG_PAX_GPIOS_CONTROL
+#ifdef CONFIG_xxx_GPIOS_CONTROL
 #include "r15_status_notify.h"
 #endif
 
 struct usb_switch_data {
-	struct class *pax_class;
+	struct class *xxxxx_class;
 	struct device *dev;
 
 	struct tcpc_device *tcpc_dev;
@@ -39,7 +39,7 @@ struct usb_switch_data {
 	struct delayed_work tcpc_dwork;
 	struct delayed_work chg_dev_dwork;
 	struct delayed_work pogo_detect_dwork;
-	struct notifier_block pax_usb_fb_notifier;
+	struct notifier_block xxxxx_usb_fb_notifier;
 	struct notifier_block r15_nb;
 	uint8_t typec_state;
 	int lcd_state;
@@ -59,7 +59,7 @@ struct usb_switch_data {
 	u32 default_mode;
 };
 
-extern struct class *g_class_pax;
+extern struct class *g_class_xxxxx;
 int usb_switch_status = 0;
 
 static void usb_host_switch(struct usb_switch_data *data, int on);
@@ -116,7 +116,7 @@ static irqreturn_t pogo_detect_irq_handle(int irq, void *dev_id)
 			CLR_BIT(usb_switch_status,0);
 		}
 
-#ifdef CONFIG_PAX_GPIOS_CONTROL
+#ifdef CONFIG_xxx_GPIOS_CONTROL
 		r15_status_notify_call_chain(SET_POGO_DEV_STATE, &status);
 #endif
 		pr_err("level: %d usb_switch_status: %d\n", level,usb_switch_status);
@@ -127,7 +127,7 @@ static irqreturn_t pogo_detect_irq_handle(int irq, void *dev_id)
 
 extern const char *cmdline_get_value(const char *key);
 
-int pax_charger_gpio_init(struct usb_switch_data *data, struct device_node *np)
+int xxxxx_charger_gpio_init(struct usb_switch_data *data, struct device_node *np)
 {
 	int ret;
 	data->usb_host_en_gpio = of_get_named_gpio(np, "usb_host_en_gpio", 0);
@@ -226,7 +226,7 @@ static struct device_attribute dev_attr[] = {
  *     When the boot mode is poweroff charger or meta mode, 
  *     we usb USB1 OTG and don't use usb switch function.
  */
-int pax_usb_switch_poweoff_charging_mode(struct device *dev)
+int xxxxx_usb_switch_poweoff_charging_mode(struct device *dev)
 {
 	unsigned int boot_mode = check_boot_mode(dev);
 
@@ -349,7 +349,7 @@ static int tcpc_notifier_call(struct notifier_block *nb,  unsigned long action, 
 	return NOTIFY_OK;
 }
 
-static void pax_tcpc_dev_init_work(struct work_struct *work)
+static void xxxxx_tcpc_dev_init_work(struct work_struct *work)
 {
 	int ret = 0;
 	struct usb_switch_data *data = (struct usb_switch_data *)container_of(work, struct usb_switch_data, tcpc_dwork.work);
@@ -371,12 +371,12 @@ static void pax_tcpc_dev_init_work(struct work_struct *work)
 	}
 }
 
-static void pax_tcpc_dev_init(struct usb_switch_data *data)
+static void xxxxx_tcpc_dev_init(struct usb_switch_data *data)
 {
 	data->lcd_state = FB_BLANK_UNBLANK;
 	usb_host_switch(data, !!data->default_mode);
 
-	INIT_DELAYED_WORK(&data->tcpc_dwork, pax_tcpc_dev_init_work);
+	INIT_DELAYED_WORK(&data->tcpc_dwork, xxxxx_tcpc_dev_init_work);
 	schedule_delayed_work(&data->tcpc_dwork, 0);
 }
 
@@ -412,7 +412,7 @@ static int chg_dev_notifier_call(struct notifier_block *nb,  unsigned long event
 	return NOTIFY_OK;
 }
 
-static void pax_chg_dev_init_work(struct work_struct *work)
+static void xxxxx_chg_dev_init_work(struct work_struct *work)
 {
 	struct usb_switch_data *data = (struct usb_switch_data *)container_of(work, struct usb_switch_data, chg_dev_dwork.work);
 
@@ -427,11 +427,11 @@ static void pax_chg_dev_init_work(struct work_struct *work)
 	}
 }
 
-static void pax_chg_dev_init(struct usb_switch_data *data)
+static void xxxxx_chg_dev_init(struct usb_switch_data *data)
 {
 	data->usb_type = POWER_SUPPLY_TYPE_UNKNOWN;
 
-	INIT_DELAYED_WORK(&data->chg_dev_dwork, pax_chg_dev_init_work);
+	INIT_DELAYED_WORK(&data->chg_dev_dwork, xxxxx_chg_dev_init_work);
 	schedule_delayed_work(&data->chg_dev_dwork, 0);
 }
 
@@ -505,12 +505,12 @@ static void pogo_detect_init(struct usb_switch_data *data)
 	}
 }
 
-static int pax_usb_fb_notifier_call(struct notifier_block *self, unsigned long event, void *data)
+static int xxxxx_usb_fb_notifier_call(struct notifier_block *self, unsigned long event, void *data)
 {
 	struct fb_event *evdata = data;
 	int blank;
 	struct usb_switch_data *usb_sdata = (struct usb_switch_data *)container_of(
-			self, struct usb_switch_data, pax_usb_fb_notifier);
+			self, struct usb_switch_data, xxxxx_usb_fb_notifier);
 
 	if (event != FB_EVENT_BLANK)
 		return 0;
@@ -539,21 +539,21 @@ static int pax_usb_fb_notifier_call(struct notifier_block *self, unsigned long e
 }
 
 extern const char *cmdline_get_value(const char *key);
-static int pax_usb_swtich_probe(struct platform_device *pdev)
+static int xxxxx_usb_swtich_probe(struct platform_device *pdev)
 {
 	int ret = 0,i = 0;
 	struct usb_switch_data *data;
 	struct device_node *np = pdev->dev.of_node;
 	const char *terminal_name;
 
-    //[FEATURE]-MOD-BEGIN by wugangnan@paxsz.com 2021-07-01, for M50 product no usb switch
+    //[FEATURE]-MOD-BEGIN by xxx@xxxxx.com 2021-07-01, for M5x product no usb switch
     terminal_name = cmdline_get_value("androidboot.terminal_name");
-    if(strcmp(terminal_name, "M50") == 0 || pax_usb_switch_poweoff_charging_mode(&pdev->dev))
+    if(strcmp(terminal_name, "M5x") == 0 || xxxxx_usb_switch_poweoff_charging_mode(&pdev->dev))
     {
-		pr_err( "product M50 and power off  && meta mode no usb switch module.\n");
+		pr_err( "product M5x and power off  && meta mode no usb switch module.\n");
 		goto err0;
     }
-    //[FEATURE]-MOD-END by wugangnan@paxsz.com 2021-07-01, for M50 product no usb switch
+    //[FEATURE]-MOD-END by xxx@xxxxx.com 2021-07-01, for M5x product no usb switch
 	
 	pr_err("%s\n", __func__);
 
@@ -564,31 +564,31 @@ static int pax_usb_swtich_probe(struct platform_device *pdev)
 	}
 
 	/* resource */
-	pax_charger_gpio_init(data,np);
+	xxxxx_charger_gpio_init(data,np);
 	if (ret) {
 		goto req_res_fail;
 	}
 
 	INIT_DELAYED_WORK(&data->usb_switch_work, do_usb_switch_work);
 
-	pax_tcpc_dev_init(data);
-	pax_chg_dev_init(data);
+	xxxxx_tcpc_dev_init(data);
+	xxxxx_chg_dev_init(data);
 	pogo_detect_init(data);
 
 	if (data->default_mode) {
-		data->pax_usb_fb_notifier.priority = 99;
-		data->pax_usb_fb_notifier.notifier_call = pax_usb_fb_notifier_call;
-		ret = fb_register_client(&data->pax_usb_fb_notifier);
+		data->xxxxx_usb_fb_notifier.priority = 99;
+		data->xxxxx_usb_fb_notifier.notifier_call = xxxxx_usb_fb_notifier_call;
+		ret = fb_register_client(&data->xxxxx_usb_fb_notifier);
 	}
 
-	if (g_class_pax != NULL) {
-		data->pax_class = g_class_pax;
+	if (g_class_xxxxx != NULL) {
+		data->xxxxx_class = g_class_xxxxx;
 	} else {
-		data->pax_class = class_create(THIS_MODULE, "pax");
+		data->xxxxx_class = class_create(THIS_MODULE, "xxxxx");
 	}
 	
-	//creat sysfs for debug /sys/class/pax/usb_switch/cur_switch
-	data->dev = device_create(data->pax_class, &pdev->dev, 0, NULL, "usb_switch");
+	//creat sysfs for debug /sys/class/xxxxx/usb_switch/cur_switch
+	data->dev = device_create(data->xxxxx_class, &pdev->dev, 0, NULL, "usb_switch");
 	platform_set_drvdata(pdev, data);
 	
 	for (i = 0; ; i++) {
@@ -608,7 +608,7 @@ err0:
     return ret;
 }
 
-static int pax_usb_swtich_remove(struct platform_device *pdev)
+static int xxxxx_usb_swtich_remove(struct platform_device *pdev)
 {
 	struct usb_switch_data *data = platform_get_drvdata(pdev);
 	int i;
@@ -631,56 +631,56 @@ static int pax_usb_swtich_remove(struct platform_device *pdev)
 }
 
 
-static const struct of_device_id pax_usb_switch_of_match[] = {
-	{ .compatible = "pax,usb_switch" },
+static const struct of_device_id xxxxx_usb_switch_of_match[] = {
+	{ .compatible = "xxxxx,usb_switch" },
 	{},
 };
 
-MODULE_DEVICE_TABLE(of, pax_usb_switch_of_match);
+MODULE_DEVICE_TABLE(of, xxxxx_usb_switch_of_match);
 
 
-static int pax_usb_switch_suspend(struct device *dev)
+static int xxxxx_usb_switch_suspend(struct device *dev)
 {
 	pr_err("==%s\n", __func__);
 	return 0;
 }
 
-static int pax_usb_switch_resume(struct device *dev)
+static int xxxxx_usb_switch_resume(struct device *dev)
 {
 	pr_err("==%s\n", __func__);
 	return 0;
 }
 
-static void pax_usb_switch_shutdown(struct platform_device *pdev)
+static void xxxxx_usb_switch_shutdown(struct platform_device *pdev)
 {
 	pr_err("==%s\n", __func__);
 }
 
-static const struct dev_pm_ops pax_usb_swtich_pm_ops = {
-	.suspend = pax_usb_switch_suspend,
-	.resume = pax_usb_switch_resume,
+static const struct dev_pm_ops xxxxx_usb_swtich_pm_ops = {
+	.suspend = xxxxx_usb_switch_suspend,
+	.resume = xxxxx_usb_switch_resume,
 };
 
-static struct platform_driver pax_usb_switch_driver = {
-	.probe = pax_usb_swtich_probe,
-	.remove = pax_usb_swtich_remove,
+static struct platform_driver xxxxx_usb_switch_driver = {
+	.probe = xxxxx_usb_swtich_probe,
+	.remove = xxxxx_usb_swtich_remove,
 	.driver = {
-		.name = "pax_usb_switch",
-		.of_match_table = pax_usb_switch_of_match,
-		.pm = &pax_usb_swtich_pm_ops,
+		.name = "xxxxx_usb_switch",
+		.of_match_table = xxxxx_usb_switch_of_match,
+		.pm = &xxxxx_usb_swtich_pm_ops,
 	},
-	.shutdown = pax_usb_switch_shutdown,
+	.shutdown = xxxxx_usb_switch_shutdown,
 };
 
 
-static int __init pax_usb_switch_init(void)
+static int __init xxxxx_usb_switch_init(void)
 {
-	return platform_driver_register(&pax_usb_switch_driver);
+	return platform_driver_register(&xxxxx_usb_switch_driver);
 }
 
-static void __exit pax_usb_switch_exit(void)
+static void __exit xxxxx_usb_switch_exit(void)
 {
-	platform_driver_unregister(&pax_usb_switch_driver);
+	platform_driver_unregister(&xxxxx_usb_switch_driver);
 }
 
 /**
@@ -688,15 +688,15 @@ static void __exit pax_usb_switch_exit(void)
  * in no_bat mode, must early then typec/pd, in case tyepc/pd cutoff vbus.
  */
 #ifdef REGISTER_TYPEC_NOTIFY
-late_initcall(pax_usb_switch_init);
+late_initcall(xxxxx_usb_switch_init);
 #else
-module_init(pax_usb_switch_init);
-//subsys_initcall(pax_usb_switch_init);
+module_init(xxxxx_usb_switch_init);
+//subsys_initcall(xxxxx_usb_switch_init);
 #endif
 
-module_exit(pax_usb_switch_exit);
+module_exit(xxxxx_usb_switch_exit);
 
 
 MODULE_LICENSE("GPL");
-MODULE_AUTHOR("PAX");
-MODULE_DESCRIPTION("pax usb switch");
+MODULE_AUTHOR("xxx");
+MODULE_DESCRIPTION("xxxxx usb switch");

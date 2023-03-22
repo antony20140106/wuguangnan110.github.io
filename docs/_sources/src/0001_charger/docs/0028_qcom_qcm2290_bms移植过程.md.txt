@@ -35,16 +35,16 @@ interface IPaxBms {
 * `frameworks/base/core/java/android/content/Context.java`:
 ```java
 @ -5529,6 +5529,8 @@ public abstract class Context {
-  		public static final String PAXBMS_SERVICE="paxbms";
+  		public static final String xxxBMS_SERVICE="xxxxxbms";
 ```
 
 # 编写BMS服务
 
-* `QSSI.12/frameworks/base/services/core/java/com/pax/server/PaxBatteryManagerService.java`:
+* `QSSI.12/frameworks/base/services/core/java/com/xxxxx/server/PaxBatteryManagerService.java`:
 ```java
 public final class PaxBatteryManagerService extends SystemService {
-	//IPaxBms pax_bms;
-	PaxBmsManager paxBmsManager;
+	//IPaxBms xxxxx_bms;
+	PaxBmsManager xxxxxBmsManager;
 
 	public PaxBatteryManagerService(Context context) {
         super(context);
@@ -59,7 +59,7 @@ public final class PaxBatteryManagerService extends SystemService {
 		mContext.registerReceiver(myReceiver, new IntentFilter(ACTION_DISABLE));//监听工厂测试程序广播
 		mContext.registerReceiver(myReceiver, new IntentFilter(ACTION_ENABLE));//监听工厂测试程序广播
 
-		paxBmsManager = (PaxBmsManager)mContext.getSystemService(Context.PAXBMS_SERVICE);
+		xxxxxBmsManager = (PaxBmsManager)mContext.getSystemService(Context.xxxBMS_SERVICE);
 	}
 
 	public void onStart() {
@@ -82,10 +82,10 @@ public final class PaxBatteryManagerService extends SystemService {
 
 * `QSSI.12/frameworks/base/services/java/com/android/server/SystemServer.java`:
 ```
-+//ADD BEGIN by (wugangnan@paxsz.com), 2022/11/01 add for BMS
-  	+import com.android.server.paxbms.PaxBmsService;
-  	+import com.pax.server.PaxBatteryManagerService;
-  	+//ADD END by (wugangnan@paxsz.com), 2022/11/01 add for BMS
++//ADD BEGIN by (xxx@xxxxx.com), 2022/11/01 add for BMS
+  	+import com.android.server.xxxxxbms.PaxBmsService;
+  	+import com.xxxxx.server.PaxBatteryManagerService;
+  	+//ADD END by (xxx@xxxxx.com), 2022/11/01 add for BMS
  
  /**
  /**
@@ -93,16 +93,16 @@ public final class PaxBatteryManagerService extends SystemService {
   * Entry point to {@code system_server}.
 @@ -1578,6 +1582,16 @@ public final class SystemServer implements Dumpable {	@@ -1578,6 +1582,16 @@ public final class SystemServer implements Dumpable {
 
-  	+			//ADD BEGIN by (wugangnan@paxsz.com), 2022/11/01 add for BMS
+  	+			//ADD BEGIN by (xxx@xxxxx.com), 2022/11/01 add for BMS
   	+             t.traceBegin("StartmPaxBMSService");
   	+            try{
   	+                PaxBmsService mPaxBmsService = new PaxBmsService(context);
-  	+                ServiceManager.addService("paxbms", mPaxBmsService);
+  	+                ServiceManager.addService("xxxxxbms", mPaxBmsService);
   	+            } catch(Throwable e){
-  	+                reportWtf("starting paxbms Service", e);
+  	+                reportWtf("starting xxxxxbms Service", e);
   	+            }
   	+            t.traceEnd();
-  	+		//ADD END by (wugangnan@paxsz.com), 2022/11/01 add for BMS
+  	+		//ADD END by (xxx@xxxxx.com), 2022/11/01 add for BMS
  
  
          } catch (Throwable e) {
@@ -116,21 +116,21 @@ public final class PaxBatteryManagerService extends SystemService {
          mSystemServiceManager.startService(MEDIA_COMMUNICATION_SERVICE_CLASS);
          t.traceEnd();
          t.traceEnd();
-  	+		//[FEATURE]-Add-BEGIN by (wugangnan@paxsz.com), 2022/11/01, for start pax Battery Manager service
+  	+		//[FEATURE]-Add-BEGIN by (xxx@xxxxx.com), 2022/11/01, for start xxxxx Battery Manager service
   	+			t.traceBegin("PaxBatteryManagerService ");
   	+			mSystemServiceManager.startService(PaxBatteryManagerService.class);
   	+			t.traceEnd();
-  	+		//[FEATURE]-Add-END by (wugangnan@paxsz.com), 2022/11/01, for start pax Battery Manager service
+  	+		//[FEATURE]-Add-END by (xxx@xxxxx.com), 2022/11/01, for start xxxxx Battery Manager service
 ```
 
 # 编写并注册PaxBmsManager类
 
 * `QSSI.12/frameworks/base/core/java/android/app/SystemServiceRegistry.java`:
 ```java
-+//ADD BEGIN by (wugangnan@paxsz.com), 2022/11/01 add for BMS
++//ADD BEGIN by (xxx@xxxxx.com), 2022/11/01 add for BMS
 import android.os.IPaxBms;
 import android.app.PaxBmsManager;
-//ADD BEGIN by (wugangnan@paxsz.com), 2022/11/01 add for BMS
+//ADD BEGIN by (xxx@xxxxx.com), 2022/11/01 add for BMS
 
  /**
  /**
@@ -146,18 +146,18 @@ import android.app.PaxBmsManager;
                  });
                  });
 
-		//ADD BEGIN by (wugangnan@paxsz.com), 2022/11/01 add for BMS
-			registerService(Context.PAXBMS_SERVICE, PaxBmsManager.class,
+		//ADD BEGIN by (xxx@xxxxx.com), 2022/11/01 add for BMS
+			registerService(Context.xxxBMS_SERVICE, PaxBmsManager.class,
 	                new CachedServiceFetcher<PaxBmsManager>() {
 	                    @Override
 	                    public PaxBmsManager createService(ContextImpl ctx)
 	                            throws ServiceNotFoundException {
-	                        IBinder b = ServiceManager.getService("paxbms");
+	                        IBinder b = ServiceManager.getService("xxxxxbms");
 	                        IPaxBms service = IPaxBms.Stub.asInterface(b);
 	                        return PaxBmsManager.getInstance();
 				}
   			});
-  			//ADD END by (wugangnan@paxsz.com), 2022/11/02 add for BMS
+  			//ADD END by (xxx@xxxxx.com), 2022/11/02 add for BMS
 ```
 
 * `QSSI.12/frameworks/base/core/java/android/app/PaxBmsManager.java`:
@@ -195,7 +195,7 @@ import android.compat.annotation.UnsupportedAppUsage;
 import android.os.IPaxBms;
 import java.util.Objects;
 
-@SystemService(Context.PAXBMS_SERVICE)
+@SystemService(Context.xxxBMS_SERVICE)
 public class PaxBmsManager {
 	//PaxBMSService mBMS;
 	private static final String TAG = "PaxBMSManager";
@@ -225,7 +225,7 @@ public class PaxBmsManager {
 		synchronized (syncObj) {
         if (sInstance == null) {
 			try {
-				IBinder b = ServiceManager.getServiceOrThrow(Context.PAXBMS_SERVICE);
+				IBinder b = ServiceManager.getServiceOrThrow(Context.xxxBMS_SERVICE);
 				sInstance = new PaxBmsManager(IPaxBms.Stub.asInterface(b));
 			}catch (ServiceNotFoundException e){
 				e.printStackTrace();
@@ -307,7 +307,7 @@ PaxBmsService 类主要是充电接口实现类，主要调用JNI。
  * limitations under the License.
  */
 
-package com.android.server.paxbms;
+package com.android.server.xxxxxbms;
 
 import android.app.ActivityManager;
 import android.content.Context;
@@ -420,9 +420,9 @@ public class PaxBmsService extends IPaxBms.Stub {
  int register_android_server_stats_pull_StatsPullAtomService(JNIEnv* env);
  int register_android_server_sensor_SensorService(JavaVM* vm, JNIEnv* env);
  int register_android_server_ActivityTriggerService(JNIEnv* env);
-+//ADD BEGIN by wugangnan@paxsz.com add for BMS, 2022/11/02
-+int register_android_server_paxbms_PaxBmsService(JNIEnv* env);
-+//ADD END by wugangnan@paxsz.com add for BMS, 2022/11/02
++//ADD BEGIN by xxx@xxxxx.com add for BMS, 2022/11/02
++int register_android_server_xxxxxbms_PaxBmsService(JNIEnv* env);
++//ADD END by xxx@xxxxx.com add for BMS, 2022/11/02
  };
 
  using namespace android;
@@ -430,14 +430,14 @@ public class PaxBmsService extends IPaxBms.Stub {
      register_android_server_stats_pull_StatsPullAtomService(env);
      register_android_server_sensor_SensorService(vm, env);
      register_android_server_ActivityTriggerService(env);
-+       //ADD BEGIN by wugangnan@paxsz.com add for BMS, 2022/11/02
-+       register_android_server_paxbms_PaxBmsService(env);
-+       //ADD END by wugangnan@paxsz.com add for BMS, 2022/11/02
++       //ADD BEGIN by xxx@xxxxx.com add for BMS, 2022/11/02
++       register_android_server_xxxxxbms_PaxBmsService(env);
++       //ADD END by xxx@xxxxx.com add for BMS, 2022/11/02
      return JNI_VERSION_1_4;
  }
 ```
 
-* `QSSI.12/frameworks/base/services/core/jni/com_android_server_paxbms_PaxBmsService.cpp`JNI如下调用ioctrl直接操作驱动：
+* `QSSI.12/frameworks/base/services/core/jni/com_android_server_xxxxxbms_PaxBmsService.cpp`JNI如下调用ioctrl直接操作驱动：
 ```C++
 /*
  * Copyright (C) 2009 The Android Open Source Project
@@ -461,8 +461,8 @@ public class PaxBmsService extends IPaxBms.Stub {
 #include <nativehelper/JNIHelp.h>
 #include "android_runtime/AndroidRuntime.h"
 
-//#include <android/hardware/pax_bms/1.0/IPaxBMS.h>
-//#include <android/hardware/pax_bms/1.0/types.h>
+//#include <android/hardware/xxxxx_bms/1.0/IPaxBMS.h>
+//#include <android/hardware/xxxxx_bms/1.0/types.h>
 #include <android-base/chrono_utils.h>
 #include <utils/misc.h>
 #include <utils/Log.h>
@@ -480,7 +480,7 @@ public class PaxBmsService extends IPaxBms.Stub {
 #include <sys/types.h>
 
 
-#define PAX_BMS_DEV                "/dev/pax_bms"
+#define xxx_BMS_DEV                "/dev/xxxxx_bms"
 #define SET_CHG_EN				_IOW('b', 1, int)
 #define SET_POWER_PATH			_IOW('b', 2, int)
 
@@ -495,9 +495,9 @@ static void enableCharge_native (
     int res;
 	int en = 1;
 
-    fd = open(PAX_BMS_DEV, O_RDWR);
+    fd = open(xxx_BMS_DEV, O_RDWR);
     if (fd <0) {
-        ALOGE("Unable to open /dev/pax_bms");
+        ALOGE("Unable to open /dev/xxxxx_bms");
     }
  	 
     res = ioctl(fd, SET_CHG_EN, &en);
@@ -517,9 +517,9 @@ static void disableCharge_native(
     int res;
 	int en = 0;
 
-    fd = open(PAX_BMS_DEV, O_RDWR);
+    fd = open(xxx_BMS_DEV, O_RDWR);
     if (fd <0) {
-        ALOGE("Unable to open /dev/pax_bms");
+        ALOGE("Unable to open /dev/xxxxx_bms");
     }
  	 
     res = ioctl(fd, SET_CHG_EN, &en);
@@ -538,9 +538,9 @@ static void enablePowerPath_native(
     int res;
 	int en = 1;
 
-    fd = open(PAX_BMS_DEV, O_RDWR);
+    fd = open(xxx_BMS_DEV, O_RDWR);
     if (fd <0) {
-        ALOGE("Unable to open /dev/pax_bms");
+        ALOGE("Unable to open /dev/xxxxx_bms");
     }
  	 
     res = ioctl(fd, SET_POWER_PATH, &en);
@@ -560,9 +560,9 @@ static void disablePowerPath_native(
     int res;
 	int en = 0;
 
-    fd = open(PAX_BMS_DEV, O_RDWR);
+    fd = open(xxx_BMS_DEV, O_RDWR);
     if (fd <0) {
-        ALOGE("Unable to open /dev/pax_bms");
+        ALOGE("Unable to open /dev/xxxxx_bms");
     }
  	 
     res = ioctl(fd, SET_POWER_PATH, &en);
@@ -580,9 +580,9 @@ static const JNINativeMethod method_table[] = {
     { "disablePowerPath_native", "()V", (void*)disablePowerPath_native },
 };
 
-int register_android_server_paxbms_PaxBmsService(JNIEnv *env) {
-	ALOGE("register_android_server_paxbms_PaxBmsService\n");
-    return jniRegisterNativeMethods(env, "com/android/server/paxbms/PaxBmsService",
+int register_android_server_xxxxxbms_PaxBmsService(JNIEnv *env) {
+	ALOGE("register_android_server_xxxxxbms_PaxBmsService\n");
+    return jniRegisterNativeMethods(env, "com/android/server/xxxxxbms/PaxBmsService",
             method_table, NELEM(method_table));
 }
 
@@ -591,17 +591,17 @@ int register_android_server_paxbms_PaxBmsService(JNIEnv *env) {
 
 # 调用 PaxBmsService类
 
-* `QSSI.12/frameworks/base/services/core/java/com/pax/server/PaxBatteryManagerService.java`PaxBmsService类被PaxBatteryManagerService调用方法如下:
+* `QSSI.12/frameworks/base/services/core/java/com/xxxxx/server/PaxBatteryManagerService.java`PaxBmsService类被PaxBatteryManagerService调用方法如下:
 ```java
-paxBmsManager = (PaxBmsManager)mContext.getSystemService(Context.PAXBMS_SERVICE);
+xxxxxBmsManager = (PaxBmsManager)mContext.getSystemService(Context.xxxBMS_SERVICE);
 
 public int setChargeState(int state){
 try {
 		Log.d(TAG,"setChargeState: "+state);
 		if(state == CHARGEING){
-			paxBmsManager.enableCharge();
+			xxxxxBmsManager.enableCharge();
 		}else{
-			paxBmsManager.disableCharge();
+			xxxxxBmsManager.disableCharge();
 		}
 	}
 }
@@ -633,7 +633,7 @@ try {
      field public static final String NFC_SERVICE = "nfc";
      field public static final String NOTIFICATION_SERVICE = "notification";
      field public static final String NSD_SERVICE = "servicediscovery";
-+    field public static final String PAXBMS_SERVICE = "paxbms";
++    field public static final String xxxBMS_SERVICE = "xxxxxbms";
      field public static final String PEOPLE_SERVICE = "people";
      field public static final String PERFORMANCE_HINT_SERVICE = "performance_hint";
      field public static final String POWER_SERVICE = "power";
@@ -645,32 +645,32 @@ try {
 --- a/QSSI.12/system/sepolicy/prebuilts/api/31.0/private/file.te
 +++ b/QSSI.12/system/sepolicy/prebuilts/api/31.0/private/file.te
 @@ -66,4 +66,5 @@ type kvm_device, dev_type;
- #PAX BMS
+ #xxx BMS
  type sysfs_battery_warning, fs_type, sysfs_type;
  type vendor_sysfs_battery_supply, sysfs_type, fs_type;
 -type vendor_sysfs_usb_supply, sysfs_type, fs_type;
 \ No newline at end of file
 +type vendor_sysfs_usb_supply, sysfs_type, fs_type;
-+type pax_bms_device, dev_type, mlstrustedobject;
++type xxxxx_bms_device, dev_type, mlstrustedobject;
 \ No newline at end of file
 diff --git a/QSSI.12/system/sepolicy/prebuilts/api/31.0/private/file_contexts b/QSSI.12/system/sepolicy/prebuilts/api/31.0/private/file_contexts
 index d711c80db20..67eca16d06e 100755
 --- a/QSSI.12/system/sepolicy/prebuilts/api/31.0/private/file_contexts
 +++ b/QSSI.12/system/sepolicy/prebuilts/api/31.0/private/file_contexts
 @@ -843,3 +843,6 @@
- #[FEATURE]-Add-BEGIN by tangyunhua@paxsz.com, 2022/11/02, for mac address
+ #[FEATURE]-Add-BEGIN by tangyunhua@xxxxx.com, 2022/11/02, for mac address
  /system/bin/macaddress   u:object_r:macaddress_exec:s0
- #[FEATURE]-Add-END by tangyunhua@paxsz.com, 2022/11/02, for mac address
-+#[FEATURE]-Add-BEGIN by wugangnan@paxsz.com, 2022/11/04, for BMS
-+/dev/pax_bms            u:object_r:pax_bms_device:s0
-+#[FEATURE]-Add-END by wugangnan@paxsz.com, 2022/11/04, for BMS
-diff --git a/QSSI.12/system/sepolicy/prebuilts/api/31.0/private/pax_bms_service.te b/QSSI.12/system/sepolicy/prebuilts/api/31.0/private/pax_bms_service.te
+ #[FEATURE]-Add-END by tangyunhua@xxxxx.com, 2022/11/02, for mac address
++#[FEATURE]-Add-BEGIN by xxx@xxxxx.com, 2022/11/04, for BMS
++/dev/xxxxx_bms            u:object_r:xxxxx_bms_device:s0
++#[FEATURE]-Add-END by xxx@xxxxx.com, 2022/11/04, for BMS
+diff --git a/QSSI.12/system/sepolicy/prebuilts/api/31.0/private/xxxxx_bms_service.te b/QSSI.12/system/sepolicy/prebuilts/api/31.0/private/xxxxx_bms_service.te
 new file mode 100755
 index 00000000000..67efced1679
 --- /dev/null
-+++ b/QSSI.12/system/sepolicy/prebuilts/api/31.0/private/pax_bms_service.te
++++ b/QSSI.12/system/sepolicy/prebuilts/api/31.0/private/xxxxx_bms_service.te
 @@ -0,0 +1 @@
-+type pax_bms_service,     app_api_service, system_server_service, service_manager_type;
++type xxxxx_bms_service,     app_api_service, system_server_service, service_manager_type;
 \ No newline at end of file
 diff --git a/QSSI.12/system/sepolicy/prebuilts/api/31.0/private/system_server.te b/QSSI.12/system/sepolicy/prebuilts/api/31.0/private/system_server.te
 index 3b510c73ad7..e23007a691c 100755
@@ -681,23 +681,23 @@ index 3b510c73ad7..e23007a691c 100755
  allow system_server logkit-init:binder call;
 
 +#BMS
-+allow system_server pax_bms_service:service_manager { find add };
-+allow system_server pax_bms_device:chr_file { ioctl read open write };
++allow system_server xxxxx_bms_service:service_manager { find add };
++allow system_server xxxxx_bms_device:chr_file { ioctl read open write };
 ```
 
 # 增加dev节点权限
 
 ```diff
---- a/QSSI.12/vendor/paxsz/initrc/init.A6650.common.rc
-+++ b/QSSI.12/vendor/paxsz/initrc/init.A6650.common.rc
+--- a/QSSI.12/vendor/xxxxx/initrc/init.A665x.common.rc
++++ b/QSSI.12/vendor/xxxxx/initrc/init.A665x.common.rc
 @@ -7,6 +7,11 @@ on boot
- #[feature]-add-begin xielianxiong@paxsz.com,20221026,for rpc  uart suspend
+ #[feature]-add-begin xielianxiong@xxxxx.com,20221026,for rpc  uart suspend
      chmod 0777 /sys/devices/platform/soc/4a84000.qcom,qup_uart/power/control
- #[feature]-add-end xielianxiong@paxsz.com,20221026,for rpc  uart suspend
-+    #[FEATURE]-Add-BEGIN by wugangnan@paxsz.com, 2022/11/04, for BMS
-+    chmod 0777 /dev/pax_bms
-+    chown system system /dev/pax_bms
-+       #[FEATURE]-Add-END by wugangnan@paxsz.com, 2022/11/04, for BMS
+ #[feature]-add-end xielianxiong@xxxxx.com,20221026,for rpc  uart suspend
++    #[FEATURE]-Add-BEGIN by xxx@xxxxx.com, 2022/11/04, for BMS
++    chmod 0777 /dev/xxxxx_bms
++    chown system system /dev/xxxxx_bms
++       #[FEATURE]-Add-END by xxx@xxxxx.com, 2022/11/04, for BMS
 ```
 
 
@@ -716,8 +716,8 @@ th inline replies or bubbles.
 10-20 10:13:11.271  1662  2551 E AndroidRuntime:        at android.app.PendingIntent.checkFlags(PendingIntent.java:378)
 10-20 10:13:11.271  1662  2551 E AndroidRuntime:        at android.app.PendingIntent.getBroadcastAsUser(PendingIntent.java:648)
 10-20 10:13:11.271  1662  2551 E AndroidRuntime:        at android.app.PendingIntent.getBroadcast(PendingIntent.java:635)
-10-20 10:13:11.271  1662  2551 E AndroidRuntime:        at com.pax.server.PaxBatteryManagerService.setAlarm(PaxBatteryManagerService.java:537)
-10-20 10:13:11.271  1662  2551 E AndroidRuntime:        at com.pax.server.PaxBatteryManagerService$PaxBatteryThread.run(PaxBatteryManagerService.java:222)
+10-20 10:13:11.271  1662  2551 E AndroidRuntime:        at com.xxxxx.server.PaxBatteryManagerService.setAlarm(PaxBatteryManagerService.java:537)
+10-20 10:13:11.271  1662  2551 E AndroidRuntime:        at com.xxxxx.server.PaxBatteryManagerService$PaxBatteryThread.run(PaxBatteryManagerService.java:222)
 ```
 
 * 出错在`setAlarm`函数，跟进代码如下：

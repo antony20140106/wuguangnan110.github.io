@@ -15,36 +15,36 @@
 
 在驱动程序中，我们通常会定义一个platform_driver的结构体，其中包含了各种操作函数：
 ```C++
-static const struct dev_pm_ops pax_bat_pm_ops = {
-        .suspend  = pax_battery_suspend,
-        .resume   = pax_battery_resume,
+static const struct dev_pm_ops xxx_bat_pm_ops = {
+        .suspend  = xxx_battery_suspend,
+        .resume   = xxx_battery_resume,
 };
 
-static const struct of_device_id pax_battery_of_match[] = {
-	{.compatible = "pax,battery",},
+static const struct of_device_id xxx_battery_of_match[] = {
+	{.compatible = "xxx,battery",},
 	{},
 };
 
-MODULE_DEVICE_TABLE(of, pax_battery_of_match);
+MODULE_DEVICE_TABLE(of, xxx_battery_of_match);
 
-static struct platform_driver pax_battery_driver = {
-	.probe = pax_battery_probe,
-	.remove = pax_battery_remove,
+static struct platform_driver xxx_battery_driver = {
+	.probe = xxx_battery_probe,
+	.remove = xxx_battery_remove,
 	.driver = {
 		   .name = "battery",
-		   .of_match_table = pax_battery_of_match,
+		   .of_match_table = xxx_battery_of_match,
 #ifdef CONFIG_PM
-			.pm = &pax_bat_pm_ops,
+			.pm = &xxx_bat_pm_ops,
             .id_table   = xxx_id,
 #endif
 	},
 };
 
-static int __init pax_battery_init(void)
+static int __init xxx_battery_init(void)
 {
-	return platform_driver_register(&pax_battery_driver);
+	return platform_driver_register(&xxx_battery_driver);
 }
-device_initcall_sync(pax_battery_init);
+device_initcall_sync(xxx_battery_init);
 ```
 
 其中，`of_match_table`和`id_table`都是用来在设备树中和设备匹配，且都是通过`compatible`，前者优先级更高，后者则会在前者未匹配的情况下去掉compatible的供应商信息后再匹配，即id_table只匹配device名字。举个例子，可以看到下面这个device和driver的compatible是不匹配的，但是它的id_table和device名字都是pn553，所以也会匹配上，
@@ -215,7 +215,7 @@ module_init(cw2017_init);
 
 和上面i2c驱动注册都是一样的，这里不做过多分析
 ```C++
-* platform_driver_register(&pax_charger_driver);
+* platform_driver_register(&xxx_charger_driver);
   └── driver_register(&drv->driver);
 ```
 
@@ -325,7 +325,7 @@ static int i2c_device_match(struct device *dev, struct device_driver *drv)
 
 利用`dump_stack`可以清晰的看到probe调用流程：
 ```log
-[    4.681355] PAX_CHG: func:sgm41528_charger_probe:line:1544.
+[    4.681355] xxx_CHG: func:sgm41528_charger_probe:line:1544.
 [    4.686977] CPU: 1 PID: 1 Comm: swapper/0 Tainted: G        W         4.19.157 #43
 [    4.694566] Hardware name: Qualcomm Technologies, Inc. SCUBA (Flattened Device Tree)
 [    4.702359] [<c0111c78>] (unwind_backtrace) from [<c010d1b0>] (show_stack+0x10/0x14)

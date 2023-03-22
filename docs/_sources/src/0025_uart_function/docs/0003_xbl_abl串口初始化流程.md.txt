@@ -191,7 +191,7 @@ if ((base == 0x04A84000) //流控专门加改了这里
   └── sp_init();
       └── if (is_sp_support()) //如果支持sp则从sp再读一遍
           ├── sp_info_reset();
-          └── ret = pax_sp_uart_init();
+          └── ret = xxx_sp_uart_init();
               └── sp_uart_init();
                   └── uart5_initialize();
 ```

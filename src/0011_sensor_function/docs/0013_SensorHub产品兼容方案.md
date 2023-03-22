@@ -1,6 +1,6 @@
 # 概述
 
-SensorHub兼容M50、M8功能开发。
+SensorHub兼容M5x、M8功能开发。
 
 ## 软件方案
 
@@ -163,11 +163,11 @@ struct SCP_SENSOR_HUB_BATCH_REQ {
 struct SCP_SENSOR_HUB_SET_CONFIG_REQ {
 	uint8_t sensorType;
 	uint8_t action;
-	// [NEW FEATURE]-BEGIN by wugangnan@paxsz.com 2022-02-23, add terminal boardid cfg
+	// [NEW FEATURE]-BEGIN by xxx@xxxxx.com 2022-02-23, add terminal boardid cfg
 	//uint8_t reserve[2];
 	uint8_t reserve[1];
 	uint8_t terminal_boardid;
-	// [NEW FEATURE]-END by wugangnan@paxsz.com 2022-02-23, add terminal boardid cfg
+	// [NEW FEATURE]-END by xxx@xxxxx.com 2022-02-23, add terminal boardid cfg
 	/* struct sensorFIFO   *bufferBase; */
 	uint32_t bufferBase;/* use int to store buffer DRAM base LSB 32 bits */
 	uint32_t bufferSize;
@@ -187,9 +187,9 @@ struct SCP_SENSOR_HUB_SET_CONFIG_REQ {
         data.set_config_req.action = SENSOR_HUB_SET_CONFIG;
         data.set_config_req.bufferBase =
                 (unsigned int)(obj->shub_dram_phys & 0xFFFFFFFF);
-+       // [NEW FEATURE]-BEGIN by wugangnan@paxsz.com 2022-02-23, add terminal boardid cfg to scp
++       // [NEW FEATURE]-BEGIN by xxx@xxxxx.com 2022-02-23, add terminal boardid cfg to scp
 +    data.set_config_req.terminal_boardid = get_terminal_type();
-+       // [NEW FEATURE]-END by wugangnan@paxsz.com 2022-02-23, add terminal boardid cfg to scp
++       // [NEW FEATURE]-END by xxx@xxxxx.com 2022-02-23, add terminal boardid cfg to scp
  }
 
  --- a/kernel-4.19/drivers/misc/mediatek/sensors-1.0/sensorHub/inc_v1/SCP_sensorHub.h
@@ -199,11 +199,11 @@ struct SCP_SENSOR_HUB_SET_CONFIG_REQ {
         uint8_t sensorType;
         uint8_t action;
 -       uint8_t reserve[2];
-+       // [NEW FEATURE]-BEGIN by wugangnan@paxsz.com 2022-02-23, add terminal boardid cfg
++       // [NEW FEATURE]-BEGIN by xxx@xxxxx.com 2022-02-23, add terminal boardid cfg
 +       //uint8_t reserve[2];
 +       uint8_t reserve[1];
 +       uint8_t terminal_boardid;
-+       // [NEW FEATURE]-END by wugangnan@paxsz.com 2022-02-23, add terminal boardid cfg
++       // [NEW FEATURE]-END by xxx@xxxxx.com 2022-02-23, add terminal boardid cfg
 ```
 
 * 4.scp这边接收IPI流程如下,上层传下来的数据格式是SENSOR_HUB_SET_CONFIG：
@@ -215,7 +215,7 @@ struct SCP_SENSOR_HUB_SET_CONFIG_REQ {
    * contextHubFindCmd(mTask.ipi_req.action);
      * contextHubFwSetCfg //因为上层传下来的数据格式是SENSOR_HUB_SET_CONFIG
        * set_cfg_req = (SCP_SENSOR_HUB_SET_CONFIG_REQ *)req;  //获取数据
-       * pax_Set_Terminal_Type(set_cfg_req->terminal_boardid); //设置机型
+       * xxxxx_Set_Terminal_Type(set_cfg_req->terminal_boardid); //设置机型
 ```
 
 * 5.所以对应scp也需要修改：
@@ -229,8 +229,8 @@ struct SCP_SENSOR_HUB_SET_CONFIG_REQ {
  #define LINEARACCEL_INCREASE_NUM_AP     1000
 +
 +typedef enum {
-+       TERMINAL_M50_PLASTIC,
-+       TERMINAL_M50_METAL,
++       TERMINAL_M5x_PLASTIC,
++       TERMINAL_M5x_METAL,
 +       TERMINAL_M8
 +}terminal_type_t;
 +
@@ -243,10 +243,10 @@ struct SCP_SENSOR_HUB_SET_CONFIG_REQ {
      uint8_t    action;
      uint8_t    event;
 -    uint8_t    reserve;
-+    // [NEW FEATURE]-BEGIN by wugangnan@paxsz.com 2022-02-23, add terminal boardid cfg
++    // [NEW FEATURE]-BEGIN by xxx@xxxxx.com 2022-02-23, add terminal boardid cfg
 +    //uint8_t    reserve;
 +    uint8_t    terminal_boardid;
-+    // [NEW FEATURE]-END by wugangnan@paxsz.com 2022-02-23, add terminal boardid cfg
++    // [NEW FEATURE]-END by xxx@xxxxx.com 2022-02-23, add terminal boardid cfg
      uint32_t   data[11];
  } SCP_SENSOR_HUB_REQ;
 
@@ -255,11 +255,11 @@ struct SCP_SENSOR_HUB_SET_CONFIG_REQ {
      uint8_t            sensorType;
      uint8_t            action;
 -    uint8_t            reserve[2];
-+    // [NEW FEATURE]-BEGIN by wugangnan@paxsz.com 2022-02-23, add terminal boardid cfg
++    // [NEW FEATURE]-BEGIN by xxx@xxxxx.com 2022-02-23, add terminal boardid cfg
 +    //uint8_t            reserve[2];
 +    uint8_t            reserve[1];
 +    uint8_t            terminal_boardid;
-+    // [NEW FEATURE]-END by wugangnan@paxsz.com 2022-02-23, add terminal boardid cfg
++    // [NEW FEATURE]-END by xxx@xxxxx.com 2022-02-23, add terminal boardid cfg
      struct sensorFIFO   *bufferBase;
      uint32_t            bufferSize;
      uint64_t            ap_timestamp;
@@ -267,7 +267,7 @@ struct SCP_SENSOR_HUB_SET_CONFIG_REQ {
  uint8_t mtkTypeToChreType(uint8_t sensortype);
  void registerDownSampleInfo(int mtkType, uint32_t rate);
  void registerHwSampleInfo(int chreType, uint32_t hwDelay);
-+int pax_Get_Terminal_Type(void);
++int xxxxx_Get_Terminal_Type(void);
 
 --- a/vendor/mediatek/proprietary/tinysys/freertos/source/middleware/contexthub/contexthub_fw.c
 +++ b/vendor/mediatek/proprietary/tinysys/freertos/source/middleware/contexthub/contexthub_fw.c
@@ -279,9 +279,9 @@ struct SCP_SENSOR_HUB_SET_CONFIG_REQ {
      dvfs_enable_DRAM_resource(SENS_MEM_ID);
  #endif
 +
-+    // [NEW FEATURE]-BEGIN by wugangnan@paxsz.com 2022-02-23, add terminal boardid cfg to scp
-+    pax_Set_Terminal_Type(set_cfg_req->terminal_boardid);
-+       // [NEW FEATURE]-END by wugangnan@paxsz.com 2022-02-23, add terminal boardid cfg to scp
++    // [NEW FEATURE]-BEGIN by xxx@xxxxx.com 2022-02-23, add terminal boardid cfg to scp
++    xxxxx_Set_Terminal_Type(set_cfg_req->terminal_boardid);
++       // [NEW FEATURE]-END by xxx@xxxxx.com 2022-02-23, add terminal boardid cfg to scp
 ```
 
 ## scp驱动功能实现
@@ -299,10 +299,10 @@ index 5560d93a820..b8021586e6f
      const char *name;
      int i2c_num;    /*!< the i2c bus used by the chip */
      int direction;  /*!< the direction of the chip */
-+    // [NEW FEATURE]-BEGIN by wugangnan@paxsz.com 2022-02-23, scp Compatible with both models
++    // [NEW FEATURE]-BEGIN by xxx@xxxxx.com 2022-02-23, scp Compatible with both models
 +    int direction_m50;
 +    int direction_m8;
-+    // [NEW FEATURE]-END by wugangnan@paxsz.com 2022-02-23, scp Compatible with both models
++    // [NEW FEATURE]-END by xxx@xxxxx.com 2022-02-23, scp Compatible with both models
      unsigned char   i2c_addr[M_CUST_I2C_ADDR_NUM];
  };
  struct mag_hw* get_cust_mag(const char *name);
@@ -324,9 +324,9 @@ index 1118c30f715..87e3d5f31dd
      caliParameter[4] = values[7];
      caliParameter[5] = values[8];
  
-+    // [NEW FEATURE]-BEGIN by wugangnan@paxsz.com 2022-02-23, add chip cfg to scp Compatible with both models
++    // [NEW FEATURE]-BEGIN by xxx@xxxxx.com 2022-02-23, add chip cfg to scp Compatible with both models
 +    sensorFsmRunState(&dataInfo, &mTask.fsm, (const void *)CHIP_MAG_CFG, &i2cCallback, &spiCallback);
-+    // [NEW FEATURE]-END by wugangnan@paxsz.com 2022-02-23, add chip cfg to scp Compatible with both models
++    // [NEW FEATURE]-END by xxx@xxxxx.com 2022-02-23, add chip cfg to scp Compatible with both models
 +
      if (mTask.caliAPI.caliApiSetCaliParam != NULL) {
          err = mTask.caliAPI.caliApiSetCaliParam(&caliParameter[0]);
@@ -369,10 +369,10 @@ index 5a4c35ba59f..386135d5443 100755
      STATE_IDLE = CHIP_IDLE,
  
      STATE_FUSE_EN = CHIP_RESET,
-+    // [NEW FEATURE]-BEGIN by wugangnan@paxsz.com 2022-02-23, add chip cfg to scp Compatible with both models
++    // [NEW FEATURE]-BEGIN by xxx@xxxxx.com 2022-02-23, add chip cfg to scp Compatible with both models
 +    STATE_MAG_CFG = CHIP_MAG_CFG,
 +    STATE_MAG_CFG_DONE = CHIP_MAG_CFG_DONE,
-+    // [NEW FEATURE]-END by wugangnan@paxsz.com 2022-02-23, add chip cfg to scp Compatible with both models
++    // [NEW FEATURE]-END by xxx@xxxxx.com 2022-02-23, add chip cfg to scp Compatible with both models
      STATE_FUSE_RD,
      STATE_CORE,
      STATE_CHIP_RESET,
@@ -381,31 +381,31 @@ index 5a4c35ba59f..386135d5443 100755
  
  #endif
 +
-+// [NEW FEATURE]-BEGIN by wugangnan@paxsz.com 2022-02-23, add terminal boardid cfg to scp Compatible with both models
++// [NEW FEATURE]-BEGIN by xxx@xxxxx.com 2022-02-23, add terminal boardid cfg to scp Compatible with both models
 +static int mmc5603MagCfg(I2cCallbackF i2cCallBack, SpiCbkF spiCallBack, void *next_state,
 +                           void *inBuf, uint8_t inSize, uint8_t elemInSize,
 +                           void *outBuf, uint8_t *outSize, uint8_t *elemOutSize)
 +{
-+	int pax_Terminal_Type;
++	int xxxxx_Terminal_Type;
 +	int ret;
 +
 +	if (mTask.cvt.map[AXIS_X] == 0 && mTask.cvt.map[AXIS_Y] == 0 && mTask.cvt.map[AXIS_Z] == 0)
 +	{
-+		pax_Terminal_Type = pax_Get_Terminal_Type();
-+		if (pax_Terminal_Type == TERMINAL_M8)
++		xxxxx_Terminal_Type = xxxxx_Get_Terminal_Type();
++		if (xxxxx_Terminal_Type == TERMINAL_M8)
 +		{
 +			mTask.hw->direction = mTask.hw->direction_m8;
 +		}
-+		else if(pax_Terminal_Type == TERMINAL_M50_PLASTIC)
++		else if(xxxxx_Terminal_Type == TERMINAL_M5x_PLASTIC)
 +		{
 +			mTask.hw->direction = mTask.hw->direction_m50;
 +		}
-+		else if(pax_Terminal_Type == TERMINAL_M50_METAL)
++		else if(xxxxx_Terminal_Type == TERMINAL_M5x_METAL)
 +		{
 +			mTask.hw->direction = mTask.hw->direction_m50;
 +		}
 +		else {
-+			osLog(LOG_ERROR, "invalid Terminal_Type: %d\n", pax_Terminal_Type);
++			osLog(LOG_ERROR, "invalid Terminal_Type: %d\n", xxxxx_Terminal_Type);
 +		}
 +
 +	    if (0 != (ret = sensorDriverGetConvert(mTask.hw->direction, &mTask.cvt)))
@@ -419,7 +419,7 @@ index 5a4c35ba59f..386135d5443 100755
 +	sensorFsmEnqueueFakeI2cEvt(i2cCallBack, next_state, SUCCESS_EVT);
 +	return 0;
 +}
-+// [NEW FEATURE]-END by wugangnan@paxsz.com 2022-02-23, add terminal boardid cfg to scp Compatible with both models
++// [NEW FEATURE]-END by xxx@xxxxx.com 2022-02-23, add terminal boardid cfg to scp Compatible with both models
 +
  static void magGetSensorInfo(struct sensorInfo_t *data)
  {
@@ -429,7 +429,7 @@ index 5a4c35ba59f..386135d5443 100755
      uint64_t timestamp = 0;
  
 -    //osLog(LOG_ERROR, "mmc5603Convert direction: %d\n", mTask.hw->direction);
-+    osLog(LOG_ERROR, "mmc5603Convert direction: %d pax_Get_Terminal_Type: %d mTask.hw->direction_m8 = %d mTask.hw->direction_m50 = %d\n", mTask.hw->direction ,pax_Get_Terminal_Type(),mTask.hw->direction_m8,mTask.hw->direction_m50);
++    osLog(LOG_ERROR, "mmc5603Convert direction: %d xxxxx_Get_Terminal_Type: %d mTask.hw->direction_m8 = %d mTask.hw->direction_m50 = %d\n", mTask.hw->direction ,xxxxx_Get_Terminal_Type(),mTask.hw->direction_m8,mTask.hw->direction_m50);
  
  #if 1
      osLog(LOG_ERROR, "%s mmc5603 raw reg data: \n"
@@ -445,11 +445,11 @@ index 5a4c35ba59f..386135d5443 100755
 +    //data[0].x = remap_data[AXIS_X] * 100.0f / 1024;
 +    //data[0].y = remap_data[AXIS_Y] * 100.0f / 1024;
 +    //data[0].z = remap_data[AXIS_Z] * 100.0f / 1024;
-+    //[BUGFIX]-BEGIN by (wugangnan@paxsz.com), use kernel Calculation formula to cali data
++    //[BUGFIX]-BEGIN by (xxx@xxxxx.com), use kernel Calculation formula to cali data
 +    data[0].x = remap_data[AXIS_X]  / 10;
 +    data[0].y = remap_data[AXIS_Y]  / 10;
 +    data[0].z = remap_data[AXIS_Z]  / 10;
-+    //[BUGFIX]-END by (wugangnan@paxsz.com), use kernel Calculation formula to cali data
++    //[BUGFIX]-END by (xxx@xxxxx.com), use kernel Calculation formula to cali data
 +
 +    printf("%s:: remaped: %f %f %f;;;raw: %f %f %f\n",__func__,(double)remap_data[0],(double)remap_data[1],(double)remap_data[2],(double)data[0].x,(double)data[0].y,(double)data[0].z);
  
@@ -468,7 +468,7 @@ index 5a4c35ba59f..386135d5443 100755
      mTask.i2c_addr = mTask.hw->i2c_addr[0];
      osLog(LOG_ERROR, "driver version : %s, mag i2c_num: %d, i2c_addr: 0x%x\n", MMC5603_DRIVER_VERSION, mTask.hw->i2c_num, mTask.i2c_addr);
  
-+    // [NEW FEATURE]-BEGIN by wugangnan@paxsz.com 2022-02-24, put mag direction compatible Function in mmc5603MagCfg
++    // [NEW FEATURE]-BEGIN by xxx@xxxxx.com 2022-02-24, put mag direction compatible Function in mmc5603MagCfg
 +	/*
      if (0 != (ret = sensorDriverGetConvert(mTask.hw->direction, &mTask.cvt)))
      {
@@ -478,7 +478,7 @@ index 5a4c35ba59f..386135d5443 100755
            mTask.cvt.map[AXIS_X], mTask.cvt.map[AXIS_Y], mTask.cvt.map[AXIS_Z],
            mTask.cvt.sign[AXIS_X], mTask.cvt.sign[AXIS_Y], mTask.cvt.sign[AXIS_Z]);
 +	*/
-+	// [NEW FEATURE]-END by wugangnan@paxsz.com 2022-02-24, put mag direction compatible Function in mmc5603MagCfg
++	// [NEW FEATURE]-END by xxx@xxxxx.com 2022-02-24, put mag direction compatible Function in mmc5603MagCfg
  
      i2cMasterRequest(mTask.hw->i2c_num, I2C_SPEED);
      mTask.txBuf[0] = MMC5603_REG_PRODUCT;
@@ -487,9 +487,9 @@ index 5a4c35ba59f..386135d5443 100755
          mTask.mag_dev_info.layout = 0x00;
          mTask.mag_dev_info.deviceid = 0x10;
 -        strncpy(mTask.mag_dev_info.libname, "memsic", sizeof(mTask.mag_dev_info.libname));
-+        // [NEW FEATURE]-BEGIN by wugangnan@paxsz.com 2022-02-24, put Calibration library compatible Function in hal,not in scp driver
++        // [NEW FEATURE]-BEGIN by xxx@xxxxx.com 2022-02-24, put Calibration library compatible Function in hal,not in scp driver
 +        //strncpy(mTask.mag_dev_info.libname, "memsic", sizeof(mTask.mag_dev_info.libname));
-+        // [NEW FEATURE]-END by wugangnan@paxsz.com 2022-02-24, put Calibration library compatible Function in hal,not in scp driver
++        // [NEW FEATURE]-END by xxx@xxxxx.com 2022-02-24, put Calibration library compatible Function in hal,not in scp driver
          magSensorRegister();
          magRegisterInterruptMode(MAG_UNFIFO);
          registerMagDriverFsm(mmc5603Fsm, ARRAY_SIZE(mmc5603Fsm));

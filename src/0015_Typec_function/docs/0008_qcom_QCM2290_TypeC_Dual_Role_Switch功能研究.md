@@ -7,11 +7,11 @@ qcom qcm2290 验证普通TypeC接拓展坞作为host功能，插入外电至拓�
 
 由于typec的data role和power role是分开控制的，讲道理，当设备data role为host时，power role是可以作为sink的，也就是被供电。
 
-## A6650接拓展坞
+## A665x接拓展坞
 
 很奇怪，当插入外电至拓展坞后，整机typec消息由host变成device，重点是后面typec发送了`PR_SWAP`信号，将power_role设置为`PD_ROLE_SINK`状态，紧接着会收到`SINK_VBUS`消息，将charger vbus关闭，由拓展坞供电。
 
-* [a6650拓展坞接U盘插外电.txt](log/a6650拓展坞接U盘插外电.txt)
+* [a665x拓展坞接U盘插外电.txt](log/a665x拓展坞接U盘插外电.txt)
 ```shell
 console:/ # [  309.766809] pd_tcp_notifier_call event = SOURCE_VBUS
 [  309.771997] pd_tcp_notifier_call source vbus 5000mV
@@ -24,14 +24,14 @@ console:/ # [  309.766809] pd_tcp_notifier_call event = SOURCE_VBUS
 [  310.298317] pd_tcp_notifier_call source vbus 5000mV
 [  310.303341] pd_tcp_notifier_call - source vbus 5v output
 [  310.361099] pd_tcp_notifier_call event = PD_STATE
-[  310.366126] PAX_CHG: psy_charger_set_property: prop:122 1
-[  310.371683] PAX_CHG: pd_status:1
-[  310.375332] PAX_CHG: _wake_up_charger:
-[  310.379576] PAX_CHG: psy_charger_set_property: prop:124 0
-[  310.379696] PAX_CHG: pax_is_charger_on chr_type = [Unknown] last_chr_type = [Unknown]
-[  310.385399] PAX_CHG: set pd_charging_current_max:0 ma
-[  310.398186] PAX_CHG: _wake_up_charger:
-[  310.402151] PAX_CHG: pax_is_charger_on chr_type = [Unknown] last_chr_type = [Unknown]
+[  310.366126] xxx_CHG: psy_charger_set_property: prop:122 1
+[  310.371683] xxx_CHG: pd_status:1
+[  310.375332] xxx_CHG: _wake_up_charger:
+[  310.379576] xxx_CHG: psy_charger_set_property: prop:124 0
+[  310.379696] xxx_CHG: xxx_is_charger_on chr_type = [Unknown] last_chr_type = [Unknown]
+[  310.385399] xxx_CHG: set pd_charging_current_max:0 ma
+[  310.398186] xxx_CHG: _wake_up_charger:
+[  310.402151] xxx_CHG: xxx_is_charger_on chr_type = [Unknown] last_chr_type = [Unknown]
 [  310.797103] Battery: [ status:Discharging, health:Good, present:1, tech:Li-ion, capcity:24,cap_rm:1246 mah, vol:3740 mv, temp:29, curr:-535 ma, ui_soc:24, notify_code: 0 ]
 [  318.972125] Battery: [ status:Discharging, health:Good, present:1, tech:Li-ion, capcity:24,cap_rm:1244 mah, vol:3677 mv, temp:29, curr:-924 ma, ui_soc:24, notify_code: 0 ]
 [  321.225755] ext_spk_switch_put: set Ext_Spk_Switch val 1
@@ -47,10 +47,10 @@ console:/ # [  309.766809] pd_tcp_notifier_call event = SOURCE_VBUS
 [  325.656575] tcpc_notifier_call, old_state = ATTACHED_SRC, new_state = ATTACHED_SNK //不做任何动作
 [  325.664514] pd_tcp_notifier_call event = PR_SWAP //这里是重点
 [  325.669254] mp2721_charger_irq_workfunc:mp2721 irq
-[  325.674384] PAX_CHG: psy_charger_set_property: prop:122 10
-[  325.679970] PAX_CHG: pd_status:10
-[  325.683525] PAX_CHG: _wake_up_charger:
-[  325.687509] PAX_CHG: pax_is_charger_on chr_type = [Unknown] last_chr_type = [Unknown]
+[  325.674384] xxx_CHG: psy_charger_set_property: prop:122 10
+[  325.679970] xxx_CHG: pd_status:10
+[  325.683525] xxx_CHG: _wake_up_charger:
+[  325.687509] xxx_CHG: xxx_is_charger_on chr_type = [Unknown] last_chr_type = [Unknown]
 [  325.981498] pd_tcp_notifier_call event = SINK_VBUS
 [  325.986766] charger soc:charger: pd_tcp_notifier_call sink vbus 5000mV 500mA type(0x84)
 [  325.995013] pd_tcp_notifier_call - sink vbus
@@ -82,9 +82,9 @@ source [sink]
 <5>[  280.369580]  (4)[238:tcpc_timer_type][MUSB]mt_usb_vbus_on 317: vbus_on
 <5>[  280.369589]  (4)[238:tcpc_timer_type][MUSB]issue_vbus_work 309: issue work, ops<1>, delay<0>
 <5>[  280.369624]  (6)[255:kworker/u16:6][MUSB]_set_vbus 157: op<1>, status<0>
-<5>[  280.369635]  (6)[255:kworker/u16:6]PAX_CHG: bq25790_enable_otg: ==bq25790_enable_otg, en=1
+<5>[  280.369635]  (6)[255:kworker/u16:6]xxx_CHG: bq25790_enable_otg: ==bq25790_enable_otg, en=1
 <4>[  280.375558]  (6)[255:kworker/u16:6]==bq25790_set_otg_current_limit, uA=1500000
-<5>[  280.381135]  (7)[240:type_c_port0]PAX_CHG: pd_tcp_notifier_call: PD charger event:14 5
+<5>[  280.381135]  (7)[240:type_c_port0]xxx_CHG: pd_tcp_notifier_call: PD charger event:14 5
 <5>[  280.381146]  (7)[240:type_c_port0][MUSB]otg_tcp_notifier_call 343: TCP_NOTIFY_TYPEC_STATE, old_state=0, new_state=2
 <5>[  280.381153]  (7)[240:type_c_port0][MUSB]otg_tcp_notifier_call 346: OTG Plug in
 <5>[  280.381159]  (7)[240:type_c_port0][MUSB]mt_usb_host_connect 268: connect
@@ -235,7 +235,7 @@ source [sink]
 <4>[  280.915863] <  280.905>TCPC-PE:VDM-> SRC_READY
 ```
 
-当接入外电，接收到`pr_swap`消息，关闭vbus，然后由host切换成device，挂载的U盘会断开一下，但是A6650是拔出断开。
+当接入外电，接收到`pr_swap`消息，关闭vbus，然后由host切换成device，挂载的U盘会断开一下，但是A665x是拔出断开。
 ```log
 <6>[  296.399300]  (6)[61:pd_dbg_info]///PD dbg info 67d
 <4>[  296.399309]  (6)[61:pd_dbg_info]<  296.399>TCPC-PE-EVT:pr_swap
@@ -246,7 +246,7 @@ source [sink]
 <5>[  296.427908]  (5)[486:tcpc_event_type][MUSB]issue_vbus_work 309: issue work, ops<0>, delay<0>
 <6>[  296.427933]  (5)[486:tcpc_event_type]pd_tcp_notifier_call ext discharge = 1
 <5>[  296.427937]  (4)[1052:kworker/u16:17][MUSB]_set_vbus 157: op<0>, status<1>
-<5>[  296.427943]  (4)[1052:kworker/u16:17]PAX_CHG: bq25790_enable_otg: ==bq25790_enable_otg, en=0
+<5>[  296.427943]  (4)[1052:kworker/u16:17]xxx_CHG: bq25790_enable_otg: ==bq25790_enable_otg, en=0
 <5>[  296.462940]  (7)[99:pmic_thread][PMIC] [PMIC_INT] Reg[0x91a]=0x40
 <5>[  296.543827]  (7)[1053:kworker/u16:18]USB_BOOST, <boost_work(), 323> id:2, end of work
 <7>[  296.543832]  (5)[340:kworker/u16:8][cpu_ctrl_cfp]start_cfp
@@ -257,11 +257,11 @@ source [sink]
 <5>[  296.543895]  (5)[340:kworker/u16:8]USB_BOOST, <boost_work(), 323> id:0, end of work
 <6>[  296.548074] -(4)[0:swapper/4]tick broadcast enter counter cpu: 44, 23, 37, 18, 34, 28, 27, 16, success counter cpu: 5, 8, 9, 3, 15, 1, 13, 1, fail counter cpu: 0, 0, 0, 0, 0, 0, 0, 0, interrupt counter cpu: 10, 9, 15, 9, 14, 11, 20, 1, o: 0-3,7, p: , f: , t:  296596000000, 301828147092, 301828138784, 297160654709, 296553142093, 296545216631, 296544815862, 296589992923,
 <6>[  296.611968]  (7)[240:type_c_port0]pd_tcp_notifier_call ext discharge = 0
-<5>[  296.612594]  (4)[486:tcpc_event_type]PAX_CHG: pd_tcp_notifier_call: PD charger event:14 5
+<5>[  296.612594]  (4)[486:tcpc_event_type]xxx_CHG: pd_tcp_notifier_call: PD charger event:14 5
 <6>[  296.612624]  (4)[486:tcpc_event_type]pd_tcp_notifier_call Source_to_Sink
 <5>[  296.612713]  (4)[486:tcpc_event_type][MUSB]otg_tcp_notifier_call 343: TCP_NOTIFY_TYPEC_STATE, old_state=2, new_state=1
 <6>[  296.612731]  (5)[257:chgdet_thread]charger type: charger IN
-<5>[  296.612817]  (4)[486:tcpc_event_type]PAX_CHG: pd_tcp_notifier_call: PD charger event:16 0
+<5>[  296.612817]  (4)[486:tcpc_event_type]xxx_CHG: pd_tcp_notifier_call: PD charger event:16 0
 <4>[  296.616984]  (7)[61:pd_dbg_info]<  296.399>TCPC-PE-EVT:dpm_ack
 <4>[  296.616984] <  296.399>TCPC-PE:PD-> P_SRC_ACCEPT
 <4>[  296.616984] <  296.400>TCPC-PE-EVT:good_crc
@@ -291,11 +291,11 @@ source [sink]
 <4>[  296.756045]  (4)[61:pd_dbg_info]<  296.729>TCPC-PE-EVT:reset_prl_done
 <4>[  296.756045] <  296.729>TCPC-PE:PD-> SNK_DISC
 <5>[  296.790764]  (7)[99:pmic_thread][PMIC] [PMIC_INT] Reg[0x91a]=0x40
-<5>[  296.859097]  (4)[240:type_c_port0]PAX_CHG: pd_tcp_notifier_call: PD charger event:19 3
+<5>[  296.859097]  (4)[240:type_c_port0]xxx_CHG: pd_tcp_notifier_call: PD charger event:19 3
 <6>[  296.859113]  (5)[61:pd_dbg_info]///PD dbg info 37d
 <4>[  296.859134]  (5)[61:pd_dbg_info]<  296.859>TCPC-TCPC:HardResetAlert
-<5>[  296.859170]  (4)[240:type_c_port0]PAX_CHG: notify_adapter_event: notify_adapter_event 0 7
-<5>[  296.859194]  (4)[240:type_c_port0]PAX_CHG: notify_adapter_event: hreset status = 0
+<5>[  296.859170]  (4)[240:type_c_port0]xxx_CHG: notify_adapter_event: notify_adapter_event 0 7
+<5>[  296.859194]  (4)[240:type_c_port0]xxx_CHG: notify_adapter_event: hreset status = 0
 <5>[  296.879961]  (5)[257:chgdet_thread][MUSB]Charger_Detect_Init 798: Charger_Detect_Init
 <5>[  296.968507]  (4)[257:chgdet_thread][MUSB]Charger_Detect_Release 818: Charger_Detect_Release
 <6>[  296.968577]  (4)[257:chgdet_thread]charger type: 3, Non-standard Charger
@@ -304,8 +304,8 @@ source [sink]
 <6>[  296.968691]  (4)[257:chgdet_thread]mt_charger_set_property
 <6>[  296.968729]  (4)[257:chgdet_thread]dump_charger_name: charger type: 3, Non-standard Charger
 <5>[  296.969046] -(5)[0:swapper/5][MUSB]musb_host_rx 2246: end 3 RX proto error,rxtoggle=0x30
-<5>[  296.969124]  (7)[340:kworker/u16:8]PAX_CHG: mtk_charger_int_handler: mtk_charger_int_handler
-<5>[  296.969185]  (7)[340:kworker/u16:8]PAX_CHG: mtk_charger_int_handler: wake_up_charger
+<5>[  296.969124]  (7)[340:kworker/u16:8]xxx_CHG: mtk_charger_int_handler: mtk_charger_int_handler
+<5>[  296.969185]  (7)[340:kworker/u16:8]xxx_CHG: mtk_charger_int_handler: wake_up_charger
 <5>[  296.969336]  (7)[340:kworker/u16:8]FG daemon is disabled
 <5>[  296.969458] -(5)[1745:batterywarning][MUSB]musb_host_rx 2246: end 3 RX proto error,rxtoggle=0x30
 <5>[  296.969830] -(5)[476:health@2.0-serv][MUSB]musb_stage0_irq 1208: musb_stage0_irq:1208 MUSB_INTR_RESET (a_host)

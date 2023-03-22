@@ -4,12 +4,12 @@ mt6762平台如何设置开机默认host功能
 ## 软件分析
 
 * 1.typec默认设置为`Try.SRC`模式。
-* 2.初始化处理，包括usb（mt_usb_otg_init）及usb_switch（pax_tcpc_dev_init），这里都是驱动初始化走一遍。
+* 2.初始化处理，包括usb（mt_usb_otg_init）及usb_switch（xxxxx_tcpc_dev_init），这里都是驱动初始化走一遍。
 * 3.CC状态回调切换逻辑`otg_tcp_notifier_call`处理。
 
 ```diff
 From 030762fb27163d196409abcdca2dd2a963ec7a15 Mon Sep 17 00:00:00 2001
-From: shanliangliang <shanliangliang@paxsz.com>
+From: xxx <xxx@xxxxx.com>
 Date: Sun, 15 Aug 2021 15:10:03 +0800
 Subject: [PATCH] =?UTF-8?q?[Title]:=20=E5=A2=9E=E5=8A=A0M8=20usb=20otg?=
  =?UTF-8?q?=E5=8A=9F=E8=83=BD?=
@@ -26,7 +26,7 @@ Content-Transfer-Encoding: 8bit
 
 [Model]: M8
 
-[author]: shanliangliang@paxsz.com
+[author]: xxx@xxxxx.com
 
 [date]: 2021-08-15
 ---
@@ -37,8 +37,8 @@ Content-Transfer-Encoding: 8bit
  .../drivers/misc/mediatek/usb20/musb.h        |   5 +
  .../drivers/misc/mediatek/usb20/musb_core.c   |   3 +
  .../drivers/misc/mediatek/usb20/musb_core.h   |   3 +
- .../drivers/misc/pax/usb_switch/Makefile      |   2 +
- .../misc/pax/usb_switch/pax_usb_switch.c      | 143 +++++++++++++++++-
+ .../drivers/misc/xxxxx/usb_switch/Makefile      |   2 +
+ .../misc/xxxxx/usb_switch/xxxxx_usb_switch.c      | 143 +++++++++++++++++-
  9 files changed, 198 insertions(+), 10 deletions(-)
 
 diff --git a/kernel-4.19/arch/arm64/boot/dts/mediatek/M8.dts b/kernel-4.19/arch/arm64/boot/dts/mediatek/M8.dts
@@ -77,11 +77,11 @@ index c0a5772aef4..cf63a8f6dc7 100644
  	of_property_read_u32(np, "mode", (u32 *) &pdata->mode);
  #endif
  
-+	/* Add-BEGIN by (shanliangliang@paxsz.com), 2021/08/15 add for M8 usb otg */
++	/* Add-BEGIN by (xxx@xxxxx.com), 2021/08/15 add for M8 usb otg */
 +	ret = of_property_read_u32(np, "default_mode", (u32 *) &pdata->default_mode);
 +	if (ret < 0)
 +		pdata->default_mode = MUSB_PERIPHERAL;
-+	/* Add-END by (shanliangliang@paxsz.com), 2021/08/15 add for M8 usb otg */
++	/* Add-END by (xxx@xxxxx.com), 2021/08/15 add for M8 usb otg */
 +
  #ifdef CONFIG_MTK_UART_USB_SWITCH
  	ap_gpio_node =
@@ -101,7 +101,7 @@ index 794465f9b1f..c6a346bfc2a 100644
 -				DBG(0, "USB Plug out\n");
 -				mt_usb_dev_disconnect();
 -			}
-+			/* Add-BEGIN by (shanliangliang@paxsz.com), 2021/08/15 add for M8 usb otg */
++			/* Add-BEGIN by (xxx@xxxxx.com), 2021/08/15 add for M8 usb otg */
 +				if (mtk_musb->default_mode != MUSB_HOST) {
 +					if (is_host_active(mtk_musb)) {
 +						DBG(0, "OTG Plug out\n");
@@ -125,7 +125,7 @@ index 794465f9b1f..c6a346bfc2a 100644
 +						mt_usb_host_connect(100); //2.还原成host
 +					}
 +				}
-+		/* Add-END by (shanliangliang@paxsz.com), 2021/08/15 add for M8 usb otg */
++		/* Add-END by (xxx@xxxxx.com), 2021/08/15 add for M8 usb otg */
  #ifdef CONFIG_MTK_UART_USB_SWITCH
  		} else if ((noti->typec_state.new_state ==
  					TYPEC_ATTACHED_SNK ||
@@ -133,10 +133,10 @@ index 794465f9b1f..c6a346bfc2a 100644
  	musb->fifo_cfg_host = fifo_cfg_host;
  	musb->fifo_cfg_host_size = ARRAY_SIZE(fifo_cfg_host);
  
-+	/* Add-BEGIN by (shanliangliang@paxsz.com), 2021/08/15 add for M8 usb otg */
++	/* Add-BEGIN by (xxx@xxxxx.com), 2021/08/15 add for M8 usb otg */
 +	if (mtk_musb->default_mode == MUSB_HOST)
 +		mt_usb_host_connect(0);   // 初始化成host模式
-+	/* Add-END by (shanliangliang@paxsz.com), 2021/08/15 add for M8 usb otg */
++	/* Add-END by (xxx@xxxxx.com), 2021/08/15 add for M8 usb otg */
 +
  }
  void mt_usb_otg_exit(struct musb *musb)
@@ -149,10 +149,10 @@ index eb9c4f389f8..1cdf864764f 100644
  	/* MUSB_HOST, MUSB_PERIPHERAL, or MUSB_OTG */
  	u8 mode;
  
-+	/* Add-BEGIN by (shanliangliang@paxsz.com), 2021/08/15 add for M8 usb otg */
++	/* Add-BEGIN by (xxx@xxxxx.com), 2021/08/15 add for M8 usb otg */
 +	/* MUSB_HOST, MUSB_PERIPHERAL */
 +	u8 default_mode;
-+	/* Add-END by (shanliangliang@paxsz.com), 2021/08/15 add for M8 usb otg */
++	/* Add-END by (xxx@xxxxx.com), 2021/08/15 add for M8 usb otg */
 +
  	/* for clk_get() */
  	const char *clock;
@@ -165,9 +165,9 @@ index 747b3540495..5f7f4fb72d4 100644
  	musb->board_set_power = plat->set_power;
  	musb->min_power = plat->min_power;
  	musb->ops = plat->platform_ops;
-+	/* Add-BEGIN by (shanliangliang@paxsz.com), 2021/08/15 add for M8 usb otg */
++	/* Add-BEGIN by (xxx@xxxxx.com), 2021/08/15 add for M8 usb otg */
 +	musb->default_mode = plat->default_mode;
-+	/* Add-END by (shanliangliang@paxsz.com), 2021/08/15 add for M8 usb otg */
++	/* Add-END by (xxx@xxxxx.com), 2021/08/15 add for M8 usb otg */
  	musb->nIrq = nIrq;
  	/* The musb_platform_init() call:
  	 *   - adjusts musb->mregs
@@ -179,28 +179,28 @@ index d6a8291f762..95010c19d00 100644
  #endif /* CONFIG_DUAL_ROLE_USB_INTF */
  	struct power_supply *usb_psy;
  	struct notifier_block psy_nb;
-+/* Add-BEGIN by (shanliangliang@paxsz.com), 2021/08/15 add for M8 usb otg */
++/* Add-BEGIN by (xxx@xxxxx.com), 2021/08/15 add for M8 usb otg */
 +	u8 default_mode;
-+/* Add-END by (shanliangliang@paxsz.com), 2021/08/15 add for M8 usb otg */
++/* Add-END by (xxx@xxxxx.com), 2021/08/15 add for M8 usb otg */
  };
  
  static inline struct musb *gadget_to_musb(struct usb_gadget *g)
-diff --git a/kernel-4.19/drivers/misc/pax/usb_switch/Makefile b/kernel-4.19/drivers/misc/pax/usb_switch/Makefile
+diff --git a/kernel-4.19/drivers/misc/xxxxx/usb_switch/Makefile b/kernel-4.19/drivers/misc/xxxxx/usb_switch/Makefile
 index 4a5627c3025..0c3e640a3f8 100755
---- a/kernel-4.19/drivers/misc/pax/usb_switch/Makefile
-+++ b/kernel-4.19/drivers/misc/pax/usb_switch/Makefile
+--- a/kernel-4.19/drivers/misc/xxxxx/usb_switch/Makefile
++++ b/kernel-4.19/drivers/misc/xxxxx/usb_switch/Makefile
 @@ -1,5 +1,7 @@
  ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/
  ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include/
 +ccflags-y += -I$(srctree)/drivers/misc/mediatek/typec/tcpc/inc
 +
- obj-y += pax_usb_switch.o
+ obj-y += xxxxx_usb_switch.o
  
  ccflags-y += -Wno-unused-function
-diff --git a/kernel-4.19/drivers/misc/pax/usb_switch/pax_usb_switch.c b/kernel-4.19/drivers/misc/pax/usb_switch/pax_usb_switch.c
+diff --git a/kernel-4.19/drivers/misc/xxxxx/usb_switch/xxxxx_usb_switch.c b/kernel-4.19/drivers/misc/xxxxx/usb_switch/xxxxx_usb_switch.c
 index 840c39fd0d0..3fdf37eacc2 100755
---- a/kernel-4.19/drivers/misc/pax/usb_switch/pax_usb_switch.c
-+++ b/kernel-4.19/drivers/misc/pax/usb_switch/pax_usb_switch.c
+--- a/kernel-4.19/drivers/misc/xxxxx/usb_switch/xxxxx_usb_switch.c
++++ b/kernel-4.19/drivers/misc/xxxxx/usb_switch/xxxxx_usb_switch.c
 @@ -19,10 +19,16 @@
  #include <linux/interrupt.h>
  #include <mt-plat/mtk_boot.h>
@@ -208,7 +208,7 @@ index 840c39fd0d0..3fdf37eacc2 100755
 +#include "tcpm.h"
 +
  struct usb_switch_data {
- 	struct class *pax_class;
+ 	struct class *xxxxx_class;
  	struct device *dev;
  
 +	struct tcpc_device *tcpc_dev;
@@ -226,16 +226,16 @@ index 840c39fd0d0..3fdf37eacc2 100755
 +	u32 default_mode;
  };
  
- extern struct class *g_class_pax;
+ extern struct class *g_class_xxxxx;
 @@ -77,6 +85,7 @@ static int check_boot_mode(struct device *dev)
   *	usb plug in : sw1sw2 = 00(USB1 = OTG USB2 = CLOSE) host_en = 0  gl850_en = 0
   *  usb plug out : sw1sw2 = 11(USB1 = HOST USB2 = HOST) host_en = 1  gl850_en = 1
   */
 +#if 0
- static irqreturn_t pax_otg_gpio_irq_handle(int irq, void *dev_id)
+ static irqreturn_t xxxxx_otg_gpio_irq_handle(int irq, void *dev_id)
  {
  	struct usb_switch_data *data = (struct usb_switch_data *)dev_id;
-@@ -102,12 +111,14 @@ static irqreturn_t pax_otg_gpio_irq_handle(int irq, void *dev_id)
+@@ -102,12 +111,14 @@ static irqreturn_t xxxxx_otg_gpio_irq_handle(int irq, void *dev_id)
  	}
  	return IRQ_HANDLED;	
  }
@@ -243,7 +243,7 @@ index 840c39fd0d0..3fdf37eacc2 100755
  
  extern const char *cmdline_get_value(const char *key);
  
- int pax_charger_gpio_init(struct usb_switch_data *data, struct device_node *np)
+ int xxxxx_charger_gpio_init(struct usb_switch_data *data, struct device_node *np)
  {
 -	int ret,irq;
 +	int ret;
@@ -251,7 +251,7 @@ index 840c39fd0d0..3fdf37eacc2 100755
  	data->usb_host_en_gpio = of_get_named_gpio(np, "usb_host_en_gpio", 0);
  	ret = gpio_request(data->usb_host_en_gpio, "usb_host_en_gpio");	
  	if (ret < 0) {
-@@ -148,6 +159,11 @@ int pax_charger_gpio_init(struct usb_switch_data *data, struct device_node *np)
+@@ -148,6 +159,11 @@ int xxxxx_charger_gpio_init(struct usb_switch_data *data, struct device_node *np)
  		goto init_alert_err;
  	}
  
@@ -263,7 +263,7 @@ index 840c39fd0d0..3fdf37eacc2 100755
  	data->otg_en_gpio = of_get_named_gpio(np, "otg_en_gpio", 0);
  	ret = gpio_request(data->otg_en_gpio, "otg_en_gpio");
  	ret = gpio_direction_input(data->otg_en_gpio);
-@@ -159,13 +175,15 @@ int pax_charger_gpio_init(struct usb_switch_data *data, struct device_node *np)
+@@ -159,13 +175,15 @@ int xxxxx_charger_gpio_init(struct usb_switch_data *data, struct device_node *np)
  		data->otg_en_gpio, ret);
  		goto init_alert_err;
  	}
@@ -280,7 +280,7 @@ index 840c39fd0d0..3fdf37eacc2 100755
  /**
   *     When starting the system, if there is an enumerated device on the usb port, 
   *     a gpio initialization is required.
-@@ -192,6 +210,7 @@ void pax_charger_usbswitch_set(struct usb_switch_data *data)
+@@ -192,6 +210,7 @@ void xxxxx_charger_usbswitch_set(struct usb_switch_data *data)
  		data->status = 1;
  	}
  }
@@ -288,7 +288,7 @@ index 840c39fd0d0..3fdf37eacc2 100755
  
  #define USB_SWITCH_TIME 300
  static void do_usb_switch_work(struct work_struct *work)
-@@ -256,6 +275,121 @@ int pax_usb_switch_poweoff_charging_mode(struct device *dev)
+@@ -256,6 +275,121 @@ int xxxxx_usb_switch_poweoff_charging_mode(struct device *dev)
  	return 0;
  }
  
@@ -377,7 +377,7 @@ index 840c39fd0d0..3fdf37eacc2 100755
 +	return NOTIFY_OK;
 +}
 +
-+static void pax_tcpc_dev_init_work(struct work_struct *work)
++static void xxxxx_tcpc_dev_init_work(struct work_struct *work)
 +{
 +	int ret = 0;
 +	struct usb_switch_data *data = (struct usb_switch_data *)container_of(work, struct usb_switch_data, tcpc_dwork.work);
@@ -399,30 +399,30 @@ index 840c39fd0d0..3fdf37eacc2 100755
 +	}
 +}
 +
-+static void pax_tcpc_dev_init(struct usb_switch_data *data)
++static void xxxxx_tcpc_dev_init(struct usb_switch_data *data)
 +{
 +	usb_host_switch(data, !!data->default_mode); //开机默认切换一次
 +
-+	INIT_DELAYED_WORK(&data->tcpc_dwork, pax_tcpc_dev_init_work);
++	INIT_DELAYED_WORK(&data->tcpc_dwork, xxxxx_tcpc_dev_init_work);
 +	schedule_delayed_work(&data->tcpc_dwork, 0);
 +}
 +
  extern const char *cmdline_get_value(const char *key);
- static int pax_usb_swtich_probe(struct platform_device *pdev)
+ static int xxxxx_usb_swtich_probe(struct platform_device *pdev)
  {
-@@ -287,8 +421,10 @@ static int pax_usb_swtich_probe(struct platform_device *pdev)
+@@ -287,8 +421,10 @@ static int xxxxx_usb_swtich_probe(struct platform_device *pdev)
  	if (ret) {
  		goto req_res_fail;
  	}
 +
-+	pax_tcpc_dev_init(data);
++	xxxxx_tcpc_dev_init(data);
  	
--	pax_charger_usbswitch_set(data);
-+	//pax_charger_usbswitch_set(data);
+-	xxxxx_charger_usbswitch_set(data);
++	//xxxxx_charger_usbswitch_set(data);
  
- 	if (g_class_pax != NULL) {
- 		data->pax_class = g_class_pax;
-@@ -310,6 +446,7 @@ static int pax_usb_swtich_probe(struct platform_device *pdev)
+ 	if (g_class_xxxxx != NULL) {
+ 		data->xxxxx_class = g_class_xxxxx;
+@@ -310,6 +446,7 @@ static int xxxxx_usb_swtich_probe(struct platform_device *pdev)
  
  	//schedule_delayed_work(&data->usb_switch_work, msecs_to_jiffies(time_interval));
  	

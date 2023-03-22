@@ -2,7 +2,7 @@
 *
 *    DESCRIPTION:Copyright(c) 2007-2010 Xiamen Yealink Network Technology Co,.Ltd
 *
-*    AUTHOR:wugangnan
+*    AUTHOR:xxx
 *
 *    HISTORY:
 *

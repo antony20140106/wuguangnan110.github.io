@@ -407,13 +407,13 @@ patch内容如下：
 
  #include "mtk_vcore_opp.h"
 
-+// [NEW FEATURE]-BEGIN by wugangnan@paxsz.com 2021-03-12, for HV/LV diffrent opp table
++// [NEW FEATURE]-BEGIN by xxx@xxxxx.com 2021-03-12, for HV/LV diffrent opp table
 #define VCORE_HV_ENABLE 
 /* #define VCORE_LV_ENABLE */
 #define VCORE_VMODE_SHIFT 0
 #define DVFSRC_BASE (0x10012000)
 +static int dvfs_v_mode;
-+// [NEW FEATURE]-END by wugangnan@paxsz.com 2021-03-12, for HV/LV diffrent opp table
++// [NEW FEATURE]-END by xxx@xxxxx.com 2021-03-12, for HV/LV diffrent opp table
 +
  static int vcore_uv_table[VCORE_OPP_NUM];
 
@@ -426,18 +426,18 @@ patch内容如下：
 -       /* todo: remove when LP4 default enable */
 -       if (ddr_type != TYPE_LPDDR3)
 -               skip = 1;
-+       // [NEW FEATURE]-BEGIN by wugangnan@paxsz.com 2021-03-12, for HV/LV diffrent opp table
++       // [NEW FEATURE]-BEGIN by xxx@xxxxx.com 2021-03-12, for HV/LV diffrent opp table
 +       u32 rsv4 = 0;
-+       // [NEW FEATURE]-END by wugangnan@paxsz.com 2021-03-12, for HV/LV diffrent opp table
++       // [NEW FEATURE]-END by xxx@xxxxx.com 2021-03-12, for HV/LV diffrent opp table
 +
-+// [NEW FEATURE]-BEGIN by wugangnan@paxsz.com 2021-03-12, for HV/LV diffrent opp table
++// [NEW FEATURE]-BEGIN by xxx@xxxxx.com 2021-03-12, for HV/LV diffrent opp table
 +#if defined(VCORE_HV_ENABLE)
 +       dvfs_v_mode = 1;
 +#elif defined(VCORE_LV_ENABLE)
 +       dvfs_v_mode = 3;
 +#endif
 +       rsv4 |= dvfs_v_mode << VCORE_VMODE_SHIFT;
-+// [NEW FEATURE]-END by wugangnan@paxsz.com 2021-03-12, for HV/LV diffrent opp table
++// [NEW FEATURE]-END by xxx@xxxxx.com 2021-03-12, for HV/LV diffrent opp table
 
  #if defined(MTK_VCORE_DVFS_SKIP_EFUSE)
         skip = 1;
@@ -445,7 +445,7 @@ patch内容如下：
                 print("%s: disabled vcore_opp_uv: %d, %d, %d, %d\n", __func__,
                                 vcore_opp_0_uv, vcore_opp_1_uv, vcore_opp_2_uv, vcore_opp_3_uv);
         }
-+    // [NEW FEATURE]-BEGIN by wugangnan@paxsz.com 2021-03-12, for HV/LV diffrent opp table
++    // [NEW FEATURE]-BEGIN by xxx@xxxxx.com 2021-03-12, for HV/LV diffrent opp table
 +       if (dvfs_v_mode == 1) {
 +               /* HV setting */
 +               vcore_opp_0_uv = 843750;
@@ -471,7 +471,7 @@ patch内容如下：
 +                       __func__,
 +                       dvfs_v_mode,
 +                       __raw_readl(DVFSRC_BASE + 0x610));
-+       // [NEW FEATURE]-END by wugangnan@paxsz.com 2021-03-12, for HV/LV diffrent opp table
++       // [NEW FEATURE]-END by xxx@xxxxx.com 2021-03-12, for HV/LV diffrent opp table
         print("%s: final vcore_opp_uv: %d, %d, %d, %d\n", __func__,
                         vcore_opp_0_uv, vcore_opp_1_uv, vcore_opp_2_uv, vcore_opp_3_uv);
 
@@ -488,7 +488,7 @@ index fbe1b6cf697..59b1e31a2cf 100644
  {
         int info2 = spm_vcorefs_get_efuse_data(2);
 -
-+       // [NEW FEATURE]-BEGIN by wugangnan@paxsz.com 2021-03-12, for HV/LV diffrent opp table
++       // [NEW FEATURE]-BEGIN by xxx@xxxxx.com 2021-03-12, for HV/LV diffrent opp table
 +        int dvfs_v_mode = 0;
 +       int dvfsrc_rsrv;
 +
@@ -502,7 +502,7 @@ index fbe1b6cf697..59b1e31a2cf 100644
 +               else if (dvfs_v_mode == 3)
 +                       flag = 2; /* LV */
 +       }
-+        // [NEW FEATURE]-END by wugangnan@paxsz.com 2021-03-12, for HV/LV diffrent opp table
++        // [NEW FEATURE]-END by xxx@xxxxx.com 2021-03-12, for HV/LV diffrent opp table
         vcore_opp_0_uv = 800000;
         vcore_opp_1_uv = 700000;
         /* apply MD VB */
@@ -588,7 +588,7 @@ goto :eof
 执行以下指令：
 
 ```log
-C:\Users\wugangnan>adb shell
+C:\Users\xxx>adb shell
 PAYTABLETM8:/ # sh /data/run.sh &
 PAYTABLETM8:/ # sh /data/vcorefs_cervino.sh &
 ```
@@ -649,7 +649,7 @@ DVFS_Nenamark_memtest_script_LPDDR4文件夹中双击start_DVFS_N2_Mem_test.bat�
   测试时间12个小时
 
 * 发现拔掉usb后，自动休眠唤醒就停止了，经研究发现sh的父进程是adbd，当usb连接断掉的时候，就导致程序退出，在网上找到参考方法nohup，注意:nohup是永久执行,&是指在后台运行,如下步骤：
-  1. 首先使用paxtool.bat工具unlock功能将机器解锁。
+  1. 首先使用xxxxxtool.bat工具unlock功能将机器解锁。
   2. adb remount
   3. 双击suspend_loop_push.bat和suspned_resume_test_v0.4.bat
   4. adb shell 
@@ -840,13 +840,13 @@ memtester的窗口停掉了会出现Error detected，如下图所示：
 
 上述3个条件任一不满足即可判定为 fail, 这时请将log发送给MTK分析。
 
-## M50/M8打开串口方式
+## M5x/M8打开串口方式
 
 * M8打开串口请使用如下patch：
 
 * [0001_open_uart_debug.patch](refers/0001_open_uart_debug.patch)
 
-* M50需要加上如下修改：
+* M5x需要加上如下修改：
 
 ```diff
 index 0170d7254ad..c0293635345 100755
@@ -855,11 +855,11 @@ index 0170d7254ad..c0293635345 100755
 @@ -29,7 +29,7 @@ int main() {
      char value[PROPERTY_VALUE_MAX];
      property_get("ro.boot.terminal_name", value, "");
-     if (strcmp(value, "M50") == 0) {
+     if (strcmp(value, "M5x") == 0) {
 -        return -1;
 +    //    return -1;
      }
-     //[FEATURE]-Add-END by (lib@paxsz.com) 2021/07/14
+     //[FEATURE]-Add-END by (lib@xxxxx.com) 2021/07/14
 
 diff --git a/hardware/interfaces/keymaster/4.1/default/service.cpp b/hardware/interfaces/keymaster/4.1/default/service.cpp
 index b0716cbfeff..08feeea1dfe 100755
@@ -868,9 +868,9 @@ index b0716cbfeff..08feeea1dfe 100755
 @@ -29,7 +29,7 @@ int main() {
      char value[PROPERTY_VALUE_MAX];
      property_get("ro.boot.terminal_name", value, "");
-     if (strcmp(value, "M50") == 0) {
+     if (strcmp(value, "M5x") == 0) {
 -        return -1;
 +  //      return -1;
      }
-     //[FEATURE]-Add-END by (lib@paxsz.com) 2021/07/14
+     //[FEATURE]-Add-END by (lib@xxxxx.com) 2021/07/14
 ```

@@ -839,7 +839,7 @@ TCPC-TCPC:ps_change=2   大于4.5v
 行 15854: <5>[92867.950325] <92867.934>TCPC-TYPEC:Attached-> SINK(repeat)
 
 拔出usb：
-05-15 01:00:15.391215 <5>[91450.062141]  (4)[5042:kworker/4:0]PAX_CHG: mtk_charger_plug_out
+05-15 01:00:15.391215 <5>[91450.062141]  (4)[5042:kworker/4:0]xxx_CHG: mtk_charger_plug_out
 05-15 01:00:15.391233 <5>[91450.062159]  (4)[5042:kworker/4:0]_pd_notifier_call evt:1 state:PD_RUN
 05-15 01:00:15.391577 <6>[91450.062503]  (4)[5042:kworker/4:0]mt6370_pmu_charger mt6370_pmu_charger: __mt6370_set_mivr: mivr = 4500000 (0x06)
 05-15 01:00:15.392007 <6>[91450.062933]  (4)[5042:kworker/4:0]mt6370_pmu_charger mt6370_pmu_charger: mt6370_plug_out

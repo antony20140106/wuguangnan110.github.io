@@ -267,7 +267,7 @@ ffffff8009e60c14 t proc_uid_sys_stats_init
 ffffff8009e60d8c t fpc1020_driver_init
 ffffff8009e60dac t mp2721_charger_driver_init
 ffffff8009e60dcc t charger_class_init
-ffffff8009e60e34 t pax_charger_init
+ffffff8009e60e34 t xxx_charger_init
 ffffff8009e60e54 t husb311_driver_init
 ffffff8009e60e74 t tcpc_class_init
 ffffff8009e60f48 t tcpc_class_complete_init

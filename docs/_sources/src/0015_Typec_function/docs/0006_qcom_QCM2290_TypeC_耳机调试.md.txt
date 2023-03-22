@@ -33,7 +33,7 @@ kernel打开数字耳机支持需要打开宏`CONFIG_SND_USB_AUDIO`。
 
 ![0006_0001.png](images/0006_0001.png)
 
-目前A6650项目使用的是asw5480切换芯片，硬件原理如下：
+目前A665x项目使用的是asw5480切换芯片，硬件原理如下：
 
 ![0006_0003.png](images/0006_0003.png)
 
@@ -59,12 +59,12 @@ CC_IN可以不经过ASW5480这颗芯片，直接连接到主控基带芯片即�
 
 插入typec耳机有打印如下：
 ```log
-[Tue Aug  2 23:54:33 2022] pax-pd-manager soc:pax_pd_manager: pd_tcp_notifier_call Audio plug in
+[Tue Aug  2 23:54:33 2022] xxx-pd-manager soc:xxx_pd_manager: pd_tcp_notifier_call Audio plug in
 [  537.098158] init: Control message: Could not find 'android.hardware.soundtrigger@2.0::ISoundTriggerHw/default' for ctl.interface_start from pid: 407 (/system/bin/hwservicemanager)
 [  539.104856] init: Control message: Could not find 'android.hardware.soundtrigger@2.0::ISoundTriggerHw/default' for ctl.interface_start from pid: 407 (/system/bin/hwservicemanager)
 [  540.105379] init: Control message: Could not find 'android.hardware.soundtrigger@2.0::ISoundTriggerHw/default' for ctl.interface_start from pid: 407 (/system/bin/hwservicemanager)
 [  541.106552] init: Control message: Could not find 'android.hardware.soundtrigger@2.0::ISoundTriggerHw/default' for ctl.interface_start from pid: 407 (/system/bin/hwservicemanager)
 [  542.109764] init: Control message: Could not find 'android.hardware.soundtrigger@2.0::ISoundTriggerHw/default' for ctl.interface_start from pid: 407 (/system/bin/hwservicemanager)
-[  542.344424] pax-pd-manager soc:pax_pd_manager: pd_tcp_notifier_call event = 14
-[Tue Aug  2 23:55:39 2022] pax-pd-manager soc:pax_pd_manager: pd_tcp_notifier_call Audio plug out
+[  542.344424] xxx-pd-manager soc:xxx_pd_manager: pd_tcp_notifier_call event = 14
+[Tue Aug  2 23:55:39 2022] xxx-pd-manager soc:xxx_pd_manager: pd_tcp_notifier_call Audio plug out
 ```

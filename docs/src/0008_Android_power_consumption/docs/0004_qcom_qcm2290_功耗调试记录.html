@@ -46,11 +46,10 @@
 <li><a class="reference internal" href="#id1">系统无法休眠调试</a></li>
 <li><a class="reference internal" href="#rtc10">RTC中断每10分钟唤醒一次</a></li>
 <li><a class="reference internal" href="#lcd6ma">拔除LCD休眠功耗减小6ma</a></li>
-<li><a class="reference internal" href="#m9200">M9200耗电因素</a><ul>
+<li><a class="reference internal" href="#a665ximei">A665x反复等待IMEI写入，阻止休眠</a></li>
+<li><a class="reference internal" href="#m92xx">M92xx耗电因素</a></li>
 <li><a class="reference internal" href="#tp-sensor2ma">TP+SENSOR供电增加2ma</a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#a6650imei">A6650反复等待IMEI写入，阻止休眠</a></li>
+<li><a class="reference internal" href="#ma">低电量50ma调试</a></li>
 </ul>
 </div>
         </div>
@@ -99,43 +98,43 @@
 <p>查看持锁如下<code class="docutils literal notranslate"><span class="pre">ws_charge</span></code>和<code class="docutils literal notranslate"><span class="pre">4a84000.qcom,qup_uart</span></code>：</p>
 <p><img alt="0004_0001.png" src="../../../_images/0004_00014.png" /></p>
 <p><code class="docutils literal notranslate"><span class="pre">ws_charge</span></code>中的最后一个参数是1668485，<code class="docutils literal notranslate"><span class="pre">prevent_suspend_time</span></code>表示阻止系统休眠时间，基本上打开后就没进行释放。</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">A6650</span><span class="p">:</span><span class="o">/</span> <span class="c1"># cat d/wakeup_sources | grep charge</span>
-<span class="n">pax</span><span class="o">-</span><span class="n">base</span><span class="o">-</span><span class="n">charger</span>        <span class="mi">2</span>               <span class="mi">2</span>               <span class="mi">0</span>               <span class="mi">0</span>               <span class="mi">0</span>               <span class="mi">74</span>             <span class="mi">37</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">A665x</span><span class="p">:</span><span class="o">/</span> <span class="c1"># cat d/wakeup_sources | grep charge</span>
+<span class="n">xxxxx</span><span class="o">-</span><span class="n">base</span><span class="o">-</span><span class="n">charger</span>        <span class="mi">2</span>               <span class="mi">2</span>               <span class="mi">0</span>               <span class="mi">0</span>               <span class="mi">0</span>               <span class="mi">74</span>             <span class="mi">37</span>
 <span class="mi">6373</span>            <span class="mi">0</span>
 <span class="n">charger</span> <span class="n">suspend</span> <span class="n">wakelock</span>        <span class="mi">282</span>             <span class="mi">282</span>             <span class="mi">0</span>               <span class="mi">0</span>               <span class="mi">39</span>              <span class="mi">19702</span>                                                                                                                       <span class="mi">323</span>              <span class="mi">1676089</span>         <span class="mi">0</span>
-<span class="n">pax</span><span class="o">-</span><span class="n">charger</span>     <span class="mi">7</span>               <span class="mi">7</span>               <span class="mi">0</span>               <span class="mi">0</span>               <span class="mi">0</span>               <span class="mi">1005</span>            <span class="mi">299</span>                                                                                                                         <span class="mi">1284884</span>          <span class="mi">0</span>
+<span class="n">xxxxx</span><span class="o">-</span><span class="n">charger</span>     <span class="mi">7</span>               <span class="mi">7</span>               <span class="mi">0</span>               <span class="mi">0</span>               <span class="mi">0</span>               <span class="mi">1005</span>            <span class="mi">299</span>                                                                                                                         <span class="mi">1284884</span>          <span class="mi">0</span>
 <span class="n">ws_charge</span>       <span class="mi">1</span>               <span class="mi">1</span>               <span class="mi">0</span>               <span class="mi">0</span>               <span class="mi">1668485</span>         <span class="mi">1668485</span>         <span class="mi">1668485</span>
 <span class="mi">7643</span>            <span class="mi">0</span>
 </pre></div>
 </div>
-<p><code class="docutils literal notranslate"><span class="pre">ws_charge</span></code>是在pax-battery-class.c中注册的wakelock，用于休眠后防止过放，通过计算放电时间唤醒系统，这个功能已经放到bms中做了。之所以持锁，是因为没有进行释放，干脆直接去掉。</p>
-<div class="highlight-diff notranslate"><div class="highlight"><pre><span></span><span class="gd">--- a/UM.9.15/kernel/msm-4.19/drivers/misc/pax/power/pax_battery_class.c</span><span class="w"></span>
-<span class="gi">+++ b/UM.9.15/kernel/msm-4.19/drivers/misc/pax/power/pax_battery_class.c</span><span class="w"></span>
-<span class="gu">@@ -807,6 +807,7 @@ int pax_battery_set_status(int new_status)</span><span class="w"></span>
+<p><code class="docutils literal notranslate"><span class="pre">ws_charge</span></code>是在xxxxx-battery-class.c中注册的wakelock，用于休眠后防止过放，通过计算放电时间唤醒系统，这个功能已经放到bms中做了。之所以持锁，是因为没有进行释放，干脆直接去掉。</p>
+<div class="highlight-diff notranslate"><div class="highlight"><pre><span></span><span class="gd">--- a/UM.9.15/kernel/msm-4.19/drivers/misc/xxxxx/power/xxxxx_battery_class.c</span><span class="w"></span>
+<span class="gi">+++ b/UM.9.15/kernel/msm-4.19/drivers/misc/xxxxx/power/xxxxx_battery_class.c</span><span class="w"></span>
+<span class="gu">@@ -807,6 +807,7 @@ int xxxxx_battery_set_status(int new_status)</span><span class="w"></span>
 <span class="w"> </span>                       status = POWER_SUPPLY_STATUS_NOT_CHARGING;<span class="w"></span>
 <span class="w"> </span>               }<span class="w"></span>
 
-<span class="gi">+#ifndef CONFIG_PAX_BMS</span><span class="w"></span>
-<span class="w"> </span>               if (g_pax_battery_dev) {<span class="w"></span>
+<span class="gi">+#ifndef CONFIG_xxx_BMS</span><span class="w"></span>
+<span class="w"> </span>               if (g_xxxxx_battery_dev) {<span class="w"></span>
 <span class="w"> </span>                       if (status == POWER_SUPPLY_STATUS_CHARGING) {<span class="w"></span>
-<span class="w"> </span>                               if (!g_pax_battery_dev-&gt;ws_charge-&gt;active)<span class="w"></span>
-<span class="gu">@@ -816,6 +817,7 @@ int pax_battery_set_status(int new_status)</span><span class="w"></span>
-<span class="w"> </span>                               __pm_relax(g_pax_battery_dev-&gt;ws_charge);<span class="w"></span>
+<span class="w"> </span>                               if (!g_xxxxx_battery_dev-&gt;ws_charge-&gt;active)<span class="w"></span>
+<span class="gu">@@ -816,6 +817,7 @@ int xxxxx_battery_set_status(int new_status)</span><span class="w"></span>
+<span class="w"> </span>                               __pm_relax(g_xxxxx_battery_dev-&gt;ws_charge);<span class="w"></span>
 <span class="w"> </span>                       }<span class="w"></span>
 <span class="w"> </span>               }<span class="w"></span>
 <span class="gi">+#endif</span><span class="w"></span>
 
-<span class="w"> </span>               pax_battery_sply.BAT_STATUS = status;<span class="w"></span>
-<span class="w"> </span>               pax_battery_supply_changed();<span class="w"></span>
-<span class="gu">@@ -989,7 +991,10 @@ struct pax_battery_device *pax_battery_device_register(const char *name,</span><span class="w"></span>
+<span class="w"> </span>               xxxxx_battery_sply.BAT_STATUS = status;<span class="w"></span>
+<span class="w"> </span>               xxxxx_battery_supply_changed();<span class="w"></span>
+<span class="gu">@@ -989,7 +991,10 @@ struct xxxxx_battery_device *xxxxx_battery_device_register(const char *name,</span><span class="w"></span>
 <span class="w"> </span>               return ERR_PTR(ret);<span class="w"></span>
 <span class="w"> </span>       }<span class="w"></span>
 <span class="w"> </span>       battery_dev-&gt;ops = ops;<span class="w"></span>
 <span class="gi">+</span><span class="w"></span>
-<span class="gi">+#ifndef CONFIG_PAX_BMS</span><span class="w"></span>
+<span class="gi">+#ifndef CONFIG_xxx_BMS</span><span class="w"></span>
 <span class="w"> </span>       battery_dev-&gt;ws_charge = wakeup_source_register(NULL, &quot;ws_charge&quot;);<span class="w"></span>
 <span class="gi">+#endif</span><span class="w"></span>
-<span class="w"> </span>       g_pax_battery_dev = battery_dev;<span class="w"></span>
+<span class="w"> </span>       g_xxxxx_battery_dev = battery_dev;<span class="w"></span>
 </pre></div>
 </div>
 <p>另外关于锁<code class="docutils literal notranslate"><span class="pre">4a84000.qcom,qup_uart</span></code>是谢工改出来的，将串口改成了永不休眠，修改如下可避免：</p>
@@ -144,7 +143,7 @@
 <span class="gu">@@ -3636,7 +3636,7 @@ static int msm_geni_serial_probe(struct platform_device *pdev)</span><span class="w"></span>
 
 <span class="w"> </span>               pm_runtime_set_suspended(&amp;pdev-&gt;dev);<span class="w"></span>
-<span class="w"> </span>//[feature]-modify-begin xielianxiong@paxsz.com,20220826,for msm-geni-serial-hs uart close auto sleep<span class="w"></span>
+<span class="w"> </span>//[feature]-modify-begin xielianxiong@xxxxx.com,20220826,for msm-geni-serial-hs uart close auto sleep<span class="w"></span>
 <span class="gd">-               pm_runtime_set_autosuspend_delay(&amp;pdev-&gt;dev, -1);//150</span><span class="w"></span>
 <span class="gi">+               pm_runtime_set_autosuspend_delay(&amp;pdev-&gt;dev, 150);//150</span><span class="w"></span>
 </pre></div>
@@ -275,24 +274,230 @@
 </section>
 <section id="lcd6ma">
 <h1>拔除LCD休眠功耗减小6ma<a class="headerlink" href="#lcd6ma" title="此标题的永久链接"></a></h1>
-<p>目前A6650项目发现底电流一共有24ma，LCD被拔除后减小6ma，那肯定是lcd的电没关，经fae确认是LCD偏置电压没关，偏置电压控制的是+-5.4V(AVDD/AVEE),A6650项目如下图：</p>
+<p>目前A665x项目发现底电流一共有24ma，LCD被拔除后减小6ma，那肯定是lcd的电没关，经fae确认是LCD偏置电压没关，偏置电压控制的是+-5.4V(AVDD/AVEE),A665x项目如下图：</p>
 <p><img alt="0004_0005.png" src="../../../_images/0004_00052.png" /></p>
 <ul class="simple">
-<li><p>M9200项目如下图：</p></li>
+<li><p>M92xx项目如下图：</p></li>
 </ul>
 <p><img alt="0004_0007.png" src="../../../_images/0004_00073.png" />
 <img alt="0004_0006.png" src="../../../_images/0004_00063.png" /></p>
+<ul class="simple">
+<li><p>软件修改方案：</p></li>
+</ul>
+<div class="highlight-diff notranslate"><div class="highlight"><pre><span></span><span class="w">From fad66e98056850c84f967ae9b59ddbd359b83f36 Mon Sep 17 00:00:00 2001</span>
+<span class="w">From: wugn &lt;xxx@xxxxx.com&gt;</span>
+<span class="w">Date: Wed, 8 Feb 2023 10:26:37 +0800</span>
+<span class="w">Subject: [PATCH] =?UTF-8?q?[Title]:=E4=BF=AE=E5=A4=8DLCD=E4=BC=91=E7=9C=A0?=</span>
+<span class="w"> </span>=?UTF-8?q?=E7=94=B5=E6=B5=81=E8=BF=87=E9=AB=98=E9=97=AE=E9=A2=98=E3=80=82?=<span class="w"></span>
+<span class="w">MIME-Version: 1.0</span>
+<span class="w">Content-Type: text/plain; charset=UTF-8</span>
+<span class="w">Content-Transfer-Encoding: 8bit</span>
+
+<span class="w">[Summary]:</span>
+<span class="w"> </span>       1.LCD休眠唤醒流程增加打开/关闭GPIO69_LCD_BIAS_EN偏置电压。<span class="w"></span>
+<span class="w"> </span>       2.休眠时通过控制偏置电压来关闭AVDD/AVEE +-5.4v电压。<span class="w"></span>
+
+<span class="w">[Test Plan]:</span>
+<span class="w">	1.测试休眠底电流是否正常。</span>
+
+<span class="w">[Module]: system</span>
+
+<span class="w">[Model]: A665x</span>
+
+<span class="w">[author]: xxx@xxxxx.com</span>
+
+<span class="w">[date]: 2023-02-08</span>
+<span class="gd">---</span><span class="w"></span>
+<span class="w"> </span>.../techpack/display/msm/dsi/dsi_display.c    | 54 +++++++++++++++++++<span class="w"></span>
+<span class="w"> </span>.../a665x-scuba-iot-idp-overlay_V01_V01.dts   |  1 +<span class="w"></span>
+<span class="w"> </span>.../a665x-scuba-iot-idp-overlay_V02_V03.dts   |  1 +<span class="w"></span>
+<span class="w"> </span>.../qcom/a665x/scuba-pinctrl.dtsi             |  8 +--<span class="w"></span>
+<span class="w"> </span>.../devicetree-4.19/qcom/m92xx/fibo-lcd.dtsi  |  3 +-<span class="w"></span>
+<span class="w"> </span>.../devicetree-4.19/qcom/m92xx/fibo-lcd1.dtsi |  3 +-<span class="w"></span>
+<span class="w"> </span>6 files changed, 62 insertions(+), 8 deletions(-)<span class="w"></span>
+<span class="w"> </span>mode change 100644 =&gt; 100755 UM.9.15/kernel/msm-4.19/techpack/display/msm/dsi/dsi_display.c<span class="w"></span>
+
+<span class="gh">diff --git a/UM.9.15/kernel/msm-4.19/techpack/display/msm/dsi/dsi_display.c b/UM.9.15/kernel/msm-4.19/techpack/display/msm/dsi/dsi_display.c</span><span class="w"></span>
+<span class="w">old mode 100644</span>
+<span class="w">new mode 100755</span>
+<span class="gh">index acb1f7db43e..b91e9f8d696</span><span class="w"></span>
+<span class="gd">--- a/UM.9.15/kernel/msm-4.19/techpack/display/msm/dsi/dsi_display.c</span><span class="w"></span>
+<span class="gi">+++ b/UM.9.15/kernel/msm-4.19/techpack/display/msm/dsi/dsi_display.c</span><span class="w"></span>
+<span class="gu">@@ -33,6 +33,9 @@</span><span class="w"></span>
+<span class="w"> </span>#define DSI_CLOCK_BITRATE_RADIX 10<span class="w"></span>
+<span class="w"> </span>#define MAX_TE_SOURCE_ID  2<span class="w"></span>
+<span class="w"> </span>
+<span class="gi">+//[NEW FEATURE]-BEGIN by xxx@xxxxx.com 2023-02-07, contrl LCD AVDD/AVEE power when suspend/resume</span><span class="w"></span>
+<span class="gi">+int lcd_gpio_power = -1;</span><span class="w"></span>
+<span class="gi">+//[NEW FEATURE]-END by xxx@xxxxx.com 2023-02-07, contrl LCD AVDD/AVEE power when suspend/resume</span><span class="w"></span>
+<span class="w"> </span>static char dsi_display_primary[MAX_CMDLINE_PARAM_LEN];<span class="w"></span>
+<span class="w"> </span>static char dsi_display_secondary[MAX_CMDLINE_PARAM_LEN];<span class="w"></span>
+<span class="w"> </span>static struct dsi_display_boot_param boot_displays[MAX_DSI_ACTIVE_DISPLAY] = {<span class="w"></span>
+<span class="gu">@@ -5373,6 +5376,35 @@ int dsi_display_dev_probe(struct platform_device *pdev)</span><span class="w"></span>
+<span class="w"> </span>		goto end;<span class="w"></span>
+<span class="w"> </span>	}<span class="w"></span>
+<span class="w"> </span>
+<span class="gi">+    //[NEW FEATURE]-BEGIN by xxx@xxxxx.com 2023-02-07, contrl LCD AVDD/AVEE power when suspend/resume</span><span class="w"></span>
+<span class="gi">+    lcd_gpio_power = of_get_named_gpio(pdev-&gt;dev.of_node, &quot;qcom,lcd_power_2v85&quot;, 0);</span><span class="w"></span>
+<span class="gi">+     if (!gpio_is_valid(lcd_gpio_power)) {</span><span class="w"></span>
+<span class="gi">+             DSI_ERR(&quot;Invalid GPIO, lcd_gpio_power:%d&quot;, lcd_gpio_power);</span><span class="w"></span>
+<span class="gi">+     } else {</span><span class="w"></span>
+<span class="gi">+		 rc = gpio_request(lcd_gpio_power, &quot;lcd-gpio-power&quot;);</span><span class="w"></span>
+<span class="gi">+		 if (rc &lt; 0) {</span><span class="w"></span>
+<span class="gi">+			 DSI_ERR(&quot;lcd-gpio-power request failed&quot;);</span><span class="w"></span>
+<span class="gi">+			 if(gpio_is_valid(lcd_gpio_power))</span><span class="w"></span>
+<span class="gi">+			 {</span><span class="w"></span>
+<span class="gi">+				 gpio_free(lcd_gpio_power);</span><span class="w"></span>
+<span class="gi">+			 }</span><span class="w"></span>
+<span class="gi">+		 } else {</span><span class="w"></span>
+<span class="gi">+			 DSI_INFO(&quot;dp-gpio-power request sucess\n&quot;);</span><span class="w"></span>
+<span class="gi">+			 rc = gpio_direction_output(lcd_gpio_power, 1);</span><span class="w"></span>
+<span class="gi">+			 if (rc) {</span><span class="w"></span>
+<span class="gi">+				 DSI_ERR(&quot;set_direction for lcd-gpio-power failed\n&quot;);</span><span class="w"></span>
+<span class="gi">+				 if(gpio_is_valid(lcd_gpio_power))</span><span class="w"></span>
+<span class="gi">+				 {</span><span class="w"></span>
+<span class="gi">+					 gpio_free(lcd_gpio_power);</span><span class="w"></span>
+<span class="gi">+				 }</span><span class="w"></span>
+<span class="gi">+			 } else {</span><span class="w"></span>
+<span class="gi">+				 gpio_set_value(lcd_gpio_power, 1);</span><span class="w"></span>
+<span class="gi">+			 }</span><span class="w"></span>
+<span class="gi">+		 }</span><span class="w"></span>
+<span class="gi">+     }</span><span class="w"></span>
+<span class="gi">+    //[NEW FEATURE]-BEGIN by xxx@xxxxx.com 2023-02-07, contrl LCD AVDD/AVEE power when suspend/resume</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="w"> </span>	display-&gt;dma_cmd_workq = create_singlethread_workqueue(<span class="w"></span>
+<span class="w"> </span>			&quot;dsi_dma_cmd_workq&quot;);<span class="w"></span>
+<span class="w"> </span>	if (!display-&gt;dma_cmd_workq)  {<span class="w"></span>
+<span class="gu">@@ -7155,6 +7187,17 @@ int dsi_display_prepare(struct dsi_display *display)</span><span class="w"></span>
+<span class="w"> </span>		return -EINVAL;<span class="w"></span>
+<span class="w"> </span>	}<span class="w"></span>
+<span class="w"> </span>
+<span class="gi">+	//[NEW FEATURE]-BEGIN by xxx@xxxxx.com 2023-02-07, contrl LCD AVDD/AVEE power when suspend/resume</span><span class="w"></span>
+<span class="gi">+   if(lcd_gpio_power &gt; 0) {</span><span class="w"></span>
+<span class="gi">+		rc = gpio_direction_output(lcd_gpio_power, 1);</span><span class="w"></span>
+<span class="gi">+		if (rc) {</span><span class="w"></span>
+<span class="gi">+				DSI_ERR(&quot;lcd_gpio_power=%d failed\n&quot;, lcd_gpio_power);</span><span class="w"></span>
+<span class="gi">+				gpio_free(lcd_gpio_power);</span><span class="w"></span>
+<span class="gi">+		}</span><span class="w"></span>
+<span class="gi">+		gpio_set_value(lcd_gpio_power, 1);</span><span class="w"></span>
+<span class="gi">+    }</span><span class="w"></span>
+<span class="gi">+	//[NEW FEATURE]-END by xxx@xxxxx.com 2023-02-07, contrl LCD AVDD/AVEE power when suspend/resume</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="w"> </span>	SDE_EVT32(SDE_EVTLOG_FUNC_ENTRY);<span class="w"></span>
+<span class="w"> </span>	mutex_lock(&amp;display-&gt;display_lock);<span class="w"></span>
+<span class="w"> </span>
+<span class="gu">@@ -7909,6 +7952,17 @@ int dsi_display_unprepare(struct dsi_display *display)</span><span class="w"></span>
+<span class="w"> </span>			       display-&gt;name, rc);<span class="w"></span>
+<span class="w"> </span>	}<span class="w"></span>
+<span class="w"> </span>
+<span class="gi">+    //[NEW FEATURE]-BEGIN by xxx@xxxxx.com 2023-02-07, contrl LCD AVDD/AVEE power when suspend/resume</span><span class="w"></span>
+<span class="gi">+    if(lcd_gpio_power &gt; 0) {</span><span class="w"></span>
+<span class="gi">+		 rc = gpio_direction_output(lcd_gpio_power, 0);</span><span class="w"></span>
+<span class="gi">+		  if (rc) {</span><span class="w"></span>
+<span class="gi">+				  DSI_ERR(&quot;lcd_gpio_power=%d failed\n&quot;, lcd_gpio_power);</span><span class="w"></span>
+<span class="gi">+				  gpio_free(lcd_gpio_power);</span><span class="w"></span>
+<span class="gi">+		  }</span><span class="w"></span>
+<span class="gi">+		  gpio_set_value(lcd_gpio_power, 0);</span><span class="w"></span>
+<span class="gi">+    }</span><span class="w"></span>
+<span class="gi">+	//[NEW FEATURE]-END by xxx@xxxxx.com 2023-02-07, contrl LCD AVDD/AVEE power when suspend/resume</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="w"> </span>	mutex_unlock(&amp;display-&gt;display_lock);<span class="w"></span>
+<span class="w"> </span>
+<span class="w"> </span>	/* Free up DSI ERROR event callback */<span class="w"></span>
+<span class="gh">diff --git a/UM.9.15/vendor/qcom/proprietary/devicetree-4.19/qcom/a665x/a665x-scuba-iot-idp-overlay_V01_V01.dts b/UM.9.15/vendor/qcom/proprietary/devicetree-4.19/qcom/a665x/a665x-scuba-iot-idp-overlay_V01_V01.dts</span><span class="w"></span>
+<span class="gh">index 19261c03113..fef3509a665 100755</span><span class="w"></span>
+<span class="gd">--- a/UM.9.15/vendor/qcom/proprietary/devicetree-4.19/qcom/a665x/a665x-scuba-iot-idp-overlay_V01_V01.dts</span><span class="w"></span>
+<span class="gi">+++ b/UM.9.15/vendor/qcom/proprietary/devicetree-4.19/qcom/a665x/a665x-scuba-iot-idp-overlay_V01_V01.dts</span><span class="w"></span>
+<span class="gu">@@ -75,6 +75,7 @@</span><span class="w"></span>
+<span class="w"> </span>};<span class="w"></span>
+<span class="w"> </span>
+<span class="w"> </span>&amp;sde_dsi {<span class="w"></span>
+<span class="gi">+    qcom,lcd_power_2v85 = &lt;&amp;tlmm 69 0&gt;;</span><span class="w"></span>
+<span class="w"> </span>	qcom,dsi-default-panel = &lt;&amp;dsi_ili7807s_1080p_video&gt;;<span class="w"></span>
+<span class="w"> </span>};<span class="w"></span>
+<span class="w"> </span>
+<span class="gh">diff --git a/UM.9.15/vendor/qcom/proprietary/devicetree-4.19/qcom/a665x/a665x-scuba-iot-idp-overlay_V02_V03.dts b/UM.9.15/vendor/qcom/proprietary/devicetree-4.19/qcom/a665x/a665x-scuba-iot-idp-overlay_V02_V03.dts</span><span class="w"></span>
+<span class="gh">index 18c1c723fec..eb5090caa15 100755</span><span class="w"></span>
+<span class="gd">--- a/UM.9.15/vendor/qcom/proprietary/devicetree-4.19/qcom/a665x/a665x-scuba-iot-idp-overlay_V02_V03.dts</span><span class="w"></span>
+<span class="gi">+++ b/UM.9.15/vendor/qcom/proprietary/devicetree-4.19/qcom/a665x/a665x-scuba-iot-idp-overlay_V02_V03.dts</span><span class="w"></span>
+<span class="gu">@@ -75,6 +75,7 @@</span><span class="w"></span>
+<span class="w"> </span>};<span class="w"></span>
+<span class="w"> </span>
+<span class="w"> </span>&amp;sde_dsi {<span class="w"></span>
+<span class="gi">+    qcom,lcd_power_2v85 = &lt;&amp;tlmm 69 0&gt;;</span><span class="w"></span>
+<span class="w"> </span>	qcom,dsi-default-panel = &lt;&amp;dsi_ili7807s_1080p_video&gt;;<span class="w"></span>
+<span class="w"> </span>};<span class="w"></span>
+<span class="w"> </span>
+<span class="gh">diff --git a/UM.9.15/vendor/qcom/proprietary/devicetree-4.19/qcom/a665x/scuba-pinctrl.dtsi b/UM.9.15/vendor/qcom/proprietary/devicetree-4.19/qcom/a665x/scuba-pinctrl.dtsi</span><span class="w"></span>
+<span class="gh">index c264eb21d00..afe902452db 100755</span><span class="w"></span>
+<span class="gd">--- a/UM.9.15/vendor/qcom/proprietary/devicetree-4.19/qcom/a665x/scuba-pinctrl.dtsi</span><span class="w"></span>
+<span class="gi">+++ b/UM.9.15/vendor/qcom/proprietary/devicetree-4.19/qcom/a665x/scuba-pinctrl.dtsi</span><span class="w"></span>
+<span class="gu">@@ -519,12 +519,12 @@</span><span class="w"></span>
+<span class="w"> </span>				/* active state */<span class="w"></span>
+<span class="w"> </span>				mux {<span class="w"></span>
+<span class="w"> </span>					/* 69: Enable 31: Firmware */<span class="w"></span>
+<span class="gd">-					pins = &quot;gpio69&quot;;</span><span class="w"></span>
+<span class="gi">+				//	pins = &quot;gpio69&quot;;</span><span class="w"></span>
+<span class="w"> </span>					function = &quot;gpio&quot;;<span class="w"></span>
+<span class="w"> </span>				};<span class="w"></span>
+<span class="w"> </span>
+<span class="w"> </span>				config {<span class="w"></span>
+<span class="gd">-					pins = &quot;gpio69&quot;;</span><span class="w"></span>
+<span class="gi">+				//	pins = &quot;gpio69&quot;;</span><span class="w"></span>
+<span class="w"> </span>					drive-strength = &lt;2&gt;; /* 2 MA */<span class="w"></span>
+<span class="w"> </span>					bias-pull-up;<span class="w"></span>
+<span class="w"> </span>				};<span class="w"></span>
+<span class="gu">@@ -534,12 +534,12 @@</span><span class="w"></span>
+<span class="w"> </span>				/* sleep state */<span class="w"></span>
+<span class="w"> </span>				mux {<span class="w"></span>
+<span class="w"> </span>					/* 69: Enable 31: Firmware */<span class="w"></span>
+<span class="gd">-					pins = &quot;gpio69&quot;;</span><span class="w"></span>
+<span class="gi">+				//	pins = &quot;gpio69&quot;;</span><span class="w"></span>
+<span class="w"> </span>					function = &quot;gpio&quot;;<span class="w"></span>
+<span class="w"> </span>				};<span class="w"></span>
+<span class="w"> </span>
+<span class="w"> </span>				config {<span class="w"></span>
+<span class="gd">-					pins = &quot;gpio69&quot;;</span><span class="w"></span>
+<span class="gi">+				//	pins = &quot;gpio69&quot;;</span><span class="w"></span>
+<span class="w"> </span>					drive-strength = &lt;2&gt;; /* 2 MA */<span class="w"></span>
+<span class="w"> </span>					bias-disable;<span class="w"></span>
+<span class="w"> </span>				};<span class="w"></span>
+<span class="gh">diff --git a/UM.9.15/vendor/qcom/proprietary/devicetree-4.19/qcom/m92xx/fibo-lcd.dtsi b/UM.9.15/vendor/qcom/proprietary/devicetree-4.19/qcom/m92xx/fibo-lcd.dtsi</span><span class="w"></span>
+<span class="gh">index d8b40d14601..7e36d773d68 100755</span><span class="w"></span>
+<span class="gd">--- a/UM.9.15/vendor/qcom/proprietary/devicetree-4.19/qcom/m92xx/fibo-lcd.dtsi</span><span class="w"></span>
+<span class="gi">+++ b/UM.9.15/vendor/qcom/proprietary/devicetree-4.19/qcom/m92xx/fibo-lcd.dtsi</span><span class="w"></span>
+<span class="gu">@@ -119,8 +119,7 @@</span><span class="w"></span>
+<span class="w"> </span>
+<span class="w"> </span>
+<span class="w"> </span>&amp;sde_dsi {<span class="w"></span>
+<span class="gd">-	qcom,lcd_power_2v85_1v8 = &lt;&amp;tlmm 34 0&gt;;</span><span class="w"></span>
+<span class="gd">-	qcom,lcd_power_2v85 = &lt;&amp;tlmm 25 0&gt;; //added by cheyali for lcd JIRA:MC0245-3</span><span class="w"></span>
+<span class="gi">+	qcom,lcd_power_2v85 = &lt;&amp;tlmm 34 0&gt;;</span><span class="w"></span>
+<span class="w"> </span>	qcom,dsi-default-panel = &lt;&amp;dsi_chsc5488_720p_video&gt;;<span class="w"></span>
+<span class="w"> </span>};<span class="w"></span>
+<span class="w"> </span>
+<span class="gh">diff --git a/UM.9.15/vendor/qcom/proprietary/devicetree-4.19/qcom/m92xx/fibo-lcd1.dtsi b/UM.9.15/vendor/qcom/proprietary/devicetree-4.19/qcom/m92xx/fibo-lcd1.dtsi</span><span class="w"></span>
+<span class="gh">index 12ac85f4552..b4d189e8e5a 100755</span><span class="w"></span>
+<span class="gd">--- a/UM.9.15/vendor/qcom/proprietary/devicetree-4.19/qcom/m92xx/fibo-lcd1.dtsi</span><span class="w"></span>
+<span class="gi">+++ b/UM.9.15/vendor/qcom/proprietary/devicetree-4.19/qcom/m92xx/fibo-lcd1.dtsi</span><span class="w"></span>
+<span class="gu">@@ -305,8 +305,7 @@</span><span class="w"></span>
+<span class="w"> </span>
+<span class="w"> </span>
+<span class="w"> </span>&amp;sde_dsi {<span class="w"></span>
+<span class="gd">-	qcom,lcd_power_2v85_1v8 = &lt;&amp;tlmm 34 0&gt;;</span><span class="w"></span>
+<span class="gd">-	qcom,lcd_power_2v85 = &lt;&amp;tlmm 25 0&gt;; //added by cheyali for lcd JIRA:MC0245-3</span><span class="w"></span>
+<span class="gi">+	qcom,lcd_power_2v85 = &lt;&amp;tlmm 34 0&gt;;</span><span class="w"></span>
+<span class="w"> </span>	qcom,dsi-default-panel = &lt;&amp;dsi_jd9365da_720p_video&gt;;<span class="w"></span>
+<span class="w"> </span>};<span class="w"></span>
+<span class="w"> </span>
+<span class="gd">-- </span><span class="w"></span>
+<span class="w">2.17.1</span>
+</pre></div>
+</div>
 </section>
-<section id="m9200">
-<h1>M9200耗电因素<a class="headerlink" href="#m9200" title="此标题的永久链接"></a></h1>
-<section id="tp-sensor2ma">
-<h2>TP+SENSOR供电增加2ma<a class="headerlink" href="#tp-sensor2ma" title="此标题的永久链接"></a></h2>
-<p>以下这个电会导致底电流增加2ma，但是不能去掉，tp和sensor共电，需要双击唤醒和抬起亮屏功能。</p>
-<p><img alt="0004_0008.png" src="../../../_images/0004_00081.png" /></p>
-</section>
-</section>
-<section id="a6650imei">
-<h1>A6650反复等待IMEI写入，阻止休眠<a class="headerlink" href="#a6650imei" title="此标题的永久链接"></a></h1>
+<section id="a665ximei">
+<h1>A665x反复等待IMEI写入，阻止休眠<a class="headerlink" href="#a665ximei" title="此标题的永久链接"></a></h1>
 <ul class="simple">
 <li><p>cat节点/d/wake_sources没找到阻止进休眠的kernel wakelock，但是看bugreport就一个ril层的wakelock：</p></li>
 </ul>
@@ -317,6 +522,97 @@
 02-06 08:02:24.359  2404  2404 D QtiImsExtConnector: onNullBinding componentName ComponentInfo{org.codeaurora.ims/org.codeaurora.ims.QtiImsExtService}
 02-06 08:02:24.368  1355  2169 W PlatformGinkgo: PlatformGinkgo getImei():null
 02-06 08:02:24.368  1355  2169 W PlatformGinkgo: wait for setImeiProp
+</pre></div>
+</div>
+</section>
+<section id="m92xx">
+<h1>M92xx耗电因素<a class="headerlink" href="#m92xx" title="此标题的永久链接"></a></h1>
+</section>
+<section id="tp-sensor2ma">
+<h1>TP+SENSOR供电增加2ma<a class="headerlink" href="#tp-sensor2ma" title="此标题的永久链接"></a></h1>
+<p>以下这个电会导致底电流增加2ma，但是不能去掉，tp和sensor共电，需要双击唤醒和抬起亮屏功能。</p>
+<p><img alt="0004_0008.png" src="../../../_images/0004_00081.png" /></p>
+</section>
+<section id="ma">
+<h1>低电量50ma调试<a class="headerlink" href="#ma" title="此标题的永久链接"></a></h1>
+<ul class="simple">
+<li><p>目前发现整机底电流比较高，大概有50ma左右，系统是休眠下去了，但是发现触摸tp会有打印：</p></li>
+</ul>
+<div class="highlight-log notranslate"><div class="highlight"><pre><span></span>[  441.101570] [Binder][0x588a45189][23:18:12.059677] wlan: [3409:I:HDD] __wlan_hdd_bus_suspend: 1035: starting bus suspend
+[  441.105163] xxx_BMS:bms_suspend. secs = 605100
+[  441.224238] Disabling non-boot CPUs ...
+[  441.225912] CPU1 killed.
+[  441.227642] IRQ 21: no longer affine to CPU2
+[  441.228375] CPU2 killed.
+[  441.230030] IRQ 77: no longer affine to CPU3
+[  441.230815] CPU3 killed.
+[  441.231605] suspend ns:     441231602015     suspend cycles:      23769803423
+[  441.231602] resume cycles:      29830770144
+[  441.232137] [CHSC] function = semi_touch_read_bytes         , line = 254 : err code = -13
+[  441.232142] [CHSC] function = read_and_report_touch_points  , line = 336 : err code = -13
+[  441.232259] Enabling non-boot CPUs ...
+[  441.232966] arch_timer: CPU1: Trapping CNTVCT access
+[  441.233854] CPU1 is up
+[  441.234790] arch_timer: CPU2: Trapping CNTVCT access
+[  441.235227] [CHSC] function = semi_touch_read_bytes         , line = 254 : err code = -13
+[  441.235232] [CHSC] function = read_and_report_touch_points  , line = 336 : err code = -13
+[  441.235656] CPU2 is up
+[  441.236503] arch_timer: CPU3: Trapping CNTVCT access
+[  441.237393] CPU3 is up
+[  441.238266] [CHSC] function = semi_touch_read_bytes         , line = 254 : err code = -13
+[  441.238271] [CHSC] function = read_and_report_touch_points  , line = 336 : err code = -13
+[  441.247643] [CHSC] function = semi_touch_read_bytes         , line = 254 : err code = -13
+[  441.247648] [CHSC] function = read_and_report_touch_points  , line = 336 : err code = -13
+[  441.250672] [CHSC] function = semi_touch_read_bytes         , line = 254 : err code = -13
+[  441.250677] [CHSC] function = read_and_report_touch_points  , line = 336 : err code = -13
+[  441.257432] [CHSC] function = semi_touch_read_bytes         , line = 254 : err code = -13
+[  441.257437] [CHSC] function = read_and_report_touch_points  , line = 336 : err code = -13
+[  441.263814] [CHSC] function = semi_touch_read_bytes         , line = 254 : err code = -13
+[  441.263818] [CHSC] function = read_and_report_touch_points  , line = 336 : err code = -13
+[  441.270592] [CHSC] function = semi_touch_read_bytes         , line = 254 : err code = -13
+[  441.270596] [CHSC] function = read_and_report_touch_points  , line = 336 : err code = -13
+[  441.277004] [CHSC] function = semi_touch_read_bytes         , line = 254 : err code = -13
+[  441.277009] [CHSC] function = read_and_report_touch_points  , line = 336 : err code = -13
+[  441.280007] [CHSC] function = semi_touch_read_bytes         , line = 254 : err code = -13
+[  441.280012] [CHSC] function = read_and_report_touch_points  , line = 336 : err code = -13
+[  441.286757] [CHSC] function = semi_touch_read_bytes         , line = 254 : err code = -13
+[  441.286762] [CHSC] function = read_and_report_touch_points  , line = 336 : err code = -13
+[  441.293576] [CHSC] function = semi_touch_read_bytes         , line = 254 : err code = -13
+[  441.293581] [CHSC] function = read_and_report_touch_points  , line = 336 : err code = -13
+[  441.296579] [CHSC] function = semi_touch_read_bytes         , line = 254 : err code = -13
+[  441.296583] [CHSC] function = read_and_report_touch_points  , line = 336 : err code = -13
+[  441.301250] [CHSC] function = semi_touch_read_bytes         , line = 254 : err code = -13
+[  441.301254] [CHSC] function = read_and_report_touch_points  , line = 336 : err code = -13
+[  441.307659] [CHSC] function = semi_touch_read_bytes         , line = 254 : err code = -13
+[  441.307664] [CHSC] function = read_and_report_touch_points  , line = 336 : err code = -13
+[  441.312312] [CHSC] function = semi_touch_read_bytes         , line = 254 : err code = -13
+[  441.312317] [CHSC] function = read_and_report_touch_points  , line = 336 : err code = -13
+[  441.318714] [CHSC] function = semi_touch_read_bytes         , line = 254 : err code = -13
+[  441.318718] [CHSC] function = read_and_report_touch_points  , line = 336 : err code = -13
+[  441.323365] [CHSC] function = semi_touch_read_bytes         , line = 254 : err code = -13
+[  441.323370] [CHSC] function = read_and_report_touch_points  , line = 336 : err code = -13
+[  441.329761] [CHSC] function = semi_touch_read_bytes         , line = 254 : err code = -13
+[  441.329766] [CHSC] function = read_and_report_touch_points  , line = 336 : err code = -13
+[  441.334429] [CHSC] function = semi_touch_read_bytes         , line = 254 : err code = -13
+[  441.334434] [CHSC] function = read_and_report_touch_points  , line = 336 : err code = -13
+[  441.348657] xxx_BAT: xxxxx_battery_resume: pre_soc: 95 soc: 95
+[  441.351912] [Binder][0x6f230ac57][23:23:27.985368] wlan: [3409:I:HDD] wlan_hdd_bus_resume: 1226: starting bus resume
+[  441.356816] xxx_BAT: [status:Discharging, health:Good, present:1, tech:Li-ion, capcity:95,cap_rm:5320 mah, vol:4249 mv, temp:28, curr:0 ma, ui_soc:95]
+[  441.793911] OOM killer enabled.
+[  441.797062] Restarting tasks ... done.
+[  441.814401] thermal thermal_zone26: failed to read out thermal zone (-61)
+[  441.818686] healthd: battery l=95 v=4249 t=28.0 h=2 st=3 c=0 fc=5600000 cc=1 chg=
+[  441.821240] xxx_CHG: charger_pm_event: enter PM_POST_SUSPEND
+[  441.821442] Resume caused by misconfigured IRQ 16 mpm
+[  441.839684] PM: suspend exit
+[  441.842196] healthd: battery l=95 v=4249 t=28.0 h=2 st=3 c=0 fc=5600000 cc=1 chg=
+[  441.944056] PM: suspend entry (deep)
+[  441.947736] PM: Syncing filesystems ... done.
+[  441.961923] xxx_CHG: charger_pm_event: enter PM_SUSPEND_PREPARE
+[  441.968067] Freezing user space processes ... (elapsed 0.014 seconds) done.
+[  441.989627] OOM killer disabled.
+[  441.992932] Freezing remaining freezable tasks ... (elapsed 0.004 seconds) done.
+[  442.004467] Suspending console(s) (use no_console_suspend to debug)
 </pre></div>
 </div>
 </section>

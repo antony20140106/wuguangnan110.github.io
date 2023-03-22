@@ -35,12 +35,12 @@ struct audio_info *g_audio_info;
 
 #define MONITOR_DBG
 #ifdef MONITOR_DBG
-#define AUDIO_MONITOR_DBG(fmt, arg...) printk(KERN_ERR "[PAX_AUDIO_SWITCH]:%s " fmt , __func__, ## arg)
+#define AUDIO_MONITOR_DBG(fmt, arg...) printk(KERN_ERR "[xxx_AUDIO_SWITCH]:%s " fmt , __func__, ## arg)
 #else
 #define AUDIO_MONITOR_DBG(fmt, arg...)
 #endif
-#define AUDIO_MONITOR_ERR(fmt, arg...) printk(KERN_ERR "[PAX_AUDIO_SWITCH] %s: " fmt , __func__ , ## arg)
-#define AUDIO_MONITOR_WARN(fmt, arg...) printk(KERN_WARNING "[PAX_AUDIO_SWITCH] %s: " fmt , __func__ , ## arg)
+#define AUDIO_MONITOR_ERR(fmt, arg...) printk(KERN_ERR "[xxx_AUDIO_SWITCH] %s: " fmt , __func__ , ## arg)
+#define AUDIO_MONITOR_WARN(fmt, arg...) printk(KERN_WARNING "[xxx_AUDIO_SWITCH] %s: " fmt , __func__ , ## arg)
 
 static void aws5480_set_i2c_fault_status(void)
 {
@@ -129,7 +129,7 @@ static int aws5480_get_dev_type(unsigned short *type)
 	return 0;
 }
 
-int pax_set_audio_switch(bool on)
+int xxx_set_audio_switch(bool on)
 {
 	int ret = 0;
 
@@ -148,12 +148,12 @@ int pax_set_audio_switch(bool on)
 				return ret;
 			}	
 		}
-		pr_err("pax_set_audio_switch: %d\n", on);
+		pr_err("xxx_set_audio_switch: %d\n", on);
 	}
 	return 0;
 }
 
-int pax_get_audio_switch(void)
+int xxx_get_audio_switch(void)
 {
 	u8 type = 0;
 	int ret = 0;
@@ -170,7 +170,7 @@ int pax_get_audio_switch(void)
 		else if (type == 0x00)
 			return 1;
 
-		pr_err("pax_get_audio_switch: %d\n", type);
+		pr_err("xxx_get_audio_switch: %d\n", type);
 	}
 	return 0;
 }
@@ -208,7 +208,7 @@ static ssize_t monitor_show_switch_select(struct device *dev,
 	unsigned int status = 0;
 	int ret = 0;
 
-	status = pax_get_audio_switch();
+	status = xxx_get_audio_switch();
 	
 	ret = sprintf(buf, "status: 0x%x\n", status);
 
@@ -226,9 +226,9 @@ static ssize_t monitor_store_switch_select(struct device *dev, struct device_att
 		return count;
 	
 	if (val)
-		pax_set_audio_switch(true);
+		xxx_set_audio_switch(true);
 	else
-		pax_set_audio_switch(false);
+		xxx_set_audio_switch(false);
 
 	return count;
 }
@@ -326,7 +326,7 @@ static int aws5480_i2c_probe(struct i2c_client *client, const struct i2c_device_
 		}
 	}
 	pr_err(" aws5480_i2c_probe enter\n");
-	/* class/pax */
+	/* class/xxx */
 	{
 		audio_class = class_create(THIS_MODULE, "audio_switch_info");
 
@@ -406,5 +406,5 @@ module_exit(aws5480_exit);
 
 
 MODULE_LICENSE("GPL");
-MODULE_AUTHOR("PAX");
-MODULE_DESCRIPTION("pax aws5480 audio switch control ic driver");
+MODULE_AUTHOR("xxx");
+MODULE_DESCRIPTION("xxx aws5480 audio switch control ic driver");

@@ -171,8 +171,8 @@
 		interrupts = &lt;105 0&gt;;
 		interrupt-names = &quot;nfc_irq&quot;;
 		pinctrl-names = &quot;nfc_active&quot;, &quot;nfc_suspend&quot;;
-		pinctrl-0 = &lt;&amp;pax_nfc_int_active &amp;pax_nfc_enable_active &amp;nfc_power_default&gt;;/*&amp;nfc_power_default*/
-		pinctrl-1 = &lt;&amp;pax_nfc_int_suspend &amp;pax_nfc_enable_suspend&gt;;	
+		pinctrl-0 = &lt;&amp;xxx_nfc_int_active &amp;xxx_nfc_enable_active &amp;nfc_power_default&gt;;/*&amp;nfc_power_default*/
+		pinctrl-1 = &lt;&amp;xxx_nfc_int_suspend &amp;xxx_nfc_enable_suspend&gt;;	
 		nxp,pn557-power = &lt;&amp;pm2250_gpios 3 GPIO_ACTIVE_HIGH&gt;;
 		
 	};
@@ -287,7 +287,7 @@
 </div>
 <p>根据log<code class="docutils literal notranslate"><span class="pre">Pinctrl</span> <span class="pre">not</span> <span class="pre">defined</span></code>定位到代码：</p>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">UM.9.15/kernel/msm-4.19/drivers/misc/pax/nfc/pn557/common.c</span></code>:</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">UM.9.15/kernel/msm-4.19/drivers/misc/xxx/nfc/pn557/common.c</span></code>:</p></li>
 </ul>
 <div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span>* nfc_i2c_dev_probe //i2c_drv.c
   └── nfc_parse_dt(&amp;client-&gt;dev,nfc_configs, PLATFORM_IF_I2C);
@@ -342,8 +342,8 @@ static struct i2c_driver nfc_i2c_dev_driver = {
 </pre></div>
 </div>
 <p>关键它找不到pintctrl还去执行了操作，那肯定空指针异常了，所以最后修改如下：</p>
-<div class="highlight-diff notranslate"><div class="highlight"><pre><span></span><span class="gd">--- a/UM.9.15/vendor/qcom/proprietary/devicetree-4.19/qcom/m9200/scuba.dtsi</span><span class="w"></span>
-<span class="gi">+++ b/UM.9.15/vendor/qcom/proprietary/devicetree-4.19/qcom/m9200/scuba.dtsi</span><span class="w"></span>
+<div class="highlight-diff notranslate"><div class="highlight"><pre><span></span><span class="gd">--- a/UM.9.15/vendor/qcom/proprietary/devicetree-4.19/qcom/m92xx/scuba.dtsi</span><span class="w"></span>
+<span class="gi">+++ b/UM.9.15/vendor/qcom/proprietary/devicetree-4.19/qcom/m92xx/scuba.dtsi</span><span class="w"></span>
 <span class="gu">@@ -2280,17 +2280,6 @@</span><span class="w"></span>
 <span class="w"> </span>       #include &quot;pm8008.dtsi&quot;<span class="w"></span>
 <span class="w"> </span>};<span class="w"></span>
@@ -359,8 +359,8 @@ static struct i2c_driver nfc_i2c_dev_driver = {
 <span class="gd">-               };</span><span class="w"></span>
 <span class="gd">-};</span><span class="w"></span>
 <span class="gd">-</span><span class="w"></span>
-<span class="gd">--- a/UM.9.15/kernel/msm-4.19/drivers/misc/pax/nfc/pn557/common.c</span><span class="w"></span>
-<span class="gi">+++ b/UM.9.15/kernel/msm-4.19/drivers/misc/pax/nfc/pn557/common.c</span><span class="w"></span>
+<span class="gd">--- a/UM.9.15/kernel/msm-4.19/drivers/misc/xxx/nfc/pn557/common.c</span><span class="w"></span>
+<span class="gi">+++ b/UM.9.15/kernel/msm-4.19/drivers/misc/xxx/nfc/pn557/common.c</span><span class="w"></span>
 <span class="gu">@@ -46,20 +46,20 @@ int nfc_parse_dt(struct device *dev, struct platform_configs *nfc_configs,</span><span class="w"></span>
 <span class="w"> </span>       if (IS_ERR_OR_NULL(pinctrl)) {<span class="w"></span>
 <span class="w"> </span>        pr_err(&quot;%s(): Pinctrl not defined&quot;, __func__);<span class="w"></span>
@@ -503,7 +503,7 @@ BOARD_SEPOLICY_DIRS += vendor/$(NXP_VENDOR_DIR)/SNxxx/sepolicy \
 <h1>HIDL接口匹配<a class="headerlink" href="#hidl" title="此标题的永久链接"></a></h1>
 <p>由于之前android标准版本都已经调通了nfc功能，需要在manifest.xml中添加我们新增的nfc接口服务，那我们直接看看标准版本目录下新增了哪些，一般可以直接在
 <code class="docutils literal notranslate"><span class="pre">vendor/etc/vintf/</span></code>目录找，启动<code class="docutils literal notranslate"><span class="pre">vendor/etc/vintf/manifest</span></code>路径是很多系统定义单独的接口：</p>
-<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>libing@ubuntu2145:~/libing/A6650-project/UM.9.15/out/target/product/bengal$ vim vendor/etc/vintf/manifest/
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>libing@ubuntu2145:~/libing/A665x-project/UM.9.15/out/target/product/bengal$ vim vendor/etc/vintf/manifest/
 android.hardware.atrace@1.0-service.xml                  android.hardware.lights-qti.xml                          manifest.xml
 android.hardware.biometrics.fingerprint@2.1-service.xml  android.hardware.neuralnetworks@1.3-service-qti.xml      power.xml
 android.hardware.boot@1.1.xml                            android.hardware.quectelat.xml                           vendor.qti.gnss@4.0-service.xml

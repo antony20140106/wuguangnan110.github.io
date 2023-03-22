@@ -44,8 +44,8 @@
 		interrupts = <105 0>;
 		interrupt-names = "nfc_irq";
 		pinctrl-names = "nfc_active", "nfc_suspend";
-		pinctrl-0 = <&pax_nfc_int_active &pax_nfc_enable_active &nfc_power_default>;/*&nfc_power_default*/
-		pinctrl-1 = <&pax_nfc_int_suspend &pax_nfc_enable_suspend>;	
+		pinctrl-0 = <&xxx_nfc_int_active &xxx_nfc_enable_active &nfc_power_default>;/*&nfc_power_default*/
+		pinctrl-1 = <&xxx_nfc_int_suspend &xxx_nfc_enable_suspend>;	
 		nxp,pn557-power = <&pm2250_gpios 3 GPIO_ACTIVE_HIGH>;
 		
 	};
@@ -159,7 +159,7 @@
 ```
 
 根据log`Pinctrl not defined`定位到代码：
-* `UM.9.15/kernel/msm-4.19/drivers/misc/pax/nfc/pn557/common.c`:
+* `UM.9.15/kernel/msm-4.19/drivers/misc/xxx/nfc/pn557/common.c`:
 ```C++
 * nfc_i2c_dev_probe //i2c_drv.c
   └── nfc_parse_dt(&client->dev,nfc_configs, PLATFORM_IF_I2C);
@@ -215,8 +215,8 @@ static struct i2c_driver nfc_i2c_dev_driver = {
 
 关键它找不到pintctrl还去执行了操作，那肯定空指针异常了，所以最后修改如下：
 ```diff
---- a/UM.9.15/vendor/qcom/proprietary/devicetree-4.19/qcom/m9200/scuba.dtsi
-+++ b/UM.9.15/vendor/qcom/proprietary/devicetree-4.19/qcom/m9200/scuba.dtsi
+--- a/UM.9.15/vendor/qcom/proprietary/devicetree-4.19/qcom/m92xx/scuba.dtsi
++++ b/UM.9.15/vendor/qcom/proprietary/devicetree-4.19/qcom/m92xx/scuba.dtsi
 @@ -2280,17 +2280,6 @@
         #include "pm8008.dtsi"
  };
@@ -232,8 +232,8 @@ static struct i2c_driver nfc_i2c_dev_driver = {
 -               };
 -};
 -
---- a/UM.9.15/kernel/msm-4.19/drivers/misc/pax/nfc/pn557/common.c
-+++ b/UM.9.15/kernel/msm-4.19/drivers/misc/pax/nfc/pn557/common.c
+--- a/UM.9.15/kernel/msm-4.19/drivers/misc/xxx/nfc/pn557/common.c
++++ b/UM.9.15/kernel/msm-4.19/drivers/misc/xxx/nfc/pn557/common.c
 @@ -46,20 +46,20 @@ int nfc_parse_dt(struct device *dev, struct platform_configs *nfc_configs,
         if (IS_ERR_OR_NULL(pinctrl)) {
          pr_err("%s(): Pinctrl not defined", __func__);
@@ -380,7 +380,7 @@ system/etc/vintf/compatibility_matrix.5.xml
 由于之前android标准版本都已经调通了nfc功能，需要在manifest.xml中添加我们新增的nfc接口服务，那我们直接看看标准版本目录下新增了哪些，一般可以直接在
 `vendor/etc/vintf/`目录找，启动`vendor/etc/vintf/manifest`路径是很多系统定义单独的接口：
 ```shell
-libing@ubuntu2145:~/libing/A6650-project/UM.9.15/out/target/product/bengal$ vim vendor/etc/vintf/manifest/
+libing@ubuntu2145:~/libing/A665x-project/UM.9.15/out/target/product/bengal$ vim vendor/etc/vintf/manifest/
 android.hardware.atrace@1.0-service.xml                  android.hardware.lights-qti.xml                          manifest.xml
 android.hardware.biometrics.fingerprint@2.1-service.xml  android.hardware.neuralnetworks@1.3-service-qti.xml      power.xml
 android.hardware.boot@1.1.xml                            android.hardware.quectelat.xml                           vendor.qti.gnss@4.0-service.xml

@@ -462,8 +462,8 @@ B -   2773510 - PM: VBAT: 3252mV IBAT: 0mA
 
 由于SBL阶段检测电池电量没有低电量图片显示，而XBL阶段也做了相同方式的检测，建议去掉该阶段的检测，将电压阈值降低，修改如下：
 ```diff
---- a/A6650_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/SocPkg/AgattiPkg/Settings/PMIC/pm_config_target.c
-+++ b/A6650_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/SocPkg/AgattiPkg/Settings/PMIC/pm_config_target.c
+--- a/A665x_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/SocPkg/AgattiPkg/Settings/PMIC/pm_config_target.c
++++ b/A665x_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/SocPkg/AgattiPkg/Settings/PMIC/pm_config_target.c
 @@ -133,7 +133,7 @@ sbl_pon_specific_data[1] =
  pm_chg_charger_config_type pm_charger_config =
  {

@@ -126,7 +126,7 @@
 
   <!-- This is the battery capacity in mAh (measured at nominal voltage) -->
   <item name="battery.capacity">3000</item>
-  <!-- M50 battery capacity. -->  
+  <!-- M5x battery capacity. -->  
   <item name="m50.battery.capacity">3020</item>
   <!-- M8 battery capacity. -->
   <item name="m8.battery.capacity">6300</item>

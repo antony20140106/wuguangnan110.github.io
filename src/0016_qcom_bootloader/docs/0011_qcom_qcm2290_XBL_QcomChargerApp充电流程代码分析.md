@@ -1503,8 +1503,8 @@ EFI_STATUS EFIAPI DrawGopBltBuffer(
 
 * 坏电池检测原理：开机阶段电池电压小于2v，则显示换电池提醒图片，无论是否在充电都执行关机动作，与低压检测不同的就是，如果在充电则不会进行低压检测。修改代码如下：
 ```diff
---- a/A6650_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/Library/ChargerLib/ChargerLibCommon.c
-+++ b/A6650_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/Library/ChargerLib/ChargerLibCommon.c
+--- a/A665x_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/Library/ChargerLib/ChargerLibCommon.c
++++ b/A665x_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/Library/ChargerLib/ChargerLibCommon.c
 @@ -1183,8 +1183,31 @@ EFI_STATUS ChargerLib_GetBatteryVoltageStatus(CHARGERLIB_VBATT_STATUS *pBatteryV
      }
    }
@@ -1513,7 +1513,7 @@ EFI_STATUS EFIAPI DrawGopBltBuffer(
 +  else if ((UINT32)BatteryStatus.BatteryVoltage > gChargerLibCfgData.emergency_shutdown_vbatt)
    {
 +
-+       //[NEW FEATURE]-BEGIN by wugangnan@paxsz.com 2022-09-22, add bad battery and voltage check function
++       //[NEW FEATURE]-BEGIN by xxx@xxxxx.com 2022-09-22, add bad battery and voltage check function
 +       if (BatteryStatus.BatteryVoltage > gChargerLibCfgData.batt_check_bad_threshold_in_mv)
 +       {
 +         for (EmergencyShutdownCounter = 0; EmergencyShutdownCounter < MAX_EMERGENCY_SHUTDOWN_COUNT; EmergencyShutdownCounter++)
@@ -1533,7 +1533,7 @@ EFI_STATUS EFIAPI DrawGopBltBuffer(
 +                return Status;
 +         }
 +       }
-+       //[NEW FEATURE]-END by wugangnan@paxsz.com 2022-09-22, add bad battery and voltage check function
++       //[NEW FEATURE]-END by xxx@xxxxx.com 2022-09-22, add bad battery and voltage check function
 +
      if(BatteryStatus.ChargeCurrent > 0) /* Battery is discharging */
      {
@@ -1560,35 +1560,35 @@ EFI_STATUS EFIAPI DrawGopBltBuffer(
        if(ChargerLib_VBatt_TooHigh == BattVoltageStatus)
        {
          *pChargingError = CHARGERLIB_CHARGING_ERROR_VBATT_OUTSIDE_RANGE;
-diff --git a/A6650_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/Library/ChargerLib/target/Agatti/ChargerLibTarget.c b/A6650_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/Library/ChargerLib/target/Agatti/ChargerLibTarget.c
+diff --git a/A665x_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/Library/ChargerLib/target/Agatti/ChargerLibTarget.c b/A665x_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/Library/ChargerLib/target/Agatti/ChargerLibTarget.c
 index 144ec3bdd60..b805f7e5136 100755
---- a/A6650_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/Library/ChargerLib/target/Agatti/ChargerLibTarget.c
-+++ b/A6650_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/Library/ChargerLib/target/Agatti/ChargerLibTarget.c
+--- a/A665x_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/Library/ChargerLib/target/Agatti/ChargerLibTarget.c
++++ b/A665x_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/Library/ChargerLib/target/Agatti/ChargerLibTarget.c
 @@ -2392,6 +2392,12 @@ EFI_STATUS ChargerLibTarget_GetErrorAction( CHARGERLIB_CHARGING_ERROR_TYPES  Cha
      case CHARGERLIB_CHARGING_ERROR_UNKNOWN_BATTERY:
           Status = ChargerLibTarget_GetUnknownBatteryAction(pErrorAction);
           break;
-+       //[NEW FEATURE]-BEGIN by wugangnan@paxsz.com 2022-09-22, add bad battery and voltage check function
++       //[NEW FEATURE]-BEGIN by xxx@xxxxx.com 2022-09-22, add bad battery and voltage check function
 +       case CHARGERLIB_CHARGING_ERROR_BAD_BATTERY:
 +         gDispImage = CHARGERLIB_EVENT_DISP_IMAGE_BADBATTERY;
 +         *pErrorAction = CHARGERLIB_ERROR_ACTION_SHUTDOWN;
 +         break;
-+       //[NEW FEATURE]-END by wugangnan@paxsz.com 2022-09-22, add bad battery and voltage check function
++       //[NEW FEATURE]-END by xxx@xxxxx.com 2022-09-22, add bad battery and voltage check function
       default:
         *pErrorAction = CHARGERLIB_ERROR_ACTION_STOP_CHARGING;
         CHARGER_DEBUG((EFI_D_WARN, "ChargerLib:: %a default action stop charging %d \r\n", __FUNCTION__, *pErrorAction));
 
-diff --git a/A6650_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/SocPkg/AgattiPkg/Settings/Charger/QcomChargerConfig_VbattTh.cfg b/A6650_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/SocPkg/AgattiPkg/Settings/Charger/QcomChargerConfig_VbattTh.cfg
+diff --git a/A665x_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/SocPkg/AgattiPkg/Settings/Charger/QcomChargerConfig_VbattTh.cfg b/A665x_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/SocPkg/AgattiPkg/Settings/Charger/QcomChargerConfig_VbattTh.cfg
 index 3b50b77ab76..e2397deb0c9 100755
---- a/A6650_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/SocPkg/AgattiPkg/Settings/Charger/QcomChargerConfig_VbattTh.cfg
-+++ b/A6650_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/SocPkg/AgattiPkg/Settings/Charger/QcomChargerConfig_VbattTh.cfg
+--- a/A665x_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/SocPkg/AgattiPkg/Settings/Charger/QcomChargerConfig_VbattTh.cfg
++++ b/A665x_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/SocPkg/AgattiPkg/Settings/Charger/QcomChargerConfig_VbattTh.cfg
 @@ -121,6 +121,10 @@ DebugBoardBehavior = 2
  #Boot device to HLOS in case of unsupported battery or battery emulator. In millivolt*/
  BootToHLOSThresholdInMv = 3450
  
-+#//[NEW FEATURE]-BEGIN by wugangnan@paxsz.com 2022-09-17, add bad battery check function
++#//[NEW FEATURE]-BEGIN by xxx@xxxxx.com 2022-09-17, add bad battery check function
 +BadBatteryThresholdInMv = 2000
-+#//[NEW FEATURE]-END by wugangnan@paxsz.com 2022-09-17, add bad battery check function
++#//[NEW FEATURE]-END by xxx@xxxxx.com 2022-09-17, add bad battery check function
 +
  #Minimum SOC Threshold before allowing to boot to HLOS
  #below param is considered only when SocBasedBoot = TRUE and LoadBatteryProfile = TRUE
@@ -1637,8 +1637,8 @@ GenFv: ERROR 3000: Invalid
 * 尝试改大`BlockSize`也无法显示，显示函数执行时会报错找不到地址。
 * 尝试删除两张不用的图片，如下：
 ```diff
---- a/A6650_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/SocPkg/AgattiPkg/LAA/ImageFv.fdf.inc
-+++ b/A6650_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/SocPkg/AgattiPkg/LAA/ImageFv.fdf.inc
+--- a/A665x_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/SocPkg/AgattiPkg/LAA/ImageFv.fdf.inc
++++ b/A665x_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/SocPkg/AgattiPkg/LAA/ImageFv.fdf.inc
 @@ -69,17 +69,11 @@ FvNameGuid         = a8169396-d0f7-49cb-890a-25e1a9767406
        SECTION RAW = QcomPkg/Application/QcomChargerApp/tsens_thermal_err_symbol.bmp
    }
@@ -1657,8 +1657,8 @@ GenFv: ERROR 3000: Invalid
 -  }
 -
 
---- a/A6650_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/Application/QcomChargerApp/QcomChargerAppDisplay.c
-+++ b/A6650_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/Application/QcomChargerApp/QcomChargerAppDisplay.c
+--- a/A665x_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/Application/QcomChargerApp/QcomChargerAppDisplay.c
++++ b/A665x_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/Application/QcomChargerApp/QcomChargerAppDisplay.c
 @@ -151,12 +151,17 @@ EFI_STATUS QcomChargerAppDisplay_DispBattSymbol(EFI_QCOM_CHARGER_DISP_IMAGE_TYPE
    case EFI_QCOM_CHARGER_DISP_IMAGE_TSENS_CRITICAL_SYMBOL:
      str = QcomChargerAppDisplay_AsciiStrNDup(CHARGER_TSENS_CRITICAL_SYMBOL, AsciiStrLen(CHARGER_TSENS_CRITICAL_SYMBOL));
@@ -1675,11 +1675,11 @@ GenFv: ERROR 3000: Invalid
 +//  case EFI_QCOM_CHARGER_DISP_IMAGE_DEBUG_LOW_SYMBOL:
 +//    str = QcomChargerAppDisplay_AsciiStrNDup(CHARGER_BATTERY_SYMBOL_DEBUG_BOARD_STAY, AsciiStrLen(CHARGER_BATTERY_SYMBOL_DEBUG_BOARD_STAY));
 +//    break;
-+  //[NEW FEATURE]-BEGIN by wugangnan@paxsz.com 2022-09-19, add bad battery check function
++  //[NEW FEATURE]-BEGIN by xxx@xxxxx.com 2022-09-19, add bad battery check function
 +  case EFI_QCOM_CHARGER_DISP_IMAGE_BADBATTERY:
 +       str = QcomChargerAppDisplay_AsciiStrNDup(CHARGER_BATTERY_SYMBOL_BADBATTERY, AsciiStrLen(CHARGER_BATTERY_SYMBOL_BADBATTERY));
 +       break;
-+  //[NEW FEATURE]-END by wugangnan@paxsz.com 2022-09-19, add bad battery check function
++  //[NEW FEATURE]-END by xxx@xxxxx.com 2022-09-19, add bad battery check function
 ```
 
 这样显示正常了。
@@ -1688,8 +1688,8 @@ GenFv: ERROR 3000: Invalid
 
 现象：执行reboot时偶发性重启，pmic对电池高低压检测，怀疑是检测电池高压了，增加打印如下：
 ```diff
---- a/A6650_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/Drivers/QcomChargerDxe/QcomChargerPlatform.c
-+++ b/A6650_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/Drivers/QcomChargerDxe/QcomChargerPlatform.c
+--- a/A665x_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/Drivers/QcomChargerDxe/QcomChargerPlatform.c
++++ b/A665x_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/Drivers/QcomChargerDxe/QcomChargerPlatform.c
 @@ -305,6 +305,7 @@ EFI_STATUS ChargerPlatform_GetChargingAction(EFI_QCOM_CHARGER_ACTION_TYPE *pActi
      return Status;
    }
@@ -1706,10 +1706,10 @@ GenFv: ERROR 3000: Invalid
      /*If there is a battery error, return */
      return Status;
    }
-diff --git a/A6650_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/Library/ChargerLib/ChargerLibCommon.c b/A6650_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/Library/ChargerLib/ChargerLibCommon.c
+diff --git a/A665x_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/Library/ChargerLib/ChargerLibCommon.c b/A665x_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/Library/ChargerLib/ChargerLibCommon.c
 index ed19100d16f..d469bbad592 100755
---- a/A6650_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/Library/ChargerLib/ChargerLibCommon.c
-+++ b/A6650_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/Library/ChargerLib/ChargerLibCommon.c
+--- a/A665x_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/Library/ChargerLib/ChargerLibCommon.c
++++ b/A665x_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/Library/ChargerLib/ChargerLibCommon.c
 @@ -1158,7 +1158,7 @@ EFI_STATUS ChargerLib_GetBatteryVoltageStatus(CHARGERLIB_VBATT_STATUS *pBatteryV
      return Status;
    }

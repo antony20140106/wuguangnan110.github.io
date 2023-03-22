@@ -574,26 +574,30 @@ static void handleEvent(uint32_t evtType, const void* evtData)
 
 这里是用的轮询的方式：
 
+1. 首先上层注册监听，将打开ALS传感器电源，这里在初始化函数alsSensorRegister就已经赋值了上电函数ops，相当于sensorhub中的CHIP_ALS_ENABLE_DONE事件：
 ```C++
-1.首先上层注册监听，将打开ALS传感器电源，这里在初始化函数alsSensorRegister就已经赋值了上电函数ops，相当于sensorhub中的CHIP_ALS_ENABLE_DONE事件：
 * sensorPowerAls() //先上电，打印sensorPowerAls on:1, nowOn:0
-* handleSensorEvent(evtData);
-  * case CHIP_ALS_ENABLE_DONE: {
-    * osLog(LOG_INFO, "als: enable done\n"); //打印als: enable done
-    * processPendingEvt(); //处理挂起的sensor，这里就是打印的44444这些，没什么用
+  └── handleSensorEvent(evtData);
+      └── case CHIP_ALS_ENABLE_DONE: {
+          ├── osLog(LOG_INFO, "als: enable done\n"); //打印als: enable done
+          └── processPendingEvt(); //处理挂起的sensor，这里就是打印的44444这些，没什么用
+```
 
-2.设置rate上报速率
+2. 设置rate上报速率
+```C++
 * sensorRateAls(uint32_t rate, uint64_t latency, void *cookie)  //打印sensorRateAls rate:
-  * setAlsHwRate(rate);
-    * sensorFsmRunState(&dataInfo, &mTask.fsm, (const void *)CHIP_ALS_RATECHG, &i2cCallback, &spiCallback);
-      * ltr553_als_ratechg(I2cCallbackF i2cCallBack, SpiCbkF spiCallBack, void *next_state, 
-        * sensorFsmEnqueueFakeI2cEvt(i2cCallBack, next_state, SUCCESS_EVT); //啥也没干，直接执行下个state
+  └── setAlsHwRate(rate);
+      └── sensorFsmRunState(&dataInfo, &mTask.fsm, (const void *)CHIP_ALS_RATECHG, &i2cCallback, &spiCallback);
+          └── ltr553_als_ratechg(I2cCallbackF i2cCallBack, SpiCbkF spiCallBack, void *next_state, 
+              └── sensorFsmEnqueueFakeI2cEvt(i2cCallBack, next_state, SUCCESS_EVT); //啥也没干，直接执行下个state
+```
 
-3.读取数据,方式不过多解释了。
+3. 读取数据,方式不过多解释了。
+```C++
 * ltr553_get_als_value
-  * mTask.als_raw_data = ltr553_als_read();
-  * mTask.data[0].als_data = getLuxFromAlsData();
-  * sensorFsmEnqueueFakeI2cEvt(i2cCallBack, next_state, SUCCESS_EVT);
+  ├── mTask.als_raw_data = ltr553_als_read();
+  ├── mTask.data[0].als_data = getLuxFromAlsData();
+  └── sensorFsmEnqueueFakeI2cEvt(i2cCallBack, next_state, SUCCESS_EVT);
 ```
 
 # 问题点

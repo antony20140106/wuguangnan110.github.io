@@ -102,7 +102,7 @@ PRODUCT_PACKAGES += \
 主要是device/mediateksample/$project/ProjectConfig.mk文件
 
 ```log
-device/mediateksample/k62v1_64_pax/ProjectConfig.mk
+device/mediateksample/k62v1_64_xxx/ProjectConfig.mk
 MTK_SENSOR_ARCHITECTURE = 1.0
 MTK_SENSORS_1_0 = yes
 ```

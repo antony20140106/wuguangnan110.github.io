@@ -298,7 +298,7 @@ log.txt
 
 将个人所有文档放入到src文件钟，现在可以开始编译渲染文件了，执行`make html`：
 ```shell
-F:\pax\wuguangnan110.github.io>make html
+F:\xxx\wuguangnan110.github.io>make html
 目标 index.md 是文件名
 还是目录名
 (F = 文件，D = 目录)? F
@@ -329,7 +329,7 @@ HTML 页面保存在 _build\html 目录。
 
 * `make docs`:
 ```shell
-F:\pax\wuguangnan110.github.io>make docs
+F:\xxx\wuguangnan110.github.io>make docs
 系统找不到指定的文件。
 复制了 850 个文件
 F:CNAME

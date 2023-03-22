@@ -10,15 +10,15 @@ kernel 下有多个独立的驱动，每个驱动或多或少地会引用到其�
 
 如上图代码，可以根据打印得知，probe跑了两次才获取到对应的typec设备，两次probe的间隔大概是3s。
 ```shell
-[    2.663660] PAX_CHG: pax_charger_probe: starts
-[    2.668256] charger soc:charger: pax_charger_probe (0.0.1) probe_cnt = 1
-[    2.675194] charger soc:charger: pax_charger_probe get tcpc dev fail
+[    2.663660] xxx_CHG: xxx_charger_probe: starts
+[    2.668256] charger soc:charger: xxx_charger_probe (0.0.1) probe_cnt = 1
+[    2.675194] charger soc:charger: xxx_charger_probe get tcpc dev fail
 
-[    5.583672] PAX_CHG: pax_charger_probe: starts
-[    5.588213] charger soc:charger: pax_charger_probe (0.0.1) probe_cnt = 2
-[    5.595207] PAX_CHG: found Basic
+[    5.583672] xxx_CHG: xxx_charger_probe: starts
+[    5.588213] charger soc:charger: xxx_charger_probe (0.0.1) probe_cnt = 2
+[    5.595207] xxx_CHG: found Basic
 [    5.598723] bms_notify_register_client
-[    5.602512] charger soc:charger: pax_charger_probe OK!!
+[    5.602512] charger soc:charger: xxx_charger_probe OK!!
 ```
 
 # 参考

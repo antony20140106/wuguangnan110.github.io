@@ -82,12 +82,12 @@ static int mt6370_get_charger_type(struct mt6370_pmu_charger_data *chg_data,
 	else {
 		prop.intval = attach;
 		if (attach) {
-			//FEATURE-BEGIN by shanliangliang@paxsz.com, 2022/01/13, typec is norp_src, no need to do bc11 detect
+			//FEATURE-BEGIN by xxx@xxxxx.com, 2022/01/13, typec is norp_src, no need to do bc11 detect
 			if (chg_data->typec_state == TYPEC_ATTACHED_NORP_SRC) {
 				prop.intval = 0;
 			}
 
-			#ifdef CONFIG_PAX_GPIOS_CONTROL
+			#ifdef CONFIG_xxx_GPIOS_CONTROL
 			if (chg_data->r15_state == R15_STATUS_ONLINE) {
 				prop.intval = 0;
 			}
@@ -100,7 +100,7 @@ static int mt6370_get_charger_type(struct mt6370_pmu_charger_data *chg_data,
 				prop.intval = attach;
 			}
 			#endif
-			//FEATURE-END by shanliangliang@paxsz.com, 2022/01/13, typec is norp_src, no need to do bc11 detect
+			//FEATURE-END by xxx@xxxxx.com, 2022/01/13, typec is norp_src, no need to do bc11 detect
 
 			ret = power_supply_set_property(chg_psy,
 					POWER_SUPPLY_PROP_ONLINE, &prop);
@@ -120,9 +120,9 @@ static int mt6370_get_charger_type(struct mt6370_pmu_charger_data *chg_data,
 		chg_data->psy_usb_type = prop3.intval;
 
 		power_supply_changed(chg_data->psy);
-		//FEATURE-BEGIN by shanliangliang@paxsz.com, 2022/01/13, for BC detect notify
+		//FEATURE-BEGIN by xxx@xxxxx.com, 2022/01/13, for BC detect notify
 		charger_dev_notify(chg_data->chg_dev, CHARGER_DEV_NOTIFY_BC);
-		//FEATURE-END by shanliangliang@paxsz.com, 2022/01/13, for BC detect notify
+		//FEATURE-END by xxx@xxxxx.com, 2022/01/13, for BC detect notify
 	}
 	return prop2.intval;
 }
@@ -258,15 +258,15 @@ static enum power_supply_property battery_props[] = {
 	POWER_SUPPLY_PROP_TIME_TO_FULL_NOW,
 	POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN,
 	POWER_SUPPLY_PROP_MANUFACTURER,
-	// [FEATURE]-ADD-BEGIN by shanliangliang@paxsz.com 2021-09-17, 	for battery serial number
+	// [FEATURE]-ADD-BEGIN by xxx@xxxxx.com 2021-09-17, 	for battery serial number
 	POWER_SUPPLY_PROP_SERIAL_NUMBER,
-	// [FEATURE]-ADD-END by shanliangliang@paxsz.com 2021-09-17, 	for battery serial number
-	// [FEATURE]-ADD-BEGIN by shanliangliang@paxsz.com 2021-10-03, 	for battery ocv
+	// [FEATURE]-ADD-END by xxx@xxxxx.com 2021-09-17, 	for battery serial number
+	// [FEATURE]-ADD-BEGIN by xxx@xxxxx.com 2021-10-03, 	for battery ocv
 	POWER_SUPPLY_PROP_VOLTAGE_OCV,
-	// [FEATURE]-ADD-END by shanliangliang@paxsz.com 2021-10-03, 	for battery ocv
-// [FEATURE]-ADD-BEGIN by shanliangliang@paxsz.com 2021-11-11, 	for battery resistance 
+	// [FEATURE]-ADD-END by xxx@xxxxx.com 2021-10-03, 	for battery ocv
+// [FEATURE]-ADD-BEGIN by xxx@xxxxx.com 2021-11-11, 	for battery resistance 
 	POWER_SUPPLY_PROP_RESISTANCE,
-// [FEATURE]-ADD-END by shanliangliang@paxsz.com 2021-11-11, 	for battery resistance 
+// [FEATURE]-ADD-END by xxx@xxxxx.com 2021-11-11, 	for battery resistance 
 };
 
 对应的uevent事件如下：
@@ -453,12 +453,12 @@ static ssize_t power_supply_show_property(struct device *dev,
 	case POWER_SUPPLY_PROP_MODEL_NAME ... POWER_SUPPLY_PROP_PTMC_ID:
 		ret = sprintf(buf, "%s\n", value.strval);
 		break;
-	// [FEATURE]-MOD-BEGIN by wugangnan@paxsz.com 2021-09-05, 	for battery manufacturer identify
+	// [FEATURE]-MOD-BEGIN by xxx@xxxxx.com 2021-09-05, 	for battery manufacturer identify
 	case POWER_SUPPLY_PROP_MANUFACTURER:
 		ret = sprintf(buf, "%s\n",
 			      power_supply_manufacturer_text[value.intval]);
 		break;
-	// [FEATURE]-MOD-BEGIN by wugangnan@paxsz.com 2021-09-05, 	for battery manufacturer identify
+	// [FEATURE]-MOD-BEGIN by xxx@xxxxx.com 2021-09-05, 	for battery manufacturer identify
 	case POWER_SUPPLY_PROP_BATTERY_TYPE ... POWER_SUPPLY_PROP_SERIAL_NUMBER:
 		ret = sprintf(buf, "%s\n", value.strval);
 		break;
@@ -701,9 +701,9 @@ kobject_uevent函数会通过netlink_broadcast_filtered以netlink（一种socket
 
 [Module]: battery
 
-[Model]: M50 && M8
+[Model]: M5x && M8
 
-[author]: wugangnan@paxsz.com
+[author]: xxx@xxxxx.com
 
 [date]: 2021-9-5
 ---
@@ -720,7 +720,7 @@ index 28748405e1e..58fdbb1d8e7 100755
  	return battery_id;
  }
  
-+bool pax_is_m8_product(void)
++bool xxxxx_is_m8_product(void)
 +{
 +	const char *product_id_cmd;
 +
@@ -749,11 +749,11 @@ index 28748405e1e..58fdbb1d8e7 100755
  		}
  		break;
 -
-+	// [FEATURE]-MOD-BEGIN by wugangnan@paxsz.com 2021-09-05, 	for battery manufacturer identify
++	// [FEATURE]-MOD-BEGIN by xxx@xxxxx.com 2021-09-05, 	for battery manufacturer identify
 +	case POWER_SUPPLY_PROP_MANUFACTURER:
 +		val->intval = fgauge_get_profile_id();
 +		break;
-+	// [FEATURE]-MOD-END by wugangnan@paxsz.com 2021-09-05, 	for battery manufacturer identify
++	// [FEATURE]-MOD-END by xxx@xxxxx.com 2021-09-05, 	for battery manufacturer identify
  	default:
 
 diff --git a/kernel-4.19/drivers/power/supply/power_supply_sysfs.c b/kernel-4.19/drivers/power/supply/power_supply_sysfs.c
@@ -766,11 +766,11 @@ index 7eee0489636..a36c0243444
  static const char * const power_supply_typec_src_rp_text[] = {
  	"Rp-Default", "Rp-1.5A", "Rp-3A"
  };
-+// [FEATURE]-MOD-BEGIN by wugangnan@paxsz.com 2021-09-05, 	for battery manufacturer identify
++// [FEATURE]-MOD-BEGIN by xxx@xxxxx.com 2021-09-05, 	for battery manufacturer identify
 +static const char * const power_supply_manufacturer_text[] = {
-+	"M50-Icon-Energy", "M50-Veken-Battery", "M8-Icon-Energy"
++	"M5x-Icon-Energy", "M5x-Veken-Battery", "M8-Icon-Energy"
 +};
-+// [FEATURE]-MOD-END by wugangnan@paxsz.com 2021-09-05, 	for battery manufacturer identify
++// [FEATURE]-MOD-END by xxx@xxxxx.com 2021-09-05, 	for battery manufacturer identify
  
  static ssize_t power_supply_show_usb_type(struct device *dev,
  					  enum power_supply_usb_type *usb_types,
@@ -782,12 +782,12 @@ index 7eee0489636..a36c0243444
 +	case POWER_SUPPLY_PROP_MODEL_NAME ... POWER_SUPPLY_PROP_PTMC_ID:
 +		ret = sprintf(buf, "%s\n", value.strval);
 +		break;
-+	// [FEATURE]-MOD-BEGIN by wugangnan@paxsz.com 2021-09-05, 	for battery manufacturer identify
++	// [FEATURE]-MOD-BEGIN by xxx@xxxxx.com 2021-09-05, 	for battery manufacturer identify
 +	case POWER_SUPPLY_PROP_MANUFACTURER:
 +		ret = sprintf(buf, "%s\n",
 +			      power_supply_manufacturer_text[value.intval]);
 +		break;
-+	// [FEATURE]-MOD-BEGIN by wugangnan@paxsz.com 2021-09-05, 	for battery manufacturer identify
++	// [FEATURE]-MOD-BEGIN by xxx@xxxxx.com 2021-09-05, 	for battery manufacturer identify
 +	case POWER_SUPPLY_PROP_BATTERY_TYPE ... POWER_SUPPLY_PROP_SERIAL_NUMBER:
  		ret = sprintf(buf, "%s\n", value.strval);
  		break;

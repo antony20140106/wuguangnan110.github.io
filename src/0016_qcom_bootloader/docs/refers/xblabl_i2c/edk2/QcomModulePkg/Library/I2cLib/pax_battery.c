@@ -1,5 +1,5 @@
 /* I2C Interfaces */
-#include "pax_battery.h"
+#include "xxx_battery.h"
 #include <Uefi.h>
 //#include <Library/PcdLib.h>
 #include <Library/UefiLib.h>

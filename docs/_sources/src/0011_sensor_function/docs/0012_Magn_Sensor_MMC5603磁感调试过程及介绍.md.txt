@@ -119,13 +119,13 @@ static int mmc5603x_i2c_probe(struct i2c_client *client, const struct i2c_device
 {
     ...
     int terminal_type = get_terminal_type();
-    if (((terminal_type >> 3) & 0x03) == TERMINAL_M50) {
-        if ((terminal_type & 0x07) == TERMINAL_M50_PLASTIC) {
+    if (((terminal_type >> 3) & 0x03) == TERMINAL_M5x) {
+        if ((terminal_type & 0x07) == TERMINAL_M5x_PLASTIC) {
             strlcpy(ctl.libinfo.libname, "memsic9axis", sizeof(ctl.libinfo.libname));
-            MEMSIC_INFO("%s: M50 memsic 6 axis plastic lib\n");
+            MEMSIC_INFO("%s: M5x memsic 6 axis plastic lib\n");
         } else {
             strlcpy(ctl.libinfo.libname, "memsic9axismetal", sizeof(ctl.libinfo.libname));
-            MEMSIC_INFO("%s: M50 memsic 6 axis metal lib\n");
+            MEMSIC_INFO("%s: M5x memsic 6 axis metal lib\n");
         }
     } else {
         strlcpy(ctl.libinfo.libname, "memsic", sizeof(ctl.libinfo.libname));
@@ -154,8 +154,8 @@ static ssize_t maglibinfo_show(struct device *dev,
 * SDK校正库文件路径：
 
   * vendor/mediatek/proprietary/hardware/sensor/sensors-1.0/algorithm/calibration/6axis/M8/lib64/libmemsic.so
-  * vendor/mediatek/proprietary/hardware/sensor/sensors-1.0/algorithm/calibration/6axis/M50_metal/libmemsic9axismetal.so
-  * vendor/mediatek/proprietary/hardware/sensor/sensors-1.0/algorithm/calibration/6axis/M50_plastic/libmemsic9axis.so
+  * vendor/mediatek/proprietary/hardware/sensor/sensors-1.0/algorithm/calibration/6axis/M5x_metal/libmemsic9axismetal.so
+  * vendor/mediatek/proprietary/hardware/sensor/sensors-1.0/algorithm/calibration/6axis/M5x_plastic/libmemsic9axis.so
 
 * 设备中的校正库文件路径：
 
@@ -165,7 +165,7 @@ static ssize_t maglibinfo_show(struct device *dev,
 
 ### 校准库获取优化
 
-* 1.校准库兼容M50/M8直接通过读取设备节点，这样做的弊端就是，kernel磁感5603驱动关闭了或者更换型号，就无法通过节点read的方式获取校准库名称了，应该直接在hal层做兼容工作，优化如下：
+* 1.校准库兼容M5x/M8直接通过读取设备节点，这样做的弊端就是，kernel磁感5603驱动关闭了或者更换型号，就无法通过节点read的方式获取校准库名称了，应该直接在hal层做兼容工作，优化如下：
 
 ```C++
 VendorInterface::VendorInterface() {
@@ -220,11 +220,11 @@ VendorInterface::VendorInterface() {
         return 0;
  }
 
-+// [NEW FEATURE]-BEGIN by wugangnan@paxsz.com 2022-02-22, put Calibration library compatible Function in the common driver
++// [NEW FEATURE]-BEGIN by xxx@xxxxx.com 2022-02-22, put Calibration library compatible Function in the common driver
 +#define ISDIGIT(c)  ((c) >= '0' && (c) <= '9')
 +#define BUFFER_LENGTH 6
-+#define TERMINAL_M50         0x00
-+#define TERMINAL_M50_PLASTIC 0x00
++#define TERMINAL_M5x         0x00
++#define TERMINAL_M5x_PLASTIC 0x00
 +static int get_terminal_type(void)
 +{
 +       int i = 0;
@@ -255,30 +255,30 @@ VendorInterface::VendorInterface() {
 +
 +       return ret;
 +}
-+// [NEW FEATURE]-END by wugangnan@paxsz.com 2022-02-22, put Calibration library compatible Function in the common driver
++// [NEW FEATURE]-END by xxx@xxxxx.com 2022-02-22, put Calibration library compatible Function in the common driver
 +
  int mag_register_control_path(struct mag_control_path *ctl)
  {
         struct mag_context *cxt = NULL;
         int err = 0;
 -
-+       // [NEW FEATURE]-BEGIN by wugangnan@paxsz.com 2022-02-22, put Calibration library compatible Function in the common driver
++       // [NEW FEATURE]-BEGIN by xxx@xxxxx.com 2022-02-22, put Calibration library compatible Function in the common driver
 +       int terminal_type = get_terminal_type();
 +
-+       if (((terminal_type >> 3) & 0x03) == TERMINAL_M50) {
-+               if ((terminal_type & 0x07) == TERMINAL_M50_PLASTIC) {
++       if (((terminal_type >> 3) & 0x03) == TERMINAL_M5x) {
++               if ((terminal_type & 0x07) == TERMINAL_M5x_PLASTIC) {
 +                       strlcpy(ctl->libinfo.libname, "memsic9axis", sizeof(ctl->libinfo.libname));
-+                       pr_err("%s: M50 memsic 6 axis plastic lib\n");
++                       pr_err("%s: M5x memsic 6 axis plastic lib\n");
 +               } else {
 +                       strlcpy(ctl->libinfo.libname, "memsic9axismetal", sizeof(ctl->libinfo.libname));
-+                       pr_err("%s: M50 memsic 6 axis metal lib\n");
++                       pr_err("%s: M5x memsic 6 axis metal lib\n");
 +               }
 +       } else {
 +               strlcpy(ctl->libinfo.libname, "memsic", sizeof(ctl->libinfo.libname));
 +               pr_err("%s: M8 memsic 6 axis lib\n");
 +       }
 +       printk("wugn test libname = %s\n",ctl->libinfo.libname);
-+    // [NEW FEATURE]-END by wugangnan@paxsz.com 2022-02-22, put Calibration library compatible Function in the common driver
++    // [NEW FEATURE]-END by xxx@xxxxx.com 2022-02-22, put Calibration library compatible Function in the common driver
 
 
 --- a/kernel-4.19/drivers/misc/mediatek/sensors-1.0/magnetometer/mmc5603/mmc5603x.c
@@ -289,8 +289,8 @@ VendorInterface::VendorInterface() {
 
 -#define ISDIGIT(c)  ((c) >= '0' && (c) <= '9')
 -#define BUFFER_LENGTH 6
--#define TERMINAL_M50         0x00
--#define TERMINAL_M50_PLASTIC 0x00
+-#define TERMINAL_M5x         0x00
+-#define TERMINAL_M5x_PLASTIC 0x00
 -static int get_terminal_type(void)
 -{
 -       int i = 0;
@@ -340,13 +340,13 @@ VendorInterface::VendorInterface() {
         ctl.is_support_batch = data->hw->is_batch_supported;
 -       #if 1 //vsun,wzd modify
 -       // strlcpy(ctl.libinfo.libname, "memsicd5603x", sizeof(ctl.libinfo.libname));
--       if (((terminal_type >> 3) & 0x03) == TERMINAL_M50) {
--               if ((terminal_type & 0x07) == TERMINAL_M50_PLASTIC) {
+-       if (((terminal_type >> 3) & 0x03) == TERMINAL_M5x) {
+-               if ((terminal_type & 0x07) == TERMINAL_M5x_PLASTIC) {
 -                       strlcpy(ctl.libinfo.libname, "memsic9axis", sizeof(ctl.libinfo.libname));
--                       MEMSIC_INFO("%s: M50 memsic 6 axis plastic lib\n");
+-                       MEMSIC_INFO("%s: M5x memsic 6 axis plastic lib\n");
 -               } else {
 -                       strlcpy(ctl.libinfo.libname, "memsic9axismetal", sizeof(ctl.libinfo.libname));
--                       MEMSIC_INFO("%s: M50 memsic 6 axis metal lib\n");
+-                       MEMSIC_INFO("%s: M5x memsic 6 axis metal lib\n");
 -               }
 -       } else {
 -               strlcpy(ctl.libinfo.libname, "memsic", sizeof(ctl.libinfo.libname));
@@ -393,7 +393,7 @@ M8 main log打印：
 02-17 13:03:49.295956   724   724 E android.hardware.sensors@2.0-service-mediatek: SI Matrix: 0.9979 0.0079 -0.0345 -0.0016 1.0325 -0.0391 0.0642 0.0233 1.0451
 02-17 13:03:49.296075   724   724 I SensorManager: createSensorConnection connection=0xb40000710315ac70, moudle=1.
 
-M50金属版本打印：
+M5x金属版本打印：
 02-23 17:05:36.079951   708   708 I VendorInterface: VendorInterface constructor.
 02-23 17:05:36.080303   708   708 I VendorInterface: wugn test get libname libmemsic9axismetal.so
 02-23 17:05:36.082824   476   476 I ServiceManager: Waiting for service 'statscompanion' on '/dev/binder'...
@@ -402,7 +402,7 @@ M50金属版本打印：
 02-23 17:05:36.096179   708   708 E android.hardware.sensors@2.0-service-mediatek: MMCKJ6a initial start 01 0
 02-23 17:05:36.096280   708   708 I SensorManager: createSensorConnection connection=0xb40000764e831cc0, moudle=1.
 
-M50塑胶版本打印：
+M5x塑胶版本打印：
 02-23 17:37:14.840610   726   726 I VendorInterface: VendorInterface constructor.
 02-23 17:37:14.840800   726   726 I VendorInterface: wugn test get libname libmemsic9axis.so
 02-23 17:37:14.841730   717   732 I ServiceManager: Waiting for service 'package_native' on '/dev/binder'...
@@ -444,7 +444,7 @@ M50塑胶版本打印：
          return;
      }
 +
-+       // [NEW FEATURE]-BEGIN by wugangnan@paxsz.com 2022-02-24, put Calibration library compatible Function in hal,not in kernel driver
++       // [NEW FEATURE]-BEGIN by xxx@xxxxx.com 2022-02-24, put Calibration library compatible Function in hal,not in kernel driver
 +    property_get("ro.boot.boardid", value, "");
 +    if (strcmp(value, "0") == 0) {
 +        strlcpy(libinfo.libname, "memsic9axis", sizeof(libinfo.libname));
@@ -455,7 +455,7 @@ M50塑胶版本打印：
 +       else {
 +               strlcpy(libinfo.libname, "memsic", sizeof(libinfo.libname));
 +       }
-+       // [NEW FEATURE]-END by wugangnan@paxsz.com 2022-02-24, put Calibration library compatible Function in hal,not in kernel driver
++       // [NEW FEATURE]-END by xxx@xxxxx.com 2022-02-24, put Calibration library compatible Function in hal,not in kernel driver
 ```
 
 ## 2.数据不准分析
@@ -599,7 +599,7 @@ void MagneticSensor::processEvent(struct sensor_event const *event) {
 }
 
 补上剑锋修改：
-Author: zengjf <zengjianfeng@paxsz.com>
+Author: zengjf <zengjianfeng@xxxxx.com>
 Date:   Sun Apr 11 14:44:00 2021 +0800
 
     移植传感器驱动及地磁9轴校正库
@@ -616,7 +616,7 @@ Date:   Sun Apr 11 14:44:00 2021 +0800
 
     [Model]: M8
 
-    [author]: zengjianfeng@paxsz.com
+    [author]: zengjianfeng@xxxxx.com
 
     [date]: 2021-04-11
 

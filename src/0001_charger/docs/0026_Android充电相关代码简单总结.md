@@ -73,11 +73,11 @@ kernel/drivers/power
 ## ac/battery/usb进行初始化
 
 ```C++
-int pax_charger_register_power_supply(struct device *dev, struct pax_charger *info)
+int xxx_charger_register_power_supply(struct device *dev, struct xxx_charger *info)
 {
 	int ret;
 
-	info->psy_desc1.name = "pax-charger";
+	info->psy_desc1.name = "xxx-charger";
 	info->psy_desc1.type = POWER_SUPPLY_TYPE_USB;
 	info->psy_desc1.properties = charger_psy_properties;
 	info->psy_desc1.num_properties = ARRAY_SIZE(charger_psy_properties);
@@ -86,10 +86,10 @@ int pax_charger_register_power_supply(struct device *dev, struct pax_charger *in
 	info->psy_desc1.property_is_writeable =
 			psy_charger_property_is_writeable;
 	info->psy_desc1.external_power_changed =
-			pax_charger_external_power_changed,
+			xxx_charger_external_power_changed,
 	info->psy_cfg1.drv_data = info;
-	info->psy_cfg1.num_supplicants =  ARRAY_SIZE(pax_charger_supplied_to);
-	info->psy_cfg1.supplied_to = pax_charger_supplied_to;
+	info->psy_cfg1.num_supplicants =  ARRAY_SIZE(xxx_charger_supplied_to);
+	info->psy_cfg1.supplied_to = xxx_charger_supplied_to;
 	info->psy1 = power_supply_register(dev, &info->psy_desc1,
 			&info->psy_cfg1);
 

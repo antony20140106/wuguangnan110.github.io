@@ -6,7 +6,7 @@
 
 NO.|文件名称|摘要
 :--:|:--|:--
-0031| [高通平台关机流程](docs/0031_高通平台关机流程.md) | 梳理一下Android平台关机流程
+0031| [qcom_qcm2290关机流程](docs/0031_qcom_qcm2290关机流程.md) | 梳理一下Android平台关机流程
 0030| [qcom_qcm2290_i2c_runtime_pm驱动流程](docs/0030_qcom_qcm2290_i2c_runtime_pm驱动流程.md) | 高通平台i2c总线初始化和其他平台不同，休眠时会将pinctrl配置为gpio并且禁止上下拉，也就是SDA/SCL拉低了，看一下流程。
 0029| [driver_probe_defer延迟机制](docs/0029_driver_probe_defer延迟机制.md) | probe defer延迟机制，让probe轮询起来。
 0028| [platform_i2c_driver_probe匹配devices及调用流程](docs/0028_platform_i2c_driver_probe匹配devices及调用流程.md) | 本文主要讲解一下platform driver是如何匹配platform device并执行probe函数的。

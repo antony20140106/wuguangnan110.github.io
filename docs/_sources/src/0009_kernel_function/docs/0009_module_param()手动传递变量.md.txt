@@ -101,7 +101,7 @@ uint，ulong，ushort /*基本的变长整型值. 以 u 开头的是无符号值
 最后的 module_param 字段是一个权限值,表示此参数在sysfs文件系统中所对应的文件节点的属性。你应当使用 中定义的值. 这个值控制谁可以存取这些模块参数在 sysfs 中的表示.当perm为0时，表示此参数不存在 sysfs文件系统下对应的文件节点。 否则, 模块被加载后，在/sys/module/ 目录下将出现以此模块名命名的目录, 带有给定的权限。例如：
 
 ```log
-PAYPHONEM50:/sys/module/musb_hdrc/parameters # cat musb_fake_CDP
+PAYPHONEM5x:/sys/module/musb_hdrc/parameters # cat musb_fake_CDP
 0
 ```
 
@@ -254,8 +254,8 @@ module_param_cb(musb_force_on, &musb_force_on_param_ops, &musb_force_on, 0644);
 
 操作
 ```log
-PAYPHONEM50:/sys/module/musb_hdrc/parameters # echo 2 > musb_force_on
-PAYPHONEM50:/sys/module/musb_hdrc/parameters # cat musb_force_on
+PAYPHONEM5x:/sys/module/musb_hdrc/parameters # echo 2 > musb_force_on
+PAYPHONEM5x:/sys/module/musb_hdrc/parameters # cat musb_force_on
 1
 打印：
 [Fri Jun 24 07:49:29 2022] (6)[3259:sh][MUSB]set_musb_force_on 2965: musb_force_on:1, option:2

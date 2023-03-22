@@ -1,0 +1,29 @@
+# xxx m92xx烧录指南
+
+m92xx项目Android使用高通qcm2290平台，sp使用兆迅MH1902S，下载功能分为两大块，SP(boot/os/config)，AP(paydroid tool/Qfil)，主要介绍一下下载工具及方式。切记sp下载请关闭其他占用串口的程序！
+
+# SP boot下载
+
+* 下载工具：MH1902 ISP.exe
+
+![0003.png](images/0003.png)
+
+# SP OS/config配置文件下载
+
+* 下载工具：xxxLoadTool -> xxxLoadTool.exe
+
+![0006_0001.png](images/0006_0001.png)
+
+# AP Qfil单独下载镜像
+
+* 下面是下载devcfg例子：
+
+![0006_0002.png](images/0006_0002.png)
+
+* 右键点击devcfg，然后选择第一项：
+
+![0006_0003.png](images/0006_0003.png)
+![0006_0004.png](images/0006_0004.png)
+![0006_0005.png](images/0006_0005.png)
+
+完成下载。

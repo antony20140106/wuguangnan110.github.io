@@ -10,7 +10,7 @@
 
 参考其他项目的方法，MTK平台首先要解锁解才能烧录，那就新增解锁命令，当匹配到版本后解锁进行烧录：
 ```
-# M50&&M8 Android paydroidboot commands
+# M5x&&M8 Android paydroidboot commands
 paydroidboot flash getvar check-firmware-ver-mtk-mt6762-m8m50-android11.0 //相当于匹配版本
 paydroidboot flash boot_a         boot.img
 paydroidboot flash boot_b         boot.img
@@ -19,7 +19,7 @@ paydroidboot flash boot_b         boot.img
 我们同时增加注册常量来查询版本信息
 ```diff
 commit 1b0e316cd497073a263b466229fdd15e007f3b84
-Author: wugn <wugangnan@paxsz.com>
+Author: wugn <xxx@xxxxx.com>
 Date:   Wed Oct 26 14:00:04 2022 +0800
 
     [Title]增加Paydroid Tool版本检测命令check-firmware-ver，用于防止Paydroid下载老版本软件。
@@ -33,29 +33,29 @@ Date:   Wed Oct 26 14:00:04 2022 +0800
     
     [Module]: Paydroid Tool
     
-    [Model]: M50/M8
+    [Model]: M5x/M8
     
-    [author]: wugangnan@paxsz.com
+    [author]: xxx@xxxxx.com
     
     [date]: 2022-10-26
 
-diff --git a/paxdroid/device/PayDroid/M50_M8_EEA_Release_Android_scatter.txt b/paxdroid/device/PayDroid/M50_M8_EEA_Release_Android_scatter.txt
+diff --git a/xxxxxdroid/device/PayDroid/M5x_M8_EEA_Release_Android_scatter.txt b/xxxxxdroid/device/PayDroid/M5x_M8_EEA_Release_Android_scatter.txt
 index 2236e0cc137..8307f626538 100755
---- a/paxdroid/device/PayDroid/M50_M8_EEA_Release_Android_scatter.txt
-+++ b/paxdroid/device/PayDroid/M50_M8_EEA_Release_Android_scatter.txt
+--- a/xxxxxdroid/device/PayDroid/M5x_M8_EEA_Release_Android_scatter.txt
++++ b/xxxxxdroid/device/PayDroid/M5x_M8_EEA_Release_Android_scatter.txt
 @@ -1,5 +1,5 @@
- # M50&&M8 Android paydroidboot commands
+ # M5x&&M8 Android paydroidboot commands
 -paydroidboot flash boot         boot.img
 +paydroidboot flash getvar check-firmware-ver-mtk-mt6762-m8m50-android11.0
  paydroidboot flash boot_a         boot.img
  paydroidboot flash boot_b         boot.img
  paydroidboot flash dtbo_a         dtbo-verified.img
-diff --git a/paxdroid/device/PayDroid/M50_M8_Release_Android_scatter.txt b/paxdroid/device/PayDroid/M50_M8_Release_Android_scatter.txt
+diff --git a/xxxxxdroid/device/PayDroid/M5x_M8_Release_Android_scatter.txt b/xxxxxdroid/device/PayDroid/M5x_M8_Release_Android_scatter.txt
 index 2236e0cc137..8307f626538 100755
---- a/paxdroid/device/PayDroid/M50_M8_Release_Android_scatter.txt
-+++ b/paxdroid/device/PayDroid/M50_M8_Release_Android_scatter.txt
+--- a/xxxxxdroid/device/PayDroid/M5x_M8_Release_Android_scatter.txt
++++ b/xxxxxdroid/device/PayDroid/M5x_M8_Release_Android_scatter.txt
 @@ -1,5 +1,5 @@
- # M50&&M8 Android paydroidboot commands
+ # M5x&&M8 Android paydroidboot commands
 -paydroidboot flash boot         boot.img
 +paydroidboot flash getvar check-firmware-ver-mtk-mt6762-m8m50-android11.0
  paydroidboot flash boot_a         boot.img
@@ -77,7 +77,7 @@ index a757f6ed3e1..3af32027361 100755
  			}
  
  			dprintf(ALWAYS,"[Cmd process]-[buf:%s]-[lenBuf:%s]\n", buffer,  buffer + cmd->prefix_len);
--			//[FEATURE]-Add-BEGIN by (wugangnan@paxsz.com), 2020/6/19,for PayDroid Tool
+-			//[FEATURE]-Add-BEGIN by (xxx@xxxxx.com), 2020/6/19,for PayDroid Tool
 -#ifdef MTK_SEC_FASTBOOT_UNLOCK_SUPPORT
 -			if ((strcmp(buffer + cmd->prefix_len, "boot") == 0) && (0 == get_unlocked_status()))
 -			{
@@ -86,7 +86,7 @@ index a757f6ed3e1..3af32027361 100755
 -				dprintf(ALWAYS, "fastboot_oem_unlock_chk\n");
 -			}
 -#endif
--			//[FEATURE]-Add-END by (wugangnan@paxsz.com), 2020/6/19,for PayDroid Tool
+-			//[FEATURE]-Add-END by (xxx@xxxxx.com), 2020/6/19,for PayDroid Tool
  
  #ifdef MTK_SECURITY_SW_SUPPORT 
  			extern unsigned int seclib_sec_boot_enabled(unsigned int);
@@ -102,9 +102,9 @@ index a757f6ed3e1..3af32027361 100755
  	timer_set_periodic(&wdt_timer, 5000, (timer_callback)mtk_wdt_restart, NULL);
  
  	fastboot_register("getvar:", cmd_getvar, TRUE, FALSE);
-+	//[FEATURE]-Add-BEGIN by (wugangnan@paxsz.com), 2020/10/26, for PayDroid Tool check-firmware-ver and unlock
++	//[FEATURE]-Add-BEGIN by (xxx@xxxxx.com), 2020/10/26, for PayDroid Tool check-firmware-ver and unlock
 +	fastboot_publish ("check-firmware-ver", VerName);
-+	//[FEATURE]-Add-END by (wugangnan@paxsz.com), 2020/10/26, for PayDroid Tool check-firmware-ver and unlock
++	//[FEATURE]-Add-END by (xxx@xxxxx.com), 2020/10/26, for PayDroid Tool check-firmware-ver and unlock
  	fastboot_publish("version", "0.5");
  	fastboot_publish("version-preloader", g_boot_arg->pl_version);
  	fastboot_publish("version-bootloader", LK_VER_TAG);
@@ -120,9 +120,9 @@ index 63472a126e6..a946f228bdc
  #define STATE_ERROR 3
 +#define MAX_RSP_SIZE 64
 +
-+//[FEATURE]-Add-BEGIN by wugnangnan@paxsz.com, 2022/10/26, for PayDroid Tool check-firmware-ver and unlock
++//[FEATURE]-Add-BEGIN by wugnangnan@xxxxx.com, 2022/10/26, for PayDroid Tool check-firmware-ver and unlock
 +static char VerName[MAX_RSP_SIZE] = "mtk-mt6762-m8m50-android11.0";
-+//[FEATURE]-Add-BEGIN by wugnangnan@paxsz.com, 2021/10/26, for PayDroid Tool check-firmware-ver and unlock
++//[FEATURE]-Add-BEGIN by wugnangnan@xxxxx.com, 2021/10/26, for PayDroid Tool check-firmware-ver and unlock
  
  struct fastboot_cmd {
  	struct fastboot_cmd *next;
@@ -137,7 +137,7 @@ index 639510a14e0..8ee06d9b64f 100755
 +	char Buff[MAX_RSP_SIZE];
 +	int ret;
 +
-+	//[FEATURE]-Add-BEGIN by (wugangnan@paxsz.com), 2020/10/26, for PayDroid Tool check-firmware-ver and unlock
++	//[FEATURE]-Add-BEGIN by (xxx@xxxxx.com), 2020/10/26, for PayDroid Tool check-firmware-ver and unlock
 +    // paydroidboot getvar check-firmware-ver-mtk-mt6762-m8m50-android11.0
 +    if (strstr(arg, "check-firmware-ver-") != NULL) {
 +		memset(Buff, 0, MAX_RSP_SIZE);
@@ -160,7 +160,7 @@ index 639510a14e0..8ee06d9b64f 100755
 +			return;
 +		}
 +	}
-+	//[FEATURE]-Add-END by (wugangnan@paxsz.com), 2022/10/26, for PayDroid Tool check-firmware-ver and unlock
++	//[FEATURE]-Add-END by (xxx@xxxxx.com), 2022/10/26, for PayDroid Tool check-firmware-ver and unlock
  
  	if (!strcmp(arg, "all")) {
  		for (var = varlist; var; var = var->next) {
@@ -170,18 +170,18 @@ index 639510a14e0..8ee06d9b64f 100755
 
 * 获取版本信息：
 ```shell
-C:\Users\wugangnan>fastboot  getvar check-firmware-ver
+C:\Users\xxx>fastboot  getvar check-firmware-ver
 check-firmware-ver: mtk-mt6762-m8m50-android11.0
 ```
 
 * 版本匹配后，解锁并烧录：
 ```shell
-C:\Users\wugangnan>fastboot  getvar check-firmware-ver-mtk-mt6762-m8m50-android11.0
+C:\Users\xxx>fastboot  getvar check-firmware-ver-mtk-mt6762-m8m50-android11.0
 check-firmware-ver-mtk-mt6762-m8m50-android11.0: firmware version match
 Finished. Total time: 0.041s
 
-C:\Users\wugangnan>paydroidboot flash boot         boot.img
-paydroidboot build for pax May 25 2020 10:41:00
+C:\Users\xxx>paydroidboot flash boot         boot.img
+paydroidboot build for xxxxx May 25 2020 10:41:00
 target reported max download size of 134217728 bytes
 sending 'boot' (33554432 bytes)...
 OKAY [  0.759s]
@@ -192,12 +192,12 @@ finished. total time: 1.194s
 
 * 版本不匹配，上锁烧录失败：
 ```shell
-:\Users\wugangnan>fastboot  getvar check-firmware-ver-mtk-mt6762-m8m50-android11.
+:\Users\xxx>fastboot  getvar check-firmware-ver-mtk-mt6762-m8m50-android11.
 getvar:check-firmware-ver-mtk-mt6762-m8m50-android11. FAILED (remote: 'firmware version do not match')
 Finished. Total time: 0.051s
 
-C:\Users\wugangnan>paydroidboot flash boot         boot.img
-paydroidboot build for pax May 25 2020 10:41:00
+C:\Users\xxx>paydroidboot flash boot         boot.img
+paydroidboot build for xxxxx May 25 2020 10:41:00
 target reported max download size of 134217728 bytes
 sending 'boot' (33554432 bytes)...
 OKAY [  0.736s]

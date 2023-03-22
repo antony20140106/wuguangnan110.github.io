@@ -72,7 +72,7 @@ Kernel-5.4以上由于GKI问题，dtb.img不再打包到boot.img，而是放入v
 首先看一下dtb和dtbo里面的内容：
 ```shell
 dtbo:
-m9200-scuba-iot-idp-overlay.dts
+m92xx-scuba-iot-idp-overlay.dts
 /dts-v1/;
 /plugin/;
 
@@ -88,18 +88,18 @@ m9200-scuba-iot-idp-overlay.dts
 	qcom,board-id = <34 0>;
 
 	soc {
-		pax_board_info {
-			compatible = "pax,board_info";
-			pax,main_board = "V01";
-			pax,port_board = "V01";
-			pax,terminal_name = "M9200";
+		xxxxx_board_info {
+			compatible = "xxxxx,board_info";
+			xxxxx,main_board = "V01";
+			xxxxx,port_board = "V01";
+			xxxxx,terminal_name = "M92xx";
 		};
 	};
 
 };
 
 dtb:
-m9200-scuba-iot-idp.dts
+m92xx-scuba-iot-idp.dts
 /dts-v1/;
 
 #include "scuba-iot.dtsi"
@@ -110,11 +110,11 @@ m9200-scuba-iot-idp.dts
 	qcom,board-id = <34 0>;
 
 	soc {
-		pax_board_info {
-			compatible = "pax,board_info";
-			pax,main_board = "V01";
-			pax,port_board = "V01";
-			pax,terminal_name = "M9200";
+		xxxxx_board_info {
+			compatible = "xxxxx,board_info";
+			xxxxx,main_board = "V01";
+			xxxxx,port_board = "V01";
+			xxxxx,terminal_name = "M92xx";
 		};
 	};
 };
@@ -136,19 +136,19 @@ ABL匹配dtbo和dtb流程如下：
           │       └── if (HeaderVersion  == BOOT_HEADER_VERSION_THREE)
           │           └── ImageBuffer = BootParamlistPtr->VendorImageBuffer; //从vendor_boot.img中获取dtb
           └── SocDtb = GetSocDtb (ImageBuffer,ImageSize,BootParamlistPtr->DtbOffset, (VOID *)BootParamlistPtr->DeviceTreeLoadAddr); //获取dtb
-              ├── ReadDtbFindMatch (&CurDtbInfo, &BestDtbInfo, BIT(SOC_MATCH) | BIT(PAX_BOARD_INFO_MATCH) //匹配dtb
+              ├── ReadDtbFindMatch (&CurDtbInfo, &BestDtbInfo, BIT(SOC_MATCH) | BIT(xxx_BOARD_INFO_MATCH) //匹配dtb
               │   ├── PlatProp = (CONST CHAR8 *)fdt_getprop (Dtb, RootOffset, "qcom,msm-id",&LenPlatId); //读取dtb中的qcom,msm-id
               │   ├── BoardProp = (CONST CHAR8 *)fdt_getprop (Dtb, RootOffset, "qcom,board-id",&LenBoardId);//读取dtb中的qcom,board-id
               │   ├── GetBoardMatchDtb (CurDtbInfo, BoardProp, LenBoardId); //和xbl中读出来的对比，Get the properties like variant id, subtype from Dtb then compare the dtb vs Board
               │   ├── (CONST CHAR8 *)fdt_getprop (Dtb, RootOffset, "qcom,pmic-id", &LenPmicId);
               │   ├── ReadBestPmicMatch (PmicProp, PmicMaxIdx, PmicEntCount, &BestPmicInfo);// 对比qcom,pmic-id，dts中没这个
-              │   └── GetPaxBoardInfoMatchDtb(CurDtbInfo); //pax加的
-              │       ├── RootOffset = fdt_path_offset(Dtb, "/soc/pax_board_info"); //找到soc=pax_board_info的dtb
-              │       ├── MainBoardProp = (CONST CHAR8 *)fdt_getprop(Dtb, RootOffset, "pax,main_board",
-              │       ├── PortBoardProp = (CONST CHAR8 *)fdt_getprop(Dtb, RootOffset, "pax,port_board",
-              │       ├── TerminalNameProp = (CONST CHAR8 *)fdt_getprop(Dtb, RootOffset, "pax,terminal_name", //读取dts中三个dtb属性
+              │   └── GetPaxBoardInfoMatchDtb(CurDtbInfo); //xxxxx加的
+              │       ├── RootOffset = fdt_path_offset(Dtb, "/soc/xxxxx_board_info"); //找到soc=xxxxx_board_info的dtb
+              │       ├── MainBoardProp = (CONST CHAR8 *)fdt_getprop(Dtb, RootOffset, "xxxxx,main_board",
+              │       ├── PortBoardProp = (CONST CHAR8 *)fdt_getprop(Dtb, RootOffset, "xxxxx,port_board",
+              │       ├── TerminalNameProp = (CONST CHAR8 *)fdt_getprop(Dtb, RootOffset, "xxxxx,terminal_name", //读取dts中三个dtb属性
               │       ├── if (getCfgTermialName(Buff) < 0) //对比terminal_name
-              │       │   └── return getCfgItemValStr("TERMINAL_NAME", buf); //pax_lib.c 我们terminal_name、port_board、main_board都是从sp配置文件中获取的
+              │       │   └── return getCfgItemValStr("TERMINAL_NAME", buf); //xxxxx_lib.c 我们terminal_name、port_board、main_board都是从sp配置文件中获取的
               │       ├── if (AsciiStrnCmp(Buff, TerminalName, TerminalNamePropLen))
               │       │   └── return EFI_NOT_FOUND;
               │       ├── if (getCfgMainBoard(Buff) < 0)
@@ -335,7 +335,7 @@ BootLinux (BootInfo *Info)
 
 ## 参考
 
-* [0001-Title-board-id-M50-M8-dts.patch](refers/0001-Title-board-id-M50-M8-dts.patch)
+* [0001-Title-board-id-M5x-M8-dts.patch](refers/0001-Title-board-id-M5x-M8-dts.patch)
 * [0001-a800-dts兼容.patch](refers/0001-a800-dts兼容.patch)
 * [基于MTK6762平台Android适配多机型方案v2.docx](refers/基于MTK6762平台Android适配多机型方案v2.docx)
 * [Android DTO和dtbo简介](https://blog.csdn.net/zhangdaxia2/article/details/100109684/)
@@ -429,7 +429,7 @@ platform/mt6765/custom_dtb_index.c：
 * NOTE: This function is for the internal projects of MT6771.
 *        -----------------------------------------
 *       |   ID4          ID5      PCB_ID          |
-*       |   Low          Low      M50             |
+*       |   Low          Low      M5x             |
 *       |   Low          High     M8              |
 *       |   High         Low      M8              |
 *       |   High         High     M8              |
@@ -443,13 +443,13 @@ int customized_get_odm_mdtbo_index(void)
         int idx = 0;
         int board_id = getBoardIDVals();
 
-        /*[FEATURE]-Add-BEGIN by zengjianfeng@paxsz.com, 2021/05/13, for multi dts */
+        /*[FEATURE]-Add-BEGIN by zengjianfeng@xxxxx.com, 2021/05/13, for multi dts */
         dprintf(INFO, "get board id vals: 0x%02x\n", board_id);
 
         if ((board_id & (0x03 << 3)) > 0)
                 idx = 1;
         dprintf(INFO, "dtb index: 0x%02x\n", idx);
-        /*[FEATURE]-Add-END by zengjianfeng@paxsz.com, 2021/05/13, for multi dts */
+        /*[FEATURE]-Add-END by zengjianfeng@xxxxx.com, 2021/05/13, for multi dts */
 
         return idx;
 }
@@ -460,22 +460,22 @@ int customized_get_odm_mdtbo_index(void)
 修改`MTK_PROJECT_DTB_NAMES`，增加两个dtb。
 
 ```diff
---- a/device/mediateksample/k62v1_64_pax/ProjectConfig.mk
-+++ b/device/mediateksample/k62v1_64_pax/ProjectConfig.mk
+--- a/device/mediateksample/k62v1_64_xxxxx/ProjectConfig.mk
++++ b/device/mediateksample/k62v1_64_xxxxx/ProjectConfig.mk
 @@ -521,7 +521,7 @@ MTK_BT_HEARING_AID_SUPPORT = no
  MTK_CAM_VPU_DSDN = no
  MTK_AI_CAM_SUPPORT = no
  MTK_BIP_UICC_SERVER_MODE = no
 -MTK_PROJECT_DTB_NAMES =
-+MTK_PROJECT_DTB_NAMES = mediatek/M50 mediatek/M8
++MTK_PROJECT_DTB_NAMES = mediatek/M5x mediatek/M8
 ```
 
 ## 结果验证
 
-M8和M50的cmdline如下：
+M8和M5x的cmdline如下：
 
 ```
-M50:
+M5x:
 cmdline:
 androidboot.dtbo_idx=0
 
@@ -511,14 +511,14 @@ wugn@jcrj-tf-compile:core$ tree
 
 
 merge目录：
-out/target/product/k62v1_64_pax/obj/KERNEL_OBJ/arch/arm64/boot/dts/mediatek
+out/target/product/k62v1_64_xxxxx/obj/KERNEL_OBJ/arch/arm64/boot/dts/mediatek
 wugn@jcrj-tf-compile:mediatek$ tree
 .
 ├── auto2712p1v1-ivi-boot.dtb
 ├── auto2712p1v1-ivi-nand-boot.dtb
-├── M50.dtb
-├── M50.dtb.merge
-├── M50.dts
+├── M5x.dtb
+├── M5x.dtb.merge
+├── M5x.dts
 ├── M8.dtb
 ├── M8.dtb.merge
 ├── M8.dts
@@ -527,7 +527,7 @@ wugn@jcrj-tf-compile:mediatek$ tree
 └── mt6765.dts
 
 mt6765.dtb及dtbo.img生成目录：
-out/target/product/k62v1_64_pax/obj/PACKAGING/dtb
+out/target/product/k62v1_64_xxxxx/obj/PACKAGING/dtb
 wugn@jcrj-tf-compile:PACKAGING$ tree dtb*
 dtb
 ├── mtk_dtb
@@ -539,7 +539,7 @@ dtboimage
 
 ### dtb和dtbo定义
 
-mtk中dtb和dtbo编译脚本如下，`MTK_DTBOIMAGE_DTS`是`mediatek/M50 mediatek/M8`：
+mtk中dtb和dtbo编译脚本如下，`MTK_DTBOIMAGE_DTS`是`mediatek/M5x mediatek/M8`：
 
 ```makefile
 ### DTB build template
@@ -570,7 +570,7 @@ endif
 
 ### build_dtbimage.mk分析（mt6765.dtb编译流程）
 
-* 该脚本主要生成dtb文件`mt6765.dtb`,然后改名为`mtk_dtb`,目录`out/target/product/k62v1_64_pax/obj/PACKAGING/dtb`，代码如下：
+* 该脚本主要生成dtb文件`mt6765.dtb`,然后改名为`mtk_dtb`,目录`out/target/product/k62v1_64_xxxxx/obj/PACKAGING/dtb`，代码如下：
 
 ```makefile
 ifdef MTK_DTBIMAGE_DTS
@@ -674,7 +674,7 @@ include $(LINUX_KERNEL_VERSION)/kenv.mk
 endif
 
 ifeq ($(KERNEL_TARGET_ARCH),arm64) 
-#目录out/target/product/k62v1_64_pax/obj/KERNEL_OBJ/arch/arm64/boot/dts/mediatek
+#目录out/target/product/k62v1_64_xxxxx/obj/KERNEL_OBJ/arch/arm64/boot/dts/mediatek
 #将目录下dts换成dtb后缀
 # my_kernel_dtb_stem = mt6765.dtb
 my_kernel_dtb_stem := mediatek/$(notdir $(patsubst %.dts,%.dtb,$(LOCAL_SRC_FILES)))
@@ -726,26 +726,26 @@ LOCAL_ADDITIONAL_DEPENDENCIES :=
 LOCAL_SRC_FILES :=
 ```
 
-### build_dtboimage.mk分析（dws M50.dtb.merg dtboimg.cfg编译流程）
+### build_dtboimage.mk分析（dws M5x.dtb.merg dtboimg.cfg编译流程）
 
 * `build_dtboimage.mk`:
 
 1.利用DrvGen.py生成dws的dts：
 ```
-obj/KERNEL_OBJ/arch/arm64/boot/dts/k62v1_64_pax/M8/cust.dtsi
-obj/KERNEL_OBJ/arch/arm64/boot/dts/k62v1_64_pax/M50/cust.dtsi
+obj/KERNEL_OBJ/arch/arm64/boot/dts/k62v1_64_xxxxx/M8/cust.dtsi
+obj/KERNEL_OBJ/arch/arm64/boot/dts/k62v1_64_xxxxx/M5x/cust.dtsi
 ```
-2.生成merge文件M50.dtb.merge（M50.dtb + mt6762.dtb）
+2.生成merge文件M5x.dtb.merge（M5x.dtb + mt6762.dtb）
 3.生成cfg文件，这个文件指定了DTBO由哪个DTS文件生成，内容如下：
 ```
 dtboimg.cfg:
-out/target/product/k62v1_64_pax/obj/KERNEL_OBJ/arch/arm64/boot/dts/mediatek/M50.dtb
+out/target/product/k62v1_64_xxxxx/obj/KERNEL_OBJ/arch/arm64/boot/dts/mediatek/M5x.dtb
  id=0
-out/target/product/k62v1_64_pax/obj/KERNEL_OBJ/arch/arm64/boot/dts/mediatek/M8.dtb
+out/target/product/k62v1_64_xxxxx/obj/KERNEL_OBJ/arch/arm64/boot/dts/mediatek/M8.dtb
  id=1
 
 dtbimg.cfg:
-out/target/product/k62v1_64_pax/obj/PACKAGING/dtb/mtk_dtb
+out/target/product/k62v1_64_xxxxx/obj/PACKAGING/dtb/mtk_dtb
  id=0
 ```
 
@@ -772,7 +772,7 @@ $(2)/cust.dtsi: $(DRVGEN_TOOL) $(1) $(DRVGEN_FIG)
 	python $$(drvgen_tool) $(1) $$(prj_path) $$(prj_path) cust_dtsi
 endef
 
-#第二步：利用命令grep -m 1 '#include [<\"].*\/cust\.dtsi[>\"]' M50.dts | sed 's/#include [<"]//g' | sed 's/\/cust\.dtsi[>"]//g' | sed 's/\/\*//g' | sed 's/\*\///g' | sed 's/ //g' 输出base_prj = k62v1_64_pax/M50，将并生成M50.dtb.merge
+#第二步：利用命令grep -m 1 '#include [<\"].*\/cust\.dtsi[>\"]' M5x.dts | sed 's/#include [<"]//g' | sed 's/\/cust\.dtsi[>"]//g' | sed 's/\/\*//g' | sed 's/\*\///g' | sed 's/ //g' 输出base_prj = k62v1_64_xxxxx/M5x，将并生成M5x.dtb.merge
 MTK_DTBOIMAGE_DTB :=
 MTK_DTBOIMAGE_DTSI :=
 $(foreach i,$(MTK_DTBOIMAGE_DTS),\
@@ -822,17 +822,17 @@ endif#MTK_DTBOIMAGE_DTS
 
 #### build_dtb.mk分析
 
-该脚本功能是用make命令在kernel中生成M50.dtb和M50.dtb.merge（M50.dtb + mt6762.dtb）:
+该脚本功能是用make命令在kernel中生成M5x.dtb和M5x.dtb.merge（M5x.dtb + mt6762.dtb）:
 
 ```
 160939 = 49565 + 111374
--rw-rw-r-- 1 wugn wugn 160939 Jul 11 22:24 M50.dtb.merge
--rw-rw-r-- 1 wugn wugn  49565 Jul 11 22:24 M50.dtb
+-rw-rw-r-- 1 wugn wugn 160939 Jul 11 22:24 M5x.dtb.merge
+-rw-rw-r-- 1 wugn wugn  49565 Jul 11 22:24 M5x.dtb
 -rw-rw-r-- 1 wugn wugn 111374 Jul 11 22:24 mt6765.dtb
 
 编译log：
 [ 19% 27973/140679] dtbo_check: 
-out/target/product/k62v1_64_pax/obj/KERNEL_OBJ/arch/arm64/boot/dts/mediatek/M50.dtb.merge
+out/target/product/k62v1_64_xxxxx/obj/KERNEL_OBJ/arch/arm64/boot/dts/mediatek/M5x.dtb.merge
 ```
 
 * `build_dtb.mk`:
@@ -852,22 +852,22 @@ include $(LINUX_KERNEL_VERSION)/kenv.mk
 endif
 
 ifeq ($(KERNEL_TARGET_ARCH),arm64) 
-#目录out/target/product/k62v1_64_pax/obj/KERNEL_OBJ/arch/arm64/boot/dts/mediatek \
+#目录out/target/product/k62v1_64_xxxxx/obj/KERNEL_OBJ/arch/arm64/boot/dts/mediatek \
 #将目录下dts换成dtb后缀 \
-# my_kernel_dtb_stem = M50.dtb
+# my_kernel_dtb_stem = M5x.dtb
 my_kernel_dtb_stem := mediatek/$(notdir $(patsubst %.dts,%.dtb,$(LOCAL_SRC_FILES)))
 else
 my_kernel_dtb_stem := $(notdir $(patsubst %.dts,%.dtb,$(LOCAL_SRC_FILES)))
 endif
 
-# my_kernel_dts = M50
+# my_kernel_dts = M5x
 ifeq ($(KERNEL_TARGET_ARCH),arm64)
 my_kernel_dts := $(KERNEL_OUT)/arch/$(KERNEL_TARGET_ARCH)/boot/dts/mediatek/$(notdir $(LOCAL_SRC_FILES))
 else
 my_kernel_dts := $(KERNEL_OUT)/arch/$(KERNEL_TARGET_ARCH)/boot/dts/$(notdir $(LOCAL_SRC_FILES))
 endif
 
-# my_kernel_dtb = M50.dtb
+# my_kernel_dtb = M5x.dtb
 my_kernel_dtb := $(KERNEL_OUT)/arch/$(KERNEL_TARGET_ARCH)/boot/dts/$(my_kernel_dtb_stem)
 
 # cp $(LOCAL_SRC_FILES) $(my_kernel_dts)

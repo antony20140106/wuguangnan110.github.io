@@ -81,7 +81,7 @@
              
   <section id="id1">
 <h1>概述<a class="headerlink" href="#id1" title="此标题的永久链接"></a></h1>
-<p>将高通A6650平台的dts整合在一起。</p>
+<p>将高通A665x平台的dts整合在一起。</p>
 </section>
 <section id="id2">
 <h1>参考<a class="headerlink" href="#id2" title="此标题的永久链接"></a></h1>
@@ -97,27 +97,27 @@
 <li><p>参考1400代码，在dtb根目录下修改Makefile如下：</p></li>
 </ul>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>ifeq ($(CONFIG_BUILD_ARM64_DT_OVERLAY),y)
-dts-dirs += a6650
-dts-dirs += m9200
+dts-dirs += a665x
+dts-dirs += m92xx
 endif
 </pre></div>
 </div>
 <ul class="simple">
 <li><p>目录结构：</p></li>
 </ul>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>wugn@jcrj-tf-compile:qcom$ tree a6650/
-a6650/
-├── a6650-scuba-iot.dts
-├── a6650-scuba-iot-idp-overlay.dts
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>wugn@jcrj-tf-compile:qcom$ tree a665x/
+a665x/
+├── a665x-scuba-iot.dts
+├── a665x-scuba-iot-idp-overlay.dts
 ├── Makefile
 </pre></div>
 </div>
 <ul class="simple">
-<li><p>a6650目录下Makefile如下：</p></li>
+<li><p>a665x目录下Makefile如下：</p></li>
 </ul>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>ifeq ($(CONFIG_BUILD_ARM64_DT_OVERLAY),y)
-dtbo-$(CONFIG_ARCH_SCUBA) += a6650-scuba-iot-idp-overlay.dtbo
-a6650-scuba-iot-idp-overlay.dtbo-base := a6650-scuba-iot.dtb
+dtbo-$(CONFIG_ARCH_SCUBA) += a665x-scuba-iot-idp-overlay.dtbo
+a665x-scuba-iot-idp-overlay.dtbo-base := a665x-scuba-iot.dtb
 endif
 
 always		:= $(dtb-y)
@@ -176,10 +176,10 @@ scuba-iot.dtsi
 </pre></div>
 </div>
 <p>将以上关联的dtsi文件全部加进来，目前目录如下：</p>
-<div class="highlight-c notranslate"><div class="highlight"><pre><span></span>wugn@jcrj-tf-compile:a6650$ tree
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span>wugn@jcrj-tf-compile:a665x$ tree
 .
-├── a6650-scuba-iot.dts
-├── a6650-scuba-iot-idp-overlay.dts
+├── a665x-scuba-iot.dts
+├── a665x-scuba-iot-idp-overlay.dts
 ├── camera
 │   ├── scuba-camera.dtsi
 │   └── scuba-camera-sensor-idp.dtsi
@@ -229,7 +229,7 @@ scuba-iot.dtsi
 <div class="highlight-log notranslate"><div class="highlight"><pre><span></span>Copying kernel image to prebuilt
 =============
 Copying target dtb/dtbo files to prebuilt
-cp: bad &#39;/home/wugn/A6650-project/UM.9.15/out/target/product/bengal/obj/kernel/msm-4.19/arch/arm64/boot/dts/vendor/qcom/*.dtb&#39;: No such file or directory
+cp: bad &#39;/home/wugn/A665x-project/UM.9.15/out/target/product/bengal/obj/kernel/msm-4.19/arch/arm64/boot/dts/vendor/qcom/*.dtb&#39;: No such file or directory
 [ 93% 2501/2665] target SharedLib: libril-qc-hal-qmi (out/target/product/bengal/obj/SHARED_LIBRARIES/libril-qc-hal-qmi_intermediates/LINKED/libril-qc-hal-qmi.so)
 [ 93% 2502/2665] target SharedLib: camera.qcom (out/target/product/bengal/obj/SHARED_LIBRARIES/camera.qcom_intermediates/LINKED/camera.qcom.so)
 ninja: build stopped: subcommand failed.
@@ -239,26 +239,26 @@ ninja: build stopped: subcommand failed.
 <p>以上可知dtb生成目录为<code class="docutils literal notranslate"><span class="pre">out/target/product/bengal/obj/kernel/msm-4.19/arch/arm64/boot/dts/vendor/qcom/</span></code>:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>wugn@jcrj-tf-compile:qcom$ tree
 .
-├── a6650
-│   ├── a6650-scuba-iot.dtb
-│   ├── a6650-scuba-iot-idp-overlay.dtbo
+├── a665x
+│   ├── a665x-scuba-iot.dtb
+│   ├── a665x-scuba-iot-idp-overlay.dtbo
 │   └── modules.order
-├── m9200
-│   ├── m9200-scuba-iot.dtb
-│   ├── m9200-scuba-iot-idp-overlay.dtbo
+├── m92xx
+│   ├── m92xx-scuba-iot.dtb
+│   ├── m92xx-scuba-iot-idp-overlay.dtbo
 │   └── modules.order
 └── modules.order
 </pre></div>
 </div>
-<p>定位到脚本，原因是生成的dtb文件都放进a6650文件夹里面，找不到路径<code class="docutils literal notranslate"><span class="pre">device/qcom/kernelscripts/buildkernel.sh</span> <span class="pre">+185</span></code>修改如下，将<code class="docutils literal notranslate"><span class="pre">a6650</span></code>和<code class="docutils literal notranslate"><span class="pre">m9200</span></code>两个文件夹下的<code class="docutils literal notranslate"><span class="pre">dtb</span></code>和<code class="docutils literal notranslate"><span class="pre">dtbo</span></code>都拷贝过去：</p>
-<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="nv">PAX_DTBO_FILE</span><span class="o">=</span><span class="s2">&quot;</span>
-<span class="s2">a6650</span>
-<span class="s2">m9200</span>
+<p>定位到脚本，原因是生成的dtb文件都放进a665x文件夹里面，找不到路径<code class="docutils literal notranslate"><span class="pre">device/qcom/kernelscripts/buildkernel.sh</span> <span class="pre">+185</span></code>修改如下，将<code class="docutils literal notranslate"><span class="pre">a665x</span></code>和<code class="docutils literal notranslate"><span class="pre">m92xx</span></code>两个文件夹下的<code class="docutils literal notranslate"><span class="pre">dtb</span></code>和<code class="docutils literal notranslate"><span class="pre">dtbo</span></code>都拷贝过去：</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="nv">xxx_DTBO_FILE</span><span class="o">=</span><span class="s2">&quot;</span>
+<span class="s2">a665x</span>
+<span class="s2">m92xx</span>
 <span class="s2">&quot;</span>
 
 copy_all_to_prebuilt<span class="o">()</span>
 <span class="o">{</span>
-    <span class="k">for</span> FILE <span class="k">in</span> <span class="nv">$PAX_DTBO_FILE</span>
+    <span class="k">for</span> FILE <span class="k">in</span> <span class="nv">$xxx_DTBO_FILE</span>
     <span class="k">do</span>
             <span class="c1">#cp -p -r ${OUT_DIR}/${IMAGE_FILE_PATH}/dts/vendor/qcom/*.dtb ${PREBUILT_OUT}/${IMAGE_FILE_PATH}/dts/vendor/qcom/</span>
             <span class="c1">#if [[ -e ${OUT_DIR}/${IMAGE_FILE_PATH}/dts/vendor/qcom/*.dtbo ]]; then</span>
@@ -266,7 +266,7 @@ copy_all_to_prebuilt<span class="o">()</span>
             <span class="k">if</span> <span class="o">[[</span> -e <span class="si">${</span><span class="nv">OUT_DIR</span><span class="si">}</span>/<span class="si">${</span><span class="nv">IMAGE_FILE_PATH</span><span class="si">}</span>/dts/vendor/qcom/<span class="nv">$FILE</span>/*.dtbo <span class="o">]]</span><span class="p">;</span> <span class="k">then</span>
                     cp -p -r <span class="si">${</span><span class="nv">OUT_DIR</span><span class="si">}</span>/<span class="si">${</span><span class="nv">IMAGE_FILE_PATH</span><span class="si">}</span>/dts/vendor/qcom/<span class="nv">$FILE</span>/*.dtbo <span class="si">${</span><span class="nv">PREBUILT_OUT</span><span class="si">}</span>/<span class="si">${</span><span class="nv">IMAGE_FILE_PATH</span><span class="si">}</span>/dts/vendor/qcom/
             <span class="k">fi</span>
-            <span class="nb">echo</span> <span class="s2">&quot;</span><span class="si">${</span><span class="nv">OUT_DIR</span><span class="si">}</span><span class="s2">/</span><span class="nv">$PAX_DTBO_FILE</span><span class="s2"> copied to </span><span class="si">${</span><span class="nv">PREBUILT_OUT</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="nb">echo</span> <span class="s2">&quot;</span><span class="si">${</span><span class="nv">OUT_DIR</span><span class="si">}</span><span class="s2">/</span><span class="nv">$xxx_DTBO_FILE</span><span class="s2"> copied to </span><span class="si">${</span><span class="nv">PREBUILT_OUT</span><span class="si">}</span><span class="s2">&quot;</span>
     <span class="k">done</span>
 <span class="o">}</span>
 </pre></div>
@@ -278,14 +278,14 @@ copy_all_to_prebuilt<span class="o">()</span>
 <div class="highlight-log notranslate"><div class="highlight"><pre><span></span>Copying kernel image to prebuilt
 =============
 Copying target dtb/dtbo files to prebuilt
-/home/wugn/A6650-project/UM.9.15/out/target/product/bengal/obj/kernel/msm-4.19/
-a6650
-m9200
- copied to /home/wugn/A6650-project/UM.9.15/kernel/ship_prebuilt/primary_kernel
-/home/wugn/A6650-project/UM.9.15/out/target/product/bengal/obj/kernel/msm-4.19/
-a6650
-m9200
- copied to /home/wugn/A6650-project/UM.9.15/kernel/ship_prebuilt/primary_kernel
+/home/wugn/A665x-project/UM.9.15/out/target/product/bengal/obj/kernel/msm-4.19/
+a665x
+m92xx
+ copied to /home/wugn/A665x-project/UM.9.15/kernel/ship_prebuilt/primary_kernel
+/home/wugn/A665x-project/UM.9.15/out/target/product/bengal/obj/kernel/msm-4.19/
+a665x
+m92xx
+ copied to /home/wugn/A665x-project/UM.9.15/kernel/ship_prebuilt/primary_kernel
 =============
 Copying arch-specific generated headers to prebuilt
 =============
@@ -308,23 +308,23 @@ cat: out/target/product/bengal/obj/kernel/msm-4.19/arch/arm64/boot/dts/vendor/qc
 <p>解决方案：将dtb和dtbo文件直接挪出来。</p>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>copy_all_to_prebuilt<span class="o">()</span>
 <span class="o">{</span>
-	<span class="c1">#[NEW FEATURE]-BEGIN by wugangnan@paxsz.com 2022-07-08, for multi dtb</span>
-	<span class="nv">PAX_DTB_FILE</span><span class="o">=</span><span class="sb">`</span>find <span class="si">${</span><span class="nv">OUT_DIR</span><span class="si">}</span>/<span class="si">${</span><span class="nv">IMAGE_FILE_PATH</span><span class="si">}</span>/dts/vendor/qcom -name <span class="s2">&quot;*.dtb&quot;</span><span class="sb">`</span>
-	<span class="nv">PAX_DTBO_FILE</span><span class="o">=</span><span class="sb">`</span>find <span class="si">${</span><span class="nv">OUT_DIR</span><span class="si">}</span>/<span class="si">${</span><span class="nv">IMAGE_FILE_PATH</span><span class="si">}</span>/dts/vendor/qcom -name <span class="s2">&quot;*.dtbo&quot;</span><span class="sb">`</span>
+	<span class="c1">#[NEW FEATURE]-BEGIN by xxx@xxxxx.com 2022-07-08, for multi dtb</span>
+	<span class="nv">xxx_DTB_FILE</span><span class="o">=</span><span class="sb">`</span>find <span class="si">${</span><span class="nv">OUT_DIR</span><span class="si">}</span>/<span class="si">${</span><span class="nv">IMAGE_FILE_PATH</span><span class="si">}</span>/dts/vendor/qcom -name <span class="s2">&quot;*.dtb&quot;</span><span class="sb">`</span>
+	<span class="nv">xxx_DTBO_FILE</span><span class="o">=</span><span class="sb">`</span>find <span class="si">${</span><span class="nv">OUT_DIR</span><span class="si">}</span>/<span class="si">${</span><span class="nv">IMAGE_FILE_PATH</span><span class="si">}</span>/dts/vendor/qcom -name <span class="s2">&quot;*.dtbo&quot;</span><span class="sb">`</span>
 
-	<span class="k">for</span> FILE <span class="k">in</span> <span class="nv">$PAX_DTB_FILE</span>
+	<span class="k">for</span> FILE <span class="k">in</span> <span class="nv">$xxx_DTB_FILE</span>
 	<span class="k">do</span>
 		mv <span class="si">${</span><span class="nv">FILE</span><span class="si">}</span> <span class="si">${</span><span class="nv">OUT_DIR</span><span class="si">}</span>/<span class="si">${</span><span class="nv">IMAGE_FILE_PATH</span><span class="si">}</span>/dts/vendor/qcom/
 		<span class="nb">echo</span> <span class="s2">&quot;</span><span class="si">${</span><span class="nv">FILE</span><span class="si">}</span><span class="s2"> move to </span><span class="si">${</span><span class="nv">OUT_DIR</span><span class="si">}</span><span class="s2">/</span><span class="si">${</span><span class="nv">IMAGE_FILE_PATH</span><span class="si">}</span><span class="s2">/dts/vendor/qcom/&quot;</span>
 	<span class="k">done</span>
-	<span class="k">for</span> FILE <span class="k">in</span> <span class="nv">$PAX_DTBO_FILE</span>
+	<span class="k">for</span> FILE <span class="k">in</span> <span class="nv">$xxx_DTBO_FILE</span>
 	<span class="k">do</span>
 		<span class="k">if</span> <span class="o">[[</span> -e <span class="si">${</span><span class="nv">FILE</span><span class="si">}</span> <span class="o">]]</span><span class="p">;</span> <span class="k">then</span>
 			mv <span class="si">${</span><span class="nv">FILE</span><span class="si">}</span> <span class="si">${</span><span class="nv">OUT_DIR</span><span class="si">}</span>/<span class="si">${</span><span class="nv">IMAGE_FILE_PATH</span><span class="si">}</span>/dts/vendor/qcom/
 		<span class="k">fi</span>
 		<span class="nb">echo</span> <span class="s2">&quot;</span><span class="si">${</span><span class="nv">FILE</span><span class="si">}</span><span class="s2"> move to </span><span class="si">${</span><span class="nv">OUT_DIR</span><span class="si">}</span><span class="s2">/</span><span class="si">${</span><span class="nv">IMAGE_FILE_PATH</span><span class="si">}</span><span class="s2">/dts/vendor/qcom/&quot;</span>
 	<span class="k">done</span>
-	<span class="c1">#[NEW FEATURE]-END by wugangnan@paxsz.com 2022-07-08, for multi dtb</span>
+	<span class="c1">#[NEW FEATURE]-END by xxx@xxxxx.com 2022-07-08, for multi dtb</span>
 <span class="o">}</span>
 </pre></div>
 </div>

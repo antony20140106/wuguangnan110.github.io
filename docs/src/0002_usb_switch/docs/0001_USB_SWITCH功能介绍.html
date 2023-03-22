@@ -105,7 +105,7 @@
 <ul class="simple">
 <li><p>驱动代码：</p></li>
 </ul>
-<p><a class="reference download internal" download="" href="../../../_downloads/d8bdd85490cb5d65831bafd42a62860d/pax_usb_switch.c"><span class="xref download myst">pax_usb_switch.c</span></a></p>
+<p><span class="xref myst">xxxxx_usb_switch.c</span></p>
 </section>
 <section id="id3">
 <h2>硬件架构<a class="headerlink" href="#id3" title="此标题的永久链接"></a></h2>
@@ -291,12 +291,12 @@ GL850_EN     （AD24）  控制HUB芯片POWER 低
 <section id="usb-switch">
 <h3>5.usb_switch亮灭屏逻辑<a class="headerlink" href="#usb-switch" title="此标题的永久链接"></a></h3>
 <p>usb_switch亮灭屏逻辑其实和usb20切换逻辑一样。</p>
-<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">pax_usb_fb_notifier_call</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">notifier_block</span><span class="w"> </span><span class="o">*</span><span class="n">self</span><span class="p">,</span><span class="w"> </span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">long</span><span class="w"> </span><span class="n">event</span><span class="p">,</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="o">*</span><span class="n">data</span><span class="p">)</span><span class="w"></span>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">xxxxx_usb_fb_notifier_call</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">notifier_block</span><span class="w"> </span><span class="o">*</span><span class="n">self</span><span class="p">,</span><span class="w"> </span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">long</span><span class="w"> </span><span class="n">event</span><span class="p">,</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="o">*</span><span class="n">data</span><span class="p">)</span><span class="w"></span>
 <span class="p">{</span><span class="w"></span>
 <span class="w">	</span><span class="k">struct</span><span class="w"> </span><span class="nc">fb_event</span><span class="w"> </span><span class="o">*</span><span class="n">evdata</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">data</span><span class="p">;</span><span class="w"></span>
 <span class="w">	</span><span class="kt">int</span><span class="w"> </span><span class="n">blank</span><span class="p">;</span><span class="w"></span>
 <span class="w">	</span><span class="k">struct</span><span class="w"> </span><span class="nc">usb_switch_data</span><span class="w"> </span><span class="o">*</span><span class="n">usb_sdata</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">usb_switch_data</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="n">container_of</span><span class="p">(</span><span class="w"></span>
-<span class="w">			</span><span class="n">self</span><span class="p">,</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">usb_switch_data</span><span class="p">,</span><span class="w"> </span><span class="n">pax_usb_fb_notifier</span><span class="p">);</span><span class="w"></span>
+<span class="w">			</span><span class="n">self</span><span class="p">,</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">usb_switch_data</span><span class="p">,</span><span class="w"> </span><span class="n">xxxxx_usb_fb_notifier</span><span class="p">);</span><span class="w"></span>
 
 <span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">event</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">FB_EVENT_BLANK</span><span class="p">)</span><span class="w"></span>
 <span class="w">		</span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
@@ -355,29 +355,29 @@ GL850_EN     （AD24）  控制HUB芯片POWER 低
 				noti-&gt;typec_state.old_state,
 				noti-&gt;typec_state.new_state);
 
-		/* Add-BEGIN by (shanliangliang@paxsz.com), 2021/08/15 add for M8 usb otg */
+		/* Add-BEGIN by (xxx@xxxxx.com), 2021/08/15 add for M8 usb otg */
 		mtk_musb-&gt;typec_state = noti-&gt;typec_state.new_state;
-		/* Add-END by (shanliangliang@paxsz.com), 2021/08/15 add for M8 usb otg */
+		/* Add-END by (xxx@xxxxx.com), 2021/08/15 add for M8 usb otg */
 
 		if (noti-&gt;typec_state.old_state == TYPEC_UNATTACHED &amp;&amp;
 			noti-&gt;typec_state.new_state == TYPEC_ATTACHED_SRC) { //M8 typec识别成source，比如接U盘，切host
 			DBG(0, &quot;OTG Plug in\n&quot;);
 			mt_usb_dev_disconnect();
 			mt_usb_host_connect(100);
-		/* Add-BEGIN by (shanliangliang@paxsz.com), 2021/09/23 add for M8 usb otg */
+		/* Add-BEGIN by (xxx@xxxxx.com), 2021/09/23 add for M8 usb otg */
 		} else if (noti-&gt;typec_state.old_state == TYPEC_UNATTACHED &amp;&amp;
 			noti-&gt;typec_state.new_state == TYPEC_ATTACHED_SNK) { //pogo pin不在位，接了电脑或者充电器，识别成sink，断开host。
 			if (!((mtk_musb-&gt;pogo_dev_detect_type == POGO_DETECT_BY_EXT_PIN) &amp;&amp; (mtk_musb-&gt;pogo_dev_state == POGO_DEV_STATE_ONLINE))) {
 				mt_usb_host_disconnect(0);
 				mt_usb_connect();
 			}
-		/* Add-END by (shanliangliang@paxsz.com), 2021/09/23 add for M8 usb otg */
+		/* Add-END by (xxx@xxxxx.com), 2021/09/23 add for M8 usb otg */
 		} else if ((noti-&gt;typec_state.old_state == TYPEC_ATTACHED_SRC ||
 			noti-&gt;typec_state.old_state == TYPEC_ATTACHED_SNK ||
 			noti-&gt;typec_state.old_state ==
 					TYPEC_ATTACHED_NORP_SRC) &amp;&amp;
 			noti-&gt;typec_state.new_state == TYPEC_UNATTACHED) { 
-			/* Add-BEGIN by (shanliangliang@paxsz.com), 2021/08/15 add for M8 usb otg */
+			/* Add-BEGIN by (xxx@xxxxx.com), 2021/08/15 add for M8 usb otg */
 				if (mtk_musb-&gt;default_mode != MUSB_HOST) { 
 					if (is_host_active(mtk_musb)) {
 						DBG(0, &quot;OTG Plug out\n&quot;);
@@ -429,7 +429,7 @@ GL850_EN     （AD24）  控制HUB芯片POWER 低
 					}
 				}
 
-		/* Add-END by (shanliangliang@paxsz.com), 2021/08/15 add for M8 usb otg */
+		/* Add-END by (xxx@xxxxx.com), 2021/08/15 add for M8 usb otg */
 #ifdef CONFIG_MTK_UART_USB_SWITCH
 		} else if ((noti-&gt;typec_state.new_state ==
 					TYPEC_ATTACHED_SNK ||
@@ -550,7 +550,7 @@ GL850_EN     （AD24）  控制HUB芯片POWER 低
 <li><p>pogo dev设备检测目前放在usb_switch驱动里面，采用gpio中断方式，notify机制发送通知，亮屏情况下，pogo pin插入后将直接切为host模式。notify处理驱动分别是usb_switch和usb20驱动。</p></li>
 <li><p>驱动提供应用层接口set_usb_switch_mode手动切换host/device，原因是pogo dev接入后，当接入电脑时，为了不切device断开r15，而让用户手动切。</p></li>
 </ul>
-<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span>* static int pax_usb_swtich_probe(struct platform_device *pdev)
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span>* static int xxxxx_usb_swtich_probe(struct platform_device *pdev)
   * pogo_detect_init(data);
     * ret = request_irq(irq, pogo_detect_irq_handle, IRQF_TRIGGER_RISING|IRQF_TRIGGER_FALLING|IRQF_NO_SUSPEND|IRQF_NO_THREAD, 
 	* data-&gt;r15_nb.notifier_call = r15_status_notifier_call; //
@@ -576,7 +576,7 @@ static irqreturn_t pogo_detect_irq_handle(int irq, void *dev_id)
 			CLR_BIT(usb_switch_status,0);
 		}
 
-#ifdef CONFIG_PAX_GPIOS_CONTROL
+#ifdef CONFIG_xxx_GPIOS_CONTROL
 		r15_status_notify_call_chain(SET_POGO_DEV_STATE, &amp;status); //发送pogo dev通知
 #endif
 		pr_err(&quot;level: %d usb_switch_status: %d\n&quot;, level,usb_switch_status);
@@ -590,7 +590,7 @@ pogo dev拔插事件处理：
 static int set_usb_switch_mode(int value)
 {
 	int val;
-	PAX_GPIO_DBG(&quot;set_usb_switch_mode = %d&quot;,value);
+	xxx_GPIO_DBG(&quot;set_usb_switch_mode = %d&quot;,value);
 
 	if (!value)
 		val = USB_MODE_DEV;
@@ -643,7 +643,7 @@ static int r15_status_notifier_call(struct notifier_block *self, unsigned long e
 <h4>8.2 usb20处理notify<a class="headerlink" href="#usb20notify" title="此标题的永久链接"></a></h4>
 <div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span><span class="w"> </span><span class="nf">mt_usb_otg_init</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">musb</span><span class="w"> </span><span class="o">*</span><span class="n">musb</span><span class="p">)</span><span class="w"></span>
 <span class="p">{</span><span class="w"></span>
-<span class="w">	</span><span class="cp">#ifdef CONFIG_PAX_GPIOS_CONTROL</span>
+<span class="w">	</span><span class="cp">#ifdef CONFIG_xxx_GPIOS_CONTROL</span>
 <span class="w">		</span><span class="n">musb</span><span class="o">-&gt;</span><span class="n">r15_state</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">R15_STATUS_OFFLINE</span><span class="p">;</span><span class="w"></span>
 <span class="w">		</span><span class="n">r15_status_notify_register_client</span><span class="p">(</span><span class="o">&amp;</span><span class="n">musb_r15_st_notifier</span><span class="p">);</span><span class="w"></span>
 <span class="w">	</span><span class="cp">#else</span>
@@ -651,7 +651,7 @@ static int r15_status_notifier_call(struct notifier_block *self, unsigned long e
 <span class="w">	</span><span class="cp">#endif</span>
 <span class="p">}</span><span class="w"></span>
 
-<span class="cp">#ifdef CONFIG_PAX_GPIOS_CONTROL</span>
+<span class="cp">#ifdef CONFIG_xxx_GPIOS_CONTROL</span>
 <span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">musb_r15_st_notifier_call</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">notifier_block</span><span class="w"> </span><span class="o">*</span><span class="n">self</span><span class="p">,</span><span class="w"> </span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">long</span><span class="w"> </span><span class="n">event</span><span class="p">,</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="o">*</span><span class="n">data</span><span class="p">)</span><span class="w"></span>
 <span class="p">{</span><span class="w"></span>
 <span class="w">	</span><span class="kt">int</span><span class="w"> </span><span class="n">state</span><span class="p">;</span><span class="w"></span>

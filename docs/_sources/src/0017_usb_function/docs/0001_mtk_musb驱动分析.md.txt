@@ -228,7 +228,7 @@ probe中注册musb-hdrc驱动(usb_core)的platform_device，最主要目的是�
 
 ```C++
 发现mt_usb platform_device包含有musb-hdrc的platform_device:
-PAYPHONEM50:/sys/devices/platform/mt_usb/musb-hdrc # ls -l
+PAYPHONEM5x:/sys/devices/platform/mt_usb/musb-hdrc # ls -l
 total 0
 -rw-rw-r-- 1 root system 4096 2010-01-01 00:00 cmode
 lrwxrwxrwx 1 root root      0 2022-06-24 08:06 driver -> ../../../../bus/platform/drivers/musb-hdrc
@@ -673,10 +673,10 @@ void mt_usb_otg_init(struct musb *musb)
 	typec_control = 1;
 #ifdef CONFIG_TCPC_CLASS
 	INIT_DELAYED_WORK(&register_otg_work, do_register_otg_work);
-/* Add-BEGIN by (shanliangliang@paxsz.com), 2021/08/27 fix notifier reigister too late */
+/* Add-BEGIN by (xxx@xxxxx.com), 2021/08/27 fix notifier reigister too late */
 	schedule_delayed_work(&register_otg_work,
 			msecs_to_jiffies(REGISTER_OTG_WORK_DELAY)); //重要，调用do_register_otg_work工作队列
-/* Add-END by (shanliangliang@paxsz.com), 2021/08/27 fix notifier reigister too late */
+/* Add-END by (xxx@xxxxx.com), 2021/08/27 fix notifier reigister too late */
 	vbus_control = 0;
 #endif
 #else
@@ -689,7 +689,7 @@ void mt_usb_otg_init(struct musb *musb)
 	musb->fifo_cfg_host = fifo_cfg_host;
 	musb->fifo_cfg_host_size = ARRAY_SIZE(fifo_cfg_host);
 
-	/* Add-BEGIN by (shanliangliang@paxsz.com), 2021/08/15 add for M8 usb otg */
+	/* Add-BEGIN by (xxx@xxxxx.com), 2021/08/15 add for M8 usb otg */
 	if (musb->default_mode == MUSB_HOST) {
 		mt_usb_host_connect(0);   //默认dts如果定义了host，则使能host
 	}
@@ -697,7 +697,7 @@ void mt_usb_otg_init(struct musb *musb)
 	fb_register_client(&musb_fb_notifier);
 
 	musb_chg_dev_init(musb);
-	/* Add-END by (shanliangliang@paxsz.com), 2021/08/15 add for M8 usb otg */
+	/* Add-END by (xxx@xxxxx.com), 2021/08/15 add for M8 usb otg */
 
 }
 ```
@@ -709,9 +709,9 @@ void mt_usb_otg_init(struct musb *musb)
 #define TCPC_OTG_DEV_NAME "type_c_port0"
 static void do_register_otg_work(struct work_struct *data)
 {
-/* Add-BEGIN by (shanliangliang@paxsz.com), 2021/08/27 fix notifier reigister too late */
+/* Add-BEGIN by (xxx@xxxxx.com), 2021/08/27 fix notifier reigister too late */
 #define REGISTER_OTG_WORK_DELAY 200
-/* Add-END by (shanliangliang@paxsz.com), 2021/08/27 fix notifier reigister too late */
+/* Add-END by (xxx@xxxxx.com), 2021/08/27 fix notifier reigister too late */
 	static int ret;
 
 	if (!otg_tcpc_dev)
@@ -719,7 +719,7 @@ static void do_register_otg_work(struct work_struct *data)
 
 	if (!otg_tcpc_dev) {
 		DBG(0, "get type_c_port0 fail\n");
-/* Add-BEGIN by (shanliangliang@paxsz.com), 2021/08/27 fix notifier reigister too late */
+/* Add-BEGIN by (xxx@xxxxx.com), 2021/08/27 fix notifier reigister too late */
 #if 0
 		queue_delayed_work(mtk_musb->st_wq, &register_otg_work,
 				msecs_to_jiffies(REGISTER_OTG_WORK_DELAY));
@@ -727,7 +727,7 @@ static void do_register_otg_work(struct work_struct *data)
 		schedule_delayed_work(&register_otg_work,
 				msecs_to_jiffies(REGISTER_OTG_WORK_DELAY));
 #endif
-/* Add-END by (shanliangliang@paxsz.com), 2021/08/27 fix notifier reigister too late */
+/* Add-END by (xxx@xxxxx.com), 2021/08/27 fix notifier reigister too late */
 		return;
 	}
 
@@ -737,7 +737,7 @@ static void do_register_otg_work(struct work_struct *data)
 		TCP_NOTIFY_TYPE_MISC);
 	if (ret < 0) {
 		DBG(0, "register OTG <%p> fail\n", otg_tcpc_dev);
-/* Add-BEGIN by (shanliangliang@paxsz.com), 2021/08/27 fix notifier reigister too late */
+/* Add-BEGIN by (xxx@xxxxx.com), 2021/08/27 fix notifier reigister too late */
 #if 0
 		queue_delayed_work(mtk_musb->st_wq, &register_otg_work,
 				msecs_to_jiffies(REGISTER_OTG_WORK_DELAY));
@@ -745,7 +745,7 @@ static void do_register_otg_work(struct work_struct *data)
 		schedule_delayed_work(&register_otg_work,
 				msecs_to_jiffies(REGISTER_OTG_WORK_DELAY));
 #endif
-/* Add-END by (shanliangliang@paxsz.com), 2021/08/27 fix notifier reigister too late */
+/* Add-END by (xxx@xxxxx.com), 2021/08/27 fix notifier reigister too late */
 		return;
 	}
 
@@ -778,29 +778,29 @@ static int otg_tcp_notifier_call(struct notifier_block *nb,
 				noti->typec_state.old_state,
 				noti->typec_state.new_state);
 
-		/* Add-BEGIN by (shanliangliang@paxsz.com), 2021/08/15 add for M8 usb otg */
+		/* Add-BEGIN by (xxx@xxxxx.com), 2021/08/15 add for M8 usb otg */
 		mtk_musb->typec_state = noti->typec_state.new_state;
-		/* Add-END by (shanliangliang@paxsz.com), 2021/08/15 add for M8 usb otg */
+		/* Add-END by (xxx@xxxxx.com), 2021/08/15 add for M8 usb otg */
 
 		if (noti->typec_state.old_state == TYPEC_UNATTACHED &&
 			noti->typec_state.new_state == TYPEC_ATTACHED_SRC) {
 			DBG(0, "OTG Plug in\n");
 			mt_usb_dev_disconnect();
 			mt_usb_host_connect(100);
-		/* Add-BEGIN by (shanliangliang@paxsz.com), 2021/09/23 add for M8 usb otg */
+		/* Add-BEGIN by (xxx@xxxxx.com), 2021/09/23 add for M8 usb otg */
 		} else if (noti->typec_state.old_state == TYPEC_UNATTACHED &&
 			noti->typec_state.new_state == TYPEC_ATTACHED_SNK) {
 			if (!((mtk_musb->pogo_dev_detect_type == POGO_DETECT_BY_EXT_PIN) && (mtk_musb->pogo_dev_state == POGO_DEV_STATE_ONLINE))) {
 				mt_usb_host_disconnect(0);
 				mt_usb_connect();
 			}
-		/* Add-END by (shanliangliang@paxsz.com), 2021/09/23 add for M8 usb otg */
+		/* Add-END by (xxx@xxxxx.com), 2021/09/23 add for M8 usb otg */
 		} else if ((noti->typec_state.old_state == TYPEC_ATTACHED_SRC ||
 			noti->typec_state.old_state == TYPEC_ATTACHED_SNK ||
 			noti->typec_state.old_state ==
 					TYPEC_ATTACHED_NORP_SRC) &&
 			noti->typec_state.new_state == TYPEC_UNATTACHED) {
-			/* Add-BEGIN by (shanliangliang@paxsz.com), 2021/08/15 add for M8 usb otg */
+			/* Add-BEGIN by (xxx@xxxxx.com), 2021/08/15 add for M8 usb otg */
 				if (mtk_musb->default_mode != MUSB_HOST) {
 					if (is_host_active(mtk_musb)) {
 						DBG(0, "OTG Plug out\n");
@@ -852,7 +852,7 @@ static int otg_tcp_notifier_call(struct notifier_block *nb,
 					}
 				}
 
-		/* Add-END by (shanliangliang@paxsz.com), 2021/08/15 add for M8 usb otg */
+		/* Add-END by (xxx@xxxxx.com), 2021/08/15 add for M8 usb otg */
 #ifdef CONFIG_MTK_UART_USB_SWITCH
 		} else if ((noti->typec_state.new_state ==
 					TYPEC_ATTACHED_SNK ||
@@ -1216,16 +1216,16 @@ void mt_usb_host_disconnect(int delay)
 
 static void issue_host_work(int ops, int delay, bool on_st)
 {
-/* Add-BEGIN by (shanliangliang@paxsz.com), 2021/10/28 modify for M8 usb host shedule work*/
+/* Add-BEGIN by (xxx@xxxxx.com), 2021/10/28 modify for M8 usb host shedule work*/
 	struct mt_usb_work *work = NULL;
-/* Add-END by (shanliangliang@paxsz.com), 2021/10/28 modify for M8 usb host shedule work*/
+/* Add-END by (xxx@xxxxx.com), 2021/10/28 modify for M8 usb host shedule work*/
 
 	if (!mtk_musb) {
 		DBG(0, "mtk_musb = NULL\n");
 		return;
 	}
 
-/* Add-BEGIN by (shanliangliang@paxsz.com), 2021/10/28 modify for M8 usb host shedule work*/
+/* Add-BEGIN by (xxx@xxxxx.com), 2021/10/28 modify for M8 usb host shedule work*/
 #if 0
 	/* create and prepare worker */
 	work = kzalloc(sizeof(struct mt_usb_work), GFP_ATOMIC);
@@ -1271,7 +1271,7 @@ static void issue_host_work(int ops, int delay, bool on_st)
 		work->ops = ops;
 	}
 #endif
-/* Add-END by (shanliangliang@paxsz.com), 2021/10/28 modify for M8 usb host shedule work*/
+/* Add-END by (xxx@xxxxx.com), 2021/10/28 modify for M8 usb host shedule work*/
 
 	/* issue connection work */
 	DBG(0, "issue work, ops<%d>, delay<%d>, on_st<%d>\n",
@@ -1453,12 +1453,12 @@ static void do_host_work(struct work_struct *data)
 		usb_prepare_clock(false);
 	}
 
-/* Add-BEGIN by (shanliangliang@paxsz.com), 2021/10/28 modify for M8 usb host shedule work*/
+/* Add-BEGIN by (xxx@xxxxx.com), 2021/10/28 modify for M8 usb host shedule work*/
 #if 0
 	/* free mt_usb_work */
 	kfree(work);
 #endif
-/* Add-END by (shanliangliang@paxsz.com), 2021/10/28 modify for M8 usb host shedule work*/
+/* Add-END by (xxx@xxxxx.com), 2021/10/28 modify for M8 usb host shedule work*/
 }
 ```
 

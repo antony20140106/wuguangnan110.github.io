@@ -95,7 +95,7 @@ unsigned char Ekkb_pub[] = {
 ![0004_0006.png](images/0004_0006.png)
 
 整个googlekey申请和写入流程见下图：
-M50: MADA和方案商是同一家，都是鸿翔源
+M5x: MADA和方案商是同一家，都是鸿翔源
 M8：MADA和方案商是分开的，MADA是九州，方案商是鸿翔源
 
 百富没有直接和瓶钵签License协议，使用的鸿翔源kkb_priv来加密googlekey，然后上传加密后的googlekey到瓶钵服务器，供下载使用

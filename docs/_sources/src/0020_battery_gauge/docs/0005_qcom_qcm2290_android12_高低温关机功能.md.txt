@@ -67,21 +67,21 @@ public BatteryService(Context context) {
 
 # bms高温关机
 
-目前BMS要求只要低温、高温、低压关机报警功能，首先看看接收异常广播`pax.intent.action.BATTERY_ABNORMAL`入口，主要完成以下事情：
-  * 1. 接收`pax.intent.action.BATTERY_ABNORMAL`异常广播，上传的type都是向左移位的，所以需要将原始的tpye根据公式`Math.log`求2的对数的解析出来。
+目前BMS要求只要低温、高温、低压关机报警功能，首先看看接收异常广播`xxx.intent.action.BATTERY_ABNORMAL`入口，主要完成以下事情：
+  * 1. 接收`xxx.intent.action.BATTERY_ABNORMAL`异常广播，上传的type都是向左移位的，所以需要将原始的tpye根据公式`Math.log`求2的对数的解析出来。
   * 2. 将type值用intent传到`BatteryWarningToShutdown`的activity中进行处理。
-* `QSSI.12/packages/apps/BatteryWarning/src/com/pax/batterywarning/BatteryWarningReceiver.java`:
+* `QSSI.12/packages/apps/BatteryWarning/src/com/xxx/batterywarning/BatteryWarningReceiver.java`:
 ```java
 public class BatteryWarningReceiver extends BroadcastReceiver {
      // private static final String ACTION_IPO_BOOT = "android.intent.action.ACTION_BOOT_IPO";
-    private static final String ACTION_BATTERY_WARNING = "pax.intent.action.BATTERY_ABNORMAL";
-    private static final String ACTION_BATTERY_NORMAL = "pax.intent.action.BATTERY_NORMAL";
+    private static final String ACTION_BATTERY_WARNING = "xxx.intent.action.BATTERY_ABNORMAL";
+    private static final String ACTION_BATTERY_NORMAL = "xxx.intent.action.BATTERY_NORMAL";
     private static final String TAG = "BatteryWarningReceiver";
     private static final String SHARED_PREFERENCES_NAME = "battery_warning_settings";
     private Context mContext;
 
     // Thermal over temperature
-    private static final String ACTION_THERMAL_WARNING = "pax.intent.action.THERMAL_DIAG";
+    private static final String ACTION_THERMAL_WARNING = "xxx.intent.action.THERMAL_DIAG";
 
    public void onReceive(Context context, Intent intent) {
         mContext = context;
@@ -98,9 +98,9 @@ public class BatteryWarningReceiver extends BroadcastReceiver {
             Log.d(TAG, "type = " + type);
             type = (int) (Math.log(type) / Math.log(2));
             Log.d(TAG, "type = " + type);
-            if(type == BatteryWarningToShutdown.PAX_BAT_NC_UV | 
-			   type == BatteryWarningToShutdown.PAX_BAT_LOW_TEMP | 
-			   type == BatteryWarningToShutdown.PAX_BAT_HIGH_TEMP){
+            if(type == BatteryWarningToShutdown.xxx_BAT_NC_UV | 
+			   type == BatteryWarningToShutdown.xxx_BAT_LOW_TEMP | 
+			   type == BatteryWarningToShutdown.xxx_BAT_HIGH_TEMP){
                 ShowBatteryWaringToShutdownDialog(type);
             }
         }
@@ -122,16 +122,16 @@ public class BatteryWarningReceiver extends BroadcastReceiver {
 * 处理异常如下：
   * 1. `onCreate`接收到type值，调用弹框`showVoltageUnderWarningDialog`，这里启动10s定时器，并监听`BatteryManager.EXTRA_PLUGGED`广播，拔出usb则关闭定时器。
   * 2. 定时器中发送给handleMessage刷新弹框倒计时时间，mShutDownTime--为0时则关机。
-* `QSSI.12/packages/apps/BatteryWarning/src/com/pax/batterywarning/BatteryWarningToShutdown.java`:
+* `QSSI.12/packages/apps/BatteryWarning/src/com/xxx/batterywarning/BatteryWarningToShutdown.java`:
 ```java
 public class BatteryWarningToShutdown extends Activity {
     private static final String TAG = "BatteryWarningToShutdown";
     protected static final String KEY_TYPE = "type";
     private static final Uri WARNING_SOUND_URI = Uri.parse("file:///system/media/audio/ui/VideoRecord.ogg");
 
-    protected static final int PAX_BAT_NC_UV = 18;  //under voltage,power off
-    protected static final int PAX_BAT_LOW_TEMP = 5;  //under temp,power off
-	 protected static final int PAX_BAT_HIGH_TEMP = 1;  //over temp,power off
+    protected static final int xxx_BAT_NC_UV = 18;  //under voltage,power off
+    protected static final int xxx_BAT_LOW_TEMP = 5;  //under temp,power off
+	 protected static final int xxx_BAT_HIGH_TEMP = 1;  //over temp,power off
 
     private Handler mHandler  = new Handler(){
         public void handleMessage(Message msg) {
@@ -139,24 +139,24 @@ public class BatteryWarningToShutdown extends Activity {
             if(msg.what == 1){
                 mShutDownTime--;
                 if(mShutDownTime == 0){
-                    mContent.setText(getString(R.string.pax_shutdown_now_text));
+                    mContent.setText(getString(R.string.xxx_shutdown_now_text));
                     mTimer.cancel();
                     stopRingtone();
                     try{
-                        Log.d(TAG, "pax under voltage will shutdown");
+                        Log.d(TAG, "xxx under voltage will shutdown");
                         IPowerManager pm = IPowerManager.Stub.asInterface(
                             ServiceManager.getService(Context.POWER_SERVICE));
                         pm.shutdown(false, "under voltage", false);
                     }catch(RemoteException e){
-                        Log.d(TAG, "pax battery under voltage shutdown fail.");
+                        Log.d(TAG, "xxx battery under voltage shutdown fail.");
                         e.printStackTrace();
                     }
                 } else {
-					if (mType == PAX_BAT_LOW_TEMP) {
-						mContent.setText(getString(R.string.pax_low_temp_shutdown_time_text, mShutDownTime));
+					if (mType == xxx_BAT_LOW_TEMP) {
+						mContent.setText(getString(R.string.xxx_low_temp_shutdown_time_text, mShutDownTime));
 					}
 					else {
-						mContent.setText(getString(R.string.pax_high_temp_shutdown_time_text, mShutDownTime));
+						mContent.setText(getString(R.string.xxx_high_temp_shutdown_time_text, mShutDownTime));
 					}
                 }
             }
@@ -197,16 +197,16 @@ public class BatteryWarningToShutdown extends Activity {
         Log.d(TAG, "onCreate, mType is " + mType);
 
         requestWindowFeature(Window.FEATURE_NO_TITLE);
-        setContentView(R.layout.pax_battery_notify_warning);
+        setContentView(R.layout.xxx_battery_notify_warning);
 
         mTitleView = (TextView) findViewById(R.id.title);
         mContent = (TextView) findViewById(R.id.content);
         mYesButton = (Button) findViewById(R.id.yes);
-        if(mType == PAX_BAT_NC_UV){
+        if(mType == xxx_BAT_NC_UV){
             showVoltageUnderWarningDialog();
-        } if(mType == PAX_BAT_LOW_TEMP){
+        } if(mType == xxx_BAT_LOW_TEMP){
             showTempLowWarningDialog();
-        } else if(mType == PAX_BAT_HIGH_TEMP){
+        } else if(mType == xxx_BAT_HIGH_TEMP){
 			showTempHighWarningDialog();
 		}
 		else {
@@ -216,8 +216,8 @@ public class BatteryWarningToShutdown extends Activity {
 
     private void showVoltageUnderWarningDialog() {
         mShutDownTime = 10;
-        mTitleView.setText(R.string.pax_battery_voltage_under);
-        mContent.setText(getString(R.string.pax_shutdown_time_text, mShutDownTime));
+        mTitleView.setText(R.string.xxx_battery_voltage_under);
+        mContent.setText(getString(R.string.xxx_shutdown_time_text, mShutDownTime));
 
         mYesButton.setText(getString(android.R.string.yes));
         mYesButton.setOnClickListener(mYesListener);

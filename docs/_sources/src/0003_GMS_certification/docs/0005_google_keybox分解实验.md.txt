@@ -21,10 +21,10 @@
 ![0005_0002.png](images/0005_0002.png)
 
 2.绍海提供了一下google官网下载的key文件，经验证可用CA的方式烧录进去(修改或者其他文件烧录失败)，烧录步骤如下：
-* (1) adb push G:\G2020PR_V2_BF_PAX_M50_R_5978.bin /data
+* (1) adb push G:\G2020PR_V2_BF_xxx_M5x_R_5978.bin /data
 * (2) adb push G:\kmsetkey_ca /data
 * (3) adb shell " chmod a+x /data/kmsetkey_ca"
-* (4) adb shell "/data/kmsetkey_ca -i /data/G2020PR_V2_BF_PAX_M50_R_5978.bin"
+* (4) adb shell "/data/kmsetkey_ca -i /data/G2020PR_V2_BF_xxx_M5x_R_5978.bin"
 提示写入成功：
 ```
 kb_len = 9568

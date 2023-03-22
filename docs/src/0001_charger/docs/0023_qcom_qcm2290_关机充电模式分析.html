@@ -104,9 +104,9 @@
 <span class="w"> </span>    CmdLineLen += AsciiStrLen (LogLevel);<span class="w"></span>
 <span class="w"> </span>  } else if (BatteryStatus &amp;&amp;<span class="w"></span>
 <span class="w"> </span>             IsChargingScreenEnable () &amp;&amp;<span class="w"></span>
-<span class="gi">+//[feature]-del-begin xielianxiong@paxsz.com 20220830,for shutdown boot into charging mode</span><span class="w"></span>
+<span class="gi">+//[feature]-del-begin xielianxiong@xxxxx.com 20220830,for shutdown boot into charging mode</span><span class="w"></span>
 <span class="gi">+             /*IsChargingScreenEnable () &amp;&amp;*/</span><span class="w"></span>
-<span class="gi">+ //[feature]-del-end xielianxiong@paxsz.com 20220830,for shutdown boot into charging mode</span><span class="w"></span>
+<span class="gi">+ //[feature]-del-end xielianxiong@xxxxx.com 20220830,for shutdown boot into charging mode</span><span class="w"></span>
 <span class="w"> </span>             !Recovery) {<span class="w"></span>
 <span class="w"> </span>    DEBUG ((EFI_D_INFO, &quot;Device will boot into off mode charging mode\n&quot;));<span class="w"></span>
 <span class="w"> </span>    PauseAtBootUp = 1;<span class="w"></span>
@@ -125,7 +125,7 @@
   └── BootLinux (&amp;Info);
       ├── Status = DTBImgCheckAndAppendDT (Info, &amp;BootParamlistPtr);
       ├── BoardDtb = GetBoardDtb (Info, BootParamlistPtr-&gt;DtboImgBuffer);
-      │   ├── FindBestDtb = ReadDtbFindMatch (&amp;CurDtbInfo, &amp;BestDtbInfo, BIT(VARIANT_MATCH) | BIT(PAX_BOARD_INFO_MATCH)); //重要，读取sp信息
+      │   ├── FindBestDtb = ReadDtbFindMatch (&amp;CurDtbInfo, &amp;BestDtbInfo, BIT(VARIANT_MATCH) | BIT(xxx_BOARD_INFO_MATCH)); //重要，读取sp信息
       │   └── if (FindBestDtb) DtboIdx = DtboCount;     * Status = UpdateCmdLine (BootParamlistPtr.CmdLine, FfbmStr, Recovery,
       ├── DtboIdx = GetDtboIdx ();
       └── if (BatteryStatus &amp;&amp; IsChargingScreenEnable () &amp;&amp; !Recovery)
@@ -707,11 +707,11 @@ TargetPauseForBatteryCharge (BOOLEAN *BatteryStatus)
 <ul class="simple">
 <li><p>操作如下：</p></li>
 </ul>
-<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>C:<span class="se">\U</span>sers<span class="se">\w</span>ugangnan&gt;fastboot oem enable-charger-screen
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>C:<span class="se">\U</span>sers<span class="se">\x</span>xx&gt;fastboot oem enable-charger-screen
                                                    OKAY <span class="o">[</span>  <span class="m">0</span>.011s<span class="o">]</span>
 Finished. Total time: <span class="m">0</span>.017s
 
-C:<span class="se">\U</span>sers<span class="se">\w</span>ugangnan&gt;fastboot getvar charger-screen-enabled
+C:<span class="se">\U</span>sers<span class="se">\x</span>xx&gt;fastboot getvar charger-screen-enabled
 charger-screen-enabled: <span class="m">1</span>
 Finished. Total time: <span class="m">0</span>.004s
 </pre></div>
@@ -825,18 +825,18 @@ QcomChargerDxe::ChargerPlatform_TakeAction ChargingAction = 3
 <ul class="simple">
 <li><p>但是最后发现我们手机支持快充功能，但是模块最大OVP是6v，想来想去还是不连模块vbus了，<code class="docutils literal notranslate"><span class="pre">EFI_PmicSchgUsbinValid</span></code>直接ture：</p></li>
 </ul>
-<div class="highlight-diff notranslate"><div class="highlight"><pre><span></span><span class="gd">--- a/A6650_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/Drivers/PmicDxe/PmicSchgProtocol.c</span><span class="w"></span>
-<span class="gi">+++ b/A6650_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/Drivers/PmicDxe/PmicSchgProtocol.c</span><span class="w"></span>
+<div class="highlight-diff notranslate"><div class="highlight"><pre><span></span><span class="gd">--- a/A665x_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/Drivers/PmicDxe/PmicSchgProtocol.c</span><span class="w"></span>
+<span class="gi">+++ b/A665x_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/Drivers/PmicDxe/PmicSchgProtocol.c</span><span class="w"></span>
 <span class="gu">@@ -355,8 +355,10 @@ EFI_PmicSchgUsbinValid</span><span class="w"></span>
 <span class="w"> </span>    errFlag = pm_schg_usb_irq_status(PmicDeviceIndex, PM_SCHG_USB_IRQ_USBIN_PLUGIN, PM_IRQ_STATUS_RT,(boolean*)&amp;UsbinPlugedIn);<span class="w"></span>
 
 <span class="w"> </span>    Status = (PM_ERR_FLAG__SUCCESS == errFlag)? PM_ERR_FLAG__SUCCESS : EFI_DEVICE_ERROR;<span class="w"></span>
 <span class="gd">-</span><span class="w"></span>
 <span class="gd">-    *Valid = (UsbinPlugedIn) ? TRUE : FALSE;</span><span class="w"></span>
-<span class="gi">+// [NEW FEATURE]-BEGIN by wugangnan@paxsz.com 2022-11-21,Not using module vbus, return ture</span><span class="w"></span>
+<span class="gi">+// [NEW FEATURE]-BEGIN by xxx@xxxxx.com 2022-11-21,Not using module vbus, return ture</span><span class="w"></span>
 <span class="gi">+//    *Valid = (UsbinPlugedIn) ? TRUE : FALSE;</span><span class="w"></span>
 <span class="gi">+    *Valid = TRUE;</span><span class="w"></span>
-<span class="gi">+// [NEW FEATURE]-END by wugangnan@paxsz.com 2022-11-21,Not using module vbus, return ture</span><span class="w"></span>
+<span class="gi">+// [NEW FEATURE]-END by xxx@xxxxx.com 2022-11-21,Not using module vbus, return ture</span><span class="w"></span>
 <span class="w"> </span>  }<span class="w"></span>
 </pre></div>
 </div>
@@ -879,17 +879,17 @@ QcomChargerDxe::ChargerPlatform_TakeAction ChargingAction = 3
 </div>
 <p>以上代码，PONReason.USB_CHG(插usb开机)和ChgPresent(充电在位)状态都无法判断，都需要去掉，修改如下：</p>
 <div class="highlight-diff notranslate"><div class="highlight"><pre><span></span><span class="w">//ChgPresent条件</span>
-<span class="gd">--- a/A6650_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/Library/PmicLib/drivers/scpq/src/pm_scpq_usb.c</span><span class="w"></span>
-<span class="gi">+++ b/A6650_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/Library/PmicLib/drivers/scpq/src/pm_scpq_usb.c</span><span class="w"></span>
+<span class="gd">--- a/A665x_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/Library/PmicLib/drivers/scpq/src/pm_scpq_usb.c</span><span class="w"></span>
+<span class="gi">+++ b/A665x_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/Library/PmicLib/drivers/scpq/src/pm_scpq_usb.c</span><span class="w"></span>
 <span class="gu">@@ -198,7 +198,10 @@ pm_err_flag_type pm_scpq_usb_irq_status(uint32 pmic_index, pm_scpq_usb_irq_type</span><span class="w"></span>
 <span class="w"> </span>    }<span class="w"></span>
 
 <span class="w"> </span>    err_flag = pm_comm_read_byte_mask(SLAVE_ID, int_sts, mask, &amp;data, 0);<span class="w"></span>
 <span class="gd">-    *status = data ? TRUE : FALSE;</span><span class="w"></span>
-<span class="gi">+    //[BUGFIX]-0043775-BENGIN by (wugangnan@paxsz.com), 2022/12/03</span><span class="w"></span>
+<span class="gi">+    //[BUGFIX]-0043775-BENGIN by (xxx@xxxxx.com), 2022/12/03</span><span class="w"></span>
 <span class="gi">+    //*status = data ? TRUE : FALSE;</span><span class="w"></span>
 <span class="gi">+    *status = TRUE;</span><span class="w"></span>
-<span class="gi">+    //[BUGFIX]-0043775-END by (wugangnan@paxsz.com), 2022/12/03</span><span class="w"></span>
+<span class="gi">+    //[BUGFIX]-0043775-END by (xxx@xxxxx.com), 2022/12/03</span><span class="w"></span>
 <span class="w"> </span>  }<span class="w"></span>
 </pre></div>
 </div>

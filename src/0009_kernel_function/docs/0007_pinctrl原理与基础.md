@@ -148,11 +148,11 @@ default实例不需要驱动配置，在probe中自动配置。
 };
 ```
 
-* `a6650-scuba-iot-idp-overlay.dts`:
+* `a665x-scuba-iot-idp-overlay.dts`:
 
 ```log
 mp2721@3f {
-        compatible = "pax,mp2721";
+        compatible = "xxx,mp2721";
         reg = <0x3f>;
         pinctrl-names = "default";
         pinctrl-0 = <&charge_interrupt_pincfg>;

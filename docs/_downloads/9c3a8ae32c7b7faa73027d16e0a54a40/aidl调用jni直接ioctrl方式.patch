@@ -1,5 +1,5 @@
 From 567bd66040e450f514576ab1f081ecb192278918 Mon Sep 17 00:00:00 2001
-From: huling <huling@paxsz.com>
+From: huling <huling@xxxxx.com>
 Date: Wed, 8 Jun 2022 07:36:27 +0000
 Subject: [PATCH] =?UTF-8?q?[Title]:framework=E5=92=8C=E5=BA=94=E7=94=A8?=
  =?UTF-8?q?=E6=94=AF=E6=8C=81=E5=8D=95=E5=87=BB=E5=94=A4=E9=86=92=E6=89=8B?=
@@ -9,8 +9,8 @@ Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 
 [Summary]:
-	1.新增paxGestureManager和paxGestureService，通过jni调用和驱动ioctl,实现对tp驱动单击唤醒功能开关的控制
-	2.新增paxGestureService和/dev/pax_tp的selinux权限
+	1.新增xxxxxGestureManager和xxxxxGestureService，通过jni调用和驱动ioctl,实现对tp驱动单击唤醒功能开关的控制
+	2.新增xxxxxGestureService和/dev/xxxxx_tp的selinux权限
 
 [Test Plan]:
 	1.测试Settings->System->Gesture->Single Tap To Wake Up功能控制是否正常
@@ -19,105 +19,105 @@ Content-Transfer-Encoding: 8bit
 
 [Model]:A3700
 
-[author]:huling@paxsz.com
+[author]:huling@xxxxx.com
 
 [date]:2022-6-8
 ---
  .../rc_file/init.mt6762.A3700_V01_V01.rc      |  2 +
  .../rc_file/init.mt6762.A3700_V02_V03.rc      |  2 +
- .../k62v1_64_pax/sepolicy/vendor/file.te      |  1 +
+ .../k62v1_64_xxxxx/sepolicy/vendor/file.te      |  1 +
  .../sepolicy/vendor/file_contexts             |  2 +
- .../sepolicy/vendor/pax_gesture_service.te    |  1 +
+ .../sepolicy/vendor/xxxxx_gesture_service.te    |  1 +
  .../sepolicy/vendor/system_server.te          |  2 +
  frameworks/base/api/current.txt               |  1 +
  .../android/app/SystemServiceRegistry.java    | 13 +++
  .../core/java/android/content/Context.java    |  1 +
- .../com/pax/gesture/IPaxGestureManager.aidl   | 24 ++++++
- .../com/pax/gesture/PaxGestureManager.java    | 48 +++++++++++
+ .../com/xxxxx/gesture/IPaxGestureManager.aidl   | 24 ++++++
+ .../com/xxxxx/gesture/PaxGestureManager.java    | 48 +++++++++++
  frameworks/base/non-updatable-api/current.txt |  1 +
- .../server/paxgesture/PaxGestureService.java  | 77 +++++++++++++++++
+ .../server/xxxxxgesture/PaxGestureService.java  | 77 +++++++++++++++++
  frameworks/base/services/core/jni/Android.bp  |  1 +
- ...id_server_paxgesture_PaxGestureService.cpp | 82 +++++++++++++++++++
+ ...id_server_xxxxxgesture_PaxGestureService.cpp | 82 +++++++++++++++++++
  frameworks/base/services/core/jni/onload.cpp  |  6 ++
  .../java/com/android/server/SystemServer.java | 13 ++-
  .../mediatek/chsc5xxx/semi_touch_device.c     | 42 +++-------
  .../apps/MtkSettings/res/values/strings.xml   |  4 +-
  ...leTapAwakeGesturePreferenceController.java |  5 ++
  20 files changed, 295 insertions(+), 33 deletions(-)
- create mode 100755 device/mediateksample/k62v1_64_pax/sepolicy/vendor/pax_gesture_service.te
- create mode 100755 frameworks/base/core/java/com/pax/gesture/IPaxGestureManager.aidl
- create mode 100755 frameworks/base/core/java/com/pax/gesture/PaxGestureManager.java
- create mode 100755 frameworks/base/services/core/java/com/android/server/paxgesture/PaxGestureService.java
- create mode 100755 frameworks/base/services/core/jni/com_android_server_paxgesture_PaxGestureService.cpp
+ create mode 100755 device/mediateksample/k62v1_64_xxxxx/sepolicy/vendor/xxxxx_gesture_service.te
+ create mode 100755 frameworks/base/core/java/com/xxxxx/gesture/IPaxGestureManager.aidl
+ create mode 100755 frameworks/base/core/java/com/xxxxx/gesture/PaxGestureManager.java
+ create mode 100755 frameworks/base/services/core/java/com/android/server/xxxxxgesture/PaxGestureService.java
+ create mode 100755 frameworks/base/services/core/jni/com_android_server_xxxxxgesture_PaxGestureService.cpp
  mode change 100644 => 100755 frameworks/base/services/core/jni/onload.cpp
 
-diff --git a/device/mediateksample/k62v1_64_pax/rc_file/init.mt6762.A3700_V01_V01.rc b/device/mediateksample/k62v1_64_pax/rc_file/init.mt6762.A3700_V01_V01.rc
+diff --git a/device/mediateksample/k62v1_64_xxxxx/rc_file/init.mt6762.A3700_V01_V01.rc b/device/mediateksample/k62v1_64_xxxxx/rc_file/init.mt6762.A3700_V01_V01.rc
 index 2fe5aa870bb..0809db36ac5 100755
---- a/device/mediateksample/k62v1_64_pax/rc_file/init.mt6762.A3700_V01_V01.rc
-+++ b/device/mediateksample/k62v1_64_pax/rc_file/init.mt6762.A3700_V01_V01.rc
+--- a/device/mediateksample/k62v1_64_xxxxx/rc_file/init.mt6762.A3700_V01_V01.rc
++++ b/device/mediateksample/k62v1_64_xxxxx/rc_file/init.mt6762.A3700_V01_V01.rc
 @@ -64,6 +64,8 @@ on property:sys.boot_completed=1
  on fs
  
  on boot
-+	chmod 0777 /dev/pax_tp
-+	chown system system /dev/pax_tp
++	chmod 0777 /dev/xxxxx_tp
++	chown system system /dev/xxxxx_tp
  
  service tpver /system/bin/tpver
  	user root
-diff --git a/device/mediateksample/k62v1_64_pax/rc_file/init.mt6762.A3700_V02_V03.rc b/device/mediateksample/k62v1_64_pax/rc_file/init.mt6762.A3700_V02_V03.rc
+diff --git a/device/mediateksample/k62v1_64_xxxxx/rc_file/init.mt6762.A3700_V02_V03.rc b/device/mediateksample/k62v1_64_xxxxx/rc_file/init.mt6762.A3700_V02_V03.rc
 index c82bcd44833..500c38dd99f 100755
---- a/device/mediateksample/k62v1_64_pax/rc_file/init.mt6762.A3700_V02_V03.rc
-+++ b/device/mediateksample/k62v1_64_pax/rc_file/init.mt6762.A3700_V02_V03.rc
+--- a/device/mediateksample/k62v1_64_xxxxx/rc_file/init.mt6762.A3700_V02_V03.rc
++++ b/device/mediateksample/k62v1_64_xxxxx/rc_file/init.mt6762.A3700_V02_V03.rc
 @@ -63,6 +63,8 @@ on property:sys.boot_completed=1
  on fs
  
  on boot
-+	chmod 0777 /dev/pax_tp
-+	chown system system /dev/pax_tp
++	chmod 0777 /dev/xxxxx_tp
++	chown system system /dev/xxxxx_tp
  
  service tpver /system/bin/tpver
  	user root
-diff --git a/device/mediateksample/k62v1_64_pax/sepolicy/vendor/file.te b/device/mediateksample/k62v1_64_pax/sepolicy/vendor/file.te
+diff --git a/device/mediateksample/k62v1_64_xxxxx/sepolicy/vendor/file.te b/device/mediateksample/k62v1_64_xxxxx/sepolicy/vendor/file.te
 index c5b33ff9971..8662ec6b529 100755
---- a/device/mediateksample/k62v1_64_pax/sepolicy/vendor/file.te
-+++ b/device/mediateksample/k62v1_64_pax/sepolicy/vendor/file.te
+--- a/device/mediateksample/k62v1_64_xxxxx/sepolicy/vendor/file.te
++++ b/device/mediateksample/k62v1_64_xxxxx/sepolicy/vendor/file.te
 @@ -1,6 +1,7 @@
- #add by paxsz
- type pax_sysfs, fs_type, sysfs_type;
+ #add by xxxxx
+ type xxxxx_sysfs, fs_type, sysfs_type;
  type logger_file, file_type;
-+type pax_gesture_device, dev_type, mlstrustedobject;
++type xxxxx_gesture_device, dev_type, mlstrustedobject;
  #type resource_file, file_type, data_file_type;
- #type pax_sp_file, file_type, data_file_type, core_data_file_type;
+ #type xxxxx_sp_file, file_type, data_file_type, core_data_file_type;
  
-diff --git a/device/mediateksample/k62v1_64_pax/sepolicy/vendor/file_contexts b/device/mediateksample/k62v1_64_pax/sepolicy/vendor/file_contexts
+diff --git a/device/mediateksample/k62v1_64_xxxxx/sepolicy/vendor/file_contexts b/device/mediateksample/k62v1_64_xxxxx/sepolicy/vendor/file_contexts
 index 34c8c3d8717..846b3921487 100755
---- a/device/mediateksample/k62v1_64_pax/sepolicy/vendor/file_contexts
-+++ b/device/mediateksample/k62v1_64_pax/sepolicy/vendor/file_contexts
+--- a/device/mediateksample/k62v1_64_xxxxx/sepolicy/vendor/file_contexts
++++ b/device/mediateksample/k62v1_64_xxxxx/sepolicy/vendor/file_contexts
 @@ -13,5 +13,7 @@
  
  /dev/ttyGS*                     u:object_r:ttyGS_device:s0
  
-+/dev/pax_tp						u:object_r:pax_gesture_device:s0
++/dev/xxxxx_tp						u:object_r:xxxxx_gesture_device:s0
 +
  # for get tp version
  /system/bin/tpver               u:object_r:tp_ver_default_exec:s0
-diff --git a/device/mediateksample/k62v1_64_pax/sepolicy/vendor/pax_gesture_service.te b/device/mediateksample/k62v1_64_pax/sepolicy/vendor/pax_gesture_service.te
+diff --git a/device/mediateksample/k62v1_64_xxxxx/sepolicy/vendor/xxxxx_gesture_service.te b/device/mediateksample/k62v1_64_xxxxx/sepolicy/vendor/xxxxx_gesture_service.te
 new file mode 100755
 index 00000000000..1a7dfcda9c4
 --- /dev/null
-+++ b/device/mediateksample/k62v1_64_pax/sepolicy/vendor/pax_gesture_service.te
++++ b/device/mediateksample/k62v1_64_xxxxx/sepolicy/vendor/xxxxx_gesture_service.te
 @@ -0,0 +1 @@
-+type pax_gesture_service,     app_api_service, system_server_service, service_manager_type;
-diff --git a/device/mediateksample/k62v1_64_pax/sepolicy/vendor/system_server.te b/device/mediateksample/k62v1_64_pax/sepolicy/vendor/system_server.te
++type xxxxx_gesture_service,     app_api_service, system_server_service, service_manager_type;
+diff --git a/device/mediateksample/k62v1_64_xxxxx/sepolicy/vendor/system_server.te b/device/mediateksample/k62v1_64_xxxxx/sepolicy/vendor/system_server.te
 index b3f1e3855c6..098572850e4 100755
---- a/device/mediateksample/k62v1_64_pax/sepolicy/vendor/system_server.te
-+++ b/device/mediateksample/k62v1_64_pax/sepolicy/vendor/system_server.te
-@@ -34,6 +34,8 @@ allow system_server paxdroid_share_file:dir { getattr };
+--- a/device/mediateksample/k62v1_64_xxxxx/sepolicy/vendor/system_server.te
++++ b/device/mediateksample/k62v1_64_xxxxx/sepolicy/vendor/system_server.te
+@@ -34,6 +34,8 @@ allow system_server xxxxxdroid_share_file:dir { getattr };
  allow system_server PaxApiService_service:service_manager { find };
  allow system_server default_android_hwservice:hwservice_manager { find };
- allow system_server hal_pax_bms:binder { call };
-+allow system_server pax_gesture_service:service_manager { find add };
-+allow system_server pax_gesture_device:chr_file { ioctl read open write };
+ allow system_server hal_xxxxx_bms:binder { call };
++allow system_server xxxxx_gesture_service:service_manager { find add };
++allow system_server xxxxx_gesture_device:chr_file { ioctl read open write };
  allow system_server auth_bpadownload:binder { call };
  
  allow system_server su:fd { use };
@@ -128,8 +128,8 @@ index 2938d9ef94d..cd025965bf4 100755
 @@ -10226,6 +10226,7 @@ package android.content {
      field public static final String NOTIFICATION_SERVICE = "notification";
      field public static final String NSD_SERVICE = "servicediscovery";
-     field public static final String PAXBMS_SERVICE = "paxbms";
-+    field public static final String PAX_GESTURE_SERVICE = "pax_gesture";
+     field public static final String xxxBMS_SERVICE = "xxxxxbms";
++    field public static final String xxx_GESTURE_SERVICE = "xxxxx_gesture";
      field public static final String POWER_SERVICE = "power";
      field public static final String PRINT_SERVICE = "print";
      field public static final int RECEIVER_VISIBLE_TO_INSTANT_APPS = 1; // 0x1
@@ -141,8 +141,8 @@ index 193542f9ef9..9f578cd1d8a 100755
  import android.os.IPaxBms;
  import android.app.PaxBmsManager;
  
-+import com.pax.gesture.PaxGestureManager;
-+import com.pax.gesture.IPaxGestureManager;
++import com.xxxxx.gesture.PaxGestureManager;
++import com.xxxxx.gesture.IPaxGestureManager;
  /**
   * Manages all of the system services that can be returned by {@link Context#getSystemService}.
   * Used by {@link ContextImpl}.
@@ -150,16 +150,16 @@ index 193542f9ef9..9f578cd1d8a 100755
                          return PaxBmsManager.getInstance();
                      }});
  
-+		//[FEATURE]-Add-BEGIN by huling@paxsz.com 2022-6-7, for pax gesture service
-+		registerService(Context.PAX_GESTURE_SERVICE, PaxGestureManager.class,
++		//[FEATURE]-Add-BEGIN by huling@xxxxx.com 2022-6-7, for xxxxx gesture service
++		registerService(Context.xxx_GESTURE_SERVICE, PaxGestureManager.class,
 +                new CachedServiceFetcher<PaxGestureManager>() {
 +					@Override
 +					public PaxGestureManager createService(ContextImpl ctx) throws ServiceNotFoundException {
-+						IBinder b = ServiceManager.getServiceOrThrow(Context.PAX_GESTURE_SERVICE);
++						IBinder b = ServiceManager.getServiceOrThrow(Context.xxx_GESTURE_SERVICE);
 +						IPaxGestureManager service = IPaxGestureManager.Stub.asInterface(b);
 +						return new PaxGestureManager(service, ctx);
 +					}});
-+		//[FEATURE]-Add-END by huling@paxsz.com 2022-6-7, for pax gesture service
++		//[FEATURE]-Add-END by huling@xxxxx.com 2022-6-7, for xxxxx gesture service
 +
          sInitializing = true;
          try {
@@ -170,17 +170,17 @@ index 190f30c9383..106be5734e1 100755
 +++ b/frameworks/base/core/java/android/content/Context.java
 @@ -5088,6 +5088,7 @@ public abstract class Context {
  
- 	public static final String PAXBMS_SERVICE="paxbms";
+ 	public static final String xxxBMS_SERVICE="xxxxxbms";
  
-+	public static final String PAX_GESTURE_SERVICE = "pax_gesture";
++	public static final String xxx_GESTURE_SERVICE = "xxxxx_gesture";
      /**
       * Use with {@link #getSystemService(String)} to retrieve a {@link
       * android.app.blob.BlobStoreManager} for contributing and accessing data blobs
-diff --git a/frameworks/base/core/java/com/pax/gesture/IPaxGestureManager.aidl b/frameworks/base/core/java/com/pax/gesture/IPaxGestureManager.aidl
+diff --git a/frameworks/base/core/java/com/xxxxx/gesture/IPaxGestureManager.aidl b/frameworks/base/core/java/com/xxxxx/gesture/IPaxGestureManager.aidl
 new file mode 100755
 index 00000000000..16b83fdca78
 --- /dev/null
-+++ b/frameworks/base/core/java/com/pax/gesture/IPaxGestureManager.aidl
++++ b/frameworks/base/core/java/com/xxxxx/gesture/IPaxGestureManager.aidl
 @@ -0,0 +1,24 @@
 +/*
 + * Copyright (C) 2019 The Android Open Source Project
@@ -198,7 +198,7 @@ index 00000000000..16b83fdca78
 + * limitations under the License.
 + */
 +
-+package com.pax.gesture;
++package com.xxxxx.gesture;
 +
 +/** @hide */
 +interface IPaxGestureManager
@@ -206,11 +206,11 @@ index 00000000000..16b83fdca78
 +    int openGesture();
 +    int closeGesture();
 +}
-diff --git a/frameworks/base/core/java/com/pax/gesture/PaxGestureManager.java b/frameworks/base/core/java/com/pax/gesture/PaxGestureManager.java
+diff --git a/frameworks/base/core/java/com/xxxxx/gesture/PaxGestureManager.java b/frameworks/base/core/java/com/xxxxx/gesture/PaxGestureManager.java
 new file mode 100755
 index 00000000000..d22460a5e10
 --- /dev/null
-+++ b/frameworks/base/core/java/com/pax/gesture/PaxGestureManager.java
++++ b/frameworks/base/core/java/com/xxxxx/gesture/PaxGestureManager.java
 @@ -0,0 +1,48 @@
 +/*
 + * Copyright (C) 2019 The Android Open Source Project
@@ -228,7 +228,7 @@ index 00000000000..d22460a5e10
 + * limitations under the License.
 + */
 +
-+package com.pax.gesture;
++package com.xxxxx.gesture;
 +
 +import android.content.Context;
 +import android.os.RemoteException;
@@ -268,16 +268,16 @@ index 5aa2e7f62a3..ec298d51e70 100755
 @@ -10226,6 +10226,7 @@ package android.content {
      field public static final String NOTIFICATION_SERVICE = "notification";
      field public static final String NSD_SERVICE = "servicediscovery";
-     field public static final String PAXBMS_SERVICE = "paxbms";
-+    field public static final String PAX_GESTURE_SERVICE = "pax_gesture";
+     field public static final String xxxBMS_SERVICE = "xxxxxbms";
++    field public static final String xxx_GESTURE_SERVICE = "xxxxx_gesture";
      field public static final String POWER_SERVICE = "power";
      field public static final String PRINT_SERVICE = "print";
      field public static final int RECEIVER_VISIBLE_TO_INSTANT_APPS = 1; // 0x1
-diff --git a/frameworks/base/services/core/java/com/android/server/paxgesture/PaxGestureService.java b/frameworks/base/services/core/java/com/android/server/paxgesture/PaxGestureService.java
+diff --git a/frameworks/base/services/core/java/com/android/server/xxxxxgesture/PaxGestureService.java b/frameworks/base/services/core/java/com/android/server/xxxxxgesture/PaxGestureService.java
 new file mode 100755
 index 00000000000..5248789bd93
 --- /dev/null
-+++ b/frameworks/base/services/core/java/com/android/server/paxgesture/PaxGestureService.java
++++ b/frameworks/base/services/core/java/com/android/server/xxxxxgesture/PaxGestureService.java
 @@ -0,0 +1,77 @@
 +/*
 + * Copyright (C) 2019 The Android Open Source Project
@@ -295,10 +295,10 @@ index 00000000000..5248789bd93
 + * limitations under the License.
 + */
 +
-+package com.android.server.paxgesture;
++package com.android.server.xxxxxgesture;
 +
 +import android.content.Context;
-+import com.pax.gesture.IPaxGestureManager;
++import com.xxxxx.gesture.IPaxGestureManager;
 +import android.os.SystemProperties;
 +import android.content.BroadcastReceiver;
 +import android.content.Intent;
@@ -362,18 +362,18 @@ index 18d92210478..f59637241e4 100755
 --- a/frameworks/base/services/core/jni/Android.bp
 +++ b/frameworks/base/services/core/jni/Android.bp
 @@ -62,6 +62,7 @@ cc_library_static {
-         //ADD BEGIN by shanliangliang@paxsz.com add for BMS, 2021/09/1
-         "com_android_server_paxbms_PaxBmsService.cpp",
-         //ADD END by shanliangliang@paxsz.com add for BMS, 2021/09/1
-+		"com_android_server_paxgesture_PaxGestureService.cpp",
+         //ADD BEGIN by xxx@xxxxx.com add for BMS, 2021/09/1
+         "com_android_server_xxxxxbms_PaxBmsService.cpp",
+         //ADD END by xxx@xxxxx.com add for BMS, 2021/09/1
++		"com_android_server_xxxxxgesture_PaxGestureService.cpp",
          "onload.cpp",
          ":lib_networkStatsFactory_native",
      ],
-diff --git a/frameworks/base/services/core/jni/com_android_server_paxgesture_PaxGestureService.cpp b/frameworks/base/services/core/jni/com_android_server_paxgesture_PaxGestureService.cpp
+diff --git a/frameworks/base/services/core/jni/com_android_server_xxxxxgesture_PaxGestureService.cpp b/frameworks/base/services/core/jni/com_android_server_xxxxxgesture_PaxGestureService.cpp
 new file mode 100755
 index 00000000000..6213998d8aa
 --- /dev/null
-+++ b/frameworks/base/services/core/jni/com_android_server_paxgesture_PaxGestureService.cpp
++++ b/frameworks/base/services/core/jni/com_android_server_xxxxxgesture_PaxGestureService.cpp
 @@ -0,0 +1,82 @@
 +#define LOG_TAG "PaxGestureService"
 +
@@ -397,19 +397,19 @@ index 00000000000..6213998d8aa
 +#include <array>
 +#include <memory>
 +
-+#define GESTURE_DEV                "/dev/pax_tp"
++#define GESTURE_DEV                "/dev/xxxxx_tp"
 +#define SET_GESTURE_OPEN           _IOW('b', 0, int)
 +#define SET_GESTURE_CLOSE          _IOW('b', 1, int)
 +
 +namespace android {
 +
-+static jint android_server_paxgesture_PaxGestureService_nativeOpenGesture(JNIEnv* env, jobject obj)
++static jint android_server_xxxxxgesture_PaxGestureService_nativeOpenGesture(JNIEnv* env, jobject obj)
 +{
 +    int fd;
 +    int res;
 +    fd = open(GESTURE_DEV, O_RDWR);
 +    if (fd <0) {
-+        ALOGE("Unable to open /dev/pax_tp");
++        ALOGE("Unable to open /dev/xxxxx_tp");
 +        return -1;
 +    }
 +    
@@ -423,13 +423,13 @@ index 00000000000..6213998d8aa
 +    return 0;
 +}
 +
-+static jint android_server_paxgesture_PaxGestureService_nativeCloseGesture(JNIEnv* env, jobject obj)
++static jint android_server_xxxxxgesture_PaxGestureService_nativeCloseGesture(JNIEnv* env, jobject obj)
 +{
 +    int fd;
 +    int res;
 +    fd = open(GESTURE_DEV, O_RDWR);
 +    if (fd <0) {
-+        ALOGE("Unable to open /dev/pax_tp");
++        ALOGE("Unable to open /dev/xxxxx_tp");
 +		return -1;
 +    }
 +    
@@ -443,16 +443,16 @@ index 00000000000..6213998d8aa
 +	return 0;
 +}
 +
-+//add by huling@paxsz.com
++//add by huling@xxxxx.com
 +static const JNINativeMethod sPaxGestureMethods[] = {
 +    /* name, signature, funcPtr */
-+    {"nativeOpenGesture", "()I", (void*)android_server_paxgesture_PaxGestureService_nativeOpenGesture},
-+    {"nativeCloseGesture", "()I", (void*)android_server_paxgesture_PaxGestureService_nativeCloseGesture},
++    {"nativeOpenGesture", "()I", (void*)android_server_xxxxxgesture_PaxGestureService_nativeOpenGesture},
++    {"nativeCloseGesture", "()I", (void*)android_server_xxxxxgesture_PaxGestureService_nativeCloseGesture},
 +};
 + 
-+int register_android_server_paxgesture_PaxGestureService(JNIEnv* env)
++int register_android_server_xxxxxgesture_PaxGestureService(JNIEnv* env)
 +{
-+    return jniRegisterNativeMethods(env, "com/android/server/paxgesture/PaxGestureService",
++    return jniRegisterNativeMethods(env, "com/android/server/xxxxxgesture/PaxGestureService",
 +                                    sPaxGestureMethods, NELEM(sPaxGestureMethods));
 +}
 +
@@ -465,34 +465,34 @@ index 0d0f56ed587..1790dceaa34
 --- a/frameworks/base/services/core/jni/onload.cpp
 +++ b/frameworks/base/services/core/jni/onload.cpp
 @@ -67,6 +67,9 @@ int register_android_server_GpuService(JNIEnv* env);
- //ADD BEGIN by shanliangliang@paxsz.com add for BMS, 2021/07/12
- int register_android_server_paxbms_PaxBmsService(JNIEnv* env);
- //ADD END by shanliangliang@paxsz.com add for BMS, 2021/07/12
-+//[FEATURE]-Add-BEGIN by huling@paxsz.com 2022-6-7, for pax gesture service
-+int register_android_server_paxgesture_PaxGestureService(JNIEnv* env);
-+//[FEATURE]-Add-END by huling@paxsz.com 2022-6-7, for pax gesture service
+ //ADD BEGIN by xxx@xxxxx.com add for BMS, 2021/07/12
+ int register_android_server_xxxxxbms_PaxBmsService(JNIEnv* env);
+ //ADD END by xxx@xxxxx.com add for BMS, 2021/07/12
++//[FEATURE]-Add-BEGIN by huling@xxxxx.com 2022-6-7, for xxxxx gesture service
++int register_android_server_xxxxxgesture_PaxGestureService(JNIEnv* env);
++//[FEATURE]-Add-END by huling@xxxxx.com 2022-6-7, for xxxxx gesture service
  };
  
  using namespace android;
 @@ -125,5 +128,8 @@ extern "C" jint JNI_OnLoad(JavaVM* vm, void* /* reserved */)
      register_android_server_AdbDebuggingManager(env);
      register_android_server_GpuService(env);
- 	register_android_server_paxbms_PaxBmsService(env);
-+	//[FEATURE]-Add-BEGIN by huling@paxsz.com 2022-6-7, for pax gesture service
-+	register_android_server_paxgesture_PaxGestureService(env);
-+	//[FEATURE]-Add-END by huling@paxsz.com 2022-6-7, for pax gesture service
+ 	register_android_server_xxxxxbms_PaxBmsService(env);
++	//[FEATURE]-Add-BEGIN by huling@xxxxx.com 2022-6-7, for xxxxx gesture service
++	register_android_server_xxxxxgesture_PaxGestureService(env);
++	//[FEATURE]-Add-END by huling@xxxxx.com 2022-6-7, for xxxxx gesture service
      return JNI_VERSION_1_4;
  }
 diff --git a/frameworks/base/services/java/com/android/server/SystemServer.java b/frameworks/base/services/java/com/android/server/SystemServer.java
 index 3f78db9de2f..d29754988d4 100755
 --- a/frameworks/base/services/java/com/android/server/SystemServer.java
 +++ b/frameworks/base/services/java/com/android/server/SystemServer.java
-@@ -206,7 +206,7 @@ import com.pax.server.PaxBatteryManagerService;
+@@ -206,7 +206,7 @@ import com.xxxxx.server.PaxBatteryManagerService;
  import com.android.server.PaxSystemServer;
- import com.paxdroid.os.PaxTrafficServiceImpl;
- //[FEATURE]-Add-BEGIN by wufh@paxsz.com 2021-10-14, for start PaxSystemServer and PaxTrafficServiceImpl
+ import com.xxxxxdroid.os.PaxTrafficServiceImpl;
+ //[FEATURE]-Add-BEGIN by wufh@xxxxx.com 2021-10-14, for start PaxSystemServer and PaxTrafficServiceImpl
 -
-+import com.android.server.paxgesture.PaxGestureService;
++import com.android.server.xxxxxgesture.PaxGestureService;
  
  public final class SystemServer {
  
@@ -500,24 +500,24 @@ index 3f78db9de2f..d29754988d4 100755
          ConsumerIrService consumerIr = null;
          MmsServiceBroker mmsService = null;
          HardwarePropertiesManagerService hardwarePropertiesService = null;
-+		PaxGestureService paxGestureService = null;
++		PaxGestureService xxxxxGestureService = null;
  
          boolean disableSystemTextClassifier = SystemProperties.getBoolean(
                  "config.disable_systemtextclassifier", false);
 @@ -1306,6 +1307,16 @@ public final class SystemServer {
              t.traceEnd();
- 		//ADD END by shanliangliang@paxsz.com add for BMS, 2021/07/12
+ 		//ADD END by xxx@xxxxx.com add for BMS, 2021/07/12
  
-+            //[FEATURE]-Add-BEGIN by huling@paxsz.com 2022-6-7, for pax gesture service
++            //[FEATURE]-Add-BEGIN by huling@xxxxx.com 2022-6-7, for xxxxx gesture service
 +            t.traceBegin("PaxGestureService");
 +            try {
-+                paxGestureService = new PaxGestureService(context);
-+                ServiceManager.addService(Context.PAX_GESTURE_SERVICE, paxGestureService);
++                xxxxxGestureService = new PaxGestureService(context);
++                ServiceManager.addService(Context.xxx_GESTURE_SERVICE, xxxxxGestureService);
 +            } catch (Throwable e) {
 +                reportWtf("StartPaxGestureService", e);
 +            }
 +            t.traceEnd();
-+            //[FEATURE]-Add-END by huling@paxsz.com 2022-6-7, for pax gesture service
++            //[FEATURE]-Add-END by huling@xxxxx.com 2022-6-7, for xxxxx gesture service
          } catch (Throwable e) {
              Slog.e("System", "******************************************");
              Slog.e("System", "************ Failure starting core service");
@@ -528,7 +528,7 @@ index d00de9403fd..0faf3643020 100755
 @@ -35,8 +35,8 @@ struct sm_touch_dev st_dev = {
  
  #if SEMI_TOUCH_GESTURE_OPEN
- #define PAX_TS_NAME "pax_tp"
+ #define xxx_TS_NAME "xxxxx_tp"
 -#define SET_GESTURE_ONOFF           _IOW('b', 0, int)
 -#define SET_DEFAULT                 _IOW('b', 1, int)
 +#define SET_GESTURE_OPEN           _IOW('b', 0, int)
@@ -599,7 +599,7 @@ index cd0d6a1b0fb..06e4166f7ec 100755
 +    <string name="double_tap_awake_summary">Single Tap Screen status</string>
  
  
-     <!-- paxsz use -->
+     <!-- xxxxx use -->
 diff --git a/vendor/mediatek/proprietary/packages/apps/MtkSettings/src/com/android/settings/gestures/PaxDoubleTapAwakeGesturePreferenceController.java b/vendor/mediatek/proprietary/packages/apps/MtkSettings/src/com/android/settings/gestures/PaxDoubleTapAwakeGesturePreferenceController.java
 index 32437d843df..8df5dade66a 100755
 --- a/vendor/mediatek/proprietary/packages/apps/MtkSettings/src/com/android/settings/gestures/PaxDoubleTapAwakeGesturePreferenceController.java
@@ -607,8 +607,8 @@ index 32437d843df..8df5dade66a 100755
 @@ -26,6 +26,7 @@ import com.android.settings.core.BasePreferenceController;
  
  import android.util.Log;
- //import pax.util.PayDevManager;
-+import com.pax.gesture.PaxGestureManager;
+ //import xxxxx.util.PayDevManager;
++import com.xxxxx.gesture.PaxGestureManager;
  import java.io.IOException;
  import android.os.SystemProperties;
  
@@ -621,7 +621,7 @@ index 32437d843df..8df5dade66a 100755
      public PaxDoubleTapAwakeGesturePreferenceController(Context context) {
          super(context,KEY_DOUBLE_TAP_AWAKE);
          //mPayDevManager = PayDevManager.getInstance(context);
-+		mPaxGestureManager = (PaxGestureManager) context.getSystemService(Context.PAX_GESTURE_SERVICE);
++		mPaxGestureManager = (PaxGestureManager) context.getSystemService(Context.xxx_GESTURE_SERVICE);
  		Log.d(TAG,"start");
      }
  

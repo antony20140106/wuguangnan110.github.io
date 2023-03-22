@@ -1,6 +1,6 @@
 # 概述
 
-高通A6650 healthd 守护进程分析。
+高通A665x healthd 守护进程分析。
 
 Android 9 引入了从 health@1.0 HAL 升级的主要版本 android.hardware.health HAL 2.0。这一新 HAL 具有以下优势：
 
@@ -307,7 +307,7 @@ Init(struct healthd_config* config) > CHECK_EQ(registerAsService(instance_name()
 * `ps -A | grep health`:
 
 ```
-A6650:/ # ps -A | grep health
+A665x:/ # ps -A | grep health
 system         646     1 12978784  3608 do_epoll_wait       0 S android.hardware.health@2.1-service
 ```
 

@@ -1,6 +1,6 @@
 # 概述
 
-PAX A3700需要删除短信和电话功能，mtk提供patch进行合并，有一些注意事项。
+xxx A3700需要删除短信和电话功能，mtk提供patch进行合并，有一些注意事项。
 
 # MTK SOP
 
@@ -76,7 +76,7 @@ CALL_STATE_IDLE
 * 首先注意到modem mcu编译命令`./m "TK_MD_BASIC(LWTG_6177M_R3_6762).mak" new`，选的project是`LWTG_6177M_R3_6762`，所以配置文件是如下路径，另外需要注意的电如下描述：
 
 ```log
-paxmodem/mcu/mtk_rel/TK_MD_BASIC/LWTG_6177M_R3_6762
+xxxmodem/mcu/mtk_rel/TK_MD_BASIC/LWTG_6177M_R3_6762
 ├── BASIC
 │   └── mcd
 │       ├── mcd_l3_inc_gprs_struct.h

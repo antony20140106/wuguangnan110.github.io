@@ -19,8 +19,8 @@ answer:3.调试屏幕的时候,要算出dpi,追加到device tree node name 后�
 # 根据屏幕size 分辨率自动设置dpi
 
 ```diff
---- a/A6650_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/SocPkg/AgattiPkg/Library/MDPPlatformLib/MDPPlatformLib.c
-+++ b/A6650_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/SocPkg/AgattiPkg/Library/MDPPlatformLib/MDPPlatformLib.c
+--- a/A665x_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/SocPkg/AgattiPkg/Library/MDPPlatformLib/MDPPlatformLib.c
++++ b/A665x_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/SocPkg/AgattiPkg/Library/MDPPlatformLib/MDPPlatformLib.c
 @@ -224,10 +224,10 @@ const PanelDTInfoType fastBootPanelList[] =
  {
    /*Supported Panels*/
@@ -35,33 +35,33 @@ answer:3.调试屏幕的时候,要算出dpi,追加到device tree node name 后�
 
    PANEL_CREATE_ENTRY("truly_nt36525_hdplus_vid",   MDPPLATFORM_PANEL_NT36525_TRULY_HDPLUS_VIDEO,  "qcom,mdss_dsi_nt36525_truly_video:",   DISP_INTF_DSI, DISP_TOPOLOGY_CONFIG_NONE,  DISP_TIMING_CONFIG_NONE,PLL_OVERRIDE_NONE, DISP_MODE_SINGLE_DSI,                                                     DISP_MODE_SINGLE_DSI,                                                             DISP_MODE_SINGLE_DSI),
 
-diff --git a/QSSI.12/system/core/init/pax_init.cpp b/QSSI.12/system/core/init/pax_init.cpp
+diff --git a/QSSI.12/system/core/init/xxxxx_init.cpp b/QSSI.12/system/core/init/xxxxx_init.cpp
 index a31b44bc867..260d6899040 100755
---- a/QSSI.12/system/core/init/pax_init.cpp
-+++ b/QSSI.12/system/core/init/pax_init.cpp
+--- a/QSSI.12/system/core/init/xxxxx_init.cpp
++++ b/QSSI.12/system/core/init/xxxxx_init.cpp
 @@ -13,7 +13,6 @@ namespace init {
- void pax_import_kernel_nv(const std::string &key, const std::string& value)
+ void xxxxx_import_kernel_nv(const std::string &key, const std::string& value)
  {
         const char *name = key.c_str();
 -
         if (!strcmp(name, "TERMINAL_NAME"))
         {
                 InitPropertySet("ro.boot.boardname", value.c_str());
-@@ -227,6 +226,10 @@ void pax_import_kernel_nv(const std::string &key, const std::string& value)
+@@ -227,6 +226,10 @@ void xxxxx_import_kernel_nv(const std::string &key, const std::string& value)
          InitPropertySet("ro.fac.wifimac", value.c_str());
-         InitPropertySet("pax.wifi.mac", value.c_str());
+         InitPropertySet("xxxxx.wifi.mac", value.c_str());
         }
 +    else if(!strcmp(name, "msm_drm.dsi_display0"))//dpi
 +    {
 +        InitPropertySet("ro.sf.lcd_density", value.substr(value.size()-4,3));
 +    }
 
- //[FEATURE]-Add-BEGIN by (xielianxiong@paxsz.com), 2021/12/29 for apk verify pax signature
- #ifdef PAXDROID_PCI
-diff --git a/UM.9.15/vendor/qcom/proprietary/devicetree-4.19/qcom/a6650/dsi-panel-ft8006s-720p-video.dtsi b/UM.9.15/vendor/qcom/proprietary/devicetree-4.19/qcom/a6650/dsi-panel-ft8006s-720p-video.dtsi
+ //[FEATURE]-Add-BEGIN by (xielianxiong@xxxxx.com), 2021/12/29 for apk verify xxxxx signature
+ #ifdef xxxDROID_PCI
+diff --git a/UM.9.15/vendor/qcom/proprietary/devicetree-4.19/qcom/a665x/dsi-panel-ft8006s-720p-video.dtsi b/UM.9.15/vendor/qcom/proprietary/devicetree-4.19/qcom/a665x/dsi-panel-ft8006s-720p-video.dtsi
 index dd87a36972e..9e099391b9f 100755
---- a/UM.9.15/vendor/qcom/proprietary/devicetree-4.19/qcom/a6650/dsi-panel-ft8006s-720p-video.dtsi
-+++ b/UM.9.15/vendor/qcom/proprietary/devicetree-4.19/qcom/a6650/dsi-panel-ft8006s-720p-video.dtsi
+--- a/UM.9.15/vendor/qcom/proprietary/devicetree-4.19/qcom/a665x/dsi-panel-ft8006s-720p-video.dtsi
++++ b/UM.9.15/vendor/qcom/proprietary/devicetree-4.19/qcom/a665x/dsi-panel-ft8006s-720p-video.dtsi
 @@ -11,7 +11,7 @@
   */
 

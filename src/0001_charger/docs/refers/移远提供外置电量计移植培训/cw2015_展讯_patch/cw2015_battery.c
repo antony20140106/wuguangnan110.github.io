@@ -956,8 +956,8 @@ void  bm_cw2015_exit(void)
 module_init(bm_cw2015_init);
 module_exit(bm_cw2015_exit);
 
-MODULE_AUTHOR("zhangqg@paxsz.com");
-MODULE_DESCRIPTION("pax bm_mp2625gl_z_q driver");
+MODULE_AUTHOR("zhangqg@xxxxx.com");
+MODULE_DESCRIPTION("xxxxx bm_mp2625gl_z_q driver");
 MODULE_LICENSE("Dual BSD/GPL");
 
 #else

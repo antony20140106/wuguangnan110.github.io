@@ -388,14 +388,14 @@ void mt_usb_otg_init(struct musb *musb)
     typec_control = 1;
 #ifdef CONFIG_TCPC_CLASS //跑这里
     INIT_DELAYED_WORK(&register_otg_work, do_register_otg_work);
-/* Add-BEGIN by (shanliangliang@paxsz.com), 2021/08/27 fix notifier reigister too late */
+/* Add-BEGIN by (xxx@xxxxx.com), 2021/08/27 fix notifier reigister too late */
 #if 0
     queue_delayed_work(mtk_musb->st_wq, &register_otg_work, 0);
 #else
     schedule_delayed_work(&register_otg_work,
             msecs_to_jiffies(REGISTER_OTG_WORK_DELAY));
 #endif
-/* Add-END by (shanliangliang@paxsz.com), 2021/08/27 fix notifier reigister too late */
+/* Add-END by (xxx@xxxxx.com), 2021/08/27 fix notifier reigister too late */
     vbus_control = 0;
 #endif
 #else  //第二种iddig方式
@@ -427,26 +427,26 @@ static int otg_tcp_notifier_call(struct notifier_block *nb,
                 noti->typec_state.old_state,
                 noti->typec_state.new_state);
 
-        /* Add-BEGIN by (shanliangliang@paxsz.com), 2021/08/15 add for M8 usb otg */
+        /* Add-BEGIN by (xxx@xxxxx.com), 2021/08/15 add for M8 usb otg */
         mtk_musb->typec_state = noti->typec_state.new_state;
-        /* Add-END by (shanliangliang@paxsz.com), 2021/08/15 add for M8 usb otg */
+        /* Add-END by (xxx@xxxxx.com), 2021/08/15 add for M8 usb otg */
 
         if (noti->typec_state.old_state == TYPEC_UNATTACHED &&
             noti->typec_state.new_state == TYPEC_ATTACHED_SRC) {
             DBG(0, "OTG Plug in\n");
             mt_usb_host_connect(0);
-        /* Add-BEGIN by (shanliangliang@paxsz.com), 2021/09/23 add for M8 usb otg */
+        /* Add-BEGIN by (xxx@xxxxx.com), 2021/09/23 add for M8 usb otg */
         } else if (noti->typec_state.old_state == TYPEC_UNATTACHED &&
             noti->typec_state.new_state == TYPEC_ATTACHED_SNK) {
             mt_usb_host_disconnect(0);
             mt_usb_connect();
-        /* Add-END by (shanliangliang@paxsz.com), 2021/09/23 add for M8 usb otg */
+        /* Add-END by (xxx@xxxxx.com), 2021/09/23 add for M8 usb otg */
         } else if ((noti->typec_state.old_state == TYPEC_ATTACHED_SRC ||
             noti->typec_state.old_state == TYPEC_ATTACHED_SNK ||
             noti->typec_state.old_state ==
                     TYPEC_ATTACHED_NORP_SRC) &&
             noti->typec_state.new_state == TYPEC_UNATTACHED) {
-            /* Add-BEGIN by (shanliangliang@paxsz.com), 2021/08/15 add for M8 usb otg */
+            /* Add-BEGIN by (xxx@xxxxx.com), 2021/08/15 add for M8 usb otg */
                 if (mtk_musb->default_mode != MUSB_HOST) {
                     if (is_host_active(mtk_musb)) {
                         DBG(0, "OTG Plug out\n");
@@ -486,7 +486,7 @@ static int otg_tcp_notifier_call(struct notifier_block *nb,
                     }
                 }
 
-        /* Add-END by (shanliangliang@paxsz.com), 2021/08/15 add for M8 usb otg */
+        /* Add-END by (xxx@xxxxx.com), 2021/08/15 add for M8 usb otg */
 #ifdef CONFIG_MTK_UART_USB_SWITCH
         } else if ((noti->typec_state.new_state ==
                     TYPEC_ATTACHED_SNK ||

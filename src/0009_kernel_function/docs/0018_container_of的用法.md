@@ -12,9 +12,9 @@ container_of的主要作用是：通过已知的一个数据结构成员指针pt
 
 # 历程
 
-将chg->plug_nb参数传入注册notify传参，pax_usb_switch_notifier通过container_of来获取指向这个数据结构chg的指针。
+将chg->plug_nb参数传入注册notify传参，xxx_usb_switch_notifier通过container_of来获取指向这个数据结构chg的指针。
 ```C++
-static int pax_usb_switch_notifier(struct notifier_block *self, unsigned long event, void *value)
+static int xxx_usb_switch_notifier(struct notifier_block *self, unsigned long event, void *value)
 {
 	int usb_role = 0;
 	struct smb_charger *chg = container_of(self, struct smb_charger, plug_nb);
@@ -34,7 +34,7 @@ static int pax_usb_switch_notifier(struct notifier_block *self, unsigned long ev
 
 init()
 {
-	chg->plug_nb.notifier_call = pax_usb_switch_notifier;
+	chg->plug_nb.notifier_call = xxx_usb_switch_notifier;
 	rc = husb311_notify_register_client(&chg->plug_nb);
 	if (rc < 0) {
 		return 0;

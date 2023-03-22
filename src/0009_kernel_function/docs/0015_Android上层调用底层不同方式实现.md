@@ -4,7 +4,7 @@ Android framework开发人员经常需要调用到底层的接口和底层通信
 
 # 1.根据属性变化写sys节点
 
-以下这种方式比较简单，建立一个属性触发器(trigger)，上层通过设置属性值，当rc检测到属性`vendor.pax.ctrl.exdev.state`有任何变化，往`sys/class/switch/sp_ready_gpio/state`节点里写入该属性值。
+以下这种方式比较简单，建立一个属性触发器(trigger)，上层通过设置属性值，当rc检测到属性`vendor.xxxxx.ctrl.exdev.state`有任何变化，往`sys/class/switch/sp_ready_gpio/state`节点里写入该属性值。
 
 ```diff
 --- a/android/device/qcom/sc138/init.L1400.common.rc
@@ -12,12 +12,12 @@ Android framework开发人员经常需要调用到底层的接口和底层通信
 @@ -17,3 +17,9 @@ on boot
 
  on property:sys.boot_completed=1
-    write /sys/class/pax/boot_state/state 1
+    write /sys/class/xxxxx/boot_state/state 1
 +
-+#lib@paxsz.com set D135 state
++#lib@xxxxx.com set D135 state
 +
-+on property:vendor.pax.ctrl.exdev.state=*
-+    write /sys/class/switch/sp_ready_gpio/state ${vendor.pax.ctrl.exdev.state}
++on property:vendor.xxxxx.ctrl.exdev.state=*
++    write /sys/class/switch/sp_ready_gpio/state ${vendor.xxxxx.ctrl.exdev.state}
 ```
 
 # 2.提供aidl接口调用jni直接io方式
@@ -54,19 +54,19 @@ Android framework开发人员经常需要调用到底层的接口和底层通信
 #include <array>
 #include <memory>
 
-#define GESTURE_DEV                "/dev/pax_tp"
+#define GESTURE_DEV                "/dev/xxxxx_tp"
 #define SET_GESTURE_OPEN           _IOW('b', 0, int)
 #define SET_GESTURE_CLOSE          _IOW('b', 1, int)
 
 namespace android {
 
-static jint android_server_paxgesture_PaxGestureService_nativeOpenGesture(JNIEnv* env, jobject obj)
+static jint android_server_xxxxxgesture_PaxGestureService_nativeOpenGesture(JNIEnv* env, jobject obj)
 {
     int fd;
     int res;
     fd = open(GESTURE_DEV, O_RDWR);
     if (fd <0) {
-        ALOGE("Unable to open /dev/pax_tp");
+        ALOGE("Unable to open /dev/xxxxx_tp");
         return -1;
     }
 
@@ -80,13 +80,13 @@ static jint android_server_paxgesture_PaxGestureService_nativeOpenGesture(JNIEnv
     return 0;
 }
 
-static jint android_server_paxgesture_PaxGestureService_nativeCloseGesture(JNIEnv* env, jobject obj)
+static jint android_server_xxxxxgesture_PaxGestureService_nativeCloseGesture(JNIEnv* env, jobject obj)
 {
     int fd;
     int res;
     fd = open(GESTURE_DEV, O_RDWR);
     if (fd <0) {
-        ALOGE("Unable to open /dev/pax_tp");
+        ALOGE("Unable to open /dev/xxxxx_tp");
                 return -1;
     }
 
@@ -100,16 +100,16 @@ static jint android_server_paxgesture_PaxGestureService_nativeCloseGesture(JNIEn
         return 0;
 }
 
-//add by huling@paxsz.com
+//add by huling@xxxxx.com
 static const JNINativeMethod sPaxGestureMethods[] = {
     /* name, signature, funcPtr */
-    {"nativeOpenGesture", "()I", (void*)android_server_paxgesture_PaxGestureService_nativeOpenGesture},
-    {"nativeCloseGesture", "()I", (void*)android_server_paxgesture_PaxGestureService_nativeCloseGesture},
+    {"nativeOpenGesture", "()I", (void*)android_server_xxxxxgesture_PaxGestureService_nativeOpenGesture},
+    {"nativeCloseGesture", "()I", (void*)android_server_xxxxxgesture_PaxGestureService_nativeCloseGesture},
 };
 
-int register_android_server_paxgesture_PaxGestureService(JNIEnv* env)
+int register_android_server_xxxxxgesture_PaxGestureService(JNIEnv* env)
 {
-    return jniRegisterNativeMethods(env, "com/android/server/paxgesture/PaxGestureService",
+    return jniRegisterNativeMethods(env, "com/android/server/xxxxxgesture/PaxGestureService",
                                     sPaxGestureMethods, NELEM(sPaxGestureMethods));
 }
 ```

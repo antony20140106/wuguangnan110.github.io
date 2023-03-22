@@ -100,7 +100,7 @@ SCP(Sensor-hub Control Processor)，CHRE(Context Hub Runtime Environment), Syste
 
 * vendor/mediatek/proprietary/tinysys/freertos/source/middleware/contexthub/MEMS_Driver/accGyro/accGyro.c
   ```CPP
-  project/CM4_A/mt6765/k62v1_64_pax_eea/ProjectConfig.mk
+  project/CM4_A/mt6765/k62v1_64_xxx_eea/ProjectConfig.mk
   34:CFG_OVERLAY_INIT_SUPPORT = yes
 
   static bool startTask(uint32_t taskId)

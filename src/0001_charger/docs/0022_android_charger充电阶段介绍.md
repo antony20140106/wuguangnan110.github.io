@@ -5,7 +5,7 @@ charger充电阶段介绍。
 # 参考
 
 * [MTK平台充电模块梳理](https://blog.csdn.net/yuewen2008/article/details/80899568)
-* [0021_qcom_pax_charger充电实验.md](0021_qcom_pax_charger充电实验.md)
+* [0021_qcom_xxx_charger充电实验.md](0021_qcom_xxx_charger充电实验.md)
 
 # 充电流程
 

@@ -91,14 +91,14 @@ extern int r15_status_notify_call_chain(unsigned long val, void *v);//发送消�
 
 ## 注册并监听
 
-* `kernel-4.19/drivers/misc/pax/gpio/pax_gpio_control.c`:
+* `kernel-4.19/drivers/misc/xxx/gpio/xxx_gpio_control.c`:
 
 ```diff
 #include "r15_status_notify.h"
 
- struct pax_gpio_desc {
+ struct xxx_gpio_desc {
         unsigned int func; /* GPIO_FUNC_INPUT/GPIO_FUNC_OUTPUT/GPIO_FUNC_INT */
-@@ -106,6 +113,8 @@ struct pax_gpio_set {
+@@ -106,6 +113,8 @@ struct xxx_gpio_set {
         unsigned long out_gpio_value; /* pre time gpio value, per bit per gpio */
 
         struct delayed_work delay_work;
@@ -121,7 +121,7 @@ extern int r15_status_notify_call_chain(unsigned long val, void *v);//发送消�
 +       }
 +
 +       r15_status_notify_call_chain(SET_POWER_EN, &power_en);
-+       PAX_GPIO_DBG("power_en: %d, \n", power_en);
++       xxx_GPIO_DBG("power_en: %d, \n", power_en);
 +
 +       return value;
 +}
@@ -144,9 +144,9 @@ extern int r15_status_notify_call_chain(unsigned long val, void *v);//发送消�
 +}
 
 2.probe 注册监听
- static int pax_gpios_probe(struct platform_device *pdev)
+ static int xxx_gpios_probe(struct platform_device *pdev)
  {
-@@ -813,6 +866,10 @@ static int pax_gpios_probe(struct platform_device *pdev)
+@@ -813,6 +866,10 @@ static int xxx_gpios_probe(struct platform_device *pdev)
         /* delay work */
         INIT_DELAYED_WORK(&data->delay_work, work_queue_func);
 

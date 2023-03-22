@@ -1,0 +1,2136 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="zh-CN" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>wugn</title>
+
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script src="../../../_static/translations.js"></script>
+        <script src="../../../_static/js/baidutongji.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="索引" href="../../../genindex.html" />
+    <link rel="search" title="搜索" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../index.html" class="icon icon-home"> wugn_note
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="在文档中搜索" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">概述</a><ul>
+<li><a class="reference internal" href="#id2">参考</a></li>
+<li><a class="reference internal" href="#id3">架构图</a></li>
+<li><a class="reference internal" href="#id4">增加双击唤醒功能</a><ul>
+<li><a class="reference internal" href="#kernelioctrl">1.kernel层ioctrl接口</a></li>
+<li><a class="reference internal" href="#halinterfacemodule">2.新增HAL层Interface及module</a></li>
+<li><a class="reference internal" href="#paxapiservicepaydevmanager-aidl">3.增加PaxApiService接口及对外PayDevManager aidl接口</a></li>
+<li><a class="reference internal" href="#id5">4.双击唤醒功能添加</a></li>
+<li><a class="reference internal" href="#r15">4.增加R15接口</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">wugn_note</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs"> 
+<li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+<li>概述</li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.forward()">Forward</a></li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.back()">Go Back</a> | </li>
+<li style="float: right;margin-left: 10px;"><a href="/index.html">Home</a> | </li>
+
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="id1">
+<h1>概述<a class="headerlink" href="#id1" title="此标题的永久链接"></a></h1>
+<p>介绍PaxApiService架构</p>
+<section id="id2">
+<h2>参考<a class="headerlink" href="#id2" title="此标题的永久链接"></a></h2>
+<ul class="simple">
+<li><p><a class="reference external" href="https://www.jianshu.com/p/d1fac6ccee98">Android中AIDL的使用详解</a></p></li>
+<li><p><a class="reference external" href="https://blog.csdn.net/qq_19923217/article/details/88398660">Android HIDL HAL 接口定义语言详解</a></p></li>
+<li><p><a class="reference external" href="https://blog.csdn.net/sinat_18179367/article/details/95940030">Android P HAL层添加HIDL实例（详细实现步骤）</a></p></li>
+</ul>
+</section>
+<section id="id3">
+<h2>架构图<a class="headerlink" href="#id3" title="此标题的永久链接"></a></h2>
+<p><img alt="0002_.png" src="../../../_images/0002_alg.png" /></p>
+<ul class="simple">
+<li><p>涉及文件：</p></li>
+</ul>
+<div class="highlight-log notranslate"><div class="highlight"><pre><span></span>kernel层：
+ kernel-4.19/touchscreen/ilitek_limv/ilitek_main.c     |  12 +-
+ kernel-4.19/drivers/misc/xxxxx/gpio/xxxxx_gpio_control.c
+ 
+jni层： 
+ xxxxxdroid/external/xxxxx/jni/libxxxxxapijni/xxxxx_util_OsPaxApi.c  |  12 +
+ xxxxxdroid/external/xxxxx/jni/libxxxxxapijni/xxxxx_util_OsPaxApi.h  |  17 +
+ xxxxxdroid/external/xxxxx/lib/libxxxxxapiclient/xxxxxapiclient.cpp  |  22 +
+ xxxxxdroid/external/xxxxx/lib/libxxxxxapiclient/xxxxxapiclient.h    |   2 +
+ 
+java服务层：
+ xxxxxdroid/frameworks/base/core/java/xxxxx/util/IPaxApi.aidl      |   4 +-
+ xxxxxdroid/frameworks/base/m50api/java/xxxxx/util/PayDevManager.java   |  91 ++
+ xxxxxdroid/frameworks/base/services/core/java/com/android/server/PaxApiService.java     |  34 +
+ 
+hal层(gpio驱动类似)：
+ xxxxxdroid/device/xxxxxdroid_mt6762.mk            |   1 +
+ xxxxxdroid/device/xxxxxdroid_mt6762_vnd.mk        |   1 +
+ xxxxxdroid/device/sepolicy/vendor/file_contexts |   1 +
+ xxxxxdroid/hardware/interfaces/current.txt      |   2 +-
+ xxxxxdroid/hardware/interfaces/xxxxxservice/1.0/IPaxApiService.hal         |   5 +
+ xxxxxdroid/hardware/interfaces/xxxxxservice/1.0/default/PaxApiService.cpp  |   5 +
+ xxxxxdroid/hardware/interfaces/xxxxxservice/1.0/default/PaxApiService.h    |   3 +
+ xxxxxdroid/hardware/interfaces/xxxxxservice/1.0/default/gesture/PaxGesture.cpp        | 103 ++
+ xxxxxdroid/hardware/interfaces/xxxxxservice/1.0/default/gesture/PaxGesture.h          |  11 +
+ xxxxxdroid/hardware/interfaces/xxxxxservice/1.0/default/axdroid.hardware.xxxxxservice@1.0-service.rc |   3 +
+ xxxxxdroid/hardware/libhardware/include/hardware/xxxxx_gesture.h            |  82 ++
+ xxxxxdroid/hardware/libhardware/modules/gesture/xxxxx_gesture.c | 180 ++++
+</pre></div>
+</div>
+</section>
+<section id="id4">
+<h2>增加双击唤醒功能<a class="headerlink" href="#id4" title="此标题的永久链接"></a></h2>
+<p>tp需要增加双击唤醒功能开关，功能已经在驱动层实现，现在需要增加hal接口及设置界面。</p>
+<section id="kernelioctrl">
+<h3>1.kernel层ioctrl接口<a class="headerlink" href="#kernelioctrl" title="此标题的永久链接"></a></h3>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">kernel-4.19/drivers/input/touchscreen/ilitek_limv/ilitek_platform_init.c</span></code>将生产/dev/xxxxx_tp节点:</p></li>
+</ul>
+<div class="highlight-diff notranslate"><div class="highlight"><pre><span></span><span class="gi">+#include &lt;linux/miscdevice.h&gt;</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="w"> </span>struct ilitek_ts_data *ilitek_data;<span class="w"></span>
+<span class="w"> </span>/*<span class="w"></span>
+<span class="w"> </span>   Data struct init. When the driver will be setup, the driver initial the data struct.<span class="w"></span>
+<span class="w"> </span>   If the memory alloc fail the function will return -ENOMEM.<span class="w"></span>
+<span class="w"> </span>   The log level be set ILITEK_DEFAULT_LOG_LEVEL.<span class="w"></span>
+<span class="w"> </span> */<span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+static int tp_open(struct inode *inode, struct file *file)</span><span class="w"></span>
+<span class="gi">+{</span><span class="w"></span>
+<span class="gi">+	return 0;</span><span class="w"></span>
+<span class="gi">+}</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+static int tp_release(struct inode *inode, struct file *file)</span><span class="w"></span>
+<span class="gi">+{</span><span class="w"></span>
+<span class="gi">+	return 0;</span><span class="w"></span>
+<span class="gi">+}</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+static long tp_ioctl(struct file *file, unsigned int cmd,</span><span class="w"></span>
+<span class="gi">+				unsigned long arg)</span><span class="w"></span>
+<span class="gi">+{</span><span class="w"></span>
+<span class="gi">+	void __user *user_data = (void __user *)arg;</span><span class="w"></span>
+<span class="gi">+	int ret = 0;</span><span class="w"></span>
+<span class="gi">+	int en = 1;</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+	switch (cmd) {</span><span class="w"></span>
+<span class="gi">+		case SET_GESTURE_ONOFF:</span><span class="w"></span>
+<span class="gi">+			ret = copy_from_user(&amp;en, user_data, sizeof(int));</span><span class="w"></span>
+<span class="gi">+			if (ret &lt; 0) {</span><span class="w"></span>
+<span class="gi">+				pr_info(&quot;SET_GESTURE_ONOFF.\n&quot;);</span><span class="w"></span>
+<span class="gi">+				ret = -1;</span><span class="w"></span>
+<span class="gi">+				break;</span><span class="w"></span>
+<span class="gi">+			}</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+			pr_info(&quot;SET_GESTURE_ONOFF: %d\n&quot;, en);</span><span class="w"></span>
+<span class="gi">+			ilitek_data-&gt;enable_gesture = en;</span><span class="w"></span>
+<span class="gi">+			break;</span><span class="w"></span>
+<span class="gi">+		case SET_DEFAULT:</span><span class="w"></span>
+<span class="gi">+			ret = copy_from_user(&amp;en, user_data, sizeof(int));</span><span class="w"></span>
+<span class="gi">+			if (ret &lt; 0) {</span><span class="w"></span>
+<span class="gi">+				pr_info(&quot;SET_DEFAULT.\n&quot;);</span><span class="w"></span>
+<span class="gi">+				ret = -1;</span><span class="w"></span>
+<span class="gi">+				break;</span><span class="w"></span>
+<span class="gi">+			}</span><span class="w"></span>
+<span class="gi">+			pr_info(&quot;SET_DEFAULT: %d\n&quot;, en);</span><span class="w"></span>
+<span class="gi">+			//tp_chg_vote(NC_DISABLE_CHG_BY_USER, !en);</span><span class="w"></span>
+<span class="gi">+			break;</span><span class="w"></span>
+<span class="gi">+		default:</span><span class="w"></span>
+<span class="gi">+			pr_info(&quot;cmd: %u is not support.\n&quot;, cmd);</span><span class="w"></span>
+<span class="gi">+			ret = -1;</span><span class="w"></span>
+<span class="gi">+			break;</span><span class="w"></span>
+<span class="gi">+	}</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+	return ret;</span><span class="w"></span>
+<span class="gi">+}</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+#ifdef CONFIG_COMPAT</span><span class="w"></span>
+<span class="gi">+static long tp_compat_ioctl(struct file *file,</span><span class="w"></span>
+<span class="gi">+			unsigned int cmd, unsigned long arg)</span><span class="w"></span>
+<span class="gi">+{</span><span class="w"></span>
+<span class="gi">+	return tp_ioctl(file, cmd, arg);</span><span class="w"></span>
+<span class="gi">+}</span><span class="w"></span>
+<span class="gi">+#endif</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+static const struct file_operations tp_fops = {</span><span class="w"></span>
+<span class="gi">+	.owner = THIS_MODULE,</span><span class="w"></span>
+<span class="gi">+	.open = tp_open,</span><span class="w"></span>
+<span class="gi">+	.release = tp_release,</span><span class="w"></span>
+<span class="gi">+	.unlocked_ioctl = tp_ioctl,</span><span class="w"></span>
+<span class="gi">+#ifdef CONFIG_COMPAT</span><span class="w"></span>
+<span class="gi">+	.compat_ioctl = tp_compat_ioctl,</span><span class="w"></span>
+<span class="gi">+#endif</span><span class="w"></span>
+<span class="gi">+};</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+static struct miscdevice tp_miscdev = {</span><span class="w"></span>
+<span class="gi">+	.minor      = MISC_DYNAMIC_MINOR,</span><span class="w"></span>
+<span class="gi">+	.name		= ILITEK_TS_NAME,</span><span class="w"></span>
+<span class="gi">+	.fops		= &amp;tp_fops,</span><span class="w"></span>
+<span class="gi">+};</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="w"> </span>int ilitek_data_init(void) {<span class="w"></span>
+<span class="w"> </span>	ilitek_data = kzalloc(sizeof(*ilitek_data), GFP_KERNEL);<span class="w"></span>
+<span class="w"> </span>	if (ilitek_data == NULL) {<span class="w"></span>
+<span class="gu">@@ -135,6 +211,8 @@ static struct i2c_driver tpd_i2c_driver = {</span><span class="w"></span>
+<span class="w"> </span>	.detect = tpd_detect,<span class="w"></span>
+<span class="w"> </span>};<span class="w"></span>
+<span class="w"> </span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="w"> </span>static int tpd_local_init(void)<span class="w"></span>
+<span class="w"> </span>{<span class="w"></span>
+<span class="w"> </span>	tp_log_info(&quot;TPD init device driver\n&quot;);<span class="w"></span>
+<span class="gu">@@ -153,6 +231,7 @@ static int tpd_local_init(void)</span><span class="w"></span>
+<span class="w"> </span>		tpd_button_setting(tpd_dts_data.tpd_key_num, tpd_dts_data.tpd_key_local, tpd_dts_data.tpd_key_dim_local);<span class="w"></span>
+<span class="w"> </span>
+<span class="w"> </span>	tpd_type_cap = 1;<span class="w"></span>
+<span class="gi">+	</span><span class="w"></span>
+<span class="w"> </span>	tp_log_info(&quot;TPD init done\n&quot;);<span class="w"></span>
+<span class="w"> </span>	return TPD_OK;<span class="w"></span>
+<span class="w"> </span>}<span class="w"></span>
+<span class="gu">@@ -403,6 +482,8 @@ static int __init ilitek_touch_driver_init(void)</span><span class="w"></span>
+<span class="w"> </span>		i2c_del_driver(&amp;ilitek_touch_device_driver);<span class="w"></span>
+<span class="w"> </span>		return -ENODEV;<span class="w"></span>
+<span class="w"> </span>	}<span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+	misc_register(&amp;tp_miscdev);</span><span class="w"></span>
+</pre></div>
+</div>
+</section>
+<section id="halinterfacemodule">
+<h3>2.新增HAL层Interface及module<a class="headerlink" href="#halinterfacemodule" title="此标题的永久链接"></a></h3>
+<div class="highlight-diff notranslate"><div class="highlight"><pre><span></span><span class="w">1.增加包：</span>
+<span class="gd">--- a/xxxxxdroid/device/xxxxxdroid_mt6762.mk</span><span class="w"></span>
+<span class="gi">+++ b/xxxxxdroid/device/xxxxxdroid_mt6762.mk</span><span class="w"></span>
+<span class="gu">@@ -98,6 +98,7 @@ USE_xxx_HELLO := AP</span><span class="w"></span>
+<span class="w"> </span>#add by zengzp for xxxxxservice<span class="w"></span>
+<span class="w"> </span>PRODUCT_PACKAGES += \<span class="w"></span>
+<span class="w"> </span>    xxxxxgpios.default \<span class="w"></span>
+<span class="gi">+    xxxxxgesture.default \</span><span class="w"></span>
+
+<span class="w">2.增加配置好的selinux节点属性：</span>
+<span class="gd">--- a/xxxxxdroid/device/sepolicy/vendor/file_contexts</span><span class="w"></span>
+<span class="gi">+++ b/xxxxxdroid/device/sepolicy/vendor/file_contexts</span><span class="w"></span>
+<span class="gu">@@ -6,6 +6,7 @@</span><span class="w"></span>
+<span class="w"> </span>/(vendor|system/vendor)/xxxxxdroid(/.*)?     u:object_r:vendor_configs_file:s0<span class="w"></span>
+<span class="w"> </span>
+<span class="w"> </span>/dev/xxxxx_gpios                             u:object_r:xxxxx_chr_device:s0<span class="w"></span>
+<span class="gi">+/dev/ilitek_ts                             u:object_r:xxxxx_chr_device:s0</span><span class="w"></span>
+
+<span class="w">3.增加hal层interface及module接口，涉及文件：</span>
+<span class="w"> </span>xxxxxdroid/hardware/interfaces/current.txt      |   2 +-<span class="w"></span>
+<span class="w"> </span>xxxxxdroid/hardware/interfaces/xxxxxservice/1.0/IPaxApiService.hal         |   5 +<span class="w"></span>
+<span class="w"> </span>xxxxxdroid/hardware/interfaces/xxxxxservice/1.0/default/PaxApiService.cpp  |   5 +<span class="w"></span>
+<span class="w"> </span>xxxxxdroid/hardware/interfaces/xxxxxservice/1.0/default/PaxApiService.h    |   3 +<span class="w"></span>
+<span class="w"> </span>xxxxxdroid/hardware/interfaces/xxxxxservice/1.0/default/gesture/PaxGesture.cpp        | 103 ++<span class="w"></span>
+<span class="w"> </span>xxxxxdroid/hardware/interfaces/xxxxxservice/1.0/default/gesture/PaxGesture.h          |  11 +<span class="w"></span>
+<span class="w"> </span>xxxxxdroid/hardware/interfaces/xxxxxservice/1.0/default/axdroid.hardware.xxxxxservice@1.0-service.rc |   3 +<span class="w"></span>
+<span class="w"> </span>xxxxxdroid/hardware/libhardware/include/hardware/xxxxx_gesture.h            |  82 ++<span class="w"></span>
+<span class="w"> </span>xxxxxdroid/hardware/libhardware/modules/gesture/xxxxx_gesture.c | 180 ++++<span class="w"></span>
+<span class="w"> </span>
+<span class="w"> </span>详细写一个ioctrl实现：<span class="w"></span>
+<span class="w"> </span>+++ b/xxxxxdroid/hardware/libhardware/modules/gesture/xxxxx_gesture.c<span class="w"></span>
+<span class="gu">@@ -0,0 +1,180 @@</span><span class="w"></span>
+<span class="gi">+/*</span><span class="w"></span>
+<span class="gi">+ * Copyright (C) 2013 The Android Open Source Project</span><span class="w"></span>
+<span class="gi">+ *</span><span class="w"></span>
+<span class="gi">+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span><span class="w"></span>
+<span class="gi">+ * you may not use this file except in compliance with the License.</span><span class="w"></span>
+<span class="gi">+ * You may obtain a copy of the License at</span><span class="w"></span>
+<span class="gi">+ *</span><span class="w"></span>
+<span class="gi">+ *      http://www.apache.org/licenses/LICENSE-2.0</span><span class="w"></span>
+<span class="gi">+ *</span><span class="w"></span>
+<span class="gi">+ * Unless required by applicable law or agreed to in writing, software</span><span class="w"></span>
+<span class="gi">+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span><span class="w"></span>
+<span class="gi">+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span><span class="w"></span>
+<span class="gi">+ * See the License for the specific language governing permissions and</span><span class="w"></span>
+<span class="gi">+ * limitations under the License.</span><span class="w"></span>
+<span class="gi">+ */</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+#include &lt;hardware/hardware.h&gt;</span><span class="w"></span>
+<span class="gi">+#include &lt;hardware/xxxxx_gesture.h&gt;</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+#include &lt;stdio.h&gt;</span><span class="w"></span>
+<span class="gi">+#include &lt;stdlib.h&gt;</span><span class="w"></span>
+<span class="gi">+#include &lt;sys/types.h&gt;</span><span class="w"></span>
+<span class="gi">+#include &lt;unistd.h&gt;</span><span class="w"></span>
+<span class="gi">+#include &lt;sys/stat.h&gt;</span><span class="w"></span>
+<span class="gi">+#include &lt;unistd.h&gt;</span><span class="w"></span>
+<span class="gi">+#include &lt;errno.h&gt;</span><span class="w"></span>
+<span class="gi">+#include &lt;fcntl.h&gt;</span><span class="w"></span>
+<span class="gi">+#include &lt;malloc.h&gt;</span><span class="w"></span>
+<span class="gi">+#include &lt;stdint.h&gt;</span><span class="w"></span>
+<span class="gi">+#include &lt;dirent.h&gt;</span><span class="w"></span>
+<span class="gi">+#include &lt;string.h&gt;</span><span class="w"></span>
+<span class="gi">+#include &lt;pthread.h&gt;</span><span class="w"></span>
+<span class="gi">+#include &lt;time.h&gt;</span><span class="w"></span>
+<span class="gi">+#include &lt;stdlib.h&gt;</span><span class="w"></span>
+<span class="gi">+#include &lt;log/log.h&gt;</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+#define TIMEOUT_STR_LEN         20</span><span class="w"></span>
+<span class="gi">+#define LOG_NDEBUG 0</span><span class="w"></span>
+<span class="gi">+#define LOG_TAG &quot;xxxxx_gesture_hal&quot;</span><span class="w"></span>
+<span class="gi">+static pthread_once_t g_init = PTHREAD_ONCE_INIT;</span><span class="w"></span>
+<span class="gi">+static pthread_mutex_t g_lock = PTHREAD_MUTEX_INITIALIZER;</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+#define xxx_TP_DEV			&quot;/dev/ilitek_ts&quot;</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+/**</span><span class="w"></span>
+<span class="gi">+ * device methods</span><span class="w"></span>
+<span class="gi">+ */</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+void init_globals(void)</span><span class="w"></span>
+<span class="gi">+{</span><span class="w"></span>
+<span class="gi">+    // init the mutex</span><span class="w"></span>
+<span class="gi">+    pthread_mutex_init(&amp;g_lock, NULL);</span><span class="w"></span>
+<span class="gi">+}</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+static bool device_exists(const char *file) {</span><span class="w"></span>
+<span class="gi">+    int fd;</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+    fd = open(file, O_RDWR);</span><span class="w"></span>
+<span class="gi">+    if(fd &lt; 0) {</span><span class="w"></span>
+<span class="gi">+        return false;</span><span class="w"></span>
+<span class="gi">+    }</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+    close(fd);</span><span class="w"></span>
+<span class="gi">+    return true;</span><span class="w"></span>
+<span class="gi">+}</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+static bool gesture_exists() {</span><span class="w"></span>
+<span class="gi">+    return device_exists(xxx_TP_DEV);</span><span class="w"></span>
+<span class="gi">+}</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+static int open_xxxxx_tp_dev(void)</span><span class="w"></span>
+<span class="gi">+{</span><span class="w"></span>
+<span class="gi">+	int fd = -1;</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+	fd = open(xxx_TP_DEV, O_RDWR);</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+	return fd;</span><span class="w"></span>
+<span class="gi">+}</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+static int xxxxx_tp_ctl( unsigned long cmd, void *data)</span><span class="w"></span>
+<span class="gi">+{</span><span class="w"></span>
+<span class="gi">+	static int xxxxx_tp_fd = -1;</span><span class="w"></span>
+<span class="gi">+	int ret = -1;</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+	if (xxxxx_tp_fd &lt; 0) {</span><span class="w"></span>
+<span class="gi">+		xxxxx_tp_fd = open_xxxxx_tp_dev();</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+		if (xxxxx_tp_fd &lt; 0) {</span><span class="w"></span>
+<span class="gi">+			return -ENODEV;</span><span class="w"></span>
+<span class="gi">+		}</span><span class="w"></span>
+<span class="gi">+	}</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+    pthread_mutex_lock(&amp;g_lock);</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+	switch(cmd) {</span><span class="w"></span>
+<span class="gi">+		case SET_GESTURE_ONOFF:</span><span class="w"></span>
+<span class="gi">+			{</span><span class="w"></span>
+<span class="gi">+				int en = *(int *)data;</span><span class="w"></span>
+<span class="gi">+				ret = ioctl(xxxxx_tp_fd, cmd, &amp;en);</span><span class="w"></span>
+<span class="gi">+			}</span><span class="w"></span>
+<span class="gi">+			break;</span><span class="w"></span>
+<span class="gi">+		default:</span><span class="w"></span>
+<span class="gi">+			break;</span><span class="w"></span>
+<span class="gi">+	};</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+    pthread_mutex_unlock(&amp;g_lock);</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+	return ret;</span><span class="w"></span>
+<span class="gi">+}</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+static int gesture_on(void)</span><span class="w"></span>
+<span class="gi">+{</span><span class="w"></span>
+<span class="gi">+	int en = 1;</span><span class="w"></span>
+<span class="gi">+    return xxxxx_tp_ctl( SET_GESTURE_ONOFF, &amp;en);</span><span class="w"></span>
+<span class="gi">+ </span><span class="w"></span>
+<span class="gi">+}</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+static int gesture_off(void)</span><span class="w"></span>
+<span class="gi">+{</span><span class="w"></span>
+<span class="gi">+   	int en = 0;</span><span class="w"></span>
+<span class="gi">+    return xxxxx_tp_ctl( SET_GESTURE_ONOFF, &amp;en);</span><span class="w"></span>
+<span class="gi">+}</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+static int gesture_close(hw_device_t *device)</span><span class="w"></span>
+<span class="gi">+{</span><span class="w"></span>
+<span class="gi">+    free(device);</span><span class="w"></span>
+<span class="gi">+    return 0;</span><span class="w"></span>
+<span class="gi">+}</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+static int gesture_open(const hw_module_t* module, const char* id __unused,</span><span class="w"></span>
+<span class="gi">+                      hw_device_t** device __unused) {</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+    if (gesture_exists()) {</span><span class="w"></span>
+<span class="gi">+        ALOGD(&quot;touchscreen gesture sys file exist&quot;);</span><span class="w"></span>
+<span class="gi">+    }else {</span><span class="w"></span>
+<span class="gi">+        ALOGE(&quot;touchscreen gesture sys file not exis. Cannot start gesture&quot;);</span><span class="w"></span>
+<span class="gi">+        return -ENODEV;</span><span class="w"></span>
+<span class="gi">+    }</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+	pthread_once(&amp;g_init, init_globals);</span><span class="w"></span>
+<span class="gi">+	</span><span class="w"></span>
+<span class="gi">+    gesture_device_t *gesturedev = malloc(sizeof(gesture_device_t));</span><span class="w"></span>
+<span class="gi">+    memset(gesturedev, 0, sizeof(gesture_device_t));</span><span class="w"></span>
+<span class="gi">+	</span><span class="w"></span>
+<span class="gi">+    if (!gesturedev) {</span><span class="w"></span>
+<span class="gi">+        ALOGE(&quot;Can not allocate memory for the gesture device&quot;);</span><span class="w"></span>
+<span class="gi">+        return -ENOMEM;</span><span class="w"></span>
+<span class="gi">+    }</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+    gesturedev-&gt;common.tag = HARDWARE_DEVICE_TAG;</span><span class="w"></span>
+<span class="gi">+    gesturedev-&gt;common.module = (hw_module_t *) module;</span><span class="w"></span>
+<span class="gi">+    gesturedev-&gt;common.version = HARDWARE_DEVICE_API_VERSION(1,0);</span><span class="w"></span>
+<span class="gi">+    gesturedev-&gt;common.close = gesture_close;</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+	gesturedev-&gt;gesture_on = gesture_on;</span><span class="w"></span>
+<span class="gi">+	gesturedev-&gt;gesture_off = gesture_off;</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+    *device = (hw_device_t *) gesturedev;</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+    return 0;</span><span class="w"></span>
+<span class="gi">+}</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+/*===========================================================================*/</span><span class="w"></span>
+<span class="gi">+/* Default gesture HW module interface definition                           */</span><span class="w"></span>
+<span class="gi">+/*===========================================================================*/</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+static struct hw_module_methods_t gesture_module_methods = {</span><span class="w"></span>
+<span class="gi">+    .open = gesture_open,</span><span class="w"></span>
+<span class="gi">+};</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+struct hw_module_t HAL_MODULE_INFO_SYM = {</span><span class="w"></span>
+<span class="gi">+    .tag = HARDWARE_MODULE_TAG,</span><span class="w"></span>
+<span class="gi">+    .module_api_version = GESTURE_API_VERSION,</span><span class="w"></span>
+<span class="gi">+    .hal_api_version = HARDWARE_HAL_API_VERSION,</span><span class="w"></span>
+<span class="gi">+    .id = GESTURE_HARDWARE_MODULE_ID,</span><span class="w"></span>
+<span class="gi">+    .name = &quot;xxxxx gesture HAL&quot;,</span><span class="w"></span>
+<span class="gi">+    .author = &quot;The Paxdroid Open Source Project&quot;,</span><span class="w"></span>
+<span class="gi">+    .methods = &amp;gesture_module_methods,</span><span class="w"></span>
+<span class="gi">+};</span><span class="w"></span>
+</pre></div>
+</div>
+</section>
+<section id="paxapiservicepaydevmanager-aidl">
+<h3>3.增加PaxApiService接口及对外PayDevManager aidl接口<a class="headerlink" href="#paxapiservicepaydevmanager-aidl" title="此标题的永久链接"></a></h3>
+<div class="highlight-log notranslate"><div class="highlight"><pre><span></span>涉及文件：
+ xxxxxdroid/frameworks/base/core/java/xxxxx/util/IPaxApi.aidl      |   4 +-
+ xxxxxdroid/frameworks/base/m50api/java/xxxxx/util/PayDevManager.java   |  91 ++
+ xxxxxdroid/frameworks/base/services/core/java/com/android/server/PaxApiService.java     |  34 +
+</pre></div>
+</div>
+</section>
+<section id="id5">
+<h3>4.双击唤醒功能添加<a class="headerlink" href="#id5" title="此标题的永久链接"></a></h3>
+<div class="highlight-diff notranslate"><div class="highlight"><pre><span></span><span class="w">From 29fd100dbbd832db17b7e620a157a6f29a44e372 Mon Sep 17 00:00:00 2001</span>
+<span class="w">From: wugn &lt;xxx@xxxxx.com&gt;</span>
+<span class="w">Date: Sun, 26 Sep 2021 18:00:54 +0800</span>
+<span class="w">Subject: [PATCH] =?UTF-8?q?[Title]:=20New=20Feature:=E5=A2=9E=E5=8A=A0?=</span>
+<span class="w"> </span>=?UTF-8?q?=E5=8F=8C=E5=87=BB=E5=94=A4=E9=86=92hal=E5=B1=82=E3=80=81PaxApi?=<span class="w"></span>
+<span class="w"> </span>=?UTF-8?q?=E6=8E=A5=E5=8F=A3=E3=80=82?=<span class="w"></span>
+<span class="w">MIME-Version: 1.0</span>
+<span class="w">Content-Type: text/plain; charset=UTF-8</span>
+<span class="w">Content-Transfer-Encoding: 8bit</span>
+
+<span class="w">[Summary]:</span>
+<span class="w">	1.增加双击唤醒hal层、PaxApi接口。</span>
+
+<span class="w">[Test Plan]:</span>
+
+<span class="w">[Module]: tp</span>
+
+<span class="w">[Model]: M8</span>
+
+<span class="w">[author]: xxx@xxxxx.com</span>
+
+<span class="w">[date]: 2021-9-26</span>
+<span class="gd">---</span><span class="w"></span>
+<span class="w"> </span>.../touchscreen/ilitek_limv/ilitek_common.h   | 895 +++++++++---------<span class="w"></span>
+<span class="w"> </span>.../touchscreen/ilitek_limv/ilitek_main.c     |  12 +-<span class="w"></span>
+<span class="w"> </span>.../ilitek_limv/ilitek_platform_init.c        |  81 ++<span class="w"></span>
+<span class="w"> </span>.../touchscreen/ilitek_limv/ilitek_tool.c     |  12 +-<span class="w"></span>
+<span class="w"> </span>xxxxxdroid/device/xxxxxdroid_mt6762.mk            |   1 +<span class="w"></span>
+<span class="w"> </span>xxxxxdroid/device/xxxxxdroid_mt6762_vnd.mk        |   1 +<span class="w"></span>
+<span class="w"> </span>xxxxxdroid/device/sepolicy/vendor/file_contexts |   1 +<span class="w"></span>
+<span class="w"> </span>.../xxxxx/jni/libxxxxxapijni/xxxxx_util_OsPaxApi.c  |  12 +<span class="w"></span>
+<span class="w"> </span>.../xxxxx/jni/libxxxxxapijni/xxxxx_util_OsPaxApi.h  |  17 +<span class="w"></span>
+<span class="w"> </span>.../xxxxx/lib/libxxxxxapiclient/xxxxxapiclient.cpp  |  22 +<span class="w"></span>
+<span class="w"> </span>.../xxxxx/lib/libxxxxxapiclient/xxxxxapiclient.h    |   2 +<span class="w"></span>
+<span class="w"> </span>.../base/core/java/xxxxx/util/IPaxApi.aidl      |   4 +-<span class="w"></span>
+<span class="w"> </span>.../m50api/java/xxxxx/util/PayDevManager.java   |  91 ++<span class="w"></span>
+<span class="w"> </span>.../com/android/server/PaxApiService.java     |  34 +<span class="w"></span>
+<span class="w"> </span>xxxxxdroid/hardware/interfaces/current.txt      |   2 +-<span class="w"></span>
+<span class="w"> </span>.../xxxxxservice/1.0/IPaxApiService.hal         |   5 +<span class="w"></span>
+<span class="w"> </span>.../xxxxxservice/1.0/default/PaxApiService.cpp  |   5 +<span class="w"></span>
+<span class="w"> </span>.../xxxxxservice/1.0/default/PaxApiService.h    |   3 +<span class="w"></span>
+<span class="w"> </span>.../1.0/default/gesture/PaxGesture.cpp        | 103 ++<span class="w"></span>
+<span class="w"> </span>.../1.0/default/gesture/PaxGesture.h          |  11 +<span class="w"></span>
+<span class="w"> </span>...axdroid.hardware.xxxxxservice@1.0-service.rc |   3 +<span class="w"></span>
+<span class="w"> </span>.../include/hardware/xxxxx_gesture.h            |  82 ++<span class="w"></span>
+<span class="w"> </span>.../hardware/libhardware/modules/Android.mk   |   3 +-<span class="w"></span>
+<span class="w"> </span>.../libhardware/modules/gesture/Android.mk    |  34 +<span class="w"></span>
+<span class="w"> </span>.../libhardware/modules/gesture/xxxxx_gesture.c | 180 ++++<span class="w"></span>
+<span class="w"> </span>25 files changed, 1165 insertions(+), 451 deletions(-)<span class="w"></span>
+<span class="w"> </span>create mode 100755 xxxxxdroid/hardware/interfaces/xxxxxservice/1.0/default/gesture/PaxGesture.cpp<span class="w"></span>
+<span class="w"> </span>create mode 100755 xxxxxdroid/hardware/interfaces/xxxxxservice/1.0/default/gesture/PaxGesture.h<span class="w"></span>
+<span class="w"> </span>create mode 100755 xxxxxdroid/hardware/libhardware/include/hardware/xxxxx_gesture.h<span class="w"></span>
+<span class="w"> </span>create mode 100755 xxxxxdroid/hardware/libhardware/modules/gesture/Android.mk<span class="w"></span>
+<span class="w"> </span>create mode 100755 xxxxxdroid/hardware/libhardware/modules/gesture/xxxxx_gesture.c<span class="w"></span>
+
+<span class="gh">diff --git a/kernel-4.19/drivers/input/touchscreen/ilitek_limv/ilitek_common.h b/kernel-4.19/drivers/input/touchscreen/ilitek_limv/ilitek_common.h</span><span class="w"></span>
+<span class="gh">index e3dd0826388..33485cc701f 100755</span><span class="w"></span>
+<span class="gd">--- a/kernel-4.19/drivers/input/touchscreen/ilitek_limv/ilitek_common.h</span><span class="w"></span>
+<span class="gi">+++ b/kernel-4.19/drivers/input/touchscreen/ilitek_limv/ilitek_common.h</span><span class="w"></span>
+<span class="gu">@@ -1,445 +1,450 @@</span><span class="w"></span>
+
+<span class="gh">diff --git a/kernel-4.19/drivers/input/touchscreen/ilitek_limv/ilitek_main.c b/kernel-4.19/drivers/input/touchscreen/ilitek_limv/ilitek_main.c</span><span class="w"></span>
+<span class="gh">index dea7d0f5115..2f51f8ee129 100755</span><span class="w"></span>
+<span class="gd">--- a/kernel-4.19/drivers/input/touchscreen/ilitek_limv/ilitek_main.c</span><span class="w"></span>
+<span class="gi">+++ b/kernel-4.19/drivers/input/touchscreen/ilitek_limv/ilitek_main.c</span><span class="w"></span>
+<span class="gu">@@ -965,7 +965,9 @@ int ilitek_read_data_and_report_3XX(void)</span><span class="w"></span>
+<span class="w"> </span>				tp_log_info(&quot;system is suspend not report point\n&quot;);<span class="w"></span>
+<span class="w"> </span>#ifdef ILITEK_GESTURE<span class="w"></span>
+<span class="w"> </span>#if ILITEK_GESTURE == ILITEK_DOUBLE_CLICK_WAKEUP<span class="w"></span>
+<span class="gd">-				finger_state = ilitek_double_click_touch(x, y, finger_state, i);</span><span class="w"></span>
+<span class="gi">+				if (ilitek_data-&gt;enable_gesture) {</span><span class="w"></span>
+<span class="gi">+					finger_state = ilitek_double_click_touch(x, y, finger_state, i);</span><span class="w"></span>
+<span class="gi">+				}</span><span class="w"></span>
+<span class="w"> </span>#endif<span class="w"></span>
+<span class="w"> </span>#endif<span class="w"></span>
+<span class="w"> </span>			} else {<span class="w"></span>
+<span class="gu">@@ -1028,6 +1030,7 @@ int ilitek_read_data_and_report_3XX(void)</span><span class="w"></span>
+<span class="w"> </span>			input_sync(input);<span class="w"></span>
+<span class="w"> </span>			//ilitek_data-&gt;system_suspend = false;<span class="w"></span>
+<span class="w"> </span>#elif ILITEK_GESTURE == ILITEK_DOUBLE_CLICK_WAKEUP<span class="w"></span>
+<span class="gi">+			if (ilitek_data-&gt;enable_gesture) {</span><span class="w"></span>
+<span class="w"> </span>			finger_state = ilitek_double_click_release(finger_state);<span class="w"></span>
+<span class="w"> </span>			if (finger_state == 5) {<span class="w"></span>
+<span class="w"> </span>				tp_log_info(&quot;double click wakeup\n&quot;);<span class="w"></span>
+<span class="gu">@@ -1041,6 +1044,7 @@ int ilitek_read_data_and_report_3XX(void)</span><span class="w"></span>
+<span class="w"> </span>				input_sync(input);<span class="w"></span>
+<span class="w"> </span>				//ilitek_data-&gt;system_suspend = false;<span class="w"></span>
+<span class="w"> </span>			}<span class="w"></span>
+<span class="gi">+			}</span><span class="w"></span>
+<span class="w"> </span>#endif<span class="w"></span>
+<span class="w"> </span>#endif<span class="w"></span>
+<span class="w"> </span>		}<span class="w"></span>
+<span class="gu">@@ -1151,7 +1155,9 @@ int ilitek_read_data_and_report_6XX(void) {</span><span class="w"></span>
+<span class="w"> </span>				tp_log_info(&quot;system is suspend not report point\n&quot;);<span class="w"></span>
+<span class="w"> </span>#ifdef ILITEK_GESTURE<span class="w"></span>
+<span class="w"> </span>#if ILITEK_GESTURE == ILITEK_DOUBLE_CLICK_WAKEUP<span class="w"></span>
+<span class="gd">-				finger_state = ilitek_double_click_touch(ilitek_data-&gt;tp[i].x, ilitek_data-&gt;tp[i].y, finger_state, i);</span><span class="w"></span>
+<span class="gi">+				if (ilitek_data-&gt;enable_gesture) {</span><span class="w"></span>
+<span class="gi">+					finger_state = ilitek_double_click_touch(ilitek_data-&gt;tp[i].x, ilitek_data-&gt;tp[i].y, finger_state, i);</span><span class="w"></span>
+<span class="gi">+				}</span><span class="w"></span>
+<span class="w"> </span>#endif<span class="w"></span>
+<span class="w"> </span>#endif<span class="w"></span>
+<span class="w"> </span>			}<span class="w"></span>
+<span class="gu">@@ -1225,6 +1231,7 @@ int ilitek_read_data_and_report_6XX(void) {</span><span class="w"></span>
+<span class="w"> </span>			input_sync(input);<span class="w"></span>
+<span class="w"> </span>			//ilitek_data-&gt;system_suspend = false;<span class="w"></span>
+<span class="w"> </span>#elif ILITEK_GESTURE == ILITEK_DOUBLE_CLICK_WAKEUP<span class="w"></span>
+<span class="gi">+			if (ilitek_data-&gt;enable_gesture) {</span><span class="w"></span>
+<span class="w"> </span>			finger_state = ilitek_double_click_release(finger_state);<span class="w"></span>
+<span class="w"> </span>			if (finger_state == 5) {<span class="w"></span>
+<span class="w"> </span>
+<span class="gu">@@ -1239,6 +1246,7 @@ int ilitek_read_data_and_report_6XX(void) {</span><span class="w"></span>
+<span class="w"> </span>				input_sync(input);<span class="w"></span>
+<span class="w"> </span>				//ilitek_data-&gt;system_suspend = false;<span class="w"></span>
+<span class="w"> </span>			}<span class="w"></span>
+<span class="gi">+			}</span><span class="w"></span>
+<span class="w"> </span>#endif<span class="w"></span>
+<span class="w"> </span>#endif<span class="w"></span>
+<span class="w"> </span>		}<span class="w"></span>
+<span class="gh">diff --git a/kernel-4.19/drivers/input/touchscreen/ilitek_limv/ilitek_platform_init.c b/kernel-4.19/drivers/input/touchscreen/ilitek_limv/ilitek_platform_init.c</span><span class="w"></span>
+<span class="gh">index 2b4b5497eb2..25a3f963516 100755</span><span class="w"></span>
+<span class="gd">--- a/kernel-4.19/drivers/input/touchscreen/ilitek_limv/ilitek_platform_init.c</span><span class="w"></span>
+<span class="gi">+++ b/kernel-4.19/drivers/input/touchscreen/ilitek_limv/ilitek_platform_init.c</span><span class="w"></span>
+<span class="gu">@@ -24,12 +24,88 @@</span><span class="w"></span>
+<span class="w"> </span>
+<span class="w"> </span>#include &quot;ilitek_ts.h&quot;<span class="w"></span>
+<span class="w"> </span>#include &quot;ilitek_common.h&quot;<span class="w"></span>
+<span class="gi">+#include &lt;linux/miscdevice.h&gt;</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="w"> </span>struct ilitek_ts_data *ilitek_data;<span class="w"></span>
+<span class="w"> </span>/*<span class="w"></span>
+<span class="w"> </span>   Data struct init. When the driver will be setup, the driver initial the data struct.<span class="w"></span>
+<span class="w"> </span>   If the memory alloc fail the function will return -ENOMEM.<span class="w"></span>
+<span class="w"> </span>   The log level be set ILITEK_DEFAULT_LOG_LEVEL.<span class="w"></span>
+<span class="w"> </span> */<span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+static int tp_open(struct inode *inode, struct file *file)</span><span class="w"></span>
+<span class="gi">+{</span><span class="w"></span>
+<span class="gi">+	return 0;</span><span class="w"></span>
+<span class="gi">+}</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+static int tp_release(struct inode *inode, struct file *file)</span><span class="w"></span>
+<span class="gi">+{</span><span class="w"></span>
+<span class="gi">+	return 0;</span><span class="w"></span>
+<span class="gi">+}</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+static long tp_ioctl(struct file *file, unsigned int cmd,</span><span class="w"></span>
+<span class="gi">+				unsigned long arg)</span><span class="w"></span>
+<span class="gi">+{</span><span class="w"></span>
+<span class="gi">+	void __user *user_data = (void __user *)arg;</span><span class="w"></span>
+<span class="gi">+	int ret = 0;</span><span class="w"></span>
+<span class="gi">+	int en = 1;</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+	switch (cmd) {</span><span class="w"></span>
+<span class="gi">+		case SET_GESTURE_ONOFF:</span><span class="w"></span>
+<span class="gi">+			ret = copy_from_user(&amp;en, user_data, sizeof(int));</span><span class="w"></span>
+<span class="gi">+			if (ret &lt; 0) {</span><span class="w"></span>
+<span class="gi">+				pr_info(&quot;SET_GESTURE_ONOFF.\n&quot;);</span><span class="w"></span>
+<span class="gi">+				ret = -1;</span><span class="w"></span>
+<span class="gi">+				break;</span><span class="w"></span>
+<span class="gi">+			}</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+			pr_info(&quot;SET_GESTURE_ONOFF: %d\n&quot;, en);</span><span class="w"></span>
+<span class="gi">+			ilitek_data-&gt;enable_gesture = en;</span><span class="w"></span>
+<span class="gi">+			break;</span><span class="w"></span>
+<span class="gi">+		case SET_DEFAULT:</span><span class="w"></span>
+<span class="gi">+			ret = copy_from_user(&amp;en, user_data, sizeof(int));</span><span class="w"></span>
+<span class="gi">+			if (ret &lt; 0) {</span><span class="w"></span>
+<span class="gi">+				pr_info(&quot;SET_DEFAULT.\n&quot;);</span><span class="w"></span>
+<span class="gi">+				ret = -1;</span><span class="w"></span>
+<span class="gi">+				break;</span><span class="w"></span>
+<span class="gi">+			}</span><span class="w"></span>
+<span class="gi">+			pr_info(&quot;SET_DEFAULT: %d\n&quot;, en);</span><span class="w"></span>
+<span class="gi">+			//tp_chg_vote(NC_DISABLE_CHG_BY_USER, !en);</span><span class="w"></span>
+<span class="gi">+			break;</span><span class="w"></span>
+<span class="gi">+		default:</span><span class="w"></span>
+<span class="gi">+			pr_info(&quot;cmd: %u is not support.\n&quot;, cmd);</span><span class="w"></span>
+<span class="gi">+			ret = -1;</span><span class="w"></span>
+<span class="gi">+			break;</span><span class="w"></span>
+<span class="gi">+	}</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+	return ret;</span><span class="w"></span>
+<span class="gi">+}</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+#ifdef CONFIG_COMPAT</span><span class="w"></span>
+<span class="gi">+static long tp_compat_ioctl(struct file *file,</span><span class="w"></span>
+<span class="gi">+			unsigned int cmd, unsigned long arg)</span><span class="w"></span>
+<span class="gi">+{</span><span class="w"></span>
+<span class="gi">+	return tp_ioctl(file, cmd, arg);</span><span class="w"></span>
+<span class="gi">+}</span><span class="w"></span>
+<span class="gi">+#endif</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+static const struct file_operations tp_fops = {</span><span class="w"></span>
+<span class="gi">+	.owner = THIS_MODULE,</span><span class="w"></span>
+<span class="gi">+	.open = tp_open,</span><span class="w"></span>
+<span class="gi">+	.release = tp_release,</span><span class="w"></span>
+<span class="gi">+	.unlocked_ioctl = tp_ioctl,</span><span class="w"></span>
+<span class="gi">+#ifdef CONFIG_COMPAT</span><span class="w"></span>
+<span class="gi">+	.compat_ioctl = tp_compat_ioctl,</span><span class="w"></span>
+<span class="gi">+#endif</span><span class="w"></span>
+<span class="gi">+};</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+static struct miscdevice tp_miscdev = {</span><span class="w"></span>
+<span class="gi">+	.minor      = MISC_DYNAMIC_MINOR,</span><span class="w"></span>
+<span class="gi">+	.name		= ILITEK_TS_NAME,</span><span class="w"></span>
+<span class="gi">+	.fops		= &amp;tp_fops,</span><span class="w"></span>
+<span class="gi">+};</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="w"> </span>int ilitek_data_init(void) {<span class="w"></span>
+<span class="w"> </span>	ilitek_data = kzalloc(sizeof(*ilitek_data), GFP_KERNEL);<span class="w"></span>
+<span class="w"> </span>	if (ilitek_data == NULL) {<span class="w"></span>
+<span class="gu">@@ -135,6 +211,8 @@ static struct i2c_driver tpd_i2c_driver = {</span><span class="w"></span>
+<span class="w"> </span>	.detect = tpd_detect,<span class="w"></span>
+<span class="w"> </span>};<span class="w"></span>
+<span class="w"> </span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="w"> </span>static int tpd_local_init(void)<span class="w"></span>
+<span class="w"> </span>{<span class="w"></span>
+<span class="w"> </span>	tp_log_info(&quot;TPD init device driver\n&quot;);<span class="w"></span>
+<span class="gu">@@ -153,6 +231,7 @@ static int tpd_local_init(void)</span><span class="w"></span>
+<span class="w"> </span>		tpd_button_setting(tpd_dts_data.tpd_key_num, tpd_dts_data.tpd_key_local, tpd_dts_data.tpd_key_dim_local);<span class="w"></span>
+<span class="w"> </span>
+<span class="w"> </span>	tpd_type_cap = 1;<span class="w"></span>
+<span class="gi">+	</span><span class="w"></span>
+<span class="w"> </span>	tp_log_info(&quot;TPD init done\n&quot;);<span class="w"></span>
+<span class="w"> </span>	return TPD_OK;<span class="w"></span>
+<span class="w"> </span>}<span class="w"></span>
+<span class="gu">@@ -403,6 +482,8 @@ static int __init ilitek_touch_driver_init(void)</span><span class="w"></span>
+<span class="w"> </span>		i2c_del_driver(&amp;ilitek_touch_device_driver);<span class="w"></span>
+<span class="w"> </span>		return -ENODEV;<span class="w"></span>
+<span class="w"> </span>	}<span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+	misc_register(&amp;tp_miscdev);</span><span class="w"></span>
+<span class="w"> </span>	tp_log_info(&quot;add touch device driver i2c driver.\n&quot;);<span class="w"></span>
+<span class="w"> </span>	return ret;<span class="w"></span>
+<span class="w"> </span>}<span class="w"></span>
+<span class="gh">diff --git a/kernel-4.19/drivers/input/touchscreen/ilitek_limv/ilitek_tool.c b/kernel-4.19/drivers/input/touchscreen/ilitek_limv/ilitek_tool.c</span><span class="w"></span>
+<span class="gh">index 892b5ccd29c..0f5b1de60cc 100755</span><span class="w"></span>
+<span class="gd">--- a/kernel-4.19/drivers/input/touchscreen/ilitek_limv/ilitek_tool.c</span><span class="w"></span>
+<span class="gi">+++ b/kernel-4.19/drivers/input/touchscreen/ilitek_limv/ilitek_tool.c</span><span class="w"></span>
+<span class="gu">@@ -1754,7 +1754,17 @@ static ssize_t ilitek_gesture_show(struct device *dev, struct device_attribute *</span><span class="w"></span>
+<span class="w"> </span>
+<span class="w"> </span>static ssize_t ilitek_gesture_store(struct device *dev, struct device_attribute *attr, const char *buf, size_t size)<span class="w"></span>
+<span class="w"> </span>{<span class="w"></span>
+<span class="gd">-	if (buf[0])</span><span class="w"></span>
+<span class="gi">+        unsigned int state;</span><span class="w"></span>
+<span class="gi">+        ssize_t ret;</span><span class="w"></span>
+<span class="gi">+        //struct usb_switch_data *data = dev_get_drvdata(dev-&gt;parent);</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+        ret = kstrtouint(buf, 10, &amp;state);</span><span class="w"></span>
+<span class="gi">+        if (ret) {</span><span class="w"></span>
+<span class="gi">+                pr_notice(&quot;set state fail\n&quot;);</span><span class="w"></span>
+<span class="gi">+                return ret;</span><span class="w"></span>
+<span class="gi">+        }</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+	if (state)</span><span class="w"></span>
+<span class="w"> </span>		ilitek_data-&gt;enable_gesture = true;<span class="w"></span>
+<span class="w"> </span>	else<span class="w"></span>
+<span class="w"> </span>		ilitek_data-&gt;enable_gesture = false;<span class="w"></span>
+<span class="gh">diff --git a/xxxxxdroid/device/xxxxxdroid_mt6762.mk b/xxxxxdroid/device/xxxxxdroid_mt6762.mk</span><span class="w"></span>
+<span class="gh">index c0268f7816b..e2dda6bb2e3 100755</span><span class="w"></span>
+<span class="gd">--- a/xxxxxdroid/device/xxxxxdroid_mt6762.mk</span><span class="w"></span>
+<span class="gi">+++ b/xxxxxdroid/device/xxxxxdroid_mt6762.mk</span><span class="w"></span>
+<span class="gu">@@ -98,6 +98,7 @@ USE_xxx_HELLO := AP</span><span class="w"></span>
+<span class="w"> </span>#add by zengzp for xxxxxservice<span class="w"></span>
+<span class="w"> </span>PRODUCT_PACKAGES += \<span class="w"></span>
+<span class="w"> </span>    xxxxxgpios.default \<span class="w"></span>
+<span class="gi">+    xxxxxgesture.default \</span><span class="w"></span>
+<span class="w"> </span>    xxxxxdroid.hardware.xxxxxservice@1.0-service<span class="w"></span>
+<span class="w"> </span>
+<span class="w"> </span>#add by zengzp for systool<span class="w"></span>
+<span class="gh">diff --git a/xxxxxdroid/device/xxxxxdroid_mt6762_vnd.mk b/xxxxxdroid/device/xxxxxdroid_mt6762_vnd.mk</span><span class="w"></span>
+<span class="gh">index 10284cd681b..ee48e23f15d 100755</span><span class="w"></span>
+<span class="gd">--- a/xxxxxdroid/device/xxxxxdroid_mt6762_vnd.mk</span><span class="w"></span>
+<span class="gi">+++ b/xxxxxdroid/device/xxxxxdroid_mt6762_vnd.mk</span><span class="w"></span>
+<span class="gu">@@ -49,6 +49,7 @@ USE_xxx_HELLO := AP</span><span class="w"></span>
+<span class="w"> </span>#add by zengzp for xxxxxservice<span class="w"></span>
+<span class="w"> </span>PRODUCT_PACKAGES += \<span class="w"></span>
+<span class="w"> </span>    xxxxxgpios.default \<span class="w"></span>
+<span class="gi">+    xxxxxgesture.default \</span><span class="w"></span>
+<span class="w"> </span>    xxxxxdroid.hardware.xxxxxservice@1.0-service<span class="w"></span>
+<span class="w"> </span>
+<span class="w"> </span>#add by zengzp for systool<span class="w"></span>
+<span class="gh">diff --git a/xxxxxdroid/device/sepolicy/vendor/file_contexts b/xxxxxdroid/device/sepolicy/vendor/file_contexts</span><span class="w"></span>
+<span class="gh">index 5d5b596ea65..c7f7d14666a 100755</span><span class="w"></span>
+<span class="gd">--- a/xxxxxdroid/device/sepolicy/vendor/file_contexts</span><span class="w"></span>
+<span class="gi">+++ b/xxxxxdroid/device/sepolicy/vendor/file_contexts</span><span class="w"></span>
+<span class="gu">@@ -6,6 +6,7 @@</span><span class="w"></span>
+<span class="w"> </span>/(vendor|system/vendor)/xxxxxdroid(/.*)?     u:object_r:vendor_configs_file:s0<span class="w"></span>
+<span class="w"> </span>
+<span class="w"> </span>/dev/xxxxx_gpios                             u:object_r:xxxxx_chr_device:s0<span class="w"></span>
+<span class="gi">+/dev/ilitek_ts                             u:object_r:xxxxx_chr_device:s0</span><span class="w"></span>
+<span class="w"> </span>/data/vendor/xxxxxdroid/*                    u:object_r:xxxxxdroid_data_file:s0<span class="w"></span>
+<span class="w"> </span>
+<span class="w"> </span>/dev/ttyS0         u:object_r:xxxxx_tty_device:s0<span class="w"></span>
+<span class="gh">diff --git a/xxxxxdroid/external/xxxxx/jni/libxxxxxapijni/xxxxx_util_OsPaxApi.c b/xxxxxdroid/external/xxxxx/jni/libxxxxxapijni/xxxxx_util_OsPaxApi.c</span><span class="w"></span>
+<span class="gh">index 13c967666e8..b1e9c40d5af 100755</span><span class="w"></span>
+<span class="gd">--- a/xxxxxdroid/external/xxxxx/jni/libxxxxxapijni/xxxxx_util_OsPaxApi.c</span><span class="w"></span>
+<span class="gi">+++ b/xxxxxdroid/external/xxxxx/jni/libxxxxxapijni/xxxxx_util_OsPaxApi.c</span><span class="w"></span>
+<span class="gu">@@ -13539,6 +13539,18 @@ JNIEXPORT jint JNICALL Java_xxxxx_util_OsPaxApi_PaymentGetStatus</span><span class="w"></span>
+<span class="w"> </span>{<span class="w"></span>
+<span class="w"> </span>    return xxxxx_PaymentGetStatus();<span class="w"></span>
+<span class="w"> </span>}<span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+JNIEXPORT jint JNICALL Java_xxxxx_util_OsPaxApi_StartTouchScreenGesture</span><span class="w"></span>
+<span class="gi">+(JNIEnv *env, jobject obj)</span><span class="w"></span>
+<span class="gi">+{</span><span class="w"></span>
+<span class="gi">+    return xxxxx_StartTouchScreenGesture();</span><span class="w"></span>
+<span class="gi">+}</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+JNIEXPORT jint JNICALL Java_xxxxx_util_OsPaxApi_StopTouchScreenGesture</span><span class="w"></span>
+<span class="gi">+(JNIEnv *env, jobject obj)</span><span class="w"></span>
+<span class="gi">+{</span><span class="w"></span>
+<span class="gi">+    return xxxxx_StopTouchScreenGesture();</span><span class="w"></span>
+<span class="gi">+}</span><span class="w"></span>
+<span class="w"> </span>//end<span class="w"></span>
+<span class="w"> </span>
+<span class="w"> </span>#ifdef __cplusplus<span class="w"></span>
+<span class="gh">diff --git a/xxxxxdroid/external/xxxxx/jni/libxxxxxapijni/xxxxx_util_OsPaxApi.h b/xxxxxdroid/external/xxxxx/jni/libxxxxxapijni/xxxxx_util_OsPaxApi.h</span><span class="w"></span>
+<span class="gh">index 464c6263914..717804e7ce0 100755</span><span class="w"></span>
+<span class="gd">--- a/xxxxxdroid/external/xxxxx/jni/libxxxxxapijni/xxxxx_util_OsPaxApi.h</span><span class="w"></span>
+<span class="gi">+++ b/xxxxxdroid/external/xxxxx/jni/libxxxxxapijni/xxxxx_util_OsPaxApi.h</span><span class="w"></span>
+<span class="gu">@@ -1956,6 +1956,23 @@ JNIEXPORT jint JNICALL Java_xxxxx_util_OsPaxApi_PaymentGetWakeupStatus</span><span class="w"></span>
+<span class="w"> </span>JNIEXPORT jint JNICALL Java_xxxxx_util_OsPaxApi_PaymentGetStatus<span class="w"></span>
+<span class="w"> </span>(JNIEnv *env, jobject obj);<span class="w"></span>
+<span class="w"> </span>
+<span class="gi">+/*</span><span class="w"></span>
+<span class="gi">+ * Class:     xxxxx_util_OsPaxApi</span><span class="w"></span>
+<span class="gi">+ * Method:    StartTouchScreenGesture</span><span class="w"></span>
+<span class="gi">+ * Signature: ()I</span><span class="w"></span>
+<span class="gi">+ */</span><span class="w"></span>
+<span class="gi">+JNIEXPORT jint JNICALL Java_xxxxx_util_OsPaxApi_StartTouchScreenGesture</span><span class="w"></span>
+<span class="gi">+(JNIEnv *env, jobject obj);</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+/*</span><span class="w"></span>
+<span class="gi">+ * Class:     xxxxx_util_OsPaxApi</span><span class="w"></span>
+<span class="gi">+ * Method:    StopTouchScreenGesture</span><span class="w"></span>
+<span class="gi">+ * Signature: ()I</span><span class="w"></span>
+<span class="gi">+ */</span><span class="w"></span>
+<span class="gi">+JNIEXPORT jint JNICALL Java_xxxxx_util_OsPaxApi_StopTouchScreenGesture</span><span class="w"></span>
+<span class="gi">+(JNIEnv *env, jobject obj);</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="w"> </span>#ifdef __cplusplus<span class="w"></span>
+<span class="w"> </span>}<span class="w"></span>
+<span class="w"> </span>#endif<span class="w"></span>
+<span class="gh">diff --git a/xxxxxdroid/external/xxxxx/lib/libxxxxxapiclient/xxxxxapiclient.cpp b/xxxxxdroid/external/xxxxx/lib/libxxxxxapiclient/xxxxxapiclient.cpp</span><span class="w"></span>
+<span class="gh">index 9c1c84e960c..186f76e6207 100755</span><span class="w"></span>
+<span class="gd">--- a/xxxxxdroid/external/xxxxx/lib/libxxxxxapiclient/xxxxxapiclient.cpp</span><span class="w"></span>
+<span class="gi">+++ b/xxxxxdroid/external/xxxxx/lib/libxxxxxapiclient/xxxxxapiclient.cpp</span><span class="w"></span>
+<span class="gu">@@ -6017,6 +6017,28 @@ int xxxxx_PaymentGetStatus() {</span><span class="w"></span>
+<span class="w"> </span>    return mPaxApiClient-&gt;getService()-&gt;getStatus();<span class="w"></span>
+<span class="w"> </span>}<span class="w"></span>
+<span class="w"> </span>
+<span class="gi">+int xxxxx_StartTouchScreenGesture() {</span><span class="w"></span>
+<span class="gi">+    int result = -1;</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+    if (mPaxApiClient-&gt;getService() == nullptr) {</span><span class="w"></span>
+<span class="gi">+        ALOGE(&quot;xxxxxapiservice is null&quot;);</span><span class="w"></span>
+<span class="gi">+        return result;</span><span class="w"></span>
+<span class="gi">+    }</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+    return mPaxApiClient-&gt;getService()-&gt;startPaxGesture();</span><span class="w"></span>
+<span class="gi">+}</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+int xxxxx_StopTouchScreenGesture() {</span><span class="w"></span>
+<span class="gi">+    int result = -1;</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+    if (mPaxApiClient-&gt;getService() == nullptr) {</span><span class="w"></span>
+<span class="gi">+        ALOGE(&quot;xxxxxapiservice is null&quot;);</span><span class="w"></span>
+<span class="gi">+        return result;</span><span class="w"></span>
+<span class="gi">+    }</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+    return mPaxApiClient-&gt;getService()-&gt;stopPaxGesture();</span><span class="w"></span>
+<span class="gi">+}</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="w"> </span>}//end extern &quot;C&quot;<span class="w"></span>
+<span class="w"> </span>
+<span class="w"> </span>//} //namespace android<span class="w"></span>
+<span class="gh">diff --git a/xxxxxdroid/external/xxxxx/lib/libxxxxxapiclient/xxxxxapiclient.h b/xxxxxdroid/external/xxxxx/lib/libxxxxxapiclient/xxxxxapiclient.h</span><span class="w"></span>
+<span class="gh">index 98f442846e7..f39fbc6f876 100755</span><span class="w"></span>
+<span class="gd">--- a/xxxxxdroid/external/xxxxx/lib/libxxxxxapiclient/xxxxxapiclient.h</span><span class="w"></span>
+<span class="gi">+++ b/xxxxxdroid/external/xxxxx/lib/libxxxxxapiclient/xxxxxapiclient.h</span><span class="w"></span>
+<span class="gu">@@ -324,6 +324,8 @@ int xxxxx_PaymentWakeUp();</span><span class="w"></span>
+<span class="w"> </span>int xxxxx_PaymentGetPowerStatus();<span class="w"></span>
+<span class="w"> </span>int xxxxx_PaymentGetWakeupStatus();<span class="w"></span>
+<span class="w"> </span>int xxxxx_PaymentGetStatus();<span class="w"></span>
+<span class="gi">+int xxxxx_StartTouchScreenGesture();</span><span class="w"></span>
+<span class="gi">+int xxxxx_StopTouchScreenGesture();</span><span class="w"></span>
+<span class="w"> </span>//add by zengzp end<span class="w"></span>
+<span class="w"> </span>
+<span class="w"> </span>#ifdef __cplusplus<span class="w"></span>
+<span class="gh">diff --git a/xxxxxdroid/frameworks/base/core/java/xxxxx/util/IPaxApi.aidl b/xxxxxdroid/frameworks/base/core/java/xxxxx/util/IPaxApi.aidl</span><span class="w"></span>
+<span class="gh">index 2635cffd7de..579c41f9ded 100755</span><span class="w"></span>
+<span class="gd">--- a/xxxxxdroid/frameworks/base/core/java/xxxxx/util/IPaxApi.aidl</span><span class="w"></span>
+<span class="gi">+++ b/xxxxxdroid/frameworks/base/core/java/xxxxx/util/IPaxApi.aidl</span><span class="w"></span>
+<span class="gu">@@ -11,6 +11,8 @@ interface IPaxApi{</span><span class="w"></span>
+<span class="w"> </span>    int sleepRequest();<span class="w"></span>
+<span class="w"> </span>    int getSleepState();<span class="w"></span>
+<span class="w"> </span>    int getPowerState();<span class="w"></span>
+<span class="gi">+    int startPaxGesture();</span><span class="w"></span>
+<span class="gi">+    int stopPaxGesture();</span><span class="w"></span>
+<span class="w"> </span>    /* end gpio */<span class="w"></span>
+<span class="w"> </span>
+<span class="w"> </span>    /* paydev log, now not use, just left here */<span class="w"></span>
+<span class="gu">@@ -27,4 +29,4 @@ interface IPaxApi{</span><span class="w"></span>
+<span class="w"> </span>    int deleteFile(String filePath);<span class="w"></span>
+<span class="w"> </span>    String[] getFiles(String dir);<span class="w"></span>
+<span class="w"> </span>    int xxxxxWriteRawImage(String blkdev, String imagePath);<span class="w"></span>
+<span class="gd">-}</span><span class="w"></span>
+<span class="w">\ No newline at end of file</span>
+<span class="gi">+}</span><span class="w"></span>
+<span class="gh">diff --git a/xxxxxdroid/frameworks/base/m50api/java/xxxxx/util/PayDevManager.java b/xxxxxdroid/frameworks/base/m50api/java/xxxxx/util/PayDevManager.java</span><span class="w"></span>
+<span class="gh">index afbffe59da9..b20cde978f9 100755</span><span class="w"></span>
+<span class="gd">--- a/xxxxxdroid/frameworks/base/m50api/java/xxxxx/util/PayDevManager.java</span><span class="w"></span>
+<span class="gi">+++ b/xxxxxdroid/frameworks/base/m50api/java/xxxxx/util/PayDevManager.java</span><span class="w"></span>
+<span class="gu">@@ -82,6 +82,60 @@ public class PayDevManager {</span><span class="w"></span>
+<span class="w"> </span>        return ret;<span class="w"></span>
+<span class="w"> </span>    }<span class="w"></span>
+<span class="w"> </span>
+<span class="gi">+    @UnsupportedAppUsage</span><span class="w"></span>
+<span class="gi">+    public int writeFile(int fd, byte[] content, int realBytes) throws IOException {</span><span class="w"></span>
+<span class="gi">+        int ret = -1;</span><span class="w"></span>
+<span class="gi">+        if (mService != null) {</span><span class="w"></span>
+<span class="gi">+            try {</span><span class="w"></span>
+<span class="gi">+                ret = mService.writeFile(fd, content, realBytes);</span><span class="w"></span>
+<span class="gi">+            } catch (RemoteException e) {</span><span class="w"></span>
+<span class="gi">+                //throw e.rethrowFromSystemServer();</span><span class="w"></span>
+<span class="gi">+                Slog.e(TAG, &quot;getPowerState binder error&quot;);</span><span class="w"></span>
+<span class="gi">+            }</span><span class="w"></span>
+<span class="gi">+        }</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+        if (ret &lt; 0)</span><span class="w"></span>
+<span class="gi">+            throw new IOException(&quot;write File fail&quot;);</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+        return ret;</span><span class="w"></span>
+<span class="gi">+    }</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+    @UnsupportedAppUsage</span><span class="w"></span>
+<span class="gi">+    public int openFile(String targetDir, String targetFileName) throws IOException {</span><span class="w"></span>
+<span class="gi">+        int ret = -1;</span><span class="w"></span>
+<span class="gi">+        if (mService != null) {</span><span class="w"></span>
+<span class="gi">+            try {</span><span class="w"></span>
+<span class="gi">+                ret = mService.openFile(targetDir, targetFileName);</span><span class="w"></span>
+<span class="gi">+            } catch (RemoteException e) {</span><span class="w"></span>
+<span class="gi">+                //throw e.rethrowFromSystemServer();</span><span class="w"></span>
+<span class="gi">+                Slog.e(TAG, &quot;getPowerState binder error&quot;);</span><span class="w"></span>
+<span class="gi">+            }</span><span class="w"></span>
+<span class="gi">+        }</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+        if (ret &lt; 0)</span><span class="w"></span>
+<span class="gi">+            throw new IOException(&quot;open File fail&quot;);</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+        return ret;</span><span class="w"></span>
+<span class="gi">+    }</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+    @UnsupportedAppUsage</span><span class="w"></span>
+<span class="gi">+    public int closeFile(int fd) throws IOException {</span><span class="w"></span>
+<span class="gi">+        int ret = -1;</span><span class="w"></span>
+<span class="gi">+        if (mService != null) {</span><span class="w"></span>
+<span class="gi">+            try {</span><span class="w"></span>
+<span class="gi">+                ret = mService.closeFile(fd);</span><span class="w"></span>
+<span class="gi">+            } catch (RemoteException e) {</span><span class="w"></span>
+<span class="gi">+                //throw e.rethrowFromSystemServer();</span><span class="w"></span>
+<span class="gi">+                Slog.e(TAG, &quot;getPowerState binder error&quot;);</span><span class="w"></span>
+<span class="gi">+            }</span><span class="w"></span>
+<span class="gi">+        }</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+        if (ret &lt; 0)</span><span class="w"></span>
+<span class="gi">+            throw new IOException(&quot;close File fail&quot;);</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+        return ret;</span><span class="w"></span>
+<span class="gi">+    }</span><span class="w"></span>
+<span class="gi">+	</span><span class="w"></span>
+<span class="w"> </span>    @UnsupportedAppUsage<span class="w"></span>
+<span class="w"> </span>    public int wakeupRequest() throws IOException {<span class="w"></span>
+<span class="w"> </span>        int ret = -1;<span class="w"></span>
+<span class="gu">@@ -153,4 +207,41 @@ public class PayDevManager {</span><span class="w"></span>
+<span class="w"> </span>
+<span class="w"> </span>        return ret;<span class="w"></span>
+<span class="w"> </span>    }<span class="w"></span>
+<span class="gi">+	</span><span class="w"></span>
+<span class="gi">+    @UnsupportedAppUsage</span><span class="w"></span>
+<span class="gi">+    public int startPaxGesture() throws IOException {</span><span class="w"></span>
+<span class="gi">+        Slog.e(TAG, &quot;startPaxGesture&quot;);</span><span class="w"></span>
+<span class="gi">+        int ret = -1;</span><span class="w"></span>
+<span class="gi">+        if (mService != null) {</span><span class="w"></span>
+<span class="gi">+            try {</span><span class="w"></span>
+<span class="gi">+                ret = mService.startPaxGesture();</span><span class="w"></span>
+<span class="gi">+            } catch (RemoteException e) {</span><span class="w"></span>
+<span class="gi">+                //throw e.rethrowFromSystemServer();</span><span class="w"></span>
+<span class="gi">+                Slog.e(TAG, &quot;startPaxGesture binder error&quot;);</span><span class="w"></span>
+<span class="gi">+            }</span><span class="w"></span>
+<span class="gi">+        }</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+        if (ret &lt; 0)</span><span class="w"></span>
+<span class="gi">+            throw new IOException(&quot;startPaxGesture fail&quot;);</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+        return ret;</span><span class="w"></span>
+<span class="gi">+    }</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+    @UnsupportedAppUsage</span><span class="w"></span>
+<span class="gi">+    public int stopPaxGesture() throws IOException {</span><span class="w"></span>
+<span class="gi">+        int ret = -1;</span><span class="w"></span>
+<span class="gi">+        if (mService != null) {</span><span class="w"></span>
+<span class="gi">+            try {</span><span class="w"></span>
+<span class="gi">+                ret = mService.stopPaxGesture();</span><span class="w"></span>
+<span class="gi">+            } catch (RemoteException e) {</span><span class="w"></span>
+<span class="gi">+                //throw e.rethrowFromSystemServer();</span><span class="w"></span>
+<span class="gi">+                Slog.e(TAG, &quot;stopPaxGesture binder error&quot;);</span><span class="w"></span>
+<span class="gi">+            }</span><span class="w"></span>
+<span class="gi">+        }</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+        if (ret &lt; 0)</span><span class="w"></span>
+<span class="gi">+            throw new IOException(&quot;stopPaxGesture fail&quot;);</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+        return ret;</span><span class="w"></span>
+<span class="gi">+    }</span><span class="w"></span>
+<span class="w"> </span>}<span class="w"></span>
+<span class="gh">diff --git a/xxxxxdroid/frameworks/base/services/core/java/com/android/server/PaxApiService.java b/xxxxxdroid/frameworks/base/services/core/java/com/android/server/PaxApiService.java</span><span class="w"></span>
+<span class="gh">index 8c1d3bdadca..3b0a729e9be 100755</span><span class="w"></span>
+<span class="gd">--- a/xxxxxdroid/frameworks/base/services/core/java/com/android/server/PaxApiService.java</span><span class="w"></span>
+<span class="gi">+++ b/xxxxxdroid/frameworks/base/services/core/java/com/android/server/PaxApiService.java</span><span class="w"></span>
+<span class="gu">@@ -180,6 +180,30 @@ public class PaxApiService extends SystemService implements IHwBinder.DeathRecip</span><span class="w"></span>
+<span class="w"> </span>        return res;<span class="w"></span>
+<span class="w"> </span>    }<span class="w"></span>
+<span class="w"> </span>
+<span class="gi">+    private int enableTouchscreenGesture(boolean enable) {</span><span class="w"></span>
+<span class="gi">+        int res = -1;</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+        IPaxApiService daemon = getPaxApiDaemon();</span><span class="w"></span>
+<span class="gi">+        if (daemon == null)</span><span class="w"></span>
+<span class="gi">+            return -1;</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+        if (enable) {</span><span class="w"></span>
+<span class="gi">+            try {</span><span class="w"></span>
+<span class="gi">+                res = daemon.startPaxGesture();</span><span class="w"></span>
+<span class="gi">+            } catch(RemoteException e){</span><span class="w"></span>
+<span class="gi">+                Slog.e(TAG, &quot;xxxxxapi binder error&quot;);</span><span class="w"></span>
+<span class="gi">+            }</span><span class="w"></span>
+<span class="gi">+        } else {</span><span class="w"></span>
+<span class="gi">+            try {</span><span class="w"></span>
+<span class="gi">+                res = daemon.stopPaxGesture();</span><span class="w"></span>
+<span class="gi">+            } catch(RemoteException e) {</span><span class="w"></span>
+<span class="gi">+                Slog.e(TAG, &quot;xxxxxapi binder error&quot;);</span><span class="w"></span>
+<span class="gi">+            }</span><span class="w"></span>
+<span class="gi">+        }</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+        return res;</span><span class="w"></span>
+<span class="gi">+    }</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="w"> </span>    public long getDirectorySize(String path) {<span class="w"></span>
+<span class="w"> </span>        long res = 0;<span class="w"></span>
+<span class="w"> </span>
+<span class="gu">@@ -469,5 +493,15 @@ public class PaxApiService extends SystemService implements IHwBinder.DeathRecip</span><span class="w"></span>
+<span class="w"> </span>        public int xxxxxWriteRawImage(String blkdev, String imagePath) {<span class="w"></span>
+<span class="w"> </span>            return xxxxxWriteRawImage2(blkdev, imagePath);<span class="w"></span>
+<span class="w"> </span>        }<span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+        @Override // Binder call</span><span class="w"></span>
+<span class="gi">+        public int startPaxGesture() {</span><span class="w"></span>
+<span class="gi">+            return enableTouchscreenGesture(true);</span><span class="w"></span>
+<span class="gi">+        }</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+        @Override // Binder call</span><span class="w"></span>
+<span class="gi">+        public int stopPaxGesture() {</span><span class="w"></span>
+<span class="gi">+            return enableTouchscreenGesture(false);</span><span class="w"></span>
+<span class="gi">+        }</span><span class="w"></span>
+<span class="w"> </span>    }<span class="w"></span>
+<span class="w"> </span>}<span class="w"></span>
+<span class="w">\ No newline at end of file</span>
+<span class="gh">diff --git a/xxxxxdroid/hardware/interfaces/current.txt b/xxxxxdroid/hardware/interfaces/current.txt</span><span class="w"></span>
+<span class="gh">index 6317e7d8013..876bf55dfec 100755</span><span class="w"></span>
+<span class="gd">--- a/xxxxxdroid/hardware/interfaces/current.txt</span><span class="w"></span>
+<span class="gi">+++ b/xxxxxdroid/hardware/interfaces/current.txt</span><span class="w"></span>
+<span class="gu">@@ -3,6 +3,6 @@ b5772891d23d223dab8525ce603ae743c9d2aa0c1e4d7ff487c370af15b32865 xxxxxdroid.hardwa</span><span class="w"></span>
+<span class="w"> </span>296c29f15736a7e3dcbac0f7bcc1cef9b31e48d5cf11a6eb0d5536b44f437e0e xxxxxdroid.hardware.hello@1.1::types<span class="w"></span>
+<span class="w"> </span>f05b057688945efaab1200df9b74d9b976636fe41c016536e65d87214cc3ab89 xxxxxdroid.hardware.hello@1.1::IHello<span class="w"></span>
+<span class="w"> </span>72d5e633f2c89901e98846565128af1417b95e7a535ae70b28c0fa867dc9b703 xxxxxdroid.hardware.xxxxxservice@1.0::types<span class="w"></span>
+<span class="gd">-9c2b073b7c8fb0d54c99b9add22a2054e588bc45609a6198512c7185d2349423 xxxxxdroid.hardware.xxxxxservice@1.0::IPaxApiService</span><span class="w"></span>
+<span class="gi">+9e563eb9414865f6f55f4b4ebc45328a84d8fd9593471b2f768b3a500029209e xxxxxdroid.hardware.xxxxxservice@1.0::IPaxApiService</span><span class="w"></span>
+<span class="w"> </span>1be06fcf4df534ec501fe828cd84a8dbe29f9ff4461102fc1939081aea85e4e0 xxxxxdroid.hardware.systool@1.0::types<span class="w"></span>
+<span class="w"> </span>1a18b6bd90b3a3bb52f738742f7c8c61fa334487244f80a4009f252d28a89bb5 xxxxxdroid.hardware.systool@1.0::ISystoolServer<span class="w"></span>
+<span class="gh">diff --git a/xxxxxdroid/hardware/interfaces/xxxxxservice/1.0/IPaxApiService.hal b/xxxxxdroid/hardware/interfaces/xxxxxservice/1.0/IPaxApiService.hal</span><span class="w"></span>
+<span class="gh">index 0b0781df008..5e656942ee5 100755</span><span class="w"></span>
+<span class="gd">--- a/xxxxxdroid/hardware/interfaces/xxxxxservice/1.0/IPaxApiService.hal</span><span class="w"></span>
+<span class="gi">+++ b/xxxxxdroid/hardware/interfaces/xxxxxservice/1.0/IPaxApiService.hal</span><span class="w"></span>
+<span class="gu">@@ -38,6 +38,11 @@ interface IPaxApiService{</span><span class="w"></span>
+<span class="w"> </span>  startPayDevLogOut() generates (int32_t res);<span class="w"></span>
+<span class="w"> </span>  stopPayDevLogOut() generates (int32_t res);<span class="w"></span>
+<span class="w"> </span>
+<span class="gi">+  /* touchscreen gesture control start*/</span><span class="w"></span>
+<span class="gi">+  startPaxGesture() generates (int32_t res);</span><span class="w"></span>
+<span class="gi">+  stopPaxGesture() generates (int32_t res);</span><span class="w"></span>
+<span class="gi">+  /* touchscreen gesture control end*/</span><span class="w"></span>
+<span class="gi">+  </span><span class="w"></span>
+<span class="w"> </span>  //preapp<span class="w"></span>
+<span class="w"> </span>  getDirSize(string dir) generates (uint64_t res);<span class="w"></span>
+<span class="w"> </span>  openFile(string dir, string fileName) generates (int32_t res);<span class="w"></span>
+<span class="gh">diff --git a/xxxxxdroid/hardware/interfaces/xxxxxservice/1.0/default/PaxApiService.cpp b/xxxxxdroid/hardware/interfaces/xxxxxservice/1.0/default/PaxApiService.cpp</span><span class="w"></span>
+<span class="gh">index 845d3e1c664..2eb27aa3d1a 100755</span><span class="w"></span>
+<span class="gd">--- a/xxxxxdroid/hardware/interfaces/xxxxxservice/1.0/default/PaxApiService.cpp</span><span class="w"></span>
+<span class="gi">+++ b/xxxxxdroid/hardware/interfaces/xxxxxservice/1.0/default/PaxApiService.cpp</span><span class="w"></span>
+<span class="gu">@@ -470,6 +470,8 @@ Return&lt;void&gt; PaxApiService::openHal() {</span><span class="w"></span>
+<span class="w"> </span>
+<span class="w"> </span>    /* gpio module */<span class="w"></span>
+<span class="w"> </span>    loadGpioHal();<span class="w"></span>
+<span class="gi">+	/* gesture module */</span><span class="w"></span>
+<span class="gi">+	loadGestureHal();</span><span class="w"></span>
+<span class="w"> </span>    //loadPayLogHal();<span class="w"></span>
+<span class="w"> </span>
+<span class="w"> </span>    return Void();<span class="w"></span>
+<span class="gu">@@ -538,12 +540,15 @@ Return&lt;void&gt; PaxApiService::closeHal() {</span><span class="w"></span>
+<span class="w"> </span>
+<span class="w"> </span>    /* gpio module */<span class="w"></span>
+<span class="w"> </span>    unloadGpioHal();<span class="w"></span>
+<span class="gi">+	/* gesture module */</span><span class="w"></span>
+<span class="gi">+	unloadGestureHal();</span><span class="w"></span>
+<span class="w"> </span>    unloadPayLogHal();<span class="w"></span>
+<span class="w"> </span>
+<span class="w"> </span>    return Void();<span class="w"></span>
+<span class="w"> </span>}<span class="w"></span>
+<span class="w"> </span>
+<span class="w"> </span>#include &quot;./gpios/PaxGpios.cpp&quot;<span class="w"></span>
+<span class="gi">+#include &quot;./gesture/PaxGesture.cpp&quot;</span><span class="w"></span>
+<span class="w"> </span>#include &quot;./paylog/PayDevLog.cpp&quot;<span class="w"></span>
+<span class="w"> </span>
+<span class="w"> </span>
+<span class="gh">diff --git a/xxxxxdroid/hardware/interfaces/xxxxxservice/1.0/default/PaxApiService.h b/xxxxxdroid/hardware/interfaces/xxxxxservice/1.0/default/PaxApiService.h</span><span class="w"></span>
+<span class="gh">index 9c3831cb002..90636d0dcf3 100755</span><span class="w"></span>
+<span class="gd">--- a/xxxxxdroid/hardware/interfaces/xxxxxservice/1.0/default/PaxApiService.h</span><span class="w"></span>
+<span class="gi">+++ b/xxxxxdroid/hardware/interfaces/xxxxxservice/1.0/default/PaxApiService.h</span><span class="w"></span>
+<span class="gu">@@ -9,6 +9,7 @@</span><span class="w"></span>
+<span class="w"> </span>//#include &lt;hardware/printer.h&gt;<span class="w"></span>
+<span class="w"> </span>#include &lt;hardware/xxxxx_gpios.h&gt;<span class="w"></span>
+<span class="w"> </span>#include &lt;hardware/r20_log.h&gt;<span class="w"></span>
+<span class="gi">+#include &lt;hardware/xxxxx_gesture.h&gt;</span><span class="w"></span>
+<span class="w"> </span>#include &lt;hidl/MQDescriptor.h&gt;<span class="w"></span>
+<span class="w"> </span>#include &lt;hidl/Status.h&gt;<span class="w"></span>
+<span class="w"> </span>#include &lt;xxxxxdroid/hardware/xxxxxservice/1.0/IPaxApiService.h&gt;<span class="w"></span>
+<span class="gu">@@ -62,6 +63,7 @@ public:</span><span class="w"></span>
+<span class="w"> </span>
+<span class="w"> </span>    #include &quot;./gpios/PaxGpios.h&quot;<span class="w"></span>
+<span class="w"> </span>    #include &quot;./paylog/PayDevLog.h&quot;<span class="w"></span>
+<span class="gi">+    #include &quot;./gesture/PaxGesture.h&quot;</span><span class="w"></span>
+<span class="w"> </span>
+<span class="w"> </span>    Return&lt;uint64_t&gt; getDirSize(const hidl_string&amp; dir) override;<span class="w"></span>
+<span class="w"> </span>    Return&lt;int32_t&gt; openFile(const hidl_string&amp; dir, const hidl_string&amp; fileName) override;<span class="w"></span>
+<span class="gu">@@ -83,6 +85,7 @@ private:</span><span class="w"></span>
+<span class="w"> </span>    //printer_device_t *mPrinterDevice;<span class="w"></span>
+<span class="w"> </span>    xxxxx_gpios_device_t *mGpiosDevice;<span class="w"></span>
+<span class="w"> </span>    r20log_device_t *mR20PayDevice;<span class="w"></span>
+<span class="gi">+    gesture_device_t *GesturePayDevice;</span><span class="w"></span>
+<span class="w"> </span>};<span class="w"></span>
+<span class="w"> </span>
+<span class="w"> </span>}  // namespace implementation<span class="w"></span>
+<span class="gh">diff --git a/xxxxxdroid/hardware/interfaces/xxxxxservice/1.0/default/gesture/PaxGesture.cpp b/xxxxxdroid/hardware/interfaces/xxxxxservice/1.0/default/gesture/PaxGesture.cpp</span><span class="w"></span>
+<span class="w">new file mode 100755</span>
+<span class="gh">index 00000000000..0e7e98a52c4</span><span class="w"></span>
+<span class="gd">--- /dev/null</span><span class="w"></span>
+<span class="gi">+++ b/xxxxxdroid/hardware/interfaces/xxxxxservice/1.0/default/gesture/PaxGesture.cpp</span><span class="w"></span>
+<span class="gu">@@ -0,0 +1,103 @@</span><span class="w"></span>
+<span class="gi">+/**</span><span class="w"></span>
+<span class="gi">+ * functions for paydev log -&gt; logcat&amp;&amp; save_files, be included by xxxxxapiservice.cpp</span><span class="w"></span>
+<span class="gi">+ *</span><span class="w"></span>
+<span class="gi">+ * note:</span><span class="w"></span>
+<span class="gi">+ *     these fuctions may nerver use, we just left here, and not supply framework api call interface;</span><span class="w"></span>
+<span class="gi">+ *     if these used, we just add framework api interface and no need to modify here again;</span><span class="w"></span>
+<span class="gi">+ */</span><span class="w"></span>
+<span class="gi">+ </span><span class="w"></span>
+<span class="gi">+#define CHECK_GESTURE_DEVICE_VALID() if (GesturePayDevice == nullptr) { \</span><span class="w"></span>
+<span class="gi">+                    ALOGD(&quot;pay device null, reget&quot;); \</span><span class="w"></span>
+<span class="gi">+                    loadGestureHal(); \</span><span class="w"></span>
+<span class="gi">+                    if (GesturePayDevice == nullptr) { \</span><span class="w"></span>
+<span class="gi">+					    ALOGE(&quot;pay device still null&quot;); \</span><span class="w"></span>
+<span class="gi">+                        return -1; \</span><span class="w"></span>
+<span class="gi">+					} \</span><span class="w"></span>
+<span class="gi">+                } </span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+Return&lt;int32_t&gt; PaxApiService::loadGestureHal(void)</span><span class="w"></span>
+<span class="gi">+{</span><span class="w"></span>
+<span class="gi">+    int err;</span><span class="w"></span>
+<span class="gi">+    const hw_module_t *hw_mdl = nullptr;</span><span class="w"></span>
+<span class="gi">+    hw_device_t *device = nullptr;</span><span class="w"></span>
+<span class="gi">+    const gesture_module_t *module = nullptr;</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+    ALOGD(&quot;load module&quot;);</span><span class="w"></span>
+<span class="gi">+    err = hw_get_module(GESTURE_HARDWARE_MODULE_ID, &amp;hw_mdl);</span><span class="w"></span>
+<span class="gi">+    if (err) {</span><span class="w"></span>
+<span class="gi">+        ALOGE(&quot;hw_get_module %s failed: %d&quot;, GESTURE_HARDWARE_MODULE_ID, err);</span><span class="w"></span>
+<span class="gi">+    } else if (hw_mdl == nullptr){</span><span class="w"></span>
+<span class="gi">+        ALOGE(&quot;No valid module&quot;);</span><span class="w"></span>
+<span class="gi">+        return -1;</span><span class="w"></span>
+<span class="gi">+    } else {</span><span class="w"></span>
+<span class="gi">+        module = reinterpret_cast&lt;const gesture_module_t*&gt;(hw_mdl);</span><span class="w"></span>
+<span class="gi">+        if (module-&gt;common.methods-&gt;open == nullptr) {</span><span class="w"></span>
+<span class="gi">+            ALOGE(&quot;No valid open method&quot;);</span><span class="w"></span>
+<span class="gi">+        } else {</span><span class="w"></span>
+<span class="gi">+            err = module-&gt;common.methods-&gt;open(</span><span class="w"></span>
+<span class="gi">+                    hw_mdl, GESTURE_HARDWARE_MODULE_ID,</span><span class="w"></span>
+<span class="gi">+                    &amp;device);</span><span class="w"></span>
+<span class="gi">+            if (err) {</span><span class="w"></span>
+<span class="gi">+                ALOGE(&quot;Can&#39;t open methods, error: %d&quot;, err);</span><span class="w"></span>
+<span class="gi">+                return -1;</span><span class="w"></span>
+<span class="gi">+            }</span><span class="w"></span>
+<span class="gi">+        }</span><span class="w"></span>
+<span class="gi">+    }</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+    GesturePayDevice = reinterpret_cast&lt;gesture_device_t*&gt;(device);</span><span class="w"></span>
+<span class="gi">+    if (!GesturePayDevice) {</span><span class="w"></span>
+<span class="gi">+        ALOGE(&quot;Can&#39;t open xxxxx_gesture HAL module&quot;);</span><span class="w"></span>
+<span class="gi">+    } else {</span><span class="w"></span>
+<span class="gi">+        ALOGD(&quot;open xxxxx_gesture HAL module sucess&quot;);</span><span class="w"></span>
+<span class="gi">+    }</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+    return 0;</span><span class="w"></span>
+<span class="gi">+}</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+Return&lt;int32_t&gt; PaxApiService::unloadGestureHal(void)</span><span class="w"></span>
+<span class="gi">+{</span><span class="w"></span>
+<span class="gi">+    int err;</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+    ALOGV(&quot;~unloadLogHal()&quot;);</span><span class="w"></span>
+<span class="gi">+    if (GesturePayDevice == nullptr) {</span><span class="w"></span>
+<span class="gi">+        ALOGE(&quot;No valid paydev device&quot;);</span><span class="w"></span>
+<span class="gi">+    } else {</span><span class="w"></span>
+<span class="gi">+        if (0 != (err = GesturePayDevice-&gt;common.close(</span><span class="w"></span>
+<span class="gi">+            reinterpret_cast&lt;hw_device_t*&gt;(GesturePayDevice)))) {</span><span class="w"></span>
+<span class="gi">+            ALOGE(&quot;Can&#39;t close paydev module, error: %d&quot;, err);</span><span class="w"></span>
+<span class="gi">+        }</span><span class="w"></span>
+<span class="gi">+        GesturePayDevice = nullptr;</span><span class="w"></span>
+<span class="gi">+    }</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+    return 0;</span><span class="w"></span>
+<span class="gi">+}</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+Return&lt;int32_t&gt; PaxApiService::startPaxGesture(void)</span><span class="w"></span>
+<span class="gi">+{</span><span class="w"></span>
+<span class="gi">+    int32_t res = -1;</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+    CHECK_GESTURE_DEVICE_VALID();</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+    if (GesturePayDevice != nullptr) {</span><span class="w"></span>
+<span class="gi">+        res = GesturePayDevice-&gt;gesture_on();</span><span class="w"></span>
+<span class="gi">+    } else {</span><span class="w"></span>
+<span class="gi">+        ALOGE(&quot;No valid device&quot;);</span><span class="w"></span>
+<span class="gi">+    }</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+    return res;</span><span class="w"></span>
+<span class="gi">+}</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+Return&lt;int32_t&gt; PaxApiService::stopPaxGesture(void)</span><span class="w"></span>
+<span class="gi">+{</span><span class="w"></span>
+<span class="gi">+    int32_t res = -1;</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+    CHECK_GESTURE_DEVICE_VALID();</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+    if (GesturePayDevice != nullptr) {</span><span class="w"></span>
+<span class="gi">+        res = GesturePayDevice-&gt;gesture_off();</span><span class="w"></span>
+<span class="gi">+    } else {</span><span class="w"></span>
+<span class="gi">+        ALOGE(&quot;No valid device&quot;);</span><span class="w"></span>
+<span class="gi">+    }</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+    return res;</span><span class="w"></span>
+<span class="gi">+}</span><span class="w"></span>
+<span class="w">\ No newline at end of file</span>
+<span class="gh">diff --git a/xxxxxdroid/hardware/interfaces/xxxxxservice/1.0/default/gesture/PaxGesture.h b/xxxxxdroid/hardware/interfaces/xxxxxservice/1.0/default/gesture/PaxGesture.h</span><span class="w"></span>
+<span class="w">new file mode 100755</span>
+<span class="gh">index 00000000000..2a86567dc7a</span><span class="w"></span>
+<span class="gd">--- /dev/null</span><span class="w"></span>
+<span class="gi">+++ b/xxxxxdroid/hardware/interfaces/xxxxxservice/1.0/default/gesture/PaxGesture.h</span><span class="w"></span>
+<span class="gu">@@ -0,0 +1,11 @@</span><span class="w"></span>
+<span class="gi">+    /**</span><span class="w"></span>
+<span class="gi">+     * methods for control touchstreen gesture, be included by PaxApiService.h</span><span class="w"></span>
+<span class="gi">+     */</span><span class="w"></span>
+<span class="gi">+public:</span><span class="w"></span>
+<span class="gi">+    /* paydev log -&gt; logcat&amp;&amp;save_files */</span><span class="w"></span>
+<span class="gi">+    Return&lt;int32_t&gt; startPaxGesture(void) override;</span><span class="w"></span>
+<span class="gi">+    Return&lt;int32_t&gt; stopPaxGesture(void) override;</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+private:</span><span class="w"></span>
+<span class="gi">+    Return&lt;int32_t&gt; loadGestureHal(void);</span><span class="w"></span>
+<span class="gi">+    Return&lt;int32_t&gt; unloadGestureHal(void);</span><span class="w"></span>
+<span class="w">\ No newline at end of file</span>
+<span class="gh">diff --git a/xxxxxdroid/hardware/interfaces/xxxxxservice/1.0/default/xxxxxdroid.hardware.xxxxxservice@1.0-service.rc b/xxxxxdroid/hardware/interfaces/xxxxxservice/1.0/default/xxxxxdroid.hardware.xxxxxservice@1.0-service.rc</span><span class="w"></span>
+<span class="gh">index 1ea00f1300d..a9a045fadec 100755</span><span class="w"></span>
+<span class="gd">--- a/xxxxxdroid/hardware/interfaces/xxxxxservice/1.0/default/xxxxxdroid.hardware.xxxxxservice@1.0-service.rc</span><span class="w"></span>
+<span class="gi">+++ b/xxxxxdroid/hardware/interfaces/xxxxxservice/1.0/default/xxxxxdroid.hardware.xxxxxservice@1.0-service.rc</span><span class="w"></span>
+<span class="gu">@@ -17,6 +17,9 @@ on boot</span><span class="w"></span>
+<span class="w"> </span>    chmod 0666 /dev/ttyGS0<span class="w"></span>
+<span class="w"> </span>    chown system system /dev/ttyGS0<span class="w"></span>
+<span class="w"> </span>
+<span class="gi">+    chmod 0666 /dev/ilitek_ts</span><span class="w"></span>
+<span class="gi">+    chown system system /dev/ilitek_ts</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="w"> </span># when boot complete power off payment dev; eng version still need uart logout,<span class="w"></span>
+<span class="w"> </span># for uart0(connect to R20), when R20 powerdown, will pull down uart to low,<span class="w"></span>
+<span class="w"> </span># in eng version, if we need uart0 logout, must keep R20 power on<span class="w"></span>
+<span class="gh">diff --git a/xxxxxdroid/hardware/libhardware/include/hardware/xxxxx_gesture.h b/xxxxxdroid/hardware/libhardware/include/hardware/xxxxx_gesture.h</span><span class="w"></span>
+<span class="w">new file mode 100755</span>
+<span class="gh">index 00000000000..6eb7c7299a0</span><span class="w"></span>
+<span class="gd">--- /dev/null</span><span class="w"></span>
+<span class="gi">+++ b/xxxxxdroid/hardware/libhardware/include/hardware/xxxxx_gesture.h</span><span class="w"></span>
+<span class="gu">@@ -0,0 +1,82 @@</span><span class="w"></span>
+<span class="gi">+/*</span><span class="w"></span>
+<span class="gi">+ * Copyright (C) 2013 The Android Open Source Project</span><span class="w"></span>
+<span class="gi">+ *</span><span class="w"></span>
+<span class="gi">+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span><span class="w"></span>
+<span class="gi">+ * you may not use this file except in compliance with the License.</span><span class="w"></span>
+<span class="gi">+ * You may obtain a copy of the License at</span><span class="w"></span>
+<span class="gi">+ *</span><span class="w"></span>
+<span class="gi">+ *      http://www.apache.org/licenses/LICENSE-2.0</span><span class="w"></span>
+<span class="gi">+ *</span><span class="w"></span>
+<span class="gi">+ * Unless required by applicable law or agreed to in writing, software</span><span class="w"></span>
+<span class="gi">+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span><span class="w"></span>
+<span class="gi">+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span><span class="w"></span>
+<span class="gi">+ * See the License for the specific language governing permissions and</span><span class="w"></span>
+<span class="gi">+ * limitations under the License.</span><span class="w"></span>
+<span class="gi">+ */</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+#ifndef _HARDWARE_GESTURE_H</span><span class="w"></span>
+<span class="gi">+#define _HARDWARE_GESTURE_H</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+#include &lt;hardware/hardware.h&gt;</span><span class="w"></span>
+<span class="gi">+#include &lt;sys/types.h&gt;</span><span class="w"></span>
+<span class="gi">+#include &lt;sys/ioctl.h&gt;</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+__BEGIN_DECLS</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+#define GESTURE_API_VERSION HARDWARE_MODULE_API_VERSION(1,0)</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+/**</span><span class="w"></span>
+<span class="gi">+ * The id of this module</span><span class="w"></span>
+<span class="gi">+ */</span><span class="w"></span>
+<span class="gi">+#define GESTURE_HARDWARE_MODULE_ID &quot;xxxxxgesture&quot;</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+/**</span><span class="w"></span>
+<span class="gi">+ * The id of the main gesture device</span><span class="w"></span>
+<span class="gi">+ */</span><span class="w"></span>
+<span class="gi">+#define GESTURE_DEVICE_ID_MAIN &quot;tp_gesture&quot;</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+#define SET_GESTURE_ONOFF         _IOW(&#39;b&#39;, 0, int)</span><span class="w"></span>
+<span class="gi">+/**</span><span class="w"></span>
+<span class="gi">+ * xxxxx_gesture module</span><span class="w"></span>
+<span class="gi">+ */</span><span class="w"></span>
+<span class="gi">+typedef struct gesture_module {</span><span class="w"></span>
+<span class="gi">+    /*</span><span class="w"></span>
+<span class="gi">+     * xxxxx_gesture module</span><span class="w"></span>
+<span class="gi">+     */</span><span class="w"></span>
+<span class="gi">+    struct hw_module_t common;</span><span class="w"></span>
+<span class="gi">+} gesture_module_t;</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+struct gesture_device;</span><span class="w"></span>
+<span class="gi">+typedef struct gesture_device {</span><span class="w"></span>
+<span class="gi">+    /**</span><span class="w"></span>
+<span class="gi">+     * Common methods of the gesture device.  This *must* be the first member of</span><span class="w"></span>
+<span class="gi">+     * gesture_device as users of this structure will cast a hw_device_t to</span><span class="w"></span>
+<span class="gi">+     * gesture_device pointer in contexts where it&#39;s known the hw_device_t references a</span><span class="w"></span>
+<span class="gi">+     * gesture_device.</span><span class="w"></span>
+<span class="gi">+     */</span><span class="w"></span>
+<span class="gi">+    struct hw_device_t common;</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+    /** Turn on gesture</span><span class="w"></span>
+<span class="gi">+     *</span><span class="w"></span>
+<span class="gi">+     * This function must only be called after the previous timeout has expired or</span><span class="w"></span>
+<span class="gi">+     * was canceled (through gesture_off()).</span><span class="w"></span>
+<span class="gi">+     *</span><span class="w"></span>
+<span class="gi">+     * @param timeout_ms number of milliseconds to gesturete</span><span class="w"></span>
+<span class="gi">+     *</span><span class="w"></span>
+<span class="gi">+     * @return 0 in case of success, negative errno code else</span><span class="w"></span>
+<span class="gi">+     */</span><span class="w"></span>
+<span class="gi">+    int (*gesture_on)(void);</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+    /** Turn off gesture</span><span class="w"></span>
+<span class="gi">+     *</span><span class="w"></span>
+<span class="gi">+     * Cancel a previously-started gesturetion, if any.</span><span class="w"></span>
+<span class="gi">+     *</span><span class="w"></span>
+<span class="gi">+     * @return 0 in case of success, negative errno code else</span><span class="w"></span>
+<span class="gi">+     */</span><span class="w"></span>
+<span class="gi">+    int (*gesture_off)(void);</span><span class="w"></span>
+<span class="gi">+} gesture_device_t;</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+__END_DECLS</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+#endif  // _HARDWARE_GESTURE_H</span><span class="w"></span>
+<span class="gh">diff --git a/xxxxxdroid/hardware/libhardware/modules/Android.mk b/xxxxxdroid/hardware/libhardware/modules/Android.mk</span><span class="w"></span>
+<span class="gh">index b6df15257c2..4b6d20ef985 100755</span><span class="w"></span>
+<span class="gd">--- a/xxxxxdroid/hardware/libhardware/modules/Android.mk</span><span class="w"></span>
+<span class="gi">+++ b/xxxxxdroid/hardware/libhardware/modules/Android.mk</span><span class="w"></span>
+<span class="gu">@@ -4,5 +4,6 @@ hardware_modules := \</span><span class="w"></span>
+<span class="w"> </span>    gpios \<span class="w"></span>
+<span class="w"> </span>    fingerprint \<span class="w"></span>
+<span class="w"> </span>    systool \<span class="w"></span>
+<span class="gd">-    r20log</span><span class="w"></span>
+<span class="gi">+    r20log \</span><span class="w"></span>
+<span class="gi">+	gesture</span><span class="w"></span>
+<span class="w"> </span>include $(call all-named-subdir-makefiles,$(hardware_modules))<span class="w"></span>
+<span class="gh">diff --git a/xxxxxdroid/hardware/libhardware/modules/gesture/Android.mk b/xxxxxdroid/hardware/libhardware/modules/gesture/Android.mk</span><span class="w"></span>
+<span class="w">new file mode 100755</span>
+<span class="gh">index 00000000000..9e494b12bd0</span><span class="w"></span>
+<span class="gd">--- /dev/null</span><span class="w"></span>
+<span class="gi">+++ b/xxxxxdroid/hardware/libhardware/modules/gesture/Android.mk</span><span class="w"></span>
+<span class="gu">@@ -0,0 +1,34 @@</span><span class="w"></span>
+<span class="gi">+# Copyright (C) 2019 The xxxxxdroid Open Source Project</span><span class="w"></span>
+<span class="gi">+#</span><span class="w"></span>
+<span class="gi">+# Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span><span class="w"></span>
+<span class="gi">+# you may not use this file except in compliance with the License.</span><span class="w"></span>
+<span class="gi">+# You may obtain a copy of the License at</span><span class="w"></span>
+<span class="gi">+#</span><span class="w"></span>
+<span class="gi">+#      http://www.apache.org/licenses/LICENSE-2.0</span><span class="w"></span>
+<span class="gi">+#</span><span class="w"></span>
+<span class="gi">+# Unless required by applicable law or agreed to in writing, software</span><span class="w"></span>
+<span class="gi">+# distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span><span class="w"></span>
+<span class="gi">+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span><span class="w"></span>
+<span class="gi">+# See the License for the specific language governing permissions and</span><span class="w"></span>
+<span class="gi">+# limitations under the License.</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+LOCAL_PATH := $(call my-dir)</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+include $(CLEAR_VARS)</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+LOCAL_MODULE := xxxxxgesture.default</span><span class="w"></span>
+<span class="gi">+LOCAL_PROPRIETARY_MODULE := true</span><span class="w"></span>
+<span class="gi">+LOCAL_MODULE_RELATIVE_PATH := hw</span><span class="w"></span>
+<span class="gi">+LOCAL_PRELINK_MODULE := false</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+LOCAL_CFLAGS += -Wno-unused-parameter \</span><span class="w"></span>
+<span class="gi">+                -Wno-macro-redefined</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+LOCAL_HEADER_LIBRARIES := libxxxxxhardware_headers</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+LOCAL_SRC_FILES := xxxxx_gesture.c </span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+LOCAL_SHARED_LIBRARIES := liblog libhardware</span><span class="w"></span>
+<span class="gi">+LOCAL_MODULE_TAGS := optional</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+include $(BUILD_SHARED_LIBRARY)</span><span class="w"></span>
+<span class="gh">diff --git a/xxxxxdroid/hardware/libhardware/modules/gesture/xxxxx_gesture.c b/xxxxxdroid/hardware/libhardware/modules/gesture/xxxxx_gesture.c</span><span class="w"></span>
+<span class="w">new file mode 100755</span>
+<span class="gh">index 00000000000..72ba9598f91</span><span class="w"></span>
+<span class="gd">--- /dev/null</span><span class="w"></span>
+<span class="gi">+++ b/xxxxxdroid/hardware/libhardware/modules/gesture/xxxxx_gesture.c</span><span class="w"></span>
+<span class="gu">@@ -0,0 +1,180 @@</span><span class="w"></span>
+<span class="gi">+/*</span><span class="w"></span>
+<span class="gi">+ * Copyright (C) 2013 The Android Open Source Project</span><span class="w"></span>
+<span class="gi">+ *</span><span class="w"></span>
+<span class="gi">+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span><span class="w"></span>
+<span class="gi">+ * you may not use this file except in compliance with the License.</span><span class="w"></span>
+<span class="gi">+ * You may obtain a copy of the License at</span><span class="w"></span>
+<span class="gi">+ *</span><span class="w"></span>
+<span class="gi">+ *      http://www.apache.org/licenses/LICENSE-2.0</span><span class="w"></span>
+<span class="gi">+ *</span><span class="w"></span>
+<span class="gi">+ * Unless required by applicable law or agreed to in writing, software</span><span class="w"></span>
+<span class="gi">+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span><span class="w"></span>
+<span class="gi">+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span><span class="w"></span>
+<span class="gi">+ * See the License for the specific language governing permissions and</span><span class="w"></span>
+<span class="gi">+ * limitations under the License.</span><span class="w"></span>
+<span class="gi">+ */</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+#include &lt;hardware/hardware.h&gt;</span><span class="w"></span>
+<span class="gi">+#include &lt;hardware/xxxxx_gesture.h&gt;</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+#include &lt;stdio.h&gt;</span><span class="w"></span>
+<span class="gi">+#include &lt;stdlib.h&gt;</span><span class="w"></span>
+<span class="gi">+#include &lt;sys/types.h&gt;</span><span class="w"></span>
+<span class="gi">+#include &lt;unistd.h&gt;</span><span class="w"></span>
+<span class="gi">+#include &lt;sys/stat.h&gt;</span><span class="w"></span>
+<span class="gi">+#include &lt;unistd.h&gt;</span><span class="w"></span>
+<span class="gi">+#include &lt;errno.h&gt;</span><span class="w"></span>
+<span class="gi">+#include &lt;fcntl.h&gt;</span><span class="w"></span>
+<span class="gi">+#include &lt;malloc.h&gt;</span><span class="w"></span>
+<span class="gi">+#include &lt;stdint.h&gt;</span><span class="w"></span>
+<span class="gi">+#include &lt;dirent.h&gt;</span><span class="w"></span>
+<span class="gi">+#include &lt;string.h&gt;</span><span class="w"></span>
+<span class="gi">+#include &lt;pthread.h&gt;</span><span class="w"></span>
+<span class="gi">+#include &lt;time.h&gt;</span><span class="w"></span>
+<span class="gi">+#include &lt;stdlib.h&gt;</span><span class="w"></span>
+<span class="gi">+#include &lt;log/log.h&gt;</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+#define TIMEOUT_STR_LEN         20</span><span class="w"></span>
+<span class="gi">+#define LOG_NDEBUG 0</span><span class="w"></span>
+<span class="gi">+#define LOG_TAG &quot;xxxxx_gesture_hal&quot;</span><span class="w"></span>
+<span class="gi">+static pthread_once_t g_init = PTHREAD_ONCE_INIT;</span><span class="w"></span>
+<span class="gi">+static pthread_mutex_t g_lock = PTHREAD_MUTEX_INITIALIZER;</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+#define xxx_TP_DEV			&quot;/dev/ilitek_ts&quot;</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+/**</span><span class="w"></span>
+<span class="gi">+ * device methods</span><span class="w"></span>
+<span class="gi">+ */</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+void init_globals(void)</span><span class="w"></span>
+<span class="gi">+{</span><span class="w"></span>
+<span class="gi">+    // init the mutex</span><span class="w"></span>
+<span class="gi">+    pthread_mutex_init(&amp;g_lock, NULL);</span><span class="w"></span>
+<span class="gi">+}</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+static bool device_exists(const char *file) {</span><span class="w"></span>
+<span class="gi">+    int fd;</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+    fd = open(file, O_RDWR);</span><span class="w"></span>
+<span class="gi">+    if(fd &lt; 0) {</span><span class="w"></span>
+<span class="gi">+        return false;</span><span class="w"></span>
+<span class="gi">+    }</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+    close(fd);</span><span class="w"></span>
+<span class="gi">+    return true;</span><span class="w"></span>
+<span class="gi">+}</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+static bool gesture_exists() {</span><span class="w"></span>
+<span class="gi">+    return device_exists(xxx_TP_DEV);</span><span class="w"></span>
+<span class="gi">+}</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+static int open_xxxxx_tp_dev(void)</span><span class="w"></span>
+<span class="gi">+{</span><span class="w"></span>
+<span class="gi">+	int fd = -1;</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+	fd = open(xxx_TP_DEV, O_RDWR);</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+	return fd;</span><span class="w"></span>
+<span class="gi">+}</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+static int xxxxx_tp_ctl( unsigned long cmd, void *data)</span><span class="w"></span>
+<span class="gi">+{</span><span class="w"></span>
+<span class="gi">+	static int xxxxx_tp_fd = -1;</span><span class="w"></span>
+<span class="gi">+	int ret = -1;</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+	if (xxxxx_tp_fd &lt; 0) {</span><span class="w"></span>
+<span class="gi">+		xxxxx_tp_fd = open_xxxxx_tp_dev();</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+		if (xxxxx_tp_fd &lt; 0) {</span><span class="w"></span>
+<span class="gi">+			return -ENODEV;</span><span class="w"></span>
+<span class="gi">+		}</span><span class="w"></span>
+<span class="gi">+	}</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+    pthread_mutex_lock(&amp;g_lock);</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+	switch(cmd) {</span><span class="w"></span>
+<span class="gi">+		case SET_GESTURE_ONOFF:</span><span class="w"></span>
+<span class="gi">+			{</span><span class="w"></span>
+<span class="gi">+				int en = *(int *)data;</span><span class="w"></span>
+<span class="gi">+				ret = ioctl(xxxxx_tp_fd, cmd, &amp;en);</span><span class="w"></span>
+<span class="gi">+			}</span><span class="w"></span>
+<span class="gi">+			break;</span><span class="w"></span>
+<span class="gi">+		default:</span><span class="w"></span>
+<span class="gi">+			break;</span><span class="w"></span>
+<span class="gi">+	};</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+    pthread_mutex_unlock(&amp;g_lock);</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+	return ret;</span><span class="w"></span>
+<span class="gi">+}</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+static int gesture_on(void)</span><span class="w"></span>
+<span class="gi">+{</span><span class="w"></span>
+<span class="gi">+	int en = 1;</span><span class="w"></span>
+<span class="gi">+    return xxxxx_tp_ctl( SET_GESTURE_ONOFF, &amp;en);</span><span class="w"></span>
+<span class="gi">+ </span><span class="w"></span>
+<span class="gi">+}</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+static int gesture_off(void)</span><span class="w"></span>
+<span class="gi">+{</span><span class="w"></span>
+<span class="gi">+   	int en = 0;</span><span class="w"></span>
+<span class="gi">+    return xxxxx_tp_ctl( SET_GESTURE_ONOFF, &amp;en);</span><span class="w"></span>
+<span class="gi">+}</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+static int gesture_close(hw_device_t *device)</span><span class="w"></span>
+<span class="gi">+{</span><span class="w"></span>
+<span class="gi">+    free(device);</span><span class="w"></span>
+<span class="gi">+    return 0;</span><span class="w"></span>
+<span class="gi">+}</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+static int gesture_open(const hw_module_t* module, const char* id __unused,</span><span class="w"></span>
+<span class="gi">+                      hw_device_t** device __unused) {</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+    if (gesture_exists()) {</span><span class="w"></span>
+<span class="gi">+        ALOGD(&quot;touchscreen gesture sys file exist&quot;);</span><span class="w"></span>
+<span class="gi">+    }else {</span><span class="w"></span>
+<span class="gi">+        ALOGE(&quot;touchscreen gesture sys file not exis. Cannot start gesture&quot;);</span><span class="w"></span>
+<span class="gi">+        return -ENODEV;</span><span class="w"></span>
+<span class="gi">+    }</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+	pthread_once(&amp;g_init, init_globals);</span><span class="w"></span>
+<span class="gi">+	</span><span class="w"></span>
+<span class="gi">+    gesture_device_t *gesturedev = malloc(sizeof(gesture_device_t));</span><span class="w"></span>
+<span class="gi">+    memset(gesturedev, 0, sizeof(gesture_device_t));</span><span class="w"></span>
+<span class="gi">+	</span><span class="w"></span>
+<span class="gi">+    if (!gesturedev) {</span><span class="w"></span>
+<span class="gi">+        ALOGE(&quot;Can not allocate memory for the gesture device&quot;);</span><span class="w"></span>
+<span class="gi">+        return -ENOMEM;</span><span class="w"></span>
+<span class="gi">+    }</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+    gesturedev-&gt;common.tag = HARDWARE_DEVICE_TAG;</span><span class="w"></span>
+<span class="gi">+    gesturedev-&gt;common.module = (hw_module_t *) module;</span><span class="w"></span>
+<span class="gi">+    gesturedev-&gt;common.version = HARDWARE_DEVICE_API_VERSION(1,0);</span><span class="w"></span>
+<span class="gi">+    gesturedev-&gt;common.close = gesture_close;</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+	gesturedev-&gt;gesture_on = gesture_on;</span><span class="w"></span>
+<span class="gi">+	gesturedev-&gt;gesture_off = gesture_off;</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+    *device = (hw_device_t *) gesturedev;</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+    return 0;</span><span class="w"></span>
+<span class="gi">+}</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+/*===========================================================================*/</span><span class="w"></span>
+<span class="gi">+/* Default gesture HW module interface definition                           */</span><span class="w"></span>
+<span class="gi">+/*===========================================================================*/</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+static struct hw_module_methods_t gesture_module_methods = {</span><span class="w"></span>
+<span class="gi">+    .open = gesture_open,</span><span class="w"></span>
+<span class="gi">+};</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+struct hw_module_t HAL_MODULE_INFO_SYM = {</span><span class="w"></span>
+<span class="gi">+    .tag = HARDWARE_MODULE_TAG,</span><span class="w"></span>
+<span class="gi">+    .module_api_version = GESTURE_API_VERSION,</span><span class="w"></span>
+<span class="gi">+    .hal_api_version = HARDWARE_HAL_API_VERSION,</span><span class="w"></span>
+<span class="gi">+    .id = GESTURE_HARDWARE_MODULE_ID,</span><span class="w"></span>
+<span class="gi">+    .name = &quot;xxxxx gesture HAL&quot;,</span><span class="w"></span>
+<span class="gi">+    .author = &quot;The Paxdroid Open Source Project&quot;,</span><span class="w"></span>
+<span class="gi">+    .methods = &amp;gesture_module_methods,</span><span class="w"></span>
+<span class="gi">+};</span><span class="w"></span>
+<span class="gd">-- </span><span class="w"></span>
+<span class="w">2.17.1</span>
+</pre></div>
+</div>
+</section>
+<section id="r15">
+<h3>4.增加R15接口<a class="headerlink" href="#r15" title="此标题的永久链接"></a></h3>
+<div class="highlight-diff notranslate"><div class="highlight"><pre><span></span><span class="w">From 9ad16a5a1d8b75ce5772c59bca978506071158b6 Mon Sep 17 00:00:00 2001</span>
+<span class="w">From: wugn &lt;xxx@xxxxx.com&gt;</span>
+<span class="w">Date: Wed, 3 Nov 2021 10:27:37 +0800</span>
+<span class="w">Subject: [PATCH] =?UTF-8?q?[Title]:=20=E5=A2=9E=E5=8A=A0R15=20HIDL?=</span>
+<span class="w"> </span>=?UTF-8?q?=E5=B1=82=E7=9B=B8=E5=85=B3=E6=8E=A5=E5=8F=A3=E3=80=82?=<span class="w"></span>
+<span class="w">MIME-Version: 1.0</span>
+<span class="w">Content-Type: text/plain; charset=UTF-8</span>
+<span class="w">Content-Transfer-Encoding: 8bit</span>
+
+<span class="w">[Summary]:</span>
+<span class="w">	1.在xxxxx_gpio hal层增加HIDL接口：</span>
+<span class="w">	Return&lt;int32_t&gt; getStatusEx(const hidl_string&amp; exdev);</span>
+<span class="w">	Return&lt;int32_t&gt; controlPowerEx(const hidl_string&amp; exdev,bool on); [Test Plan]:</span>
+<span class="w">	Return&lt;int32_t&gt; wakeupRequestEx(const hidl_string&amp; exdev);</span>
+
+<span class="w">	2.R15供电vcc_out改为长供电，usb_switch驱动休眠唤醒不对vcc_out进行操作。</span>
+
+<span class="w">[Module]: system</span>
+
+<span class="w">[Model]: M8</span>
+
+<span class="w">[author]: xxx@xxxxx.com</span>
+
+<span class="w">[date]: 2021-11-3</span>
+<span class="gd">---</span><span class="w"></span>
+<span class="w"> </span>.../arch/arm64/boot/dts/mediatek/M8.dts       |   9 +-<span class="w"></span>
+<span class="w"> </span>.../drivers/misc/xxxxx/gpio/xxxxx_gpio_control.c  |   7 +-<span class="w"></span>
+<span class="w"> </span>.../misc/xxxxx/usb_switch/xxxxx_usb_switch.c      |  20 +--<span class="w"></span>
+<span class="w"> </span>xxxxxdroid/hardware/interfaces/current.txt      |   2 +-<span class="w"></span>
+<span class="w"> </span>.../xxxxxservice/1.0/IPaxApiService.hal         |   3 +<span class="w"></span>
+<span class="w"> </span>.../xxxxxservice/1.0/default/gpios/PaxGpios.cpp | 114 ++++++++++++++++++<span class="w"></span>
+<span class="w"> </span>.../xxxxxservice/1.0/default/gpios/PaxGpios.h   |   3 +<span class="w"></span>
+<span class="w"> </span>.../libhardware/include/hardware/xxxxx_gpios.h  |   6 +-<span class="w"></span>
+<span class="w"> </span>.../libhardware/modules/gpios/dev_gpios.c     |  19 ++-<span class="w"></span>
+<span class="w"> </span>.../libhardware/modules/gpios/dev_gpios.h     |   3 +-<span class="w"></span>
+<span class="w"> </span>.../libhardware/modules/gpios/xxxxx_gpios.c     |   1 +<span class="w"></span>
+<span class="w"> </span>11 files changed, 164 insertions(+), 23 deletions(-)<span class="w"></span>
+
+<span class="gh">diff --git a/kernel-4.19/arch/arm64/boot/dts/mediatek/M8.dts b/kernel-4.19/arch/arm64/boot/dts/mediatek/M8.dts</span><span class="w"></span>
+<span class="gh">index 35f1e3ffb75..51b0f9a8bb4 100755</span><span class="w"></span>
+<span class="gd">--- a/kernel-4.19/arch/arm64/boot/dts/mediatek/M8.dts</span><span class="w"></span>
+<span class="gi">+++ b/kernel-4.19/arch/arm64/boot/dts/mediatek/M8.dts</span><span class="w"></span>
+<span class="gu">@@ -627,7 +627,7 @@</span><span class="w"></span>
+<span class="w"> </span>	usb_sw2_sel_gpio = &lt;&amp;pio 170 0x0&gt;;<span class="w"></span>
+<span class="w"> </span>	gl850_en_gpio = &lt;&amp;pio 151 0x0&gt;;<span class="w"></span>
+<span class="w"> </span>	otg_en_gpio  = &lt;&amp;pio 7 0x0&gt;;<span class="w"></span>
+<span class="gd">-	vcc_out_en_gpio  = &lt;&amp;pio 152 0x0&gt;;</span><span class="w"></span>
+<span class="gi">+	/* vcc_out_en_gpio  = &lt;&amp;pio 152 0x0&gt;; */</span><span class="w"></span>
+<span class="w"> </span>	default_mode = &lt;1&gt;;  //0-device mode, 1-host mode<span class="w"></span>
+<span class="w"> </span>};<span class="w"></span>
+<span class="w"> </span>
+<span class="gu">@@ -689,11 +689,11 @@</span><span class="w"></span>
+<span class="w"> </span>
+<span class="w"> </span>&amp;xxxxx_gpios {<span class="w"></span>
+<span class="w"> </span>	status = &quot;okay&quot;;<span class="w"></span>
+<span class="gd">-	gpio_num = &lt;8&gt;;</span><span class="w"></span>
+<span class="gi">+	gpio_num = &lt;9&gt;;</span><span class="w"></span>
+<span class="w"> </span>	gpio_in_num = &lt;4&gt;;<span class="w"></span>
+<span class="w"> </span>	gpio_input_index_array = &lt;0 2 3 4&gt;;<span class="w"></span>
+<span class="gd">-	gpio_output_index_array = &lt;1 5 6 7&gt;;</span><span class="w"></span>
+<span class="gd">-	gpio_output_default = &lt;0 0 0 0&gt;;  /* output default value */</span><span class="w"></span>
+<span class="gi">+	gpio_output_index_array = &lt;1 5 6 7 8&gt;;</span><span class="w"></span>
+<span class="gi">+	gpio_output_default = &lt;0 0 0 0 1&gt;;  /* output default value */</span><span class="w"></span>
+<span class="w"> </span>	gpio_eint_num = &lt;0&gt;;<span class="w"></span>
+<span class="w"> </span>	gpio_eint_index_array = &lt;0xff&gt;; /* 0xff: invalid */<span class="w"></span>
+<span class="w"> </span>
+<span class="gu">@@ -705,6 +705,7 @@</span><span class="w"></span>
+<span class="w"> </span>	gpio5_out = &lt;&amp;pio 163 0x0&gt;;<span class="w"></span>
+<span class="w"> </span>	gpio6_out = &lt;&amp;pio 164 0x0&gt;;<span class="w"></span>
+<span class="w"> </span>	gpio7_out = &lt;&amp;pio 171 0x0&gt;;<span class="w"></span>
+<span class="gi">+	gpio8_out  = &lt;&amp;pio 152 0x0&gt;;</span><span class="w"></span>
+<span class="w"> </span>};<span class="w"></span>
+<span class="w"> </span>
+<span class="w"> </span>&amp;xxxxx_lcm_control {<span class="w"></span>
+<span class="gh">diff --git a/kernel-4.19/drivers/misc/xxxxx/gpio/xxxxx_gpio_control.c b/kernel-4.19/drivers/misc/xxxxx/gpio/xxxxx_gpio_control.c</span><span class="w"></span>
+<span class="gh">index 8b68c44e5c7..909c264b03c 100755</span><span class="w"></span>
+<span class="gd">--- a/kernel-4.19/drivers/misc/xxxxx/gpio/xxxxx_gpio_control.c</span><span class="w"></span>
+<span class="gi">+++ b/kernel-4.19/drivers/misc/xxxxx/gpio/xxxxx_gpio_control.c</span><span class="w"></span>
+<span class="gu">@@ -32,8 +32,6 @@</span><span class="w"></span>
+<span class="w"> </span>#include &lt;linux/uaccess.h&gt;<span class="w"></span>
+<span class="w"> </span>#include &lt;linux/ioctl.h&gt;<span class="w"></span>
+<span class="w"> </span>
+<span class="gd">-</span><span class="w"></span>
+<span class="gd">-</span><span class="w"></span>
+<span class="w"> </span>//#define xxx_USE_PINCTRL<span class="w"></span>
+<span class="w"> </span>
+<span class="w"> </span>#define DEV_NAME &quot;xxxxx_gpios&quot;<span class="w"></span>
+<span class="gu">@@ -59,7 +57,8 @@ enum {</span><span class="w"></span>
+<span class="w"> </span>	xxx_GPIO_POWER_EN_1 = 5,<span class="w"></span>
+<span class="w"> </span>	xxx_GPIO_POWER_EN_2 = 6,<span class="w"></span>
+<span class="w"> </span>	xxx_GPIO_MODULE_EN = 7,<span class="w"></span>
+<span class="gd">-	xxx_GPIO_MAX = xxx_GPIO_MODULE_EN,</span><span class="w"></span>
+<span class="gi">+	xxx_GPIO_R15_MODULE_EN = 8,</span><span class="w"></span>
+<span class="gi">+	xxx_GPIO_MAX = xxx_GPIO_R15_MODULE_EN,</span><span class="w"></span>
+<span class="w"> </span>};<span class="w"></span>
+<span class="w"> </span>
+<span class="w"> </span>#define PAY_DEV_SLEEP_PIN  xxx_GPIO_2<span class="w"></span>
+<span class="gu">@@ -73,7 +72,6 @@ enum {</span><span class="w"></span>
+<span class="w"> </span>#define xxx_GPIO_IOCTL_CONFIG	_IOR(xxx_GPIO_IOCTL_MAGIC, 2, unsigned int)<span class="w"></span>
+<span class="w"> </span>
+<span class="w"> </span>
+<span class="gd">-</span><span class="w"></span>
+<span class="w"> </span>enum {<span class="w"></span>
+<span class="w"> </span>	GPIO_FUNC_INPUT = (1UL&lt;&lt;0),<span class="w"></span>
+<span class="w"> </span>	GPIO_FUNC_OUTPUT = (1UL&lt;&lt;1),<span class="w"></span>
+<span class="gu">@@ -130,7 +128,6 @@ static irqreturn_t xxxxx_gpio_irq_handle(int irq, void *dev_id);</span><span class="w"></span>
+<span class="w"> </span>
+<span class="w"> </span>extern struct class *g_class_xxxxx;<span class="w"></span>
+<span class="w"> </span>
+<span class="gd">-</span><span class="w"></span>
+<span class="w"> </span>static int get_gpio_info_from_dts(struct platform_device *pdev, struct xxxxx_gpio_info *info)<span class="w"></span>
+<span class="w"> </span>{<span class="w"></span>
+<span class="w"> </span>	int i;<span class="w"></span>
+<span class="gh">diff --git a/kernel-4.19/drivers/misc/xxxxx/usb_switch/xxxxx_usb_switch.c b/kernel-4.19/drivers/misc/xxxxx/usb_switch/xxxxx_usb_switch.c</span><span class="w"></span>
+<span class="gh">index 6864df2049e..5b24dbf28eb 100755</span><span class="w"></span>
+<span class="gd">--- a/kernel-4.19/drivers/misc/xxxxx/usb_switch/xxxxx_usb_switch.c</span><span class="w"></span>
+<span class="gi">+++ b/kernel-4.19/drivers/misc/xxxxx/usb_switch/xxxxx_usb_switch.c</span><span class="w"></span>
+<span class="gu">@@ -41,7 +41,7 @@ struct usb_switch_data {</span><span class="w"></span>
+<span class="w"> </span>	int usb_sw2_sel_gpio;<span class="w"></span>
+<span class="w"> </span>	int gl850_en_gpio;<span class="w"></span>
+<span class="w"> </span>	int otg_en_gpio;<span class="w"></span>
+<span class="gd">-	int vcc_out_en_gpio;</span><span class="w"></span>
+<span class="gi">+	//int vcc_out_en_gpio;</span><span class="w"></span>
+<span class="w"> </span>	int status;<span class="w"></span>
+<span class="w"> </span>
+<span class="w"> </span>	u32 default_mode;<span class="w"></span>
+<span class="gu">@@ -101,7 +101,7 @@ static irqreturn_t xxxxx_otg_gpio_irq_handle(int irq, void *dev_id)</span><span class="w"></span>
+<span class="w"> </span>		gpio_set_value(data-&gt;usb_sw1_sel_gpio, 1);<span class="w"></span>
+<span class="w"> </span>		gpio_set_value(data-&gt;usb_sw2_sel_gpio, 1);<span class="w"></span>
+<span class="w"> </span>		gpio_set_value(data-&gt;gl850_en_gpio, 1);<span class="w"></span>
+<span class="gd">-		gpio_set_value(data-&gt;vcc_out_en_gpio, 1);</span><span class="w"></span>
+<span class="gi">+		//gpio_set_value(data-&gt;vcc_out_en_gpio, 1);</span><span class="w"></span>
+<span class="w"> </span>		data-&gt;status = 0;<span class="w"></span>
+<span class="w"> </span>	}<span class="w"></span>
+<span class="w"> </span>	else {<span class="w"></span>
+<span class="gu">@@ -110,7 +110,7 @@ static irqreturn_t xxxxx_otg_gpio_irq_handle(int irq, void *dev_id)</span><span class="w"></span>
+<span class="w"> </span>		gpio_set_value(data-&gt;usb_sw1_sel_gpio, 0);<span class="w"></span>
+<span class="w"> </span>		gpio_set_value(data-&gt;usb_sw2_sel_gpio, 0);<span class="w"></span>
+<span class="w"> </span>		gpio_set_value(data-&gt;gl850_en_gpio, 0);<span class="w"></span>
+<span class="gd">-		gpio_set_value(data-&gt;vcc_out_en_gpio, 0);</span><span class="w"></span>
+<span class="gi">+		g//pio_set_value(data-&gt;vcc_out_en_gpio, 0);</span><span class="w"></span>
+<span class="w"> </span>		data-&gt;status = 1;<span class="w"></span>
+<span class="w"> </span>	}<span class="w"></span>
+<span class="w"> </span>	return IRQ_HANDLED;	<span class="w"></span>
+<span class="gu">@@ -154,7 +154,7 @@ int xxxxx_charger_gpio_init(struct usb_switch_data *data, struct device_node *np)</span><span class="w"></span>
+<span class="w"> </span>		data-&gt;gl850_en_gpio, ret);<span class="w"></span>
+<span class="w"> </span>		goto init_alert_err;<span class="w"></span>
+<span class="w"> </span>	}<span class="w"></span>
+<span class="gd">-</span><span class="w"></span>
+<span class="gi">+	/*</span><span class="w"></span>
+<span class="w"> </span>	data-&gt;vcc_out_en_gpio = of_get_named_gpio(np, &quot;vcc_out_en_gpio&quot;, 0);<span class="w"></span>
+<span class="w"> </span>	ret = gpio_request(data-&gt;vcc_out_en_gpio, &quot;vcc_out_en_gpio&quot;);<span class="w"></span>
+<span class="w"> </span>	if (ret &lt; 0) {<span class="w"></span>
+<span class="gu">@@ -162,7 +162,7 @@ int xxxxx_charger_gpio_init(struct usb_switch_data *data, struct device_node *np)</span><span class="w"></span>
+<span class="w"> </span>		data-&gt;vcc_out_en_gpio, ret);<span class="w"></span>
+<span class="w"> </span>		goto init_alert_err;<span class="w"></span>
+<span class="w"> </span>	}<span class="w"></span>
+<span class="gd">-</span><span class="w"></span>
+<span class="gi">+	*/</span><span class="w"></span>
+<span class="w"> </span>	ret = of_property_read_u32(np, &quot;default_mode&quot;, (u32 *)&amp;data-&gt;default_mode);<span class="w"></span>
+<span class="w"> </span>	if (ret &lt; 0)<span class="w"></span>
+<span class="w"> </span>		data-&gt;default_mode = 0;<span class="w"></span>
+<span class="gu">@@ -201,7 +201,7 @@ void xxxxx_charger_usbswitch_set(struct usb_switch_data *data)</span><span class="w"></span>
+<span class="w"> </span>		gpio_set_value(data-&gt;usb_sw1_sel_gpio, 1);<span class="w"></span>
+<span class="w"> </span>		gpio_set_value(data-&gt;usb_sw2_sel_gpio, 1);<span class="w"></span>
+<span class="w"> </span>		gpio_set_value(data-&gt;gl850_en_gpio, 1);<span class="w"></span>
+<span class="gd">-		gpio_set_value(data-&gt;vcc_out_en_gpio, 1);</span><span class="w"></span>
+<span class="gi">+		//gpio_set_value(data-&gt;vcc_out_en_gpio, 1);</span><span class="w"></span>
+<span class="w"> </span>		data-&gt;status = 0;<span class="w"></span>
+<span class="w"> </span>	}<span class="w"></span>
+<span class="w"> </span>	else {<span class="w"></span>
+<span class="gu">@@ -210,7 +210,7 @@ void xxxxx_charger_usbswitch_set(struct usb_switch_data *data)</span><span class="w"></span>
+<span class="w"> </span>		gpio_set_value(data-&gt;usb_sw1_sel_gpio, 0);<span class="w"></span>
+<span class="w"> </span>		gpio_set_value(data-&gt;usb_sw2_sel_gpio, 0);<span class="w"></span>
+<span class="w"> </span>		gpio_set_value(data-&gt;gl850_en_gpio, 0);<span class="w"></span>
+<span class="gd">-		gpio_set_value(data-&gt;vcc_out_en_gpio, 0);</span><span class="w"></span>
+<span class="gi">+		//gpio_set_value(data-&gt;vcc_out_en_gpio, 0);</span><span class="w"></span>
+<span class="w"> </span>		data-&gt;status = 1;<span class="w"></span>
+<span class="w"> </span>	}<span class="w"></span>
+<span class="w"> </span>}<span class="w"></span>
+<span class="gu">@@ -279,11 +279,13 @@ int xxxxx_usb_switch_poweoff_charging_mode(struct device *dev)</span><span class="w"></span>
+<span class="w"> </span>	return 0;<span class="w"></span>
+<span class="w"> </span>}<span class="w"></span>
+<span class="w"> </span>
+<span class="gi">+/*</span><span class="w"></span>
+<span class="w"> </span>static void prog_vbus_en(struct usb_switch_data *data, int on)<span class="w"></span>
+<span class="w"> </span>{<span class="w"></span>
+<span class="w"> </span>	if (gpio_is_valid(data-&gt;vcc_out_en_gpio))<span class="w"></span>
+<span class="w"> </span>		gpio_set_value(data-&gt;vcc_out_en_gpio, 1);<span class="w"></span>
+<span class="w"> </span>}<span class="w"></span>
+<span class="gi">+*/</span><span class="w"></span>
+<span class="w"> </span>
+<span class="w"> </span>static void vbus_en(struct usb_switch_data *data, int on)<span class="w"></span>
+<span class="w"> </span>{<span class="w"></span>
+<span class="gu">@@ -303,7 +305,7 @@ static void usb_host_switch(struct usb_switch_data *data, int on)</span><span class="w"></span>
+<span class="w"> </span>		if (gpio_is_valid(data-&gt;usb_sw2_sel_gpio))<span class="w"></span>
+<span class="w"> </span>			gpio_set_value(data-&gt;usb_sw2_sel_gpio, 1);<span class="w"></span>
+<span class="w"> </span>
+<span class="gd">-		prog_vbus_en(data, 1);</span><span class="w"></span>
+<span class="gi">+		//prog_vbus_en(data, 1);</span><span class="w"></span>
+<span class="w"> </span>	}<span class="w"></span>
+<span class="w"> </span>	else {<span class="w"></span>
+<span class="w"> </span>		if (gpio_is_valid(data-&gt;gl850_en_gpio))<span class="w"></span>
+<span class="gu">@@ -313,7 +315,7 @@ static void usb_host_switch(struct usb_switch_data *data, int on)</span><span class="w"></span>
+<span class="w"> </span>		if (gpio_is_valid(data-&gt;usb_sw2_sel_gpio))<span class="w"></span>
+<span class="w"> </span>			gpio_set_value(data-&gt;usb_sw2_sel_gpio, 0);<span class="w"></span>
+<span class="w"> </span>
+<span class="gd">-		prog_vbus_en(data, 0);</span><span class="w"></span>
+<span class="gi">+		//prog_vbus_en(data, 0);</span><span class="w"></span>
+<span class="w"> </span>	}<span class="w"></span>
+<span class="w"> </span>}<span class="w"></span>
+<span class="w"> </span>
+<span class="gh">diff --git a/xxxxxdroid/hardware/interfaces/current.txt b/xxxxxdroid/hardware/interfaces/current.txt</span><span class="w"></span>
+<span class="gh">index 876bf55dfec..898c7595d4b 100755</span><span class="w"></span>
+<span class="gd">--- a/xxxxxdroid/hardware/interfaces/current.txt</span><span class="w"></span>
+<span class="gi">+++ b/xxxxxdroid/hardware/interfaces/current.txt</span><span class="w"></span>
+<span class="gu">@@ -3,6 +3,6 @@ b5772891d23d223dab8525ce603ae743c9d2aa0c1e4d7ff487c370af15b32865 xxxxxdroid.hardwa</span><span class="w"></span>
+<span class="w"> </span>296c29f15736a7e3dcbac0f7bcc1cef9b31e48d5cf11a6eb0d5536b44f437e0e xxxxxdroid.hardware.hello@1.1::types<span class="w"></span>
+<span class="w"> </span>f05b057688945efaab1200df9b74d9b976636fe41c016536e65d87214cc3ab89 xxxxxdroid.hardware.hello@1.1::IHello<span class="w"></span>
+<span class="w"> </span>72d5e633f2c89901e98846565128af1417b95e7a535ae70b28c0fa867dc9b703 xxxxxdroid.hardware.xxxxxservice@1.0::types<span class="w"></span>
+<span class="gd">-9e563eb9414865f6f55f4b4ebc45328a84d8fd9593471b2f768b3a500029209e xxxxxdroid.hardware.xxxxxservice@1.0::IPaxApiService</span><span class="w"></span>
+<span class="gi">+4dac403bb45b3b3abaad5468257b32700a5761e59eabda186c0d93a574105335 xxxxxdroid.hardware.xxxxxservice@1.0::IPaxApiService</span><span class="w"></span>
+<span class="w"> </span>1be06fcf4df534ec501fe828cd84a8dbe29f9ff4461102fc1939081aea85e4e0 xxxxxdroid.hardware.systool@1.0::types<span class="w"></span>
+<span class="w"> </span>1a18b6bd90b3a3bb52f738742f7c8c61fa334487244f80a4009f252d28a89bb5 xxxxxdroid.hardware.systool@1.0::ISystoolServer<span class="w"></span>
+<span class="gh">diff --git a/xxxxxdroid/hardware/interfaces/xxxxxservice/1.0/IPaxApiService.hal b/xxxxxdroid/hardware/interfaces/xxxxxservice/1.0/IPaxApiService.hal</span><span class="w"></span>
+<span class="gh">index 5e656942ee5..1d723d799e4 100755</span><span class="w"></span>
+<span class="gd">--- a/xxxxxdroid/hardware/interfaces/xxxxxservice/1.0/IPaxApiService.hal</span><span class="w"></span>
+<span class="gi">+++ b/xxxxxdroid/hardware/interfaces/xxxxxservice/1.0/IPaxApiService.hal</span><span class="w"></span>
+<span class="gu">@@ -32,6 +32,9 @@ interface IPaxApiService{</span><span class="w"></span>
+<span class="w"> </span>  getSleepState() generates (int32_t res);<span class="w"></span>
+<span class="w"> </span>  getPowerState() generates (int32_t res);<span class="w"></span>
+<span class="w"> </span>  getStatus() generates (int32_t res);<span class="w"></span>
+<span class="gi">+  getStatusEx(string exdev) generates (int32_t res);</span><span class="w"></span>
+<span class="gi">+  controlPowerEx(string exdev,bool on) generates (int32_t res);</span><span class="w"></span>
+<span class="gi">+  wakeupRequestEx(string exdev) generates (int32_t res);</span><span class="w"></span>
+<span class="w"> </span>  /* gpio method end */<span class="w"></span>
+<span class="w"> </span>
+<span class="w"> </span>  /* paydev log, now not use, just left here */<span class="w"></span>
+<span class="gh">diff --git a/xxxxxdroid/hardware/interfaces/xxxxxservice/1.0/default/gpios/PaxGpios.cpp b/xxxxxdroid/hardware/interfaces/xxxxxservice/1.0/default/gpios/PaxGpios.cpp</span><span class="w"></span>
+<span class="gh">index 5115456abc4..099ca603c91 100755</span><span class="w"></span>
+<span class="gd">--- a/xxxxxdroid/hardware/interfaces/xxxxxservice/1.0/default/gpios/PaxGpios.cpp</span><span class="w"></span>
+<span class="gi">+++ b/xxxxxdroid/hardware/interfaces/xxxxxservice/1.0/default/gpios/PaxGpios.cpp</span><span class="w"></span>
+<span class="gu">@@ -188,3 +188,117 @@ Return&lt;int32_t&gt; PaxApiService::getStatus(void)</span><span class="w"></span>
+<span class="w"> </span>        return 1; /* power off */<span class="w"></span>
+<span class="w"> </span>    }<span class="w"></span>
+<span class="w"> </span>}<span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+/**</span><span class="w"></span>
+<span class="gi">+ * @return</span><span class="w"></span>
+<span class="gi">+ *   1：mpos power off</span><span class="w"></span>
+<span class="gi">+ *   2：mpos power on, but monitor not ready</span><span class="w"></span>
+<span class="gi">+ *   3：mpos power on, monitor ready</span><span class="w"></span>
+<span class="gi">+ *   4：mpos sleep</span><span class="w"></span>
+<span class="gi">+ */</span><span class="w"></span>
+<span class="gi">+Return&lt;int32_t&gt; PaxApiService::getStatusEx(const hidl_string&amp; exdev)</span><span class="w"></span>
+<span class="gi">+{</span><span class="w"></span>
+<span class="gi">+    uint32_t value;</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+    CHECK_GPIO_DEVICE_VALID();</span><span class="w"></span>
+<span class="gi">+	if (strcmp((char *)exdev.c_str(), &quot;R20&quot;) == 0) {</span><span class="w"></span>
+<span class="gi">+		/* check power */</span><span class="w"></span>
+<span class="gi">+		if (mPayDevPowerOn) {</span><span class="w"></span>
+<span class="gi">+			/* check paydev power status gpio */</span><span class="w"></span>
+<span class="gi">+			if (!mGpiosDevice-&gt;ops.get_gpio_value_by_index(xxx_GPIO_4, &amp;value)) {</span><span class="w"></span>
+<span class="gi">+				if (value) { /* payment dev show power on, means monitor ready */</span><span class="w"></span>
+<span class="gi">+					/* get paydev sleep gpio state */</span><span class="w"></span>
+<span class="gi">+					if (!mGpiosDevice-&gt;ops.get_gpio_value_by_index(xxx_GPIO_1, &amp;value)) {</span><span class="w"></span>
+<span class="gi">+						if (!value) {</span><span class="w"></span>
+<span class="gi">+							return 4; /* paydev sleep */</span><span class="w"></span>
+<span class="gi">+						}</span><span class="w"></span>
+<span class="gi">+					} else {</span><span class="w"></span>
+<span class="gi">+						ALOGE(&quot;get status sleep gpio val fail!!&quot;);</span><span class="w"></span>
+<span class="gi">+						return -1;</span><span class="w"></span>
+<span class="gi">+					}</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+					return 3;</span><span class="w"></span>
+<span class="gi">+				} else {  /* payment dev still show power off, means monitor not ready */</span><span class="w"></span>
+<span class="gi">+					return 2;</span><span class="w"></span>
+<span class="gi">+				}</span><span class="w"></span>
+<span class="gi">+			} else {</span><span class="w"></span>
+<span class="gi">+				ALOGE(&quot;get status power gpio val fail!!&quot;);</span><span class="w"></span>
+<span class="gi">+				return -1;</span><span class="w"></span>
+<span class="gi">+			}</span><span class="w"></span>
+<span class="gi">+		} else {</span><span class="w"></span>
+<span class="gi">+			return 1; /* power off */</span><span class="w"></span>
+<span class="gi">+		}</span><span class="w"></span>
+<span class="gi">+	}</span><span class="w"></span>
+<span class="gi">+	else if (strcmp((char *)exdev.c_str(), &quot;R15&quot;) == 0) {</span><span class="w"></span>
+<span class="gi">+		return mGpiosDevice-&gt;ops.get_r15_status();</span><span class="w"></span>
+<span class="gi">+	}</span><span class="w"></span>
+<span class="gi">+	else {</span><span class="w"></span>
+<span class="gi">+		ALOGE(&quot;get status fail!!&quot;);</span><span class="w"></span>
+<span class="gi">+		return -1;</span><span class="w"></span>
+<span class="gi">+	}</span><span class="w"></span>
+<span class="gi">+}</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+Return&lt;int32_t&gt; PaxApiService::controlPowerEx(const hidl_string&amp; exdev,bool on)</span><span class="w"></span>
+<span class="gi">+{</span><span class="w"></span>
+<span class="gi">+	ALOGD(&quot;control Power&quot;);</span><span class="w"></span>
+<span class="gi">+	CHECK_GPIO_DEVICE_VALID();</span><span class="w"></span>
+<span class="gi">+	if (strcmp((char *)exdev.c_str(), &quot;R20&quot;) == 0) {</span><span class="w"></span>
+<span class="gi">+		if (on) {</span><span class="w"></span>
+<span class="gi">+			/* when poweron wakeup R20 gpio must set to 0, in case R20 power on goto sleep */</span><span class="w"></span>
+<span class="gi">+			mGpiosDevice-&gt;ops.set_gpio_value_by_index(xxx_GPIO_2, 0);</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+			mGpiosDevice-&gt;ops.set_gpio_value_by_index(xxx_GPIO_POWER_EN_1, 1);</span><span class="w"></span>
+<span class="gi">+			mGpiosDevice-&gt;ops.set_gpio_value_by_index(xxx_GPIO_POWER_EN_2, 1);</span><span class="w"></span>
+<span class="gi">+			mGpiosDevice-&gt;ops.set_gpio_value_by_index(xxx_GPIO_MODULE_EN, 1);</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+			/* add 2020.12.16, request by R20 */</span><span class="w"></span>
+<span class="gi">+			mGpiosDevice-&gt;ops.set_gpio_value_by_index(xxx_GPIO_2, 1);</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+			mPayDevPowerOn = true;</span><span class="w"></span>
+<span class="gi">+		}</span><span class="w"></span>
+<span class="gi">+		else {</span><span class="w"></span>
+<span class="gi">+			mGpiosDevice-&gt;ops.set_gpio_value_by_index(xxx_GPIO_POWER_EN_1, 0);</span><span class="w"></span>
+<span class="gi">+			mGpiosDevice-&gt;ops.set_gpio_value_by_index(xxx_GPIO_POWER_EN_2, 0);</span><span class="w"></span>
+<span class="gi">+			mGpiosDevice-&gt;ops.set_gpio_value_by_index(xxx_GPIO_MODULE_EN, 0);</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+			/* default output 0 */</span><span class="w"></span>
+<span class="gi">+			mGpiosDevice-&gt;ops.set_gpio_value_by_index(xxx_GPIO_2, 0);</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+			mPayDevPowerOn = false;</span><span class="w"></span>
+<span class="gi">+		}</span><span class="w"></span>
+<span class="gi">+	}</span><span class="w"></span>
+<span class="gi">+	else if (strcmp((char *)exdev.c_str(), &quot;R15&quot;) == 0) {</span><span class="w"></span>
+<span class="gi">+		if (on) {</span><span class="w"></span>
+<span class="gi">+			mGpiosDevice-&gt;ops.set_gpio_value_by_index(xxx_GPIO_R15_MODULE_EN, 1);</span><span class="w"></span>
+<span class="gi">+		}</span><span class="w"></span>
+<span class="gi">+		else {</span><span class="w"></span>
+<span class="gi">+			mGpiosDevice-&gt;ops.set_gpio_value_by_index(xxx_GPIO_R15_MODULE_EN, 0);</span><span class="w"></span>
+<span class="gi">+		}</span><span class="w"></span>
+<span class="gi">+	}</span><span class="w"></span>
+<span class="gi">+	return 0;</span><span class="w"></span>
+<span class="gi">+}</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+Return&lt;int32_t&gt; PaxApiService::wakeupRequestEx(const hidl_string&amp; exdev)</span><span class="w"></span>
+<span class="gi">+{</span><span class="w"></span>
+<span class="gi">+    ALOGD(&quot;wakeup sp&quot;);</span><span class="w"></span>
+<span class="gi">+    CHECK_GPIO_DEVICE_VALID();</span><span class="w"></span>
+<span class="gi">+	if (strcmp((char *)exdev.c_str(), &quot;R20&quot;) == 0) {</span><span class="w"></span>
+<span class="gi">+		/* raising pulse wakeup R20 */</span><span class="w"></span>
+<span class="gi">+		mGpiosDevice-&gt;ops.set_gpio_value_by_index(xxx_GPIO_2, 1);</span><span class="w"></span>
+<span class="gi">+		usleep(1000);</span><span class="w"></span>
+<span class="gi">+		mGpiosDevice-&gt;ops.set_gpio_value_by_index(xxx_GPIO_2, 0);</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+		/* add 2020.12.16, request by R20 */</span><span class="w"></span>
+<span class="gi">+		usleep(1000);</span><span class="w"></span>
+<span class="gi">+		mGpiosDevice-&gt;ops.set_gpio_value_by_index(xxx_GPIO_2, 1);</span><span class="w"></span>
+<span class="gi">+	}</span><span class="w"></span>
+<span class="gi">+	else if (strcmp((char *)exdev.c_str(), &quot;R15&quot;) == 0) {</span><span class="w"></span>
+<span class="gi">+		mGpiosDevice-&gt;ops.set_gpio_value_by_index(xxx_GPIO_R15_MODULE_EN, 0);</span><span class="w"></span>
+<span class="gi">+		usleep(1000);</span><span class="w"></span>
+<span class="gi">+		mGpiosDevice-&gt;ops.set_gpio_value_by_index(xxx_GPIO_R15_MODULE_EN, 1);</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+	}</span><span class="w"></span>
+<span class="gi">+    return 0;</span><span class="w"></span>
+<span class="gi">+}</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gh">diff --git a/xxxxxdroid/hardware/interfaces/xxxxxservice/1.0/default/gpios/PaxGpios.h b/xxxxxdroid/hardware/interfaces/xxxxxservice/1.0/default/gpios/PaxGpios.h</span><span class="w"></span>
+<span class="gh">index 0117f887b18..564c5228df2 100755</span><span class="w"></span>
+<span class="gd">--- a/xxxxxdroid/hardware/interfaces/xxxxxservice/1.0/default/gpios/PaxGpios.h</span><span class="w"></span>
+<span class="gi">+++ b/xxxxxdroid/hardware/interfaces/xxxxxservice/1.0/default/gpios/PaxGpios.h</span><span class="w"></span>
+<span class="gu">@@ -14,6 +14,9 @@ public:</span><span class="w"></span>
+<span class="w"> </span>    Return&lt;int32_t&gt; getPowerState(void);<span class="w"></span>
+<span class="w"> </span>
+<span class="w"> </span>    Return&lt;int32_t&gt; getStatus(void);<span class="w"></span>
+<span class="gi">+	Return&lt;int32_t&gt; getStatusEx(const hidl_string&amp; exdev);</span><span class="w"></span>
+<span class="gi">+	Return&lt;int32_t&gt; controlPowerEx(const hidl_string&amp; exdev,bool on);</span><span class="w"></span>
+<span class="gi">+	Return&lt;int32_t&gt; wakeupRequestEx(const hidl_string&amp; exdev);</span><span class="w"></span>
+<span class="w"> </span>
+<span class="w"> </span>private:<span class="w"></span>
+<span class="w"> </span>    Return&lt;int32_t&gt; loadGpioHal(void);<span class="w"></span>
+<span class="gh">diff --git a/xxxxxdroid/hardware/libhardware/include/hardware/xxxxx_gpios.h b/xxxxxdroid/hardware/libhardware/include/hardware/xxxxx_gpios.h</span><span class="w"></span>
+<span class="gh">index 5e97918cccd..d3ee8b2bfb7 100755</span><span class="w"></span>
+<span class="gd">--- a/xxxxxdroid/hardware/libhardware/include/hardware/xxxxx_gpios.h</span><span class="w"></span>
+<span class="gi">+++ b/xxxxxdroid/hardware/libhardware/include/hardware/xxxxx_gpios.h</span><span class="w"></span>
+<span class="gu">@@ -27,7 +27,8 @@ enum {</span><span class="w"></span>
+<span class="w"> </span>    xxx_GPIO_POWER_EN_1 = 5,<span class="w"></span>
+<span class="w"> </span>    xxx_GPIO_POWER_EN_2 = 6,<span class="w"></span>
+<span class="w"> </span>    xxx_GPIO_MODULE_EN  = 7,<span class="w"></span>
+<span class="gd">-    xxx_GPIO_MAX = xxx_GPIO_MODULE_EN,</span><span class="w"></span>
+<span class="gi">+	xxx_GPIO_R15_MODULE_EN = 8,</span><span class="w"></span>
+<span class="gi">+    xxx_GPIO_MAX = xxx_GPIO_R15_MODULE_EN,</span><span class="w"></span>
+<span class="w"> </span>};<span class="w"></span>
+<span class="w"> </span>
+<span class="w"> </span>struct xxxxx_gpios_ops {<span class="w"></span>
+<span class="gu">@@ -48,6 +49,9 @@ struct xxxxx_gpios_ops {</span><span class="w"></span>
+<span class="w"> </span>
+<span class="w"> </span>    /* set output gpio value by index */<span class="w"></span>
+<span class="w"> </span>    int (*set_gpio_value_by_index)(unsigned int index, unsigned int value);<span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+    /* get r15 power status */</span><span class="w"></span>
+<span class="gi">+    int (*get_r15_status)(void);</span><span class="w"></span>
+<span class="w"> </span>};<span class="w"></span>
+<span class="w"> </span>
+<span class="w"> </span>/**<span class="w"></span>
+<span class="gh">diff --git a/xxxxxdroid/hardware/libhardware/modules/gpios/dev_gpios.c b/xxxxxdroid/hardware/libhardware/modules/gpios/dev_gpios.c</span><span class="w"></span>
+<span class="gh">index 134009483de..29f4ce1abd9 100755</span><span class="w"></span>
+<span class="gd">--- a/xxxxxdroid/hardware/libhardware/modules/gpios/dev_gpios.c</span><span class="w"></span>
+<span class="gi">+++ b/xxxxxdroid/hardware/libhardware/modules/gpios/dev_gpios.c</span><span class="w"></span>
+<span class="gu">@@ -21,7 +21,7 @@</span><span class="w"></span>
+<span class="w"> </span>#define xxx_GPIO_IOCTL_READ		_IOR(xxx_GPIO_IOCTL_MAGIC, 0, unsigned int)<span class="w"></span>
+<span class="w"> </span>#define xxx_GPIO_IOCTL_WRITE	_IOW(xxx_GPIO_IOCTL_MAGIC, 1, unsigned int)<span class="w"></span>
+<span class="w"> </span>#define xxx_GPIO_IOCTL_CONFIG	_IOR(xxx_GPIO_IOCTL_MAGIC, 2, unsigned int)<span class="w"></span>
+<span class="gd">-</span><span class="w"></span>
+<span class="gi">+#define xxx_GPIO_IOCTL_WAKEUP	_IOR(xxx_GPIO_IOCTL_MAGIC, 3, unsigned int)</span><span class="w"></span>
+<span class="w"> </span>
+<span class="w"> </span>#define CHECK_GPIO_VALID(index) if (index &gt; SP_GPIO_MAX) { \<span class="w"></span>
+<span class="w"> </span>                                    ALOGE(&quot;gpio index invalid&quot;); \<span class="w"></span>
+<span class="gu">@@ -37,7 +37,6 @@</span><span class="w"></span>
+<span class="w"> </span>
+<span class="w"> </span>static struct dev_gpios g_dev_gpios;<span class="w"></span>
+<span class="w"> </span>
+<span class="gd">-</span><span class="w"></span>
+<span class="w"> </span>static int get_gpios_config(int fd, unsigned int *value)<span class="w"></span>
+<span class="w"> </span>{<span class="w"></span>
+<span class="w"> </span>    int ret;<span class="w"></span>
+<span class="gu">@@ -228,3 +227,19 @@ int set_xxxxx_gpio_value_by_index(unsigned int index, unsigned int value)</span><span class="w"></span>
+<span class="w"> </span>    return set_xxxxx_gpio_value(val);<span class="w"></span>
+<span class="w"> </span>}<span class="w"></span>
+<span class="w"> </span>
+<span class="gi">+/**</span><span class="w"></span>
+<span class="gi">+ * get_xxxxx_r15_status</span><span class="w"></span>
+<span class="gi">+ */</span><span class="w"></span>
+<span class="gi">+int get_xxxxx_r15_status(void)</span><span class="w"></span>
+<span class="gi">+{</span><span class="w"></span>
+<span class="gi">+    unsigned int val;</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+	if((access(&quot;/dev/ttyACM0&quot;,F_OK)) != -1) {</span><span class="w"></span>
+<span class="gi">+		val = 3;</span><span class="w"></span>
+<span class="gi">+	}</span><span class="w"></span>
+<span class="gi">+	else {</span><span class="w"></span>
+<span class="gi">+		val = 4;</span><span class="w"></span>
+<span class="gi">+	}</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+	return val;</span><span class="w"></span>
+<span class="gi">+}</span><span class="w"></span>
+<span class="w">\ No newline at end of file</span>
+<span class="gh">diff --git a/xxxxxdroid/hardware/libhardware/modules/gpios/dev_gpios.h b/xxxxxdroid/hardware/libhardware/modules/gpios/dev_gpios.h</span><span class="w"></span>
+<span class="gh">index 1d97b895d5a..dac8222a413 100755</span><span class="w"></span>
+<span class="gd">--- a/xxxxxdroid/hardware/libhardware/modules/gpios/dev_gpios.h</span><span class="w"></span>
+<span class="gi">+++ b/xxxxxdroid/hardware/libhardware/modules/gpios/dev_gpios.h</span><span class="w"></span>
+<span class="gu">@@ -52,7 +52,8 @@ int get_xxxxx_gpio_value_by_index(unsigned int index, unsigned int *value);</span><span class="w"></span>
+<span class="w"> </span>int set_xxxxx_gpio_value(unsigned int value);<span class="w"></span>
+<span class="w"> </span>/* set output gpio value by index */<span class="w"></span>
+<span class="w"> </span>int set_xxxxx_gpio_value_by_index(unsigned int index, unsigned int value);<span class="w"></span>
+<span class="gd">-</span><span class="w"></span>
+<span class="gi">+/* get r15 power status */</span><span class="w"></span>
+<span class="gi">+int get_xxxxx_r15_status(void);</span><span class="w"></span>
+<span class="w"> </span>
+<span class="w"> </span>
+<span class="w"> </span>
+<span class="gh">diff --git a/xxxxxdroid/hardware/libhardware/modules/gpios/xxxxx_gpios.c b/xxxxxdroid/hardware/libhardware/modules/gpios/xxxxx_gpios.c</span><span class="w"></span>
+<span class="gh">index faa79d4cd49..0beb7319537 100755</span><span class="w"></span>
+<span class="gd">--- a/xxxxxdroid/hardware/libhardware/modules/gpios/xxxxx_gpios.c</span><span class="w"></span>
+<span class="gi">+++ b/xxxxxdroid/hardware/libhardware/modules/gpios/xxxxx_gpios.c</span><span class="w"></span>
+<span class="gu">@@ -64,6 +64,7 @@ static int open_module(const hw_module_t* module, const char __unused *id,</span><span class="w"></span>
+<span class="w"> </span>        dev-&gt;ops.get_gpio_value_by_index = get_xxxxx_gpio_value_by_index;<span class="w"></span>
+<span class="w"> </span>        dev-&gt;ops.set_gpio_value = set_xxxxx_gpio_value;<span class="w"></span>
+<span class="w"> </span>        dev-&gt;ops.set_gpio_value_by_index = set_xxxxx_gpio_value_by_index;<span class="w"></span>
+<span class="gi">+		dev-&gt;ops.get_r15_status = get_xxxxx_r15_status;</span><span class="w"></span>
+<span class="w"> </span>    } else {<span class="w"></span>
+<span class="w"> </span>        ALOGE(&quot;gpio init fail!&quot;);<span class="w"></span>
+<span class="w"> </span>        free(dev);<span class="w"></span>
+<span class="gd">-- </span><span class="w"></span>
+<span class="w">2.17.1</span>
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+
+
+           </div>
+             <div class="articleComments">
+                <comments>
+  <script src="https://utteranc.es/client.js"
+    repo="iswbm/magic-python"
+    issue-term="pathname"
+    theme="github-light"
+    crossorigin="anonymous"
+    async>
+  </script>
+</comments>
+             </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; 版权所有 2022, wugn.</p>
+  </div>
+
+  利用 <a href="https://www.sphinx-doc.org/">Sphinx</a> 构建，使用了 
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">主题</a>
+    由 <a href="https://readthedocs.org">Read the Docs</a>开发.
+  
+
+<script charset="UTF-8" id="LA_COLLECT" src="//sdk.51.la/js-sdk-pro.min.js"></script>
+<script>LA.init({id: "JoV5csIHTGhHiGQ4",ck: "JoV5csIHTGhHiGQ4"})</script>
+
+<br/>
+<script id="LA-DATA-WIDGET" crossorigin="anonymous" charset="UTF-8" src="https://v6-widget.51.la/v6/JoV5csIHTGhHiGQ4/quote.js?theme=#4C8AC2,#BB2626,#040000,#333333,#AE3535,#1690FF,14&f=14"></script>
+
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

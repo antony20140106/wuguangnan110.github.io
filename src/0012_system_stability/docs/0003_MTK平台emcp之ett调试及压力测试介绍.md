@@ -256,7 +256,7 @@ HV和LV测量电压方法一样，测量时需要覆盖三种频率，下载不�
 
 ### Step2.根据测试场景选择对应的load (HTLV/LTHV/NTNV)
 
-* 高温测试请下载`DDR压力测试\preloader镜像\HV\preloader_k62v1_64_pax.bin`镜像，低温则对应`LV`目录，常温对应`NV`目录。下载后第一次开机进行如下设置:
+* 高温测试请下载`DDR压力测试\preloader镜像\HV\preloader_k62v1_64_xxx.bin`镜像，低温则对应`LV`目录，常温对应`NV`目录。下载后第一次开机进行如下设置:
   * 设置>显示>休眠>30分钟，
   * 设置>Developer options>stay awake 设置为不休眠
   * 手机设置为飞行模式，关闭MTK mobile log
@@ -295,7 +295,7 @@ HV和LV测量电压方法一样，测量时需要覆盖三种频率，下载不�
 执行以下指令：
 
 ```log
-C:\Users\wugangnan>adb shell
+C:\Users\xxx>adb shell
 PAYTABLETM8:/ # sh /data/run.sh &
 PAYTABLETM8:/ # sh /data/vcorefs_cervino.sh &
 ```
@@ -329,7 +329,7 @@ DVFS_Nenamark_memtest_script_LPDDR4文件夹中双击start_DVFS_N2_Mem_test.bat�
 * 屏幕不要设置为always on， 手机设置为飞行模式，关闭MTK mobile log。
 * Step1. 打开suspend_test_v0.4文件夹，手机开debug功能。
 * Step2.连接手机，双击suspend_loop_push.bat脚本，运行完毕后按任意键结束。
-* Step3.使用paxtool.bat工具unlock功能将机器解锁。
+* Step3.使用xxxtool.bat工具unlock功能将机器解锁。
 * 执行`adb remount`。
 * Step4. 调出一个cmd命令框，输入如下命令。
   * `adb shell`
@@ -371,7 +371,7 @@ DDR Reserve mode test：
 
 ### 2.Full-K Reboot测试步骤
 
-* Step1. 首先使用flashtool工具烧录`DDR压力测试\MT6762平台DDR测试工具\reboot_script\reboot_full_k\preloader_k62v1_64_pax.bin`。
+* Step1. 首先使用flashtool工具烧录`DDR压力测试\MT6762平台DDR测试工具\reboot_script\reboot_full_k\preloader_k62v1_64_xxx.bin`。
 * Step2. 屏幕不要设置为always on，手机设置为飞行模式，关闭MTK mobile log。
 * Step3. 编辑 reboot_full_k.bat把device id改成测试机器id后保存，双击该脚本。
   * Note1: Full k 每5次更新。

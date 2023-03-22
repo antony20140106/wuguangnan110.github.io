@@ -102,7 +102,7 @@ index e122936ce32..3390b2f8103
      if (BTM_DEF_LOCAL_NAME[0] != '\0') {
        strncpy(btif_default_local_name, BTM_DEF_LOCAL_NAME, max_len);
      } else {
-+//[FEATURE]-Mod-BEGIN by (qumy@paxsz.com), 2020/8/13,for bt feature
++//[FEATURE]-Mod-BEGIN by (qumy@xxxxx.com), 2020/8/13,for bt feature
 +#ifndef SET_BT_NAME_WITH_SN
        char prop_model[PROPERTY_VALUE_MAX];
        osi_property_get(PROPERTY_PRODUCT_MODEL, prop_model, "");
@@ -129,7 +129,7 @@ index e122936ce32..3390b2f8103
      }
      btif_default_local_name[max_len] = '\0';
    }
-+//[FEATURE]-Mod-BEGIN by (qumy@paxsz.com), 2020/8/13,for bt feature
++//[FEATURE]-Mod-BEGIN by (qumy@xxxxx.com), 2020/8/13,for bt feature
    return btif_default_local_name;
  }
 ```

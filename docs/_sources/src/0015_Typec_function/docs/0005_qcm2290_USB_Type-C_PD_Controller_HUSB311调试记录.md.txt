@@ -1,6 +1,6 @@
 # 概述
 
-TypeC_高通A6650_USB_Type-C_PD_Controller_HUSB311调试记录。 
+TypeC_高通A665x_USB_Type-C_PD_Controller_HUSB311调试记录。 
 
 # 参考
 
@@ -96,7 +96,7 @@ B -   4888098 - func_addr  :   0C2259A8
 B -   4891669 - ^^^^^- Done Printing -^^^^^
 ```
 
-* 解决方案：移远提供编译中间文件替换`Z:\A6650-project\A6650_Unpacking_Tool\TZ.XF.5.1\trustzone_images\build\ms\bin\FAYAANAA`，全编然后烧录，发现直接进入recovery模式，选择格式化数据正常启动。
+* 解决方案：移远提供编译中间文件替换`Z:\A665x-project\A665x_Unpacking_Tool\TZ.XF.5.1\trustzone_images\build\ms\bin\FAYAANAA`，全编然后烧录，发现直接进入recovery模式，选择格式化数据正常启动。
 
 ![0005_0002.png](images/0005_0002.png)
 
@@ -170,15 +170,15 @@ static int find_vdd_level(struct clk_init_data *clk_intd, unsigned long rate)
 ```diff
 1.QUP SE0目前配置成I2C，供charger、电量计、PD等使用。
 2.QUP SE0去除Uart0功能配置，只存在一种功能复用。
-3.QUP SE1默认配置为串口功能，修改A6650_Unpacking_Tool/TZ.XF.5.1/trustzone_images/build/ms/bin/FAYAANAA TZ编译文件。
+3.QUP SE1默认配置为串口功能，修改A665x_Unpacking_Tool/TZ.XF.5.1/trustzone_images/build/ms/bin/FAYAANAA TZ编译文件。
 
---- a/A6650_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/Library/HSUartQupv3Lib/HSUartSettings.h
-+++ b/A6650_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/Library/HSUartQupv3Lib/HSUartSettings.h
+--- a/A665x_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/Library/HSUartQupv3Lib/HSUartSettings.h
++++ b/A665x_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/Library/HSUartQupv3Lib/HSUartSettings.h
 @@ -76,6 +76,8 @@ static const char *se_clocks_str_2 [] =
      "gcc_qupv3_wrap2_s5_clk",
  };
 
-+//[FEATURE]-Add-BEGIN by wugangnan@paxsz.com, 2022/07/15, for disble QUP SE0 as uart0 function
++//[FEATURE]-Add-BEGIN by xxx@xxxxx.com, 2022/07/15, for disble QUP SE0 as uart0 function
 +/*
  static HSUART_PROPERTIES devices =
  {
@@ -207,19 +207,19 @@ static int find_vdd_level(struct clk_init_data *clk_intd, unsigned long rate)
 +   0   // TCSR value
 +
 +};
-+//[FEATURE]-Add-END by wugangnan@paxsz.com, 2022/07/15, for disble QUP SE0 as uart0 function
++//[FEATURE]-Add-END by xxx@xxxxx.com, 2022/07/15, for disble QUP SE0 as uart0 function
 
  static uint8 __attribute__ ((aligned (4))) qup_v1_2_uart_fw[] =
  {
-diff --git a/A6650_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/SocPkg/AgattiPkg/Settings/UART/UartSettings.c b/A6650_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/SocPkg/AgattiPkg/Settings/UART/UartSettings.c
+diff --git a/A665x_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/SocPkg/AgattiPkg/Settings/UART/UartSettings.c b/A665x_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/SocPkg/AgattiPkg/Settings/UART/UartSettings.c
 index 45148d24c61..1d2a8cb8dd9 100755
---- a/A6650_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/SocPkg/AgattiPkg/Settings/UART/UartSettings.c
-+++ b/A6650_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/SocPkg/AgattiPkg/Settings/UART/UartSettings.c
+--- a/A665x_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/SocPkg/AgattiPkg/Settings/UART/UartSettings.c
++++ b/A665x_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/SocPkg/AgattiPkg/Settings/UART/UartSettings.c
 @@ -16,6 +16,8 @@ DESCRIPTION: UEFI driver settings for QUP UART
  #include "UartDefs.h"
  #include "ClockBoot.h"
 
-+//[FEATURE]-Add-BEGIN by wugangnan@paxsz.com, 2022/07/15, for disble QUP SE0 as uart0 function
++//[FEATURE]-Add-BEGIN by xxx@xxxxx.com, 2022/07/15, for disble QUP SE0 as uart0 function
 +/*
  UART_PROPERTIES devices_uart5 =
  {
@@ -246,7 +246,7 @@ index 45148d24c61..1d2a8cb8dd9 100755
 +   0   // TCSR value
 +
 +};
-+//[FEATURE]-Add-END by wugangnan@paxsz.com, 2022/07/15, for disble QUP SE0 as uart0 function
++//[FEATURE]-Add-END by xxx@xxxxx.com, 2022/07/15, for disble QUP SE0 as uart0 function
 
  UART_PROPERTIES devices =
  {
@@ -260,10 +260,10 @@ index c56d81e2b76..d8da5368820 100644
  static int Is_Enter_Fctmode(int value){
 -    CHAR8 Char;
 -    UINT8 Buffer_start[] = { "Android Bootloader - UART_DM Initialized!!!\r\n" };
-+    //[FEATURE]-Add-BEGIN by wugangnan@paxsz.com, 2022/07/15, for disble QUP SE0 as uart0 function
++    //[FEATURE]-Add-BEGIN by xxx@xxxxx.com, 2022/07/15, for disble QUP SE0 as uart0 function
 +    //CHAR8 Char;
 +    //UINT8 Buffer_start[] = { "Android Bootloader - UART_DM Initialized!!!\r\n" };
-+    //[FEATURE]-Add-END by wugangnan@paxsz.com, 2022/07/15, for disble QUP SE0 as uart0 function
++    //[FEATURE]-Add-END by xxx@xxxxx.com, 2022/07/15, for disble QUP SE0 as uart0 function
 
  #if UART_DEBUG
      uart_initialize();
@@ -271,7 +271,7 @@ index c56d81e2b76..d8da5368820 100644
      DEBUG ((EFI_D_ERROR, "uart init end\n"));
  #endif
 +
-+//[FEATURE]-Add-BEGIN by wugangnan@paxsz.com, 2022/07/15, for disble QUP SE0 as uart0 function
++//[FEATURE]-Add-BEGIN by xxx@xxxxx.com, 2022/07/15, for disble QUP SE0 as uart0 function
 +/*
      uart5_initialize();
      uart5_write(Buffer_start,45);
@@ -282,7 +282,7 @@ index c56d81e2b76..d8da5368820 100644
      }
 -
 +*/
-+//[FEATURE]-Add-END by wugangnan@paxsz.com, 2022/07/15, for disble QUP SE0 as uart0 function
++//[FEATURE]-Add-END by xxx@xxxxx.com, 2022/07/15, for disble QUP SE0 as uart0 function
      DEBUG ((EFI_D_ERROR, "****** SUCCESS ENTER ANDROID ******\n"));
      return 0;
  }
@@ -293,8 +293,8 @@ index c56d81e2b76..d8da5368820 100644
 使用patch后，i2c通了，如下：
 
 ```diff
---- a/A6650_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/SocPkg/AgattiPkg/Library/ClockTargetLib/ClockBSP.c
-+++ b/A6650_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/SocPkg/AgattiPkg/Library/ClockTargetLib/ClockBSP.c
+--- a/A665x_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/SocPkg/AgattiPkg/Library/ClockTargetLib/ClockBSP.c
++++ b/A665x_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/SocPkg/AgattiPkg/Library/ClockTargetLib/ClockBSP.c
 @@ -579,11 +579,15 @@ static ClockMuxConfigType ClockDomainBSP_GCC_GCCQUPV3WRAP0CORE2X[] =
   *   ClockDomain_GCC_GCCQUPV3WRAP0S4
   *   ClockDomain_GCC_GCCQUPV3WRAP0S5
@@ -393,7 +393,7 @@ static inline int husb311_check_revision(struct i2c_client *client)
 
 ## 2.dts无法加载启动
 
-烧录最新软件发现打印`Get Pax Main Board Failed.`，启动不了，咨询剑锋说目前`Main Board`都是从cfg分区获取的，需要烧录配置文件`A6650-AA200-260A-2N0-EA_Config_2570000_SIG_V1.0.ini`，内容如下：
+烧录最新软件发现打印`Get Pax Main Board Failed.`，启动不了，咨询剑锋说目前`Main Board`都是从cfg分区获取的，需要烧录配置文件`A665x-AA200-260A-2N0-EA_Config_2570000_SIG_V1.0.ini`，内容如下：
 
 ```log
 TOUCH_SCREEN="257"
@@ -405,20 +405,20 @@ CAMERA_NUMBER="01"
 CAMERA_FRONT="80"
 MAIN_BOARD="V01"
 PORT_BOARD="V01"
-PN="A6650-AA200-260A-2N0-EA"
+PN="A665x-AA200-260A-2N0-EA"
 CONFIG_FILE_VER="2570000_V1.0"
-TERMINAL_NAME="A6650"|?]!@S
+TERMINAL_NAME="A665x"|?]!@S
 ```
 
-fastboot flash cfg A6650-AA200-260A-2N0-EA_Config_2570000_SIG_V1.0.ini
+fastboot flash cfg A665x-AA200-260A-2N0-EA_Config_2570000_SIG_V1.0.ini
 
-* 所有采用pax签名镜像。
+* 所有采用xxxxx签名镜像。
 
 ```log
 SUMMARY:
 Following actions were performed: "validate"
 Following Multi-Image Sign & Integrity actions were performed: "sign, validate"
-Output is saved at: /home/wugn/A6650-project/Unpacking_Tool/QCM2290.LA.2.0/common/build/bin/multi_image
+Output is saved at: /home/wugn/A665x-project/Unpacking_Tool/QCM2290.LA.2.0/common/build/bin/multi_image
 
 | Idx |       SignId      | Parse | Integrity | Sign | Encrypt |              Validate              |
 |     |                   |       |           |      |         | Parse | Integrity | Sign | Encrypt |
@@ -1309,10 +1309,10 @@ log如下，每次跑到`TCPC-TCPC:EXT-Discharge`就死机了。
 [    5.916816] tcpc_device_irq_enable : +++
 [    5.925895] ///PD dbg info 41d
 [    5.929019] <    5.925>TCPC-TYPEC:typec_init: TrySNK //初始化，没接直接走untacch流程
-[    5.936173] PAX_CHG_MP2721: mp2721_info tcpc_notifier_call, old_state = UNATTACHED, new_state = UNATTACHED
+[    5.936173] xxx_CHG_MP2721: mp2721_info tcpc_notifier_call, old_state = UNATTACHED, new_state = UNATTACHED
 [    5.936175] tcpc_device_irq_enable : tcpc irq enable OK!
 [    5.936179] rt-pd-manager soc:rt_pd_manager: rt_pd_manager_probe OK!!
-[    5.945857] PAX_CHG_MP2721: tcpc_notifier_call sink vbus 0mV 0mA type(0x00)
+[    5.945857] xxx_CHG_MP2721: tcpc_notifier_call sink vbus 0mV 0mA type(0x00)
 [    5.951558] msm-qusb-phy 1613000.qusb: 1613000.qusb supply USB3_GDSC not found, using dummy regulator
 [    5.957679] ///PD dbg info 262d
 [    5.964730] msm-qusb-phy 1613000.qusb: Linked as a consumer to regulator.0
@@ -1326,7 +1326,7 @@ log如下，每次跑到`TCPC-TCPC:EXT-Discharge`就死机了。
 [    5.973960] <    5.936>Enable TYPEC_RT_TIMER_AUTO_DISC
 [    5.973961] HARGE
 [    5.977142] msm-qusb-phy 1613000.qusb: Linked as a consumer to regulator.35
-[    5.983977] PAX_CHG_MP2721: mp2721_info tcpc_notifier_call, old_state = UNATTACHED, new_state = UNATTACHED
+[    5.983977] xxx_CHG_MP2721: mp2721_info tcpc_notifier_call, old_state = UNATTACHED, new_state = UNATTACHED
 [    5.992714] msm-qusb-phy 1613000.qusb: Linked as a consumer to regulator.46
 [    5.996063] ///PD dbg info 87d
 [    5.996065] <    5.992>Trigger TYPEC_RT_TIMER_AUTO_DISCHARGE
@@ -1349,13 +1349,13 @@ S - IMAGE_VARIANT_STRING=AgattiPkgLAA
 [    6.035413] <    5.997>TCPC-TCPC:EXT-Discharge: 1
 [    6.035413] <    5.997>Enable TYPEC_RT_TIMER_AUTO_DISC
 [    6.035437] rt-pd-manager soc:rt_pd_manager: pd_tcp_notifier_call sink vbus 0mV 0mA type(0x00)
-[    6.035445] PAX_CHG_MP2721: mp2721_info tcpc_notifier_call, old_state = UNATTACHED, new_state = UNATTACHED
+[    6.035445] xxx_CHG_MP2721: mp2721_info tcpc_notifier_call, old_state = UNATTACHED, new_state = UNATTACHED
 [    6.035448] rt-pd-manager soc:rt_pd_manager: pd_tcp_notifier_call source vbus 0mV
-[    6.035453] PAX_CHG_MP2721: mp2721_info tcpc_notifier_call, old_state = (null), new_state = HVDCP
+[    6.035453] xxx_CHG_MP2721: mp2721_info tcpc_notifier_call, old_state = (null), new_state = HVDCP
 [    6.035456] rt-pd-manager soc:rt_pd_manager: pd_tcp_notifier_call ext discharge = 1
 [    6.038632] msm-qusb-phy 1613000.qusb: Linked as a consumer to regulator.35
 [    6.045449] HARGE
-[    6.060917] PAX_CHG_MP2721: mp2721_info tcpc_notifier_call, old_state = (null), new_state = (null)
+[    6.060917] xxx_CHG_MP2721: mp2721_info tcpc_notifier_call, old_state = (null), new_state = (null)
 [    6.068080] ///PD dbg info 87d
 [    6.068082] <    6.060>Trigger TYPEC_RT_TIMER_AUTO_DISCHARGE
 [    6.068082] <    6.060>TCPC-TCPC:EXT-Discharge: 0
@@ -1407,7 +1407,7 @@ unttach流程会开启timer跑一遍`tcpc_timer_rt_discharge`，并发送tcp通�
 
 ```log
 wugn@jcrj-tf-compile:msm-4.19$ ack TCP_NOTIFY_EXT_DISCHARGE drivers/
-drivers/misc/pax/tcpc/rt_pd_manager.c
+drivers/misc/xxxxx/tcpc/rt_pd_manager.c
 600:    //case TCP_NOTIFY_EXT_DISCHARGE:
 ```
 
@@ -1446,8 +1446,8 @@ drivers/misc/pax/tcpc/rt_pd_manager.c
 ```
 上面这个方案不行，最终修改如下：
 ```diff
---- a/UM.9.15/kernel/msm-4.19/drivers/misc/pax/tcpc/inc/tcpci_config.h
-+++ b/UM.9.15/kernel/msm-4.19/drivers/misc/pax/tcpc/inc/tcpci_config.h
+--- a/UM.9.15/kernel/msm-4.19/drivers/misc/xxxxx/tcpc/inc/tcpci_config.h
++++ b/UM.9.15/kernel/msm-4.19/drivers/misc/xxxxx/tcpc/inc/tcpci_config.h
 @@ -57,7 +57,7 @@
 
  #define CONFIG_TYPEC_CAP_FORCE_DISCHARGE
@@ -1455,8 +1455,8 @@ drivers/misc/pax/tcpc/rt_pd_manager.c
 -#define CONFIG_TCPC_FORCE_DISCHARGE_EXT
 +//#define CONFIG_TCPC_FORCE_DISCHARGE_EXT
 
---- a/UM.9.15/vendor/qcom/proprietary/devicetree-4.19/qcom/a6650/a6650-scuba-iot-idp-overlay.dts
-+++ b/UM.9.15/vendor/qcom/proprietary/devicetree-4.19/qcom/a6650/a6650-scuba-iot-idp-overlay.dts
+--- a/UM.9.15/vendor/qcom/proprietary/devicetree-4.19/qcom/a665x/a665x-scuba-iot-idp-overlay.dts
++++ b/UM.9.15/vendor/qcom/proprietary/devicetree-4.19/qcom/a665x/a665x-scuba-iot-idp-overlay.dts
 @@ -4,6 +4,7 @@
  #include <dt-bindings/interrupt-controller/arm-gic.h>
  #include "scuba-iot-idp.dtsi"
@@ -1484,7 +1484,7 @@ drivers/misc/pax/tcpc/rt_pd_manager.c
 [    9.195482] <    9.192>TCPC-TYPEC:typec_init: DRP
 [    9.196018] tcpc_device_irq_enable : tcpc irq enable OK!
 [    9.199019] husb311_set_low_power_mode - write HUSB311_REG_BMC_CTRL=0x7
-[    9.199197] PAX_CHG_MP2721: mp2721_info tcpc_notifier_call, old_state = UNATTACHED, new_state = UNATTACHED
+[    9.199197] xxx_CHG_MP2721: mp2721_info tcpc_notifier_call, old_state = UNATTACHED, new_state = UNATTACHED
 [    9.222164] ALSA device list:
 [    9.224071] ///PD dbg info 339d
 [    9.225152]   No soundcards found.
@@ -1506,14 +1506,14 @@ drivers/misc/pax/tcpc/rt_pd_manager.c
 [    9.308611] init: [libfs_mgr]ReadFstabFromDt(): failed to read fstab from dt
 [    9.315880] init: [libfs_mgr]dt_fstab: Skip disabled entry for partition vendor
 [    9.319252] ///PD dbg info 118d
-[    9.320281] PAX_CHG_MP2721: mp2721_info tcpc_notifier_call, old_state = UNATTACHED, new_state = (null)
-[    9.320284] PAX_CHG_MP2721: tcpc_notifier_call sink vbus 5000mV 100mA type(0x01)
+[    9.320281] xxx_CHG_MP2721: mp2721_info tcpc_notifier_call, old_state = UNATTACHED, new_state = (null)
+[    9.320284] xxx_CHG_MP2721: tcpc_notifier_call sink vbus 5000mV 100mA type(0x01)
 [    9.320293] rt-pd-manager soc:rt_pd_manager: pd_tcp_notifier_call sink vbus 5000mV 100mA type(0x01)
-[    9.320304] PAX_CHG_MP2721: mp2721_info tcpc_notifier_call, old_state = UNATTACHED, new_state = ATTACHED_SNK
-[    9.320306] PAX_CHG_MP2721: handle_typec_attach: ++ en:1
+[    9.320304] xxx_CHG_MP2721: mp2721_info tcpc_notifier_call, old_state = UNATTACHED, new_state = ATTACHED_SNK
+[    9.320306] xxx_CHG_MP2721: handle_typec_attach: ++ en:1
 [    9.320326] rt-pd-manager soc:rt_pd_manager: pd_tcp_notifier_call Charger plug in, polarity = 1
-[    9.320432] PAX_CHG_MP2721: mp2721_set_otg_enable en:0 enable_otg:0
-[    9.320435] PAX_CHG_MP2721: typec_attach_thread: attach:1 charge_type = 0
+[    9.320432] xxx_CHG_MP2721: mp2721_set_otg_enable en:0 enable_otg:0
+[    9.320435] xxx_CHG_MP2721: typec_attach_thread: attach:1 charge_type = 0
 [    9.324503] init: Using Android DT directory /proc/device-tree/firmware/android/
 [    9.326407] <    9.319>Trigger TYPEC_TIMER_CCDEBOUNCE
 [    9.326407] <    9.319>TCPC-TYPEC:[CC_Change] 0/5
@@ -1555,7 +1555,7 @@ drivers/misc/pax/tcpc/rt_pd_manager.c
 [   19.176352] tcpc_event_init_work typec attach new = 1
 [   19.182127] ///PD dbg info 67d
 [   19.185435] <   19.182>TCPC-TCPC-ERR:tcpc_event_init_work get battery psy fail
-[   19.197008] pax_charger_alarm_timer_func: not suspend, wake up charger
+[   19.197008] xxxxx_charger_alarm_timer_func: not suspend, wake up charger
 [   19.204866] ipa ipa_smmu_11ad_cb_probe:8180 11AD SMMU is disabled
 [   19.204998] subsys-pil-tz soc:qcom,ipa_fws: Falling back to syfs fallback for: scuba_ipa_fws.mdt
 [   19.216432] ///PD dbg info 299d
@@ -1605,16 +1605,16 @@ drivers/misc/pax/tcpc/rt_pd_manager.c
 [   19.551347] <   19.483>TCPC-PE-EVT:vbus_high
 [   19.551347] <   19.483>TCPC-PE:PD -> SNK_WAIT_CAP (CUN
 [   19.599288] binder: 652:652 ioctl 40046210 7ff77b6454 returned -22
-[   19.624111] PAX_CHG: pax_is_charger_on chr_type = 4
+[   19.624111] xxx_CHG: xxxxx_is_charger_on chr_type = 4
 [   19.666501] )
 [   19.666501] <   19.483>Enable PD_TIMER_SINK_WAIT_CAP
-[   19.690708] PAX_CHG_MP2721: chg_dump: CHG [online: 1, type: SDP, status: Charging, fault: OK, health: Good, ICHG = 4000mA, AICR = 2000mA, MIVR = 4440mV, IEOC = 240mA, CV = 4350mV]
+[   19.690708] xxx_CHG_MP2721: chg_dump: CHG [online: 1, type: SDP, status: Charging, fault: OK, health: Good, ICHG = 4000mA, AICR = 2000mA, MIVR = 4440mV, IEOC = 240mA, CV = 4350mV]
 [   19.694393] QSEECOM: qseecom_load_app: App (soter64) does'nt exist, loading apps for first time
-[   19.715512] PAX_CHG: charger_routine_thread end , 0
+[   19.715512] xxx_CHG: charger_routine_thread end , 0
 [   19.846387] QSEECOM: qseecom_load_app: App with id 3 (soter64) now loaded
-[   19.856141] PAX_CHG_MP2721: mp2721_info tcpc_notifier_call, old_state = NORP_SRC, new_state = SDP
+[   19.856141] xxx_CHG_MP2721: mp2721_info tcpc_notifier_call, old_state = NORP_SRC, new_state = SDP
 [   19.858797] ///PD dbg info 148d
-[   19.871218] PAX_CHG_MP2721: mp2721_info tcpc_notifier_call, old_state = UNATTACHED, new_state = UNATTACHED
+[   19.871218] xxx_CHG_MP2721: mp2721_info tcpc_notifier_call, old_state = UNATTACHED, new_state = UNATTACHED
 [   19.874344] <   19.855>Trigger PD_TIMER_SINK_WAIT_CAP
 [   19.874344] <   19.855>TCPC-PE-EVT:timer
 [   19.874344] <   19.855>TCPC-PE:PD -> SNK_HRESET (CUN)
@@ -1624,7 +1624,7 @@ drivers/misc/pax/tcpc/rt_pd_manager.c
 [   19.878868] rmt_storage:INFO:main: Done with init now waiting for messages!
 [   19.889979] servloc: service_locator_new_server: Connection established with the Service locator
 [   19.925339] servloc: init_service_locator: Service locator initialized
-[   19.948576] PAX_CHG_MP2721: tcpc_notifier_call sink vbus 9mV 0mA type(0x00)
+[   19.948576] xxx_CHG_MP2721: tcpc_notifier_call sink vbus 9mV 0mA type(0x00)
 [   19.960409] ///PD dbg info 534d
 [   19.963579] <   19.866>TCPC-TCPC:Alert:0x0050, Mask:0x230fff
 [   19.963579] <   19.866>TCPC-PE-EVT:hard_reset_done
@@ -1792,8 +1792,8 @@ int tcpci_event_init(struct tcpc_device *tcpc)
 
 让event_init_work延后5s启动，修改代码如下：
 ```diff
---- a/UM.9.15/kernel/msm-4.19/drivers/misc/pax/tcpc/tcpci_core.c
-+++ b/UM.9.15/kernel/msm-4.19/drivers/misc/pax/tcpc/tcpci_core.c
+--- a/UM.9.15/kernel/msm-4.19/drivers/misc/xxxxx/tcpc/tcpci_core.c
++++ b/UM.9.15/kernel/msm-4.19/drivers/misc/xxxxx/tcpc/tcpci_core.c
 @@ -450,7 +450,7 @@ static int tcpc_device_irq_enable(struct tcpc_device *tcpc)
         }
 
@@ -1820,12 +1820,12 @@ int tcpci_event_init(struct tcpc_device *tcpc)
 [Sun Apr 24 03:59:24 2022] ///PD dbg info 49d
 [Sun Apr 24 03:59:24 2022] <  358.989>TCPC-TCPC:Alert:0x0001, Mask:0x21067f
 [Sun Apr 24 03:59:24 2022] husb311_set_low_power_mode - write HUSB311_REG_BMC_CTRL=0x7
-[Sun Apr 24 03:59:25 2022] type=1400 audit(1650787517.160:502): avc: denied { write } for comm="paxservice" name="property_service" dev="tmpfs" ino=17854 scontext=u:r:paxservice:s0 tcontext=u:object_rrty_socket:s0 tclass=sock_file permissive=0
+[Sun Apr 24 03:59:25 2022] type=1400 audit(1650787517.160:502): avc: denied { write } for comm="xxxxxservice" name="property_service" dev="tmpfs" ino=17854 scontext=u:r:xxxxxservice:s0 tcontext=u:object_rrty_socket:s0 tclass=sock_file permissive=0
 [Sun Apr 24 03:59:25 2022] binder: 4402:4402 ioctl 40046210 7fe1c722c4 returned -22
 [Sun Apr 24 03:59:25 2022] binder: 4402:4402 transaction failed 29201/-1, size 0-0 line 3079
 ```
 
-换成展讯的代码后，将pax_charger和mp2721的typec监听去掉，能够识别U盘，挂载点如下`/mnt/media_rw/ACFA-F03A`:
+换成展讯的代码后，将xxxxx_charger和mp2721的typec监听去掉，能够识别U盘，挂载点如下`/mnt/media_rw/ACFA-F03A`:
 ```log
 Filesystem                 Size Used Avail Use% Mounted on
 tmpfs                      1.8G 1.5M  1.8G   1% /dev
@@ -1849,17 +1849,17 @@ tmpfs                      1.8G    0  1.8G   0% /data_mirror
 
 接入host打印如下：
 ```log
-[  387.012601] pax-pd-manager soc:pax_pd_manager: pd_tcp_notifier_call event = 10
-[  387.020017] pax-pd-manager soc:pax_pd_manager: pd_tcp_notifier_call sink vbus 0mV 0mA type(0x01)
-[  387.043015] pax-pd-manager soc:pax_pd_manager: pd_tcp_notifier_call event = 8
-[  387.050467] pax-pd-manager soc:pax_pd_manager: pd_tcp_notifier_call source vconn 1
-[  387.058466] pax-pd-manager soc:pax_pd_manager: pd_tcp_notifier_call - source vconn on 5v,gpio_26=high
-[  387.068166] pax-pd-manager soc:pax_pd_manager: pd_tcp_notifier_call event = 9
-[  387.075658] pax-pd-manager soc:pax_pd_manager: pd_tcp_notifier_call source vbus 5000mV
-[  387.083985] pax-pd-manager soc:pax_pd_manager: pd_tcp_notifier_call - source vbus 5v output
+[  387.012601] xxxxx-pd-manager soc:xxxxx_pd_manager: pd_tcp_notifier_call event = 10
+[  387.020017] xxxxx-pd-manager soc:xxxxx_pd_manager: pd_tcp_notifier_call sink vbus 0mV 0mA type(0x01)
+[  387.043015] xxxxx-pd-manager soc:xxxxx_pd_manager: pd_tcp_notifier_call event = 8
+[  387.050467] xxxxx-pd-manager soc:xxxxx_pd_manager: pd_tcp_notifier_call source vconn 1
+[  387.058466] xxxxx-pd-manager soc:xxxxx_pd_manager: pd_tcp_notifier_call - source vconn on 5v,gpio_26=high
+[  387.068166] xxxxx-pd-manager soc:xxxxx_pd_manager: pd_tcp_notifier_call event = 9
+[  387.075658] xxxxx-pd-manager soc:xxxxx_pd_manager: pd_tcp_notifier_call source vbus 5000mV
+[  387.083985] xxxxx-pd-manager soc:xxxxx_pd_manager: pd_tcp_notifier_call - source vbus 5v output
 [  387.092910] set vbus status: 1
-[  387.102915] pax-pd-manager soc:pax_pd_manager: pd_tcp_notifier_call event = 14
-[  387.110493] pax-pd-manager soc:pax_pd_manager: usb_dwork_handler Host
+[  387.102915] xxxxx-pd-manager soc:xxxxx_pd_manager: pd_tcp_notifier_call event = 14
+[  387.110493] xxxxx-pd-manager soc:xxxxx_pd_manager: usb_dwork_handler Host
 [  387.120926] extcon extcon6: extcon_set_state_sync id = 1 state = 0
 [  387.127345] extcon extcon6: extcon_set_state_sync state 1
 [  387.134522] extcon extcon6: extcon_set_state_sync id = 2 state = 1
@@ -1868,7 +1868,7 @@ tmpfs                      1.8G    0  1.8G   0% /data_mirror
 [  387.150962] extcon extcon6: extcon_sync state 2 index = 1
 [  387.150965] extcon extcon6: extcon_sync state 3
 [  387.151042] msm-qusb-phy 1613000.qusb: Got id notification: 1
-[  387.151063] extcon extcon6: name_show = NAME=soc:pax_pd_manager
+[  387.151063] extcon extcon6: name_show = NAME=soc:xxxxx_pd_manager
 [  387.151068] extcon extcon6: state_show = STATE=USB=0
 [  387.151068] USB-HOST=1
 [  387.151861] msm-qusb-phy 1613000.qusb: state: 0
@@ -1924,12 +1924,12 @@ tmpfs                      1.8G    0  1.8G   0% /data_mirror
 
 将展讯代码移植过来，也可以了：
 ```log
-[  160.270133] pax-pd-manager soc:pax_pd_manager: pd_tcp_notifier_call event = 9
-[  160.277810] pax-pd-manager soc:pax_pd_manager: pd_tcp_notifier_call source vbus 5000mV
-[  160.286290] pax-pd-manager soc:pax_pd_manager: pd_tcp_notifier_call - source vbus 5v output
+[  160.270133] xxxxx-pd-manager soc:xxxxx_pd_manager: pd_tcp_notifier_call event = 9
+[  160.277810] xxxxx-pd-manager soc:xxxxx_pd_manager: pd_tcp_notifier_call source vbus 5000mV
+[  160.286290] xxxxx-pd-manager soc:xxxxx_pd_manager: pd_tcp_notifier_call - source vbus 5v output
 [  160.295147] set vbus status: 1
-[  160.304888] pax-pd-manager soc:pax_pd_manager: pd_tcp_notifier_call event = 14
-[  160.313326] pax-pd-manager soc:pax_pd_manager: usb_dwork_handler Host
+[  160.304888] xxxxx-pd-manager soc:xxxxx_pd_manager: pd_tcp_notifier_call event = 14
+[  160.313326] xxxxx-pd-manager soc:xxxxx_pd_manager: usb_dwork_handler Host
 [  160.337793] extcon extcon2: extcon_set_state_sync id = 1 state = 0
 [  160.344268] extcon extcon2: extcon_set_state_sync state 1
 [  160.349867] extcon extcon2: extcon_set_state_sync id = 2 state = 1
@@ -1938,7 +1938,7 @@ tmpfs                      1.8G    0  1.8G   0% /data_mirror
 [  160.366443] extcon extcon2: extcon_sync state 2 index = 1
 [  160.372067] extcon extcon2: extcon_sync state 3
 [  160.376815] msm-qusb-phy 1613000.qusb: Got id notification: 1
-[  160.382756] extcon extcon2: name_show = NAME=soc:pax_pd_manager
+[  160.382756] extcon extcon2: name_show = NAME=soc:xxxxx_pd_manager
 [  160.388696] extcon extcon2: state_show = STATE=USB=0
 [  160.388696] USB-HOST=1
 [  160.396805] msm-qusb-phy 1613000.qusb: state: 0
@@ -1993,18 +1993,18 @@ tmpfs                      1.8G    0  1.8G   0% /data_mirror
 [  161.218836] msm-dwc3 4e00000.ssusb: set hs core clk rate 66666667
 ```
 
-发现是监听有问题，开了pax_charger的typec监听，device会挂，如下打印：
+发现是监听有问题，开了xxxxx_charger的typec监听，device会挂，如下打印：
 ```
-console:/ # [   34.703801] pax-pd-manager soc:pax_pd_manager: pd_tcp_notifier_call event = 12
-[   34.926579] pax-pd-manager soc:pax_pd_manager: pd_tcp_notifier_call event = 9
-[   34.933921] pax-pd-manager soc:pax_pd_manager: pd_tcp_notifier_call source vbus 0mV
-[   34.941712] pax-pd-manager soc:pax_pd_manager: pd_tcp_notifier_call - source vbus 0v output
+console:/ # [   34.703801] xxxxx-pd-manager soc:xxxxx_pd_manager: pd_tcp_notifier_call event = 12
+[   34.926579] xxxxx-pd-manager soc:xxxxx_pd_manager: pd_tcp_notifier_call event = 9
+[   34.933921] xxxxx-pd-manager soc:xxxxx_pd_manager: pd_tcp_notifier_call source vbus 0mV
+[   34.941712] xxxxx-pd-manager soc:xxxxx_pd_manager: pd_tcp_notifier_call - source vbus 0v output
 [   34.950134] set vbus status: 0
-[   35.051648] pax-pd-manager soc:pax_pd_manager: pd_tcp_notifier_call event = 10
-[   35.059146] pax-pd-manager soc:pax_pd_manager: pd_tcp_notifier_call sink vbus 5000mV 100mA type(0x01)
+[   35.051648] xxxxx-pd-manager soc:xxxxx_pd_manager: pd_tcp_notifier_call event = 10
+[   35.059146] xxxxx-pd-manager soc:xxxxx_pd_manager: pd_tcp_notifier_call sink vbus 5000mV 100mA type(0x01)
 ```
 
-查看监听函数，pax_pd_manager和都是监听了`TCP_NOTIFY_TYPE_ALL`，表示typec所有事件，怀疑是监听了`TCP_NOTIFY_TYPE_ALL`所有的，导致系统反应不过来，死机了，改为如下，现象还是一样的，难道是完全不能监听？
+查看监听函数，xxxxx_pd_manager和都是监听了`TCP_NOTIFY_TYPE_ALL`，表示typec所有事件，怀疑是监听了`TCP_NOTIFY_TYPE_ALL`所有的，导致系统反应不过来，死机了，改为如下，现象还是一样的，难道是完全不能监听？
 ```C++
 ret = register_tcp_dev_notifier(g_info->tcpc_dev, &g_info->tcpc_nb,TCP_NOTIFY_TYPE_ALL);
 改为：
@@ -2012,7 +2012,7 @@ ret = register_tcp_dev_notifier(g_info->tcpc_dev, &g_info->tcpc_nb,TCP_NOTIFY_TY
 	TCP_NOTIFY_TYPE_MISC);
 ```
 
-想了一下，貌似typec通知里面都不能做耗时操作，最好是创建工作队列来搞。刚刚在typec通知里面加入notify通知pax_charger，发现函数都不往下面跑了，如下：
+想了一下，貌似typec通知里面都不能做耗时操作，最好是创建工作队列来搞。刚刚在typec通知里面加入notify通知xxxxx_charger，发现函数都不往下面跑了，如下：
 ```C++
 static void set_charger_plug_status(int status)
 {
@@ -2054,8 +2054,8 @@ static void usb_dwork_handler(struct work_struct *work)
 #if 1
 	//int ret = 0;
 	struct delayed_work *dwork = to_delayed_work(work);
-	struct pax_pd_manager_data *rpmd =
-		container_of(dwork, struct pax_pd_manager_data, usb_dwork);
+	struct xxxxx_pd_manager_data *rpmd =
+		container_of(dwork, struct xxxxx_pd_manager_data, usb_dwork);
 	enum dr usb_dr = rpmd->usb_dr;
 	//union power_supply_propval val = {.intval = 0};
 
@@ -2113,18 +2113,18 @@ void handle_typec_attach_dettach(bool en)
 	mutex_lock(&g_info->attach_lock);
 	g_info->attach = en;
 	if (en) {
-		/* The thread notifies the pax charger that the device is connected */
+		/* The thread notifies the xxxxx charger that the device is connected */
 		//if (g_info->sink_mv_new > 5000) {
 			/* if the charging supports PD fast charging, turn off the OVP protection */
-			pax_charger_dev_enable_vbus_ovp(g_info->chg1_dev, false);
+			xxxxx_charger_dev_enable_vbus_ovp(g_info->chg1_dev, false);
 			g_info->pd_status = 1;
 			_wake_up_charger(g_info);
 		//}
 	}
 	else {
 		/* open ovp after device is disconnected */
-		pax_charger_dev_enable_otg(g_info->chg1_dev, true);
-		pax_charger_dev_enable_vbus_ovp(g_info->chg1_dev, true);
+		xxxxx_charger_dev_enable_otg(g_info->chg1_dev, true);
+		xxxxx_charger_dev_enable_vbus_ovp(g_info->chg1_dev, true);
 		g_info->pd_status = 0;
 		g_info->chr_type = POWER_SUPPLY_USB_TYPE_UNKNOWN;
 		val.intval = g_info->chr_type;
@@ -2251,8 +2251,8 @@ S - QC_IMAGE_VERSION_STRING=BOOT.XF.4.1-00343-KAMORTALAZ-1
 [    7.979103] pd_tcp_notifier_call event = SINK_VBUS
 [    7.979113] charger soc:charger: pd_tcp_notifier_call sink vbus 5000mV 3000mA type(0x01)
 [    7.979116] pd_tcp_notifier_call - sink vbus
-[    7.979131] PAX_CHG: psy_charger_set_property: prop:8 5000000
-[    7.979139] PAX_CHG: _wake_up_charger:
+[    7.979131] xxx_CHG: psy_charger_set_property: prop:8 5000000
+[    7.979139] xxx_CHG: _wake_up_charger:
 [    7.979163] pd_tcp_notifier_call event = TYPEC_STATE
 [    7.979167] tcpc_notifier_call, old_state = UNATTACHED, new_state = ATTACHED_SNK
 ```
@@ -2289,10 +2289,10 @@ S - QC_IMAGE_VERSION_STRING=BOOT.XF.4.1-00343-KAMORTALAZ-1
 [    8.015677] <    8.012>TCPC-TYPEC:** Attached.SNK
 [    8.020568] charger soc:charger: pd_tcp_notifier_call sink vbus 5000mV 3000mA type(0x01)
 [    8.038350] pd_tcp_notifier_call - sink vbus
-[    8.042743] PAX_CHG: psy_charger_set_property: prop:8 5000000
-[    8.048611] PAX_CHG: _wake_up_charger:
+[    8.042743] xxx_CHG: psy_charger_set_property: prop:8 5000000
+[    8.048611] xxx_CHG: _wake_up_charger:
 [    8.052446] pd_tcp_notifier_call event = TYPEC_STATE
-[    8.052469] PAX_CHG: Found primary charger
+[    8.052469] xxx_CHG: Found primary charger
 [    8.057449] tcpc_notifier_call, old_state = UNATTACHED, new_state = ATTACHED_SNK
 ```
 
@@ -2306,7 +2306,7 @@ static int husb311_tcpcdev_init(struct husb311_chip *chip, struct device *dev)
 			desc->role_def = TYPEC_ROLE_DRP;
 		else {
 			desc->role_def = val;
-			if (!pax_bat_exist_from_cmdline()) {
+			if (!xxxxx_bat_exist_from_cmdline()) {
 				dev_info(dev, "%s no bettery startup, role_def is sink!\n", __func__);
 				desc->role_def = TYPEC_ROLE_SNK - 1;
 			}
@@ -2354,10 +2354,10 @@ static int husb311_tcpcdev_init(struct husb311_chip *chip, struct device *dev)
 [    8.048300] pd_tcp_notifier_call event = SINK_VBUS
 [    8.053148] charger soc:charger: pd_tcp_notifier_call sink vbus 5000mV 3000mA type(0x01)
 [    8.061304] pd_tcp_notifier_call - sink vbus
-[    8.065635] PAX_CHG: psy_charger_set_property: prop:8 5000000
-[    8.071435] PAX_CHG: _wake_up_charger:
+[    8.065635] xxx_CHG: psy_charger_set_property: prop:8 5000000
+[    8.071435] xxx_CHG: _wake_up_charger:
 [    8.075260] pd_tcp_notifier_call event = TYPEC_STATE
-[    8.075283] PAX_CHG: Found primary charger
+[    8.075283] xxx_CHG: Found primary charger
 [    8.080294] tcpc_notifier_call, old_state = UNATTACHED, new_state = ATTACHED_SNK
 ```
 
@@ -2383,7 +2383,7 @@ static int husb311_tcpcdev_init(struct husb311_chip *chip, struct device *dev)
 [   18.325911] <   18.322>TCPC-PE:PD -> SNK_HRESET (CUN)
 [   18.325911] <   18.322>TCPC-PE:Send HARD Reset
 [   18.331407] i2c_geni 4a80000.i2c: i2c error :-107
-[   18.348816] PAX_CHG: psy_charger_set_property: prop:123 1
+[   18.348816] xxx_CHG: psy_charger_set_property: prop:123 1
 [   18.356562] ///PD dbg info 47d
 [   18.356840] pd_tcp_notifier_call event = PD_STATE
 [   18.359649] <   18.356>TCPC-TCPC:Alert:0x0050, Mask:0x0fff
@@ -2396,13 +2396,13 @@ Log Type: B - Since Boot(Power On Reset),  D - Delta,  S - Statistic
 
 问了A800工程师，说是无电池时不能进行硬复位操作`HARD Reset`，需要改成软复位，硬复位会让typec断一下电，那肯定不行，修改如下：
 ```diff
---- a/UM.9.15/kernel/msm-4.19/drivers/misc/pax/tcpc/pd_process_evt_snk.c
-+++ b/UM.9.15/kernel/msm-4.19/drivers/misc/pax/tcpc/pd_process_evt_snk.c
+--- a/UM.9.15/kernel/msm-4.19/drivers/misc/xxxxx/tcpc/pd_process_evt_snk.c
++++ b/UM.9.15/kernel/msm-4.19/drivers/misc/xxxxx/tcpc/pd_process_evt_snk.c
 @@ -18,6 +18,7 @@
  #include "inc/tcpci_event.h"
  #include "inc/pd_process_evt.h"
  #include "inc/tcpci_typec.h"
-+#include "paxpd-charger-manager.h"
++#include "xxxxxpd-charger-manager.h"
 
  /* PD Control MSG reactions */
 
@@ -2411,14 +2411,14 @@ Log Type: B - Since Boot(Power On Reset),  D - Delta,  S - Statistic
                 if ((pd_port->pe_state_curr != PE_SNK_DISCOVERY) &&
                         (pe_data->hard_reset_counter <= PD_HARD_RESET_COUNT)) {
 -                       PE_TRANSIT_STATE(pd_port, PE_SNK_HARD_RESET);
-+                       //[FEATURE]-Add-BEGIN by (wugangnan@paxsz.com), defaults to soft reset when no-battery-startup 2022/09/26
-+                       if (!pax_bat_exist_from_cmdline()) {
++                       //[FEATURE]-Add-BEGIN by (xxx@xxxxx.com), defaults to soft reset when no-battery-startup 2022/09/26
++                       if (!xxxxx_bat_exist_from_cmdline()) {
 +                               PE_TRANSIT_STATE(pd_port, PE_SNK_SEND_SOFT_RESET);
 +                       }
 +                       else {
 +                               PE_TRANSIT_STATE(pd_port, PE_SNK_HARD_RESET);
 +                       }
-+                       //[FEATURE]-Add-END by (wugangnan@paxsz.com), defaults to soft reset when no-battery-startup 2022/09/26
++                       //[FEATURE]-Add-END by (xxx@xxxxx.com), defaults to soft reset when no-battery-startup 2022/09/26
                         return true;
                 }
 ```
@@ -2437,7 +2437,7 @@ Log Type: B - Since Boot(Power On Reset),  D - Delta,  S - Statistic
 [   17.958474] <   17.928>TCPC-PE-E
 [   17.958477] VT:vbus_high
 [   17.958477] <   17.928>TCPC-PE:PD -> SNK_WAIT_CAP (CUN)
-[   18.300805] pax_bat_exist_from_cmdline = 0
+[   18.300805] xxxxx_bat_exist_from_cmdline = 0
 [   18.300812] ///PD dbg info 29d
 [   18.305213] i2c_geni 4a80000.i2c: i2c error :-107
 [   18.308119] <   18.300>TCPC-PE-EVT:timer
@@ -2455,29 +2455,29 @@ Log Type: B - Since Boot(Power On Reset),  D - Delta,  S - Statistic
 [   18.374812] 3>TCPC-TCPC:Alert:0x0004, Mask:0x0fff
 [   18.400139] ///PD dbg info 891d
 [   18.404511] pd_tcp_notifier_call - sink vbus
-[   18.404528] PAX_CHG: psy_charger_set_property: prop:8 9000000
-[   18.404536] PAX_CHG: _wake_up_charger:
-[   18.404578] PAX_CHG: psy_charger_get_property psp:122
-[   18.404587] PAX_CHG: psy_charger_set_property: prop:122 1
-[   18.404594] PAX_CHG: pd_status:1
-[   18.404601] PAX_CHG: _wake_up_charger:
-[   18.404611] PAX_CHG: psy_charger_set_property: prop:143 9000000
-[   18.404619] PAX_CHG: set pd_charging_voltage_max:9000 mv
-[   18.404621] PAX_CHG: pax_is_charger_on chr_type = [DCP] last_chr_type = [DCP]
-[   18.404626] PAX_CHG: _wake_up_charger:
-[   18.404635] PAX_CHG: psy_charger_set_property: prop:124 277000
-[   18.404637] PAX_CHG: [SW_JEITA] Battery Normal Temperature between 10 and 45 !!
-[   18.404643] PAX_CHG: set pd_charging_current_max:277 ma
-[   18.404646] PAX_CHG: [SW_JEITA]preState:3 newState:3 tmp:25 cv:0
-[   18.404650] PAX_CHG: _wake_up_charger:
-[   18.404656] PAX_CHG: tmp:25 (jeita:1 sm:3 cv:0 en:1) (sm:1) en:1 c:0 s:0 ov:0 1 1
-[   18.412582] PAX_CHG: support_fast_charging = 1
-[   18.412595] PAX_CHG: chg:-1,-1,2000,3000 type:5:0 usb_unlimited:0 usbif:0 usbsm:0 aicl:-1 atm:0 bm:0 b:0
-[   18.412603] PAX_CHG: support pd charger do_algorithm input_current_limit:2000 charging_current_limit:4080
-[   18.422905] PAX_CHG_MP2721: reg :1  read data:0x13
-[   18.428458] PAX_CHG_MP2721: reg :1  write data:0x13
-[   18.428469] PAX_CHG_MP2721: ==mp2721_set_ichg, chg_chr=4080 mA
-[   18.434877] PAX_CHG_MP2721: reg :2  read data:0xf3
+[   18.404528] xxx_CHG: psy_charger_set_property: prop:8 9000000
+[   18.404536] xxx_CHG: _wake_up_charger:
+[   18.404578] xxx_CHG: psy_charger_get_property psp:122
+[   18.404587] xxx_CHG: psy_charger_set_property: prop:122 1
+[   18.404594] xxx_CHG: pd_status:1
+[   18.404601] xxx_CHG: _wake_up_charger:
+[   18.404611] xxx_CHG: psy_charger_set_property: prop:143 9000000
+[   18.404619] xxx_CHG: set pd_charging_voltage_max:9000 mv
+[   18.404621] xxx_CHG: xxxxx_is_charger_on chr_type = [DCP] last_chr_type = [DCP]
+[   18.404626] xxx_CHG: _wake_up_charger:
+[   18.404635] xxx_CHG: psy_charger_set_property: prop:124 277000
+[   18.404637] xxx_CHG: [SW_JEITA] Battery Normal Temperature between 10 and 45 !!
+[   18.404643] xxx_CHG: set pd_charging_current_max:277 ma
+[   18.404646] xxx_CHG: [SW_JEITA]preState:3 newState:3 tmp:25 cv:0
+[   18.404650] xxx_CHG: _wake_up_charger:
+[   18.404656] xxx_CHG: tmp:25 (jeita:1 sm:3 cv:0 en:1) (sm:1) en:1 c:0 s:0 ov:0 1 1
+[   18.412582] xxx_CHG: support_fast_charging = 1
+[   18.412595] xxx_CHG: chg:-1,-1,2000,3000 type:5:0 usb_unlimited:0 usbif:0 usbsm:0 aicl:-1 atm:0 bm:0 b:0
+[   18.412603] xxx_CHG: support pd charger do_algorithm input_current_limit:2000 charging_current_limit:4080
+[   18.422905] xxx_CHG_MP2721: reg :1  read data:0x13
+[   18.428458] xxx_CHG_MP2721: reg :1  write data:0x13
+[   18.428469] xxx_CHG_MP2721: ==mp2721_set_ichg, chg_chr=4080 mA
+[   18.434877] xxx_CHG_MP2721: reg :2  read data:0xf3
 [   18.438325] <   18.344>TCPC-PE-EVT:src_cap
 [   18.438325] <   18.344>TCPC-PE:PD -> SNK_EVA_CAP (CUN)
 [   18.438325] <   18.344>TCPC-PE:pd_rev=2
@@ -2487,7 +2487,7 @@ Log Type: B - Since Boot(Power On Reset),  D - Delta,  S - Statistic
 [   18.438328] <   18.344>TCPC-DPM:SrcCap2: 0x0002d0c8
 [   18.438328] <   18.344>TCPC-DPM:SrcCap3: 0x0003c096
 [   18.438328] <
-[   18.442080] PAX_CHG_MP2721: reg :2  write data:0xf3
+[   18.442080] xxx_CHG_MP2721: reg :2  write data:0xf3
 [   18.447899]   18.344>TCPC-DPM:EvaSinkCap1
 [   18.447899] <   18.344>TCPC-DPM:Find SrcCap1(Match):10000 mw
 [   18.447899] <   18.344>TCPC-DPM:EvaSinkCap2
@@ -2509,24 +2509,24 @@ Log Type: B - Since Boot(Power On Reset),  D - Delta,  S - Statistic
 [   18.447913] <   18.353>TCPC-PE:pd_set_vconn:0
 [   18.447913] <   18.353>TCPC-TCPC:sink_vbus: 9000 mV, 277 mA
 [   18.511345] ///PD dbg info 47d
-[   18.514392] PAX_CHG_MP2721: reg :5  write data:0x1f
+[   18.514392] xxx_CHG_MP2721: reg :5  write data:0x1f
 [   18.523965] <   18.511>TCPC-TCPC:Alert:0x0004, Mask:0x0fff
 [   18.524034] pd_tcp_notifier_call event = SINK_VBUS
 [   18.524073] charger soc:charger: pd_tcp_notifier_call sink vbus 9000mV 2000mA type(0x84)
 [   18.524076] pd_tcp_notifier_call - sink vbus
-[   18.524200] PAX_CHG: psy_charger_set_property: prop:8 9000000
-[   18.524209] PAX_CHG: _wake_up_charger:
-[   18.524220] PAX_CHG: psy_charger_get_property psp:122
-[   18.524228] PAX_CHG: psy_charger_set_property: prop:144 9000000
-[   18.524237] PAX_CHG: psy_charger_set_property: prop:143 9000000
-[   18.524245] PAX_CHG: set pd_charging_voltage_max:9000 mv
-[   18.524252] PAX_CHG: _wake_up_charger:
-[   18.524261] PAX_CHG: psy_charger_set_property: prop:124 2000000
-[   18.524268] PAX_CHG: set pd_charging_current_max:2000 ma
-[   18.524276] PAX_CHG: _wake_up_charger:
+[   18.524200] xxx_CHG: psy_charger_set_property: prop:8 9000000
+[   18.524209] xxx_CHG: _wake_up_charger:
+[   18.524220] xxx_CHG: psy_charger_get_property psp:122
+[   18.524228] xxx_CHG: psy_charger_set_property: prop:144 9000000
+[   18.524237] xxx_CHG: psy_charger_set_property: prop:143 9000000
+[   18.524245] xxx_CHG: set pd_charging_voltage_max:9000 mv
+[   18.524252] xxx_CHG: _wake_up_charger:
+[   18.524261] xxx_CHG: psy_charger_set_property: prop:124 2000000
+[   18.524268] xxx_CHG: set pd_charging_current_max:2000 ma
+[   18.524276] xxx_CHG: _wake_up_charger:
 [   18.531799] chg_dump: CHG [online: 1, type: DCP, status: Charging, fault: 0x20, ICHG = 4080mA, AICR = 2000mA, MIVR = 4360mV, IEOC = 240mA, CV = 4375mV]
 [   18.564114] ///PD dbg info 120d
-[   18.579627] PAX_CHG: charger_routine_thread end , 1
+[   18.579627] xxx_CHG: charger_routine_thread end , 1
 [   18.584521] <   18.523>TCPC-PE-EVT:ps_rdy
 [   18.584521] <   18.523>TCPC-TCPC:sink_vbus: 9000 mV, 2000 mA
 [   18.584521] <   18.523>TCPC-PE:PD -> SNK_READY (CUN)

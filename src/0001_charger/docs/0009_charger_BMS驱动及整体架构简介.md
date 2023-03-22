@@ -20,9 +20,9 @@ BMS功能介绍
 
 上图是BMS新的架构图，注意以下几点：
 * 1. `mSystemServiceManager.startService`方法主要就是调用service的onstart方法。
-* 2. `ServiceManager.addService("paxbms", mPaxBmsService)`方法是将服务加入到binder，作为binder sercice。
+* 2. `ServiceManager.addService("xxxxxbms", mPaxBmsService)`方法是将服务加入到binder，作为binder sercice。
 * 3. `PaxBmsService`是`binder server`端，`PaxBmsManager`是服务于`PaxBmsService`的`binder client`端，并给外部提供接口的。
-* 4. `PaxBmsManager`调用方式一般都是在`SystemServiceRegistry.java`中先注册一个静态系统服务(不是四大件中的服务)，应用通过`getSystemService(Context.PAXBMS_SERVICE)`调用，两个函数就是put和get操作。
+* 4. `PaxBmsManager`调用方式一般都是在`SystemServiceRegistry.java`中先注册一个静态系统服务(不是四大件中的服务)，应用通过`getSystemService(Context.xxxBMS_SERVICE)`调用，两个函数就是put和get操作。
 
 * `base/services/java/com/android/server/SystemServer.java`第一点说明:
 ```java
@@ -115,12 +115,12 @@ base/services/core/java/com/android/server/SystemServiceManager.java：
 * `base/core/java/android/app/SystemServiceRegistry.java`第四点说明，可以看到以下通过put和get调用:
 
 ```java
-                registerService(Context.PAXBMS_SERVICE, PaxBmsManager.class,
+                registerService(Context.xxxBMS_SERVICE, PaxBmsManager.class,
                 new CachedServiceFetcher<PaxBmsManager>() {
                     @Override
                     public PaxBmsManager createService(ContextImpl ctx)
                             throws ServiceNotFoundException {
-                        /*IBinder b = ServiceManager.getService("paxbms");
+                        /*IBinder b = ServiceManager.getService("xxxxxbms");
                         IPaxBms service = IPaxBms.Stub.asInterface(b);*/
                         return PaxBmsManager.getInstance();
                     }});
@@ -164,7 +164,7 @@ public static final String EXTRA_MANUFACTURER = "android.os.extra.MANUFACTURER";
 public static final String EXTRA_SERIAL_NUMBER = "android.os.extra.SERIAL_NUMBER";                 //电池序列号
 ```
 Healthd是对接power supply 驱动的hal层实现，主要是监听power supply 驱动通过uevent上报的事件，并将power supply信息分发给framework层BatteryService
-下面的表格为pax要提供power supply信息。
+下面的表格为xxxxx要提供power supply信息。
 
 
 类型 |	节点	| 值类型	| 单位
@@ -197,19 +197,19 @@ Healthd是对接power supply 驱动的hal层实现，主要是监听power supply
 PaxBmsService.java和PaxBatteryManagerService.java都是系统服务，都是在`system_server`里面，区别就是PaxBatteryManagerService.java跑了onstart方法。
 关联文件：
 ```
-frameworks/base/services/core/java/com/android/server/paxbms/OWNERS
+frameworks/base/services/core/java/com/android/server/xxxxxbms/OWNERS
 frameworks/base/core/java/android/app/PaxBmsManager.java //代理PaxBmsService方法，供PaxBatteryManagerService调用
-frameworks/base/services/core/java/com/android/server/paxbms/PaxBmsService.java //system bms service 主要实现打开/关闭 充电及power path功能
-frameworks/base/services/core/java/com/pax/server/BatteryTermInfo.java
-frameworks/base/services/core/java/com/pax/server/DatabaseHelper.java
-frameworks/base/services/core/java/com/pax/server/PaxBatteryManagerService.java //system BatteryManager service 
-frameworks/base/services/core/java/com/pax/util/OsPaxApiInternal.java
-frameworks/base/services/core/jni/com_android_server_paxbms_PaxBmsService.cpp //jni封装
+frameworks/base/services/core/java/com/android/server/xxxxxbms/PaxBmsService.java //system bms service 主要实现打开/关闭 充电及power path功能
+frameworks/base/services/core/java/com/xxxxx/server/BatteryTermInfo.java
+frameworks/base/services/core/java/com/xxxxx/server/DatabaseHelper.java
+frameworks/base/services/core/java/com/xxxxx/server/PaxBatteryManagerService.java //system BatteryManager service 
+frameworks/base/services/core/java/com/xxxxx/util/OsPaxApiInternal.java
+frameworks/base/services/core/jni/com_android_server_xxxxxbms_PaxBmsService.cpp //jni封装
 ```
 
 接口定义：
 ```java
-frameworks/base/services/core/java/com/android/server/paxbms/PaxBmsService.java:
+frameworks/base/services/core/java/com/android/server/xxxxxbms/PaxBmsService.java:
     static native void enableCharge_native();
     static native void disableCharge_native();
     static native void enablePowerPath_native();
@@ -287,7 +287,7 @@ BMS记录设备连接电源线及关机的状态和时间，保存在/data/syste
 
 # 三、异常信息广播APP batterywarning
 
-广播通知节点改为`/sys/class/pax/bms/bms_notify`：
+广播通知节点改为`/sys/class/xxxxx/bms/bms_notify`：
 
 ```diff
 --- a/device/mediatek/sepolicy/bsp/plat_private/genfs_contexts
@@ -296,7 +296,7 @@ BMS记录设备连接电源线及关机的状态和时间，保存在/data/syste
  #path="/sys/devices/platform/(charger|mt-battery)/BatteryNotify"
  genfscon sysfs /devices/platform/charger/BatteryNotify u:object_r:sysfs_battery_warning:s0
  genfscon sysfs /devices/platform/mt-battery/BatteryNotify u:object_r:sysfs_battery_warning:s0
-+genfscon sysfs /devices/platform/pax_bms/pax/bms/bms_notify u:object_r:sysfs_battery_warning:s0
++genfscon sysfs /devices/platform/xxxxx_bms/xxxxx/bms/bms_notify u:object_r:sysfs_battery_warning:s0
 
  # Purpose : Camera need read cl_cam_status
  # Package: com.mediatek.camera
@@ -312,7 +312,7 @@ index d4bae84dee9..434e2b197c2 100644
 -    "/sys/devices/platform/mt-battery/BatteryNotify",
 +    //"/sys/devices/platform/charger/BatteryNotify",
 +    //"/sys/devices/platform/mt-battery/BatteryNotify",
-+       "/sys/class/pax/bms/bms_notify",
++       "/sys/class/xxxxx/bms/bms_notify",
  };
 
  static int read_from_file(const char* path) {
@@ -370,7 +370,7 @@ index d4bae84dee9..434e2b197c2 100644
 }
 ```
 
-* 异常状态上报是通过uevent时间上报，上层通过epoll检测到并查看`/sys/class/pax/bms/bms_notify`节点设置值，判断是哪种异常并发送广播上报给App处理：
+* 异常状态上报是通过uevent时间上报，上层通过epoll检测到并查看`/sys/class/xxxxx/bms/bms_notify`节点设置值，判断是哪种异常并发送广播上报给App处理：
 
 ```C++
 bms_notify格式，数字表示第几个bit：
@@ -576,8 +576,8 @@ int bms_thermal_check(struct bms_data *data)
 //#define FILE_NAME "/sys/devices/platform/mt-battery/BatteryNotify"
 //#endif
 //M: @}
-#define ACTION "pax.intent.action.BATTERY_ABNORMAL"
-#define NORMAL_ACTION "pax.intent.action.BATTERY_NORMAL"
+#define ACTION "xxxxx.intent.action.BATTERY_ABNORMAL"
+#define NORMAL_ACTION "xxxxx.intent.action.BATTERY_NORMAL"
 #define TYPE "type"
 #define ARRAY_SIZE(a) (sizeof (a) / sizeof ((a)[0]))
 using namespace android;
@@ -658,7 +658,7 @@ bool sendBroadcastMessage(String8 action, int value)
 static const char *charger_file_path[] = {
     //"/sys/devices/platform/charger/BatteryNotify",
     //"/sys/devices/platform/mt-battery/BatteryNotify",
-        "/sys/class/pax/bms/bms_notify",
+        "/sys/class/xxxxx/bms/bms_notify",
 };
 
 static int read_from_file(const char* path) {
@@ -915,21 +915,21 @@ bool sendBroadcastMessage(String8 action, int value)
 
 ## 4.batterywarning java应用异常处理
 
-目前BMS要求只要低温、高温、低压关机报警功能，首先看看接收异常广播`pax.intent.action.BATTERY_ABNORMAL`入口，主要完成以下事情：
-  * 1. 接收`pax.intent.action.BATTERY_ABNORMAL`异常广播，上传的type都是向左移位的，所以需要将原始的tpye根据公式`Math.log`求2的对数的解析出来。
+目前BMS要求只要低温、高温、低压关机报警功能，首先看看接收异常广播`xxxxx.intent.action.BATTERY_ABNORMAL`入口，主要完成以下事情：
+  * 1. 接收`xxxxx.intent.action.BATTERY_ABNORMAL`异常广播，上传的type都是向左移位的，所以需要将原始的tpye根据公式`Math.log`求2的对数的解析出来。
   * 2. 将type值用intent传到`BatteryWarningToShutdown`的activity中进行处理。
-* `QSSI.12/packages/apps/BatteryWarning/src/com/pax/batterywarning/BatteryWarningReceiver.java`:
+* `QSSI.12/packages/apps/BatteryWarning/src/com/xxxxx/batterywarning/BatteryWarningReceiver.java`:
 ```java
 public class BatteryWarningReceiver extends BroadcastReceiver {
      // private static final String ACTION_IPO_BOOT = "android.intent.action.ACTION_BOOT_IPO";
-    private static final String ACTION_BATTERY_WARNING = "pax.intent.action.BATTERY_ABNORMAL";
-    private static final String ACTION_BATTERY_NORMAL = "pax.intent.action.BATTERY_NORMAL";
+    private static final String ACTION_BATTERY_WARNING = "xxxxx.intent.action.BATTERY_ABNORMAL";
+    private static final String ACTION_BATTERY_NORMAL = "xxxxx.intent.action.BATTERY_NORMAL";
     private static final String TAG = "BatteryWarningReceiver";
     private static final String SHARED_PREFERENCES_NAME = "battery_warning_settings";
     private Context mContext;
 
     // Thermal over temperature
-    private static final String ACTION_THERMAL_WARNING = "pax.intent.action.THERMAL_DIAG";
+    private static final String ACTION_THERMAL_WARNING = "xxxxx.intent.action.THERMAL_DIAG";
 
    public void onReceive(Context context, Intent intent) {
         mContext = context;
@@ -946,9 +946,9 @@ public class BatteryWarningReceiver extends BroadcastReceiver {
             Log.d(TAG, "type = " + type);
             type = (int) (Math.log(type) / Math.log(2));
             Log.d(TAG, "type = " + type);
-            if(type == BatteryWarningToShutdown.PAX_BAT_NC_UV | 
-			   type == BatteryWarningToShutdown.PAX_BAT_LOW_TEMP | 
-			   type == BatteryWarningToShutdown.PAX_BAT_HIGH_TEMP){
+            if(type == BatteryWarningToShutdown.xxx_BAT_NC_UV | 
+			   type == BatteryWarningToShutdown.xxx_BAT_LOW_TEMP | 
+			   type == BatteryWarningToShutdown.xxx_BAT_HIGH_TEMP){
                 ShowBatteryWaringToShutdownDialog(type);
             }
         }
@@ -970,16 +970,16 @@ public class BatteryWarningReceiver extends BroadcastReceiver {
 * 处理异常如下：
   * 1. `onCreate`接收到type值，调用弹框`showVoltageUnderWarningDialog`，这里启动10s定时器，并监听`BatteryManager.EXTRA_PLUGGED`广播，拔出usb则关闭定时器。
   * 2. 定时器中发送给handleMessage刷新弹框倒计时时间，mShutDownTime--为0时则关机。
-* `QSSI.12/packages/apps/BatteryWarning/src/com/pax/batterywarning/BatteryWarningToShutdown.java`:
+* `QSSI.12/packages/apps/BatteryWarning/src/com/xxxxx/batterywarning/BatteryWarningToShutdown.java`:
 ```java
 public class BatteryWarningToShutdown extends Activity {
     private static final String TAG = "BatteryWarningToShutdown";
     protected static final String KEY_TYPE = "type";
     private static final Uri WARNING_SOUND_URI = Uri.parse("file:///system/media/audio/ui/VideoRecord.ogg");
 
-    protected static final int PAX_BAT_NC_UV = 18;  //under voltage,power off
-    protected static final int PAX_BAT_LOW_TEMP = 5;  //under temp,power off
-	 protected static final int PAX_BAT_HIGH_TEMP = 1;  //over temp,power off
+    protected static final int xxx_BAT_NC_UV = 18;  //under voltage,power off
+    protected static final int xxx_BAT_LOW_TEMP = 5;  //under temp,power off
+	 protected static final int xxx_BAT_HIGH_TEMP = 1;  //over temp,power off
 
     private Handler mHandler  = new Handler(){
         public void handleMessage(Message msg) {
@@ -987,24 +987,24 @@ public class BatteryWarningToShutdown extends Activity {
             if(msg.what == 1){
                 mShutDownTime--;
                 if(mShutDownTime == 0){
-                    mContent.setText(getString(R.string.pax_shutdown_now_text));
+                    mContent.setText(getString(R.string.xxxxx_shutdown_now_text));
                     mTimer.cancel();
                     stopRingtone();
                     try{
-                        Log.d(TAG, "pax under voltage will shutdown");
+                        Log.d(TAG, "xxxxx under voltage will shutdown");
                         IPowerManager pm = IPowerManager.Stub.asInterface(
                             ServiceManager.getService(Context.POWER_SERVICE));
                         pm.shutdown(false, "under voltage", false);
                     }catch(RemoteException e){
-                        Log.d(TAG, "pax battery under voltage shutdown fail.");
+                        Log.d(TAG, "xxxxx battery under voltage shutdown fail.");
                         e.printStackTrace();
                     }
                 } else {
-					if (mType == PAX_BAT_LOW_TEMP) {
-						mContent.setText(getString(R.string.pax_low_temp_shutdown_time_text, mShutDownTime));
+					if (mType == xxx_BAT_LOW_TEMP) {
+						mContent.setText(getString(R.string.xxxxx_low_temp_shutdown_time_text, mShutDownTime));
 					}
 					else {
-						mContent.setText(getString(R.string.pax_high_temp_shutdown_time_text, mShutDownTime));
+						mContent.setText(getString(R.string.xxxxx_high_temp_shutdown_time_text, mShutDownTime));
 					}
                 }
             }
@@ -1045,16 +1045,16 @@ public class BatteryWarningToShutdown extends Activity {
         Log.d(TAG, "onCreate, mType is " + mType);
 
         requestWindowFeature(Window.FEATURE_NO_TITLE);
-        setContentView(R.layout.pax_battery_notify_warning);
+        setContentView(R.layout.xxxxx_battery_notify_warning);
 
         mTitleView = (TextView) findViewById(R.id.title);
         mContent = (TextView) findViewById(R.id.content);
         mYesButton = (Button) findViewById(R.id.yes);
-        if(mType == PAX_BAT_NC_UV){
+        if(mType == xxx_BAT_NC_UV){
             showVoltageUnderWarningDialog();
-        } if(mType == PAX_BAT_LOW_TEMP){
+        } if(mType == xxx_BAT_LOW_TEMP){
             showTempLowWarningDialog();
-        } else if(mType == PAX_BAT_HIGH_TEMP){
+        } else if(mType == xxx_BAT_HIGH_TEMP){
 			showTempHighWarningDialog();
 		}
 		else {
@@ -1064,8 +1064,8 @@ public class BatteryWarningToShutdown extends Activity {
 
     private void showVoltageUnderWarningDialog() {
         mShutDownTime = 10;
-        mTitleView.setText(R.string.pax_battery_voltage_under);
-        mContent.setText(getString(R.string.pax_shutdown_time_text, mShutDownTime));
+        mTitleView.setText(R.string.xxxxx_battery_voltage_under);
+        mContent.setText(getString(R.string.xxxxx_shutdown_time_text, mShutDownTime));
 
         mYesButton.setText(getString(android.R.string.yes));
         mYesButton.setOnClickListener(mYesListener);
@@ -1081,26 +1081,26 @@ public class BatteryWarningToShutdown extends Activity {
 
 流程如下：
   * 1. 底层bms轮询12次过温现象，发送过温code给上层batterywarning，启动notify_code: 0x2。
-  * 2. batterywarning发送pax.intent.action.BATTERY_ABNORMAL广播给到BatteryWarning应用，其中type值为2。
+  * 2. batterywarning发送xxxxx.intent.action.BATTERY_ABNORMAL广播给到BatteryWarning应用，其中type值为2。
   * 3. BatteryWarningReceiver接收到广播并解析弹框。
 ```shell
 #define NC_BAT_OT				(1)
 bms.c:
-[  510.675050] PAX_BMS:temp: 610, max_bat_temp: 600, out of range.
-[  510.681010] PAX_BMS:notify_code: 0x1
-[  510.684771] PAX_BMS:type: NC_BAT_OT, set: 1, notify_code: 0x2
+[  510.675050] xxx_BMS:temp: 610, max_bat_temp: 600, out of range.
+[  510.681010] xxx_BMS:notify_code: 0x1
+[  510.684771] xxx_BMS:type: NC_BAT_OT, set: 1, notify_code: 0x2
 
 batterywarning.cpp:
 android:/ # logcat -s batterywarning
 --------- beginning of main
 11-08 14:08:55.076  2850  2850 D batterywarning: Inside file_index value : 0
 11-08 14:08:55.077  2850  2850 D batterywarning: start activity by send intent to BatteryWarningReceiver, type = 2
-11-08 14:08:55.077  2850  2850 D batterywarning: sendBroadcastMessage(): Action: pax.intent.action.BATTERY_ABNORMAL, Value: 2
+11-08 14:08:55.077  2850  2850 D batterywarning: sendBroadcastMessage(): Action: xxxxx.intent.action.BATTERY_ABNORMAL, Value: 2
 
-C:\Users\wugangnan>adb logcat -s BatteryWarningReceiver
+C:\Users\xxx>adb logcat -s BatteryWarningReceiver
 --------- beginning of main
-11-08 14:08:55.094  3622  3622 D BatteryWarningReceiver: action = pax.intent.action.BATTERY_ABNORMAL
-11-08 14:08:55.095  3622  3622 D BatteryWarningReceiver: pax.intent.action.BATTERY_ABNORMAL start activity according to shared preference
+11-08 14:08:55.094  3622  3622 D BatteryWarningReceiver: action = xxxxx.intent.action.BATTERY_ABNORMAL
+11-08 14:08:55.095  3622  3622 D BatteryWarningReceiver: xxxxx.intent.action.BATTERY_ABNORMAL start activity according to shared preference
 11-08 14:08:55.095  3622  3622 D BatteryWarningReceiver: type = 2
 11-08 14:08:55.095  3622  3622 D BatteryWarningReceiver: type = 1 //换算成2 << 1
 ```
@@ -1111,16 +1111,16 @@ C:\Users\wugangnan>adb logcat -s BatteryWarningReceiver
 
 驱动层发送uevent事件没问题，使用binder调用函数`broadcastIntent`报错如下：
 ```
-130|A6650:/ # logcat -s batterywarning
+130|A665x:/ # logcat -s batterywarning
 --------- beginning of main
 09-30 03:47:31.892  3117  3117 D batterywarning: Inside file_index value : 0
 09-30 03:47:31.892  3117  3117 D batterywarning: start activity by send intent to BatteryWarningReceiver to remove notification, type = 0
-09-30 03:47:31.892  3117  3117 D batterywarning: sendBroadcastMessage(): Action: pax.intent.action.BATTERY_NORMAL, Value: 0
-09-30 03:47:31.911  3117  3117 E batterywarning: sendBroadcastMessage(pax.intent.action.BATTERY_NORMAL) caught exception -129
+09-30 03:47:31.892  3117  3117 D batterywarning: sendBroadcastMessage(): Action: xxxxx.intent.action.BATTERY_NORMAL, Value: 0
+09-30 03:47:31.911  3117  3117 E batterywarning: sendBroadcastMessage(xxxxx.intent.action.BATTERY_NORMAL) caught exception -129
 09-30 03:47:48.083  3117  3117 D batterywarning: Inside file_index value : 0
 09-30 03:47:48.084  3117  3117 D batterywarning: start activity by send intent to BatteryWarningReceiver, type = 262144
-09-30 03:47:48.084  3117  3117 D batterywarning: sendBroadcastMessage(): Action: pax.intent.action.BATTERY_ABNORMAL, Value: 262144
-09-30 03:47:48.089  3117  3117 E batterywarning: sendBroadcastMessage(pax.intent.action.BATTERY_ABNORMAL) caught exception -129
+09-30 03:47:48.084  3117  3117 D batterywarning: sendBroadcastMessage(): Action: xxxxx.intent.action.BATTERY_ABNORMAL, Value: 262144
+09-30 03:47:48.089  3117  3117 E batterywarning: sendBroadcastMessage(xxxxx.intent.action.BATTERY_ABNORMAL) caught exception -129
 ```
 
 * `frameworks/base/core/java/android/app/IActivityManager.aidl`函数参数没变一样：
@@ -1147,7 +1147,7 @@ int broadcastIntent(in IApplicationThread caller, in Intent intent,
 
 实现原理是休眠时根据整机底电流`suspend_current_ua`计算整机能运行最大时长`secs`，启动唤醒定时器进行唤醒。
 ```C++
-static enum alarmtimer_restart pax_battery_alarm_func(struct alarm *alarm, ktime_t ktime)
+static enum alarmtimer_restart xxxxx_battery_alarm_func(struct alarm *alarm, ktime_t ktime)
 {
 	pr_info("%s: enter\n", __func__);
 	__pm_wakeup_event(g_bms_data.bms_ws, 1000);
@@ -1213,8 +1213,8 @@ static int bms_resume(struct platform_device *pdev)
 }
 ```
 
-```shell
-[ 3850.395822] PAX_CHG: charger_pm_event: enter PM_SUSPEND_PREPARE //进入休眠
+```log
+[ 3850.395822] xxx_CHG: charger_pm_event: enter PM_SUSPEND_PREPARE //进入休眠
 [ 3850.401988] Freezing user space processes ...
 [ 3850.403149] i2c_read: err wakeup of wq
 [ 3850.414895] (elapsed 0.012 seconds) done.
@@ -1224,10 +1224,10 @@ static int bms_resume(struct platform_device *pdev)
 [ 3850.447211] ILITEK: (ilitek_tp_pm_suspend, 765): CALL BACK TP PM SUSPEND
 [ 3850.460164] [Binder][0x295c2a685fe][03:18:30.189330] wlan: [4077:I:HDD] __wlan_hdd_bus_suspend: 1035: starting bus suspend
 [ 3850.464172] ======sp_cat_tp_suspend 336
-[ 3850.464189] [pax_authinfo]: gpio_sleep_sp, en=1
+[ 3850.464189] [xxxxx_authinfo]: gpio_sleep_sp, en=1
 [ 3850.464189]
-[ 3850.464219] PAX_BMS:bms_suspend. secs = 300 //计算resume时间为300s
-[ 3850.464253] pax_base_detect_suspend
+[ 3850.464219] xxx_BMS:bms_suspend. secs = 300 //计算resume时间为300s
+[ 3850.464253] xxxxx_base_detect_suspend
 [ 3850.587708] Disabling non-boot CPUs ...
 [ 3850.588992] CPU1: shutdown
 [ 3850.590215] psci: CPU1 killed (polled 0 ms)
@@ -1253,8 +1253,8 @@ static int bms_resume(struct platform_device *pdev)
 [ 3850.603122] arch_timer: CPU3: Trapping CNTVCT access
 [ 3850.603178] CPU3: Booted secondary processor 0x0000000003 [0x51af8014]
 [ 3850.604146] CPU3 is up
-[ 3850.721789] pax_base_detect_resume
-[ 3850.722653] PAX_BAT: pax_battery_resume: pre_soc: 4 soc: 4 //唤醒时电量为4%
+[ 3850.721789] xxxxx_base_detect_resume
+[ 3850.722653] xxx_BAT: xxxxx_battery_resume: pre_soc: 4 soc: 4 //唤醒时电量为4%
 [ 3850.723752] ///PD dbg info 127d
 [ 3850.723758] < 3850.723>TCPC-TCPC:bat_update_work_func battery update soc = 4
 [ 3850.723758] < 3850.723>TCPC-TCPC:bat_update_work_func Battery Discharging
@@ -1265,7 +1265,7 @@ static int bms_resume(struct platform_device *pdev)
 [ 3850.730450] ILITEK: (drm_notifier_callback, 471): DRM event:1,blank:3
 [ 3850.730453] ILITEK: (drm_notifier_callback, 492): DRM BLANK(3) do not need process
 [ 3850.731232] ILITEK: (ilitek_tp_pm_resume, 779): CALL BACK TP PM RESUME
-[ 3850.794730] PAX_BAT: [status:Discharging, health:Good, present:1, tech:Li-ion, capcity:4,cap_rm:152 mah, vol:3567 mv, temp:29, curr:-60 ma, ui_soc:4]
+[ 3850.794730] xxx_BAT: [status:Discharging, health:Good, present:1, tech:Li-ion, capcity:4,cap_rm:152 mah, vol:3567 mv, temp:29, curr:-60 ma, ui_soc:4]
 [ 3850.795842] ///PD dbg info 127d
 [ 3850.799272] OOM killer enabled.
 [ 3850.799275] Restarting tasks ... done.
@@ -1273,7 +1273,7 @@ static int bms_resume(struct platform_device *pdev)
 [ 3850.829577] thermal thermal_zone26: failed to read out thermal zone (-61)
 [ 3850.838820] < 3850.795>TCPC-TCPC:bat_update_work_func battery update soc = 4
 [ 3850.838820] < 3850.795>TCPC-TCPC:bat_update_work_func Battery Discharging
-[ 3850.842930] PAX_CHG: charger_pm_event: enter PM_POST_SUSPEND
+[ 3850.842930] xxx_CHG: charger_pm_event: enter PM_POST_SUSPEND
 [ 3851.009018] Resume caused by IRQ 173, pm8xxx_rtc_alarm // 唤醒源
 ```
 
@@ -1286,35 +1286,35 @@ static int bms_resume(struct platform_device *pdev)
 ## HAL层接口实现
 
 ```C++
-/home/wugn/M8-project/vendor/mediatek/proprietary/hardware/libpax_bms
-wugn@jcrj-tf-compile:libpax_bms$ tree
+/home/wugn/M8-project/vendor/mediatek/proprietary/hardware/libxxxxx_bms
+wugn@jcrj-tf-compile:libxxxxx_bms$ tree
 .
 ├── 1.0
 │   └── default
-│       ├── android.hardware.pax_bms@1.0-service-lazy.rc
-│       ├── android.hardware.pax_bms@1.0-service.rc //rc is for launch HAL service，将调用service.cpp main函数
+│       ├── android.hardware.xxxxx_bms@1.0-service-lazy.rc
+│       ├── android.hardware.xxxxx_bms@1.0-service.rc //rc is for launch HAL service，将调用service.cpp main函数
 │       ├── Android.mk
 │       ├── PaxBMS.cpp
 │       ├── PaxBMS.h
-│       ├── service.cpp //defaultPassthroughServiceImplementation<IPaxBMS>(); Hal启动进程android.hardware.pax_bms@1.0-service
+│       ├── service.cpp //defaultPassthroughServiceImplementation<IPaxBMS>(); Hal启动进程android.hardware.xxxxx_bms@1.0-service
 │       └── serviceLazy.cpp
 ├── Android.mk
-├── pax_bms.c
-└── pax_bms_test.c
+├── xxxxx_bms.c
+└── xxxxx_bms_test.c
 ```
 
 hal层是采用传统的HAL架构，device调用module方式，关系图如下：
 
 ![0009_0003.png](images/0009_0003.png)
-*  `pax_bms.c`作为`hw_module_t`为`hw_device_t`提供pax_bms_ctl(ioctrl)和close_pax_bms方法，主要是实现填充`hw_device_t`结构体中的方法。
-* `PaxBMS.cpp`主要在构造函数中调用`getPaxBMSDevice`函数，函数中`hw_get_module`获取并调用hwModule的open方法，open方法会返回`hw_device_t`结构体指针`pax_bmsDevice`，其中就是`hw_module_t`的方法，这样就可以调用`hw_get_module`封装的pax_bms_ctl(ioctrl)和close_pax_bms方法了。
+*  `xxxxx_bms.c`作为`hw_module_t`为`hw_device_t`提供xxxxx_bms_ctl(ioctrl)和close_xxxxx_bms方法，主要是实现填充`hw_device_t`结构体中的方法。
+* `PaxBMS.cpp`主要在构造函数中调用`getPaxBMSDevice`函数，函数中`hw_get_module`获取并调用hwModule的open方法，open方法会返回`hw_device_t`结构体指针`xxxxx_bmsDevice`，其中就是`hw_module_t`的方法，这样就可以调用`hw_get_module`封装的xxxxx_bms_ctl(ioctrl)和close_xxxxx_bms方法了。
 
-### hw_module_t pax_bms.c
+### hw_module_t xxxxx_bms.c
 
-pax_bms.c作为hw_module_t为hw_device_t提供pax_bms_ctl(ioctrl)和close_pax_bms方法。
+xxxxx_bms.c作为hw_module_t为hw_device_t提供xxxxx_bms_ctl(ioctrl)和close_xxxxx_bms方法。
 
 ```C++
-vendor/mediatek/proprietary/hardware/libpax_bms/pax_bms.c
+vendor/mediatek/proprietary/hardware/libxxxxx_bms/xxxxx_bms.c
 #define LOG_TAG "bms"
 
 
@@ -1331,14 +1331,14 @@ vendor/mediatek/proprietary/hardware/libpax_bms/pax_bms.c
 #include <sys/ioctl.h>
 #include <sys/types.h>
 
-#include <hardware/pax_bms.h>
+#include <hardware/xxxxx_bms.h>
 
 /******************************************************************************/
 
 static pthread_once_t g_init = PTHREAD_ONCE_INIT;
 static pthread_mutex_t g_lock = PTHREAD_MUTEX_INITIALIZER;
 
-#define PAX_BMS_DEV			"/dev/pax_bms"
+#define xxx_BMS_DEV			"/dev/xxxxx_bms"
 
 /**
  * device methods
@@ -1350,18 +1350,18 @@ void init_globals(void)
     pthread_mutex_init(&g_lock, NULL);
 }
 
-static int open_pax_bms_dev(void)
+static int open_xxxxx_bms_dev(void)
 {
 	int fd = -1;
 
-	fd = open(PAX_BMS_DEV, O_RDWR);
+	fd = open(xxx_BMS_DEV, O_RDWR);
 
 	return fd;
 }
 
-/** Close the pax bms device */
+/** Close the xxxxx bms device */
 static int
-close_pax_bms(struct pax_bms_dev_t *dev)
+close_xxxxx_bms(struct xxxxx_bms_dev_t *dev)
 {
     if (dev) {
         free(dev);
@@ -1369,18 +1369,18 @@ close_pax_bms(struct pax_bms_dev_t *dev)
     return 0;
 }
 
-static int pax_bms_ctl(struct pax_bms_dev_t *dev, unsigned long cmd, void *data)
+static int xxxxx_bms_ctl(struct xxxxx_bms_dev_t *dev, unsigned long cmd, void *data)
 {
-	static int pax_bms_fd = -1;
+	static int xxxxx_bms_fd = -1;
 	int ret = -1;
 
 	if (dev == NULL)
 		return -1;
 
-	if (pax_bms_fd < 0) {
-		pax_bms_fd = open_pax_bms_dev();
+	if (xxxxx_bms_fd < 0) {
+		xxxxx_bms_fd = open_xxxxx_bms_dev();
 
-		if (pax_bms_fd < 0) {
+		if (xxxxx_bms_fd < 0) {
 			return -ENODEV;
 		}
 	}
@@ -1392,7 +1392,7 @@ static int pax_bms_ctl(struct pax_bms_dev_t *dev, unsigned long cmd, void *data)
 		case SET_POWER_PATH:
 			{
 				int en = *(int *)data;
-				ret = ioctl(pax_bms_fd, cmd, &en);
+				ret = ioctl(xxxxx_bms_fd, cmd, &en);
 			}
 			break;
 		default:
@@ -1411,15 +1411,15 @@ static int pax_bms_ctl(struct pax_bms_dev_t *dev, unsigned long cmd, void *data)
  */
 
 /** Open a new instance of a device using name */
-static int open_pax_bms(const struct hw_module_t* module, char const* name,
+static int open_xxxxx_bms(const struct hw_module_t* module, char const* name,
         struct hw_device_t** device)
 {
     pthread_once(&g_init, init_globals);
 
-	if (strcmp(PAX_BMS_HARDWARE_MODULE_ID, name) != 0)
+	if (strcmp(xxx_BMS_HARDWARE_MODULE_ID, name) != 0)
 		return -1;
 
-    struct pax_bms_dev_t *dev = malloc(sizeof(struct pax_bms_dev_t));
+    struct xxxxx_bms_dev_t *dev = malloc(sizeof(struct xxxxx_bms_dev_t));
     if (!dev)
         return -ENOMEM;
 
@@ -1428,38 +1428,38 @@ static int open_pax_bms(const struct hw_module_t* module, char const* name,
     dev->common.tag = HARDWARE_DEVICE_TAG;
     dev->common.version = 0;
     dev->common.module = (struct hw_module_t*)module;
-    dev->common.close = (int (*)(struct hw_device_t*))close_pax_bms;
-    dev->bms_ctl = pax_bms_ctl;
+    dev->common.close = (int (*)(struct hw_device_t*))close_xxxxx_bms;
+    dev->bms_ctl = xxxxx_bms_ctl;
 
     *device = (struct hw_device_t*)dev;
     return 0;
 }
 
 
-static struct hw_module_methods_t pax_bms_module_methods = {
-    .open =  open_pax_bms,
+static struct hw_module_methods_t xxxxx_bms_module_methods = {
+    .open =  open_xxxxx_bms,
 };
 
 /*
- * The pax bms Module
+ * The xxxxx bms Module
  */
 struct hw_module_t HAL_MODULE_INFO_SYM = {
     .tag = HARDWARE_MODULE_TAG,
     //.version_major = 1,
     //.version_minor = 0,
-    .id = PAX_BMS_HARDWARE_MODULE_ID,
-    .name = "pax_bms Module",
-    .author = "pax",
-    .methods = &pax_bms_module_methods,
+    .id = xxx_BMS_HARDWARE_MODULE_ID,
+    .name = "xxxxx_bms Module",
+    .author = "xxxxx",
+    .methods = &xxxxx_bms_module_methods,
 };
 ```
 
 ### hw_device_t PaxBMS.cpp 
 
-`PaxBMS.cpp`主要调用`hw_get_module`获取并调用hwModule的open方法，open方法会返回hw_device_t结构体指针`pax_bmsDevice`，这样就可以调用`hw_get_module`封装的ioctrl方法了。
+`PaxBMS.cpp`主要调用`hw_get_module`获取并调用hwModule的open方法，open方法会返回hw_device_t结构体指针`xxxxx_bmsDevice`，这样就可以调用`hw_get_module`封装的ioctrl方法了。
 
 ```c++
-vendor/mediatek/proprietary/hardware/libpax_bms/1.0/default/PaxBMS.cpp
+vendor/mediatek/proprietary/hardware/libxxxxx_bms/1.0/default/PaxBMS.cpp
 /*
  * Copyright (C) 2016 The Android Open Source Project
  *
@@ -1479,27 +1479,27 @@ vendor/mediatek/proprietary/hardware/libpax_bms/1.0/default/PaxBMS.cpp
 
 namespace android {
 namespace hardware {
-namespace pax_bms {
+namespace xxxxx_bms {
 namespace V1_0 {
 namespace implementation {
 
-pax_bms_dev_t* getPaxBMSDevice() {
-    pax_bms_dev_t* pax_bmsDevice = NULL;
+xxxxx_bms_dev_t* getPaxBMSDevice() {
+    xxxxx_bms_dev_t* xxxxx_bmsDevice = NULL;
     const hw_module_t* hwModule = NULL;
 
-    int ret = hw_get_module (PAX_BMS_HARDWARE_MODULE_ID, &hwModule);
+    int ret = hw_get_module (xxx_BMS_HARDWARE_MODULE_ID, &hwModule);
     if (ret == 0) {
-        ret = hwModule->methods->open(hwModule, PAX_BMS_HARDWARE_MODULE_ID,
-            reinterpret_cast<hw_device_t**>(&pax_bmsDevice));
+        ret = hwModule->methods->open(hwModule, xxx_BMS_HARDWARE_MODULE_ID,
+            reinterpret_cast<hw_device_t**>(&xxxxx_bmsDevice));
         if (ret != 0) {
-            ALOGE("pax_bms_open %s failed: %d", PAX_BMS_HARDWARE_MODULE_ID, ret);
+            ALOGE("xxxxx_bms_open %s failed: %d", xxx_BMS_HARDWARE_MODULE_ID, ret);
         }
     } else {
-        ALOGE("hw_get_module %s failed: %d", PAX_BMS_HARDWARE_MODULE_ID, ret);
+        ALOGE("hw_get_module %s failed: %d", xxx_BMS_HARDWARE_MODULE_ID, ret);
     }
 
     if (ret == 0) {
-        return pax_bmsDevice;
+        return xxxxx_bmsDevice;
     } else {
         ALOGE("PaxBMS passthrough failed to load legacy HAL.");
         return nullptr;
@@ -1518,7 +1518,7 @@ PaxBMS::~PaxBMS() {
 	}
 }
 
-// Methods from ::android::hardware::pax_bms::V1_0::IPaxBMS follow.
+// Methods from ::android::hardware::xxxxx_bms::V1_0::IPaxBMS follow.
 Return<int32_t> PaxBMS::EnableCharge() {
 	int ret = 0;
 	int en = 1;
@@ -1530,7 +1530,7 @@ Return<int32_t> PaxBMS::EnableCharge() {
 	return ret;
 }
 
-// Methods from ::android::hardware::pax_bms::V1_0::IPaxBMS follow.
+// Methods from ::android::hardware::xxxxx_bms::V1_0::IPaxBMS follow.
 Return<int32_t> PaxBMS::DisableCharge() {
 	int ret = 0;
 	int en = 0;
@@ -1542,7 +1542,7 @@ Return<int32_t> PaxBMS::DisableCharge() {
 	return ret;
 }
 
-// Methods from ::android::hardware::pax_bms::V1_0::IPaxBMS follow.
+// Methods from ::android::hardware::xxxxx_bms::V1_0::IPaxBMS follow.
 Return<int32_t> PaxBMS::EnablePowerPath() {
 	int ret = 0;
 	int en = 1;
@@ -1554,7 +1554,7 @@ Return<int32_t> PaxBMS::EnablePowerPath() {
 	return ret;
 }
 
-// Methods from ::android::hardware::pax_bms::V1_0::IPaxBMS follow.
+// Methods from ::android::hardware::xxxxx_bms::V1_0::IPaxBMS follow.
 Return<int32_t> PaxBMS::DisablePowerPath() {
 	int ret = 0;
 	int en = 0;
@@ -1573,7 +1573,7 @@ IPaxBMS* HIDL_FETCH_IPaxBMS(const char* /* name */) {
 
 } // namespace implementation
 }  // namespace V1_0
-}  // namespace pax_bms
+}  // namespace xxxxx_bms
 }  // namespace hardware
 }  // namespace android
 ```
@@ -1583,9 +1583,9 @@ IPaxBMS* HIDL_FETCH_IPaxBMS(const char* /* name */) {
 * HIDL层接口定义：
 
 ```C++
-/home/wugn/M8-project/hardware/interfaces/pax_bms
+/home/wugn/M8-project/hardware/interfaces/xxxxx_bms
 
-wugn@jcrj-tf-compile:pax_bms$ tree
+wugn@jcrj-tf-compile:xxxxx_bms$ tree
 .
 └── 1.0
     ├── Android.bp
@@ -1593,7 +1593,7 @@ wugn@jcrj-tf-compile:pax_bms$ tree
     └── types.hal
 
 IPaxBMS.hal:
-package android.hardware.pax_bms@1.0;
+package android.hardware.xxxxx_bms@1.0;
 
 interface IPaxBMS {
     EnableCharge() generates (int32_t res);
@@ -1614,10 +1614,10 @@ index d8e5e306de1..d8f5f70318e 100644
      android.hardware.graphics.allocator@2.0 \
      vendor.mediatek.hardware.gpu@1.0 \
  
-+#ADD BEGIN by shanliangliang@paxsz.com, add for BMS 2021/07/12
++#ADD BEGIN by xxx@xxxxx.com, add for BMS 2021/07/12
 +LOCAL_SHARED_LIBRARIES += \
-+    android.hardware.pax_bms@1.0 \
-+#ADD END by shanliangliang@paxsz.com, add for BMS 2021/07/12
++    android.hardware.xxxxx_bms@1.0 \
++#ADD END by xxx@xxxxx.com, add for BMS 2021/07/12
 +
      LOCAL_REQUIRED_MODULES := \
          android.hardware.thermal@2.0-impl
@@ -1630,9 +1630,9 @@ index be73b5d2be9..0461dbd9a22 100644
  #include <android/hardware/gnss/2.1/IGnss.h>
  #endif
  
-+//ADD BEGIN by shanliangliang@paxsz.com, add for BMS 2021/07/12
-+#include <android/hardware/pax_bms/1.0/IPaxBMS.h>
-+//ADD END by shanliangliang@paxsz.com, add for BMS 2021/07/12
++//ADD BEGIN by xxx@xxxxx.com, add for BMS 2021/07/12
++#include <android/hardware/xxxxx_bms/1.0/IPaxBMS.h>
++//ADD END by xxx@xxxxx.com, add for BMS 2021/07/12
 +
  using ::android::OK;
  using ::android::status_t;
@@ -1641,9 +1641,9 @@ index be73b5d2be9..0461dbd9a22 100644
  using ::android::hardware::gnss::V2_1::IGnss;
  #endif
  
-+//ADD BEGIN by shanliangliang@paxsz.com, add for BMS 2021/07/12
-+using ::android::hardware::pax_bms::V1_0::IPaxBMS;
-+//ADD END by shanliangliang@paxsz.com, add for BMS 2021/07/12
++//ADD BEGIN by xxx@xxxxx.com, add for BMS 2021/07/12
++using ::android::hardware::xxxxx_bms::V1_0::IPaxBMS;
++//ADD END by xxx@xxxxx.com, add for BMS 2021/07/12
 +
  #define register(service) do { \
      status_t err = registerPassthroughServiceImplementation<service>(); \
@@ -1652,9 +1652,9 @@ index be73b5d2be9..0461dbd9a22 100644
      register(IAllocator);
      register(IGraphicExt);
  
-+//ADD BEGIN by shanliangliang@paxsz.com, add for BMS 2021/07/12
++//ADD BEGIN by xxx@xxxxx.com, add for BMS 2021/07/12
 +    register(IPaxBMS);
-+//ADD END by shanliangliang@paxsz.com, add for BMS 2021/07/12
++//ADD END by xxx@xxxxx.com, add for BMS 2021/07/12
 +
  #ifdef MTK_GPS_SUPPORT
      register(IGnss);
@@ -1672,13 +1672,13 @@ index be73b5d2be9..0461dbd9a22 100644
  PRODUCT_PACKAGES += \
      android.hardware.lights-service.mediatek
  
-+#Added BEGIN by shanliangliang@paxsz.com for BMS @2021-07-12
-+PRODUCT_PACKAGES += pax_bms.mt6765
-+#PRODUCT_PACKAGES += pax_bms_test
-+PRODUCT_PACKAGES += android.hardware.pax_bms@1.0-impl
-+PRODUCT_PACKAGES += android.hardware.pax_bms@1.0-service-lazy
-+PRODUCT_PACKAGES += android.hardware.pax_bms@1.0-service
-+#Added END by shanliangliang@paxsz.com for BMS @2021-07-12
++#Added BEGIN by xxx@xxxxx.com for BMS @2021-07-12
++PRODUCT_PACKAGES += xxxxx_bms.mt6765
++#PRODUCT_PACKAGES += xxxxx_bms_test
++PRODUCT_PACKAGES += android.hardware.xxxxx_bms@1.0-impl
++PRODUCT_PACKAGES += android.hardware.xxxxx_bms@1.0-service-lazy
++PRODUCT_PACKAGES += android.hardware.xxxxx_bms@1.0-service
++#Added END by xxx@xxxxx.com for BMS @2021-07-12
 ```
 
 ### 添加HIDL manifest
@@ -1690,9 +1690,9 @@ index be73b5d2be9..0461dbd9a22 100644
              <instance>default</instance>
          </interface>
      </hal>
-+	<!--ADD BEGIN by shanliangliang@paxsz.com add for BMS 2021/07/12 -->
++	<!--ADD BEGIN by xxx@xxxxx.com add for BMS 2021/07/12 -->
 +    <hal format="hidl">
-+        <name>android.hardware.pax_bms</name>
++        <name>android.hardware.xxxxx_bms</name>
 +        <transport>hwbinder</transport>
 +        <impl level="generic"></impl>
 +        <version>1.0</version>
@@ -1701,25 +1701,25 @@ index be73b5d2be9..0461dbd9a22 100644
 +            <instance>default</instance>
 +        </interface>
 +    </hal>
-+	<!--ADD END by shanliangliang@paxsz.com add for BMS 2021/07/12 -->
++	<!--ADD END by xxx@xxxxx.com add for BMS 2021/07/12 -->
  </manifest>
 ```
 
 ### 启动HIDL服务
 
 ```c++
-vendor/mediatek/proprietary/hardware/libpax_bms/1.0/default/android.hardware.pax_bms@1.0-service.rc
+vendor/mediatek/proprietary/hardware/libxxxxx_bms/1.0/default/android.hardware.xxxxx_bms@1.0-service.rc
 @ -0,0 +1,9 @@
-service pax_bms-hal-1-0 /vendor/bin/hw/android.hardware.pax_bms@1.0-service
-    interface android.hardware.pax_bms@1.0::IPaxBMS default
+service xxxxx_bms-hal-1-0 /vendor/bin/hw/android.hardware.xxxxx_bms@1.0-service
+    interface android.hardware.xxxxx_bms@1.0::IPaxBMS default
     oneshot
     class hal
     user system
     group system
-    # shutting off pax bms while powering-off
+    # shutting off xxxxx bms while powering-off
     shutdown critical
 
-vendor/mediatek/proprietary/hardware/libpax_bms/1.0/default/service.cpp
+vendor/mediatek/proprietary/hardware/libxxxxx_bms/1.0/default/service.cpp
 @ -0,0 +1,28 @@
 /*
  * Copyright 2016 The Android Open Source Project
@@ -1738,12 +1738,12 @@ vendor/mediatek/proprietary/hardware/libpax_bms/1.0/default/service.cpp
  */
 
 #define NDEBUG 1
-#define LOG_TAG "android.hardware.pax_bms@2.0-service-mediatek"
+#define LOG_TAG "android.hardware.xxxxx_bms@2.0-service-mediatek"
 
-#include <android/hardware/pax_bms/1.0/IPaxBMS.h>
+#include <android/hardware/xxxxx_bms/1.0/IPaxBMS.h>
 #include <hidl/LegacySupport.h>
 
-using android::hardware::pax_bms::V1_0::IPaxBMS;
+using android::hardware::xxxxx_bms::V1_0::IPaxBMS;
 using android::hardware::defaultPassthroughServiceImplementation;
 
 int main() {
@@ -1757,18 +1757,18 @@ int main() {
 
 ```
 PAYTABLETM8:/ # ps -A | grep bms
-system          479      1 10776264  5036 binder_ioctl_write_read 0 S android.hardware.pax_bms@1.0-service
+system          479      1 10776264  5036 binder_ioctl_write_read 0 S android.hardware.xxxxx_bms@1.0-service
 ```
 
-# A6650项目kernel BMS测试结果
+# A665x项目kernel BMS测试结果
 
 * 根据notify APP中得知：
-* `BatteryWarningReceiver.java`当收到`pax.intent.action.BATTERY_ABNORMAL`广播时，只处理广播type值为`PAX_BAT_NC_UV`低压事件，处理方式是关机。也就是其他异常没处理，但是都上报上来了:
+* `BatteryWarningReceiver.java`当收到`xxxxx.intent.action.BATTERY_ABNORMAL`广播时，只处理广播type值为`xxx_BAT_NC_UV`低压事件，处理方式是关机。也就是其他异常没处理，但是都上报上来了:
 ```java
 public class BatteryWarningReceiver extends BroadcastReceiver {
      // private static final String ACTION_IPO_BOOT = "android.intent.action.ACTION_BOOT_IPO";
-    private static final String ACTION_BATTERY_WARNING = "pax.intent.action.BATTERY_ABNORMAL";
-    private static final String ACTION_BATTERY_NORMAL = "pax.intent.action.BATTERY_NORMAL";
+    private static final String ACTION_BATTERY_WARNING = "xxxxx.intent.action.BATTERY_ABNORMAL";
+    private static final String ACTION_BATTERY_NORMAL = "xxxxx.intent.action.BATTERY_NORMAL";
     private static final String TAG = "BatteryWarningReceiver";
 
     @Override
@@ -1787,7 +1787,7 @@ public class BatteryWarningReceiver extends BroadcastReceiver {
             Log.d(TAG, "type = " + type);
             type = (int) (Math.log(type) / Math.log(2));
             Log.d(TAG, "type = " + type);
-            if(type == BatteryWarningToShutdown.PAX_BAT_NC_UV){
+            if(type == BatteryWarningToShutdown.xxx_BAT_NC_UV){
                 ShowBatteryWaringToShutdownDialog(type);
             }
         }
@@ -1815,8 +1815,8 @@ public class BatteryWarningToShutdown extends Activity {
     protected static final String KEY_TYPE = "type";
     private static final Uri WARNING_SOUND_URI = Uri.parse("file:///system/media/audio/ui/VideoRecord.ogg");
 
-    protected static final int PAX_BAT_NC_UV = 18;  //under voltage,power off
-    protected static final int PAX_BAT_LOW_TEMP = 30;  //under voltage,power off
+    protected static final int xxx_BAT_NC_UV = 18;  //under voltage,power off
+    protected static final int xxx_BAT_LOW_TEMP = 30;  //under voltage,power off
 
     private Ringtone mRingtone;
     private TextView mTitleView;
@@ -1831,20 +1831,20 @@ public class BatteryWarningToShutdown extends Activity {
             if(msg.what == 1){
                 mShutDownTime--;
                 if(mShutDownTime == 0){
-                    mContent.setText(getString(R.string.pax_shutdown_now_text));
+                    mContent.setText(getString(R.string.xxxxx_shutdown_now_text));
                     mTimer.cancel();
                     stopRingtone();
                     try{
-                        Log.d(TAG, "pax under voltage will shutdown");
+                        Log.d(TAG, "xxxxx under voltage will shutdown");
                         IPowerManager pm = IPowerManager.Stub.asInterface(
                             ServiceManager.getService(Context.POWER_SERVICE));
                         pm.shutdown(false, "under voltage", false);
                     }catch(RemoteException e){
-                        Log.d(TAG, "pax battery under voltage shutdown fail.");
+                        Log.d(TAG, "xxxxx battery under voltage shutdown fail.");
                         e.printStackTrace();
                     }
                 } else {
-                    mContent.setText(getString(R.string.pax_shutdown_time_text, mShutDownTime));
+                    mContent.setText(getString(R.string.xxxxx_shutdown_time_text, mShutDownTime));
                 }
             }
         }
@@ -1884,14 +1884,14 @@ public class BatteryWarningToShutdown extends Activity {
         Log.d(TAG, "onCreate, mType is " + mType);
 
         requestWindowFeature(Window.FEATURE_NO_TITLE);
-        setContentView(R.layout.pax_battery_notify_warning);
+        setContentView(R.layout.xxxxx_battery_notify_warning);
 
         mTitleView = (TextView) findViewById(R.id.title);
         mContent = (TextView) findViewById(R.id.content);
         mYesButton = (Button) findViewById(R.id.yes);
-        if(mType == PAX_BAT_NC_UV){
+        if(mType == xxx_BAT_NC_UV){
             showVoltageUnderWarningDialog();
-        } if(mType == PAX_BAT_LOW_TEMP){
+        } if(mType == xxx_BAT_LOW_TEMP){
             showTempLowWarningDialog();
         } else {
             finish();
@@ -1900,8 +1900,8 @@ public class BatteryWarningToShutdown extends Activity {
 
     private void showVoltageUnderWarningDialog() {
         mShutDownTime = 10;
-        mTitleView.setText(R.string.pax_battery_voltage_under);
-        mContent.setText(getString(R.string.pax_shutdown_time_text, mShutDownTime));
+        mTitleView.setText(R.string.xxxxx_battery_voltage_under);
+        mContent.setText(getString(R.string.xxxxx_shutdown_time_text, mShutDownTime));
 
         mYesButton.setText(getString(android.R.string.yes));
         mYesButton.setOnClickListener(mYesListener);
@@ -1913,8 +1913,8 @@ public class BatteryWarningToShutdown extends Activity {
 
     private void showTempLowWarningDialog() {//提示低温弹框，打开YES点击事件监听
         mShutDownTime = 10;
-        mTitleView.setText(R.string.pax_battery_low_temp_title);
-        mContent.setText(getString(R.string.pax_low_temp_shutdown_time_text, mShutDownTime));
+        mTitleView.setText(R.string.xxxxx_battery_low_temp_title);
+        mContent.setText(getString(R.string.xxxxx_low_temp_shutdown_time_text, mShutDownTime));
 
         mYesButton.setText(getString(android.R.string.yes));
         mYesButton.setOnClickListener(mYesListener);
@@ -1928,12 +1928,12 @@ public class BatteryWarningToShutdown extends Activity {
             mTimer.cancel();
             stopRingtone();
             try{
-                Log.d(TAG, "pax under voltage will shutdown");
+                Log.d(TAG, "xxxxx under voltage will shutdown");
                 IPowerManager pm = IPowerManager.Stub.asInterface(
                     ServiceManager.getService(Context.POWER_SERVICE));
                 pm.shutdown(false, "under voltage", false);
             }catch(RemoteException e){
-                Log.d(TAG, "pax battery under voltage shutdown fail.");
+                Log.d(TAG, "xxxxx battery under voltage shutdown fail.");
                 e.printStackTrace();
             }
         }
@@ -1951,20 +1951,20 @@ i2cset -f -y 0 0x3f 0x06 0x00 b
 
 * `logcat -s BatteryWarningReceiver`:
 ```
-[  276.000160] PAX_CHG: BMS bms_dump: 
-09-30 15:51:11.948  3753  3753 D BatteryWarningReceiver: action = pax.intent.action.BATTERY_ABNORMAL
+[  276.000160] xxx_CHG: BMS bms_dump: 
+09-30 15:51:11.948  3753  3753 D BatteryWarningReceiver: action = xxxxx.intent.action.BATTERY_ABNORMAL
 09-30 15:51:11.948  3753  3753 D BatteryWarningReceiver: type = 1
-09-30 15:51:11.949  3753  3753 D BatteryW[  276.127060] PAX_CHG: BatteryWarningReceiver: type = 0
+09-30 15:51:11.949  3753  3753 D BatteryW[  276.127060] xxx_CHG: BatteryWarningReceiver: type = 0
 ```
 
 * 以上一共花了88秒，感觉时间有点长！
 
 ## 2.NC_BAT_UT低温NC_BAT_UV低压测试
 
-直接通过命令传参，向`BatteryWarningToShutdown`这个activity传参`PAX_BAT_LOW_TEMP 30`和`PAX_BAT_NC_UV 18`：
+直接通过命令传参，向`BatteryWarningToShutdown`这个activity传参`xxx_BAT_LOW_TEMP 30`和`xxx_BAT_NC_UV 18`：
 ```
-adb shell am start -n com.pax.batterywarning/.BatteryWarningToShutdown --ei type 18 //低压
-adb shell am start -n com.pax.batterywarning/.BatteryWarningToShutdown --ei type 30 //低温
+adb shell am start -n com.xxxxx.batterywarning/.BatteryWarningToShutdown --ei type 18 //低压
+adb shell am start -n com.xxxxx.batterywarning/.BatteryWarningToShutdown --ei type 30 //低温
 ```
 
 * 低温结果：
@@ -1977,34 +1977,34 @@ adb shell am start -n com.pax.batterywarning/.BatteryWarningToShutdown --ei type
 
 * 低温测试打印：
 ```
-[  878.014934] PAX_BMS:PRESENT = 1
-[  878.014943] PAX_BMS:g_bms_data.bat_info.soc = 92
-[  878.023565] PAX_BMS:chg vol: 5100000
-[  878.032074] PAX_BMS:bat vol: 8520000, bat_no_zcv: 1
-[  878.037535] PAX_BMS:temp: -300, min_bat_temp: -100, out of range.
-[  878.043704] PAX_BMS:notify_code: 0x1
-[  878.047497] PAX_BMS:type: NC_BAT_UT, set: 1, notify_code: 0x20
+[  878.014934] xxx_BMS:PRESENT = 1
+[  878.014943] xxx_BMS:g_bms_data.bat_info.soc = 92
+[  878.023565] xxx_BMS:chg vol: 5100000
+[  878.032074] xxx_BMS:bat vol: 8520000, bat_no_zcv: 1
+[  878.037535] xxx_BMS:temp: -300, min_bat_temp: -100, out of range.
+[  878.043704] xxx_BMS:notify_code: 0x1
+[  878.047497] xxx_BMS:type: NC_BAT_UT, set: 1, notify_code: 0x20
 ```
 
 * 高温测试打印：
 ```
-[  163.374401] PAX_BMS:g_bms_data.bat_info.soc = 92
-[  163.379360] PAX_BMS:chg vol: 5104000
-[  163.387945] PAX_BMS:bat vol: 8494000, bat_no_zcv: 1
-[  163.392944] PAX_BMS:temp: 610, max_bat_temp: 600, out of range.
-[  163.399139] PAX_BMS:notify_code: 0x1
-[  163.402832] PAX_BMS:type: NC_BAT_OT, set: 1, notify_code: 0x2
+[  163.374401] xxx_BMS:g_bms_data.bat_info.soc = 92
+[  163.379360] xxx_BMS:chg vol: 5104000
+[  163.387945] xxx_BMS:bat vol: 8494000, bat_no_zcv: 1
+[  163.392944] xxx_BMS:temp: 610, max_bat_temp: 600, out of range.
+[  163.399139] xxx_BMS:notify_code: 0x1
+[  163.402832] xxx_BMS:type: NC_BAT_OT, set: 1, notify_code: 0x2
 ```
 
 ## 3.NC_CHG_TMO超时测试
 
-通过命令`echo 10 > /sys/devices/platform/soc/soc:pax_bms/pax/bms/max_chg_time`设置一个10秒的充电超时时间，打印如下：
+通过命令`echo 10 > /sys/devices/platform/soc/soc:xxxxx_bms/xxxxx/bms/max_chg_time`设置一个10秒的充电超时时间，打印如下：
 ```
-[  866.816670] PAX_CHG: BMS time: 15, max_chg_time: 10, out of range.
+[  866.816670] xxx_CHG: BMS time: 15, max_chg_time: 10, out of range.
 [  866.823019] bms_notify_call_chain
-[  866.826570] PAX_CHG: bms_notify_event evt = SET_CHG_EN en:0
-[  866.833324] PAX_CHG: enable_charging en: 0 last_en: 1
-[  866.838535] pax_charger_update
-[  866.850534] PAX_CHG: BMS bms_dump: CHG [online: 0, type: 0, vol: 5000000, cur: 16800000, time: 15], BAT [present: 1, status: 1, vol: 3950000, cur: 449000, resistance: 0, temp: 300, soc: 61], OTHER [skin_temp: 0, chg_vote: 0x2000, notify_code: 0x2400],
+[  866.826570] xxx_CHG: bms_notify_event evt = SET_CHG_EN en:0
+[  866.833324] xxx_CHG: enable_charging en: 0 last_en: 1
+[  866.838535] xxxxx_charger_update
+[  866.850534] xxx_CHG: BMS bms_dump: CHG [online: 0, type: 0, vol: 5000000, cur: 16800000, time: 15], BAT [present: 1, status: 1, vol: 3950000, cur: 449000, resistance: 0, temp: 300, soc: 61], OTHER [skin_temp: 0, chg_vote: 0x2000, notify_code: 0x2400],
 ```
 

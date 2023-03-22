@@ -51,8 +51,8 @@ Property | 属性 |
 
 在支持DTO的Android下, DT 是由以下两个部分组成:
 
-* Main DT, 主要是Soc-only的部分以及默认的系统配置，例如cpu配置/内存相关配置等，soc的供应商提供, 本文所用的QCM2290 那么这个Main DT就是由QCOM提供的.（a6650-scuba-iot.dts）
-* Overlay DT, 该Soc所对应的产品需要的特定配置, 主要是由ODM/OEM提供，这里可以理解为开发者自己定义(当然目前在QCM2290上QCOM也提供了基本的Oerlay DT基本模板)(a6650-scuba-iot-idp-overlay.dts)
+* Main DT, 主要是Soc-only的部分以及默认的系统配置，例如cpu配置/内存相关配置等，soc的供应商提供, 本文所用的QCM2290 那么这个Main DT就是由QCOM提供的.（a665x-scuba-iot.dts）
+* Overlay DT, 该Soc所对应的产品需要的特定配置, 主要是由ODM/OEM提供，这里可以理解为开发者自己定义(当然目前在QCM2290上QCOM也提供了基本的Oerlay DT基本模板)(a665x-scuba-iot-idp-overlay.dts)
 
 ## 编译阶段
 
@@ -84,7 +84,7 @@ Property | 属性 |
 
 * 1. QCM2290平台的Main DT和Overlay DT一览
 
-* `a6650-scuba-iot.dts`:
+* `a665x-scuba-iot.dts`:
 ```shell
 
 /dts-v1/;
@@ -97,11 +97,11 @@ Property | 属性 |
 	qcom,board-id = <0 0>;
 
 	soc {
-		pax_board_info {
-			compatible = "pax,board_info";
-			pax,main_board = "V01";
-			pax,port_board = "V01";
-			pax,terminal_name = "A6650";
+		xxxxx_board_info {
+			compatible = "xxxxx,board_info";
+			xxxxx,main_board = "V01";
+			xxxxx,port_board = "V01";
+			xxxxx,terminal_name = "A665x";
 		};
 	};
 };
@@ -111,13 +111,13 @@ Property | 属性 |
 
 ```makefile
 ifeq ($(CONFIG_BUILD_ARM64_DT_OVERLAY),y)
-dts-dirs += a6650
-dts-dirs += m9200
+dts-dirs += a665x
+dts-dirs += m92xx
 endif
 
 ifeq ($(CONFIG_BUILD_ARM64_DT_OVERLAY),y)
-dtbo-$(CONFIG_ARCH_SCUBA) += a6650-scuba-iot-idp-overlay.dtbo
-a6650-scuba-iot-idp-overlay.dtbo-base := a6650-scuba-iot.dtb //指定a6650-scuba-iot-idp-overlay.dtbo的dtb
+dtbo-$(CONFIG_ARCH_SCUBA) += a665x-scuba-iot-idp-overlay.dtbo
+a665x-scuba-iot-idp-overlay.dtbo-base := a665x-scuba-iot.dtb //指定a665x-scuba-iot-idp-overlay.dtbo的dtb
 endif
 always		:= $(dtb-y)
 subdir-y	:= $(dts-dirs)
@@ -125,7 +125,7 @@ subdir-y	:= $(dts-dirs)
 clean-files	:= *.dtb *.dtbo
 ```
 
-* 继续看Overlay DT,`a6650-scuba-iot-idp-overlay.dts`:
+* 继续看Overlay DT,`a665x-scuba-iot-idp-overlay.dts`:
 ```shell
 /dts-v1/;
 /plugin/;
@@ -140,18 +140,18 @@ clean-files	:= *.dtb *.dtbo
 	qcom,board-id = <34 0>;
 
 	soc {
-		pax_board_info {
-			compatible = "pax,board_info";
-			pax,main_board = "V01";
-			pax,port_board = "V01";
-			pax,terminal_name = "A6650";
+		xxxxx_board_info {
+			compatible = "xxxxx,board_info";
+			xxxxx,main_board = "V01";
+			xxxxx,port_board = "V01";
+			xxxxx,terminal_name = "A665x";
 		};
 	};
 
 };
 
 &soc {
-//[FEATURE]-Add-begin by wugangnan@paxsz.com, 2022/07/06, for charger and type-c driver
+//[FEATURE]-Add-begin by xxx@xxxxx.com, 2022/07/06, for charger and type-c driver
 	rt_pd_manager:rt_pd_manager {
 		compatible = "richtek,rt-pd-manager";
 	};
@@ -161,7 +161,7 @@ clean-files	:= *.dtb *.dtbo
 	qcom,batteryless-platform;
 };
 ```
-这里需要注意的是，在a6650-scuba-iot-idp-overlay.dts中&符号在dts语法中是引用的意思，这里暂时可以理解为引用修改。
+这里需要注意的是，在a665x-scuba-iot-idp-overlay.dts中&符号在dts语法中是引用的意思，这里暂时可以理解为引用修改。
 
 ## Main DT 和 Overlay DT的构建
 
@@ -169,16 +169,16 @@ clean-files	:= *.dtb *.dtbo
 
 ```log
 Main DT
-    -> a6650-scuba-iot.dts
-       -> DTC - a6650-scuba-iot.dtb  
-          -> CAT a6650-scuba-iot.dtb && zImage > zImage-dtb中
+    -> a665x-scuba-iot.dts
+       -> DTC - a665x-scuba-iot.dtb  
+          -> CAT a665x-scuba-iot.dtb && zImage > zImage-dtb中
 也就是Main DT最终会包含在boot.img中
 
 
 Overlay DT
-    -> a6650-scuba-iot-idp-overlay.dts
-        -> DTC - a6650-scuba-iot-idp-overlay.dtb
-            -> mkimage a6650-scuba-iot-idp-overlay.dtb -> dtbo.img
+    -> a665x-scuba-iot-idp-overlay.dts
+        -> DTC - a665x-scuba-iot-idp-overlay.dtb
+            -> mkimage a665x-scuba-iot-idp-overlay.dtb -> dtbo.img
 也就是Overlay DT最终会包含在odmdtbo.img,作为独立的分区文件写入设备的指定分区
 ```
 
@@ -186,11 +186,11 @@ Overlay DT
 ```
 wugn@jcrj-tf-compile:qcom$ tree
 .
-├── a6650
-│   ├── a6650-scuba-iot.dtb
-│   ├── a6650-scuba-iot-idp-overlay.dtbo
+├── a665x
+│   ├── a665x-scuba-iot.dtb
+│   ├── a665x-scuba-iot-idp-overlay.dtbo
 │   └── modules.order
-├── a6650-scuba-iot.dtb
+├── a665x-scuba-iot.dtb
 ├── a7000-scuba-iot.dtb
 ├── bengal-1gb.dtb
 ├── bengal-2gb.dtb
@@ -201,11 +201,11 @@ wugn@jcrj-tf-compile:qcom$ tree
 ├── bengalp-iot-2gb.dtb
 ├── bengalp-iot.dtb
 ├── khaje.dtb
-├── m9200
-│   ├── m9200-scuba-iot.dtb
-│   ├── m9200-scuba-iot-idp-overlay.dtbo
+├── m92xx
+│   ├── m92xx-scuba-iot.dtb
+│   ├── m92xx-scuba-iot-idp-overlay.dtbo
 │   └── modules.order
-├── m9200-scuba-iot.dtb
+├── m92xx-scuba-iot.dtb
 ├── modules.order
 ├── scuba-2gb.dtb
 ├── scuba.dtb
@@ -223,7 +223,7 @@ wugn@jcrj-tf-compile:qcom$ tree
 
 ```log
 # 源文件 
-kernel/msm-4.19/arch/arm64/boot/dts/vendor/qcom/a6650/a6650-scuba-iot.dts
+kernel/msm-4.19/arch/arm64/boot/dts/vendor/qcom/a665x/a665x-scuba-iot.dts
 
 # 相关Makefile
 kernel/msm-4.19/arch/arm64/boot/Makefile
@@ -233,11 +233,11 @@ kernel/msm-4.19/scripts/Makefile.lib
 下面来看下具体的构建过程,在`arm64/boot/Makefile`中有如下相关代码:
 
 ```shell
-# 一般在kernel的配置文件apollo_defconfig中将CONFIG_BUILD_ARM64_APPENDED_DTB_IMAGE_NAMES 定义为了a6650-scuba-iot
+# 一般在kernel的配置文件apollo_defconfig中将CONFIG_BUILD_ARM64_APPENDED_DTB_IMAGE_NAMES 定义为了a665x-scuba-iot
 # 我们没定义，使用dtb-y的，我们在Makefile文件里有添加
-#a6650/Makefile
+#a665x/Makefile
 #6:always                := $(dtb-y)
-# 也就是这里DTB_NAMES := a6650-scuba-iot
+# 也就是这里DTB_NAMES := a665x-scuba-iot
 
 DTB_NAMES := $(subst $\",,$(CONFIG_BUILD_ARM64_APPENDED_DTB_IMAGE_NAMES))
 ifneq ($(DTB_NAMES),)
@@ -252,7 +252,7 @@ $(obj)/Image.gz-dtb: $(obj)/Image.gz $(DTB_OBJS) FORCE
 	$(call if_changed,cat)
 ```
 
-如上图所截取的部分Makfile, 在构建Image.gz-dtb时, 首先会构建Image 和 $(DTB_OBJS)-a6650-scuba-iot.dtb。在构建构建生成Image和a6650-scuba-iot.dtb会调自定义的cat指令将a6650-scuba-iot.dtb追加到zImage尾部.
+如上图所截取的部分Makfile, 在构建Image.gz-dtb时, 首先会构建Image 和 $(DTB_OBJS)-a665x-scuba-iot.dtb。在构建构建生成Image和a665x-scuba-iot.dtb会调自定义的cat指令将a665x-scuba-iot.dtb追加到zImage尾部.
 
 以上描述了Main DT的构建以及如何追加到zImage.
 
@@ -262,7 +262,7 @@ $(obj)/Image.gz-dtb: $(obj)/Image.gz $(DTB_OBJS) FORCE
 
 ```shell
 # 源文件 
-kernel/msm-4.19/arch/arm64/boot/dts/vendor/qcom/a6650/a6650-scuba-iot-idp-overlay.dts
+kernel/msm-4.19/arch/arm64/boot/dts/vendor/qcom/a665x/a665x-scuba-iot-idp-overlay.dts
 
 # Makefile
 kernel/msm-4.19/arch/arm64/boot/qcom/dts/Makefile
@@ -298,7 +298,7 @@ DTB_LIST := $(addsuffix .dtb,$(DTB_NAMES))
 else
 DTB_LIST := $(dtb-y)
 endif
-# 将构建Overlay dts的目标添加到targets中进行a6650-scuba-iot-idp-overlay.dts的构建, 输出目标为a6650-scuba-iot-idp-overlay.dtb
+# 将构建Overlay dts的目标添加到targets中进行a665x-scuba-iot-idp-overlay.dts的构建, 输出目标为a665x-scuba-iot-idp-overlay.dtb
 targets += $(DTB_LIST)
 ```
 
@@ -339,11 +339,11 @@ $(obj)/%.dtb: $(src)/%.dts FORCE
 dtc-tmp = $(subst $(comma),_,$(dot-target).dts.tmp)
 ```
 
-以上的构建只是将a6650-scuba-iot-idp-overlay.dts编译生成了a6650-scuba-iot-idp-overlay.dtb还是并不是最终烧录到dtb分区的Overlay DT.下面来继续看下中的dtb image是如何生成的.
+以上的构建只是将a665x-scuba-iot-idp-overlay.dts编译生成了a665x-scuba-iot-idp-overlay.dtb还是并不是最终烧录到dtb分区的Overlay DT.下面来继续看下中的dtb image是如何生成的.
 
 ```makefile
 # arch/arm/Makefile
-# 前面的内容已经讲述了dtbs的构建生成了a6650-scuba-iot-idp-overlay.dtb，下面继续看下$(DTB_OVERLAY_IMAGE_TAGERT)的构建
+# 前面的内容已经讲述了dtbs的构建生成了a665x-scuba-iot-idp-overlay.dtb，下面继续看下$(DTB_OVERLAY_IMAGE_TAGERT)的构建
 
 zImage-dtb: vmlinux scripts dtbs
         $(Q)$(MAKE) $(build)=$(boot) MACHINE=$(MACHINE) DTSSUBDIR=$(DTSSUBDIR) $(boot)/$@

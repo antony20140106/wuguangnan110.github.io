@@ -31,18 +31,18 @@ kernel-4.19/include/uapi/linux/input-event-codes.h
 
 ```C++
 /* input device */
-static int create_input_device(struct pax_gpio_set *data)
+static int create_input_device(struct xxxxx_gpio_set *data)
 {
 	int ret = 0;
 
 	data->input = input_allocate_device();//为新添加的输入设备分配内存
 	if (!data->input) {
-		PAX_GPIO_ERR("err: not enough memory for input device");
+		xxx_GPIO_ERR("err: not enough memory for input device");
 		return -ENOMEM;
 	}
 
 	data->input->id.bustype = BUS_HOST;
-	data->input->name = "pax_gpios";
+	data->input->name = "xxxxx_gpios";
 	__set_bit(EV_KEY, data->input->evbit);//支持的事件,EV_KEY事件，事件类型由input_dev.evbit表示
 	__set_bit(KEY_WAKEUP, data->input->keybit);// 为了快速看到现象, 可以上报 KEY_POWER 事件, 看是否会亮灭屏，后续注释该代码  ++++
 	__set_bit(KEY_CHANNELUP, data->input->keybit);
@@ -53,7 +53,7 @@ static int create_input_device(struct pax_gpio_set *data)
 
 	ret = input_register_device(data->input);//将input_dev(输入设备结构体)注册到输入子系统核心中
 	if (ret) {
-		PAX_GPIO_ERR("err: input_register_device failed");
+		xxx_GPIO_ERR("err: input_register_device failed");
 		input_free_device(data->input);
 		data->input = NULL;
 		return -ENOMEM;
@@ -62,7 +62,7 @@ static int create_input_device(struct pax_gpio_set *data)
 	return 0;
 }
 
-static int pax_gpios_probe(struct platform_device *pdev)
+static int xxxxx_gpios_probe(struct platform_device *pdev)
 {
         /* regitster input dev */
         if (create_input_device(data)) {
@@ -78,27 +78,27 @@ static int r15_status_notify_call(struct notifier_block *self, unsigned long eve
 	switch (event) {
 		case SET_POWER_EN:
 			power_en = *(int *)value;
-			PAX_GPIO_DBG("SET_POWER_EN: %d", power_en);
+			xxx_GPIO_DBG("SET_POWER_EN: %d", power_en);
 			break;
 		case SET_POWER_STATUS:
 			power_en = *(int *)value;
-			PAX_GPIO_DBG("SET_POWER_STATUS: %d", power_en);
+			xxx_GPIO_DBG("SET_POWER_STATUS: %d", power_en);
 			break;
         case SET_POGO_DEV_STATE:
 		    power_en = *(int *)value;
 			if (power_en) {
-				input_report_key(g_pax_gpio_set->input, KEY_CHANNELUP, 1); //上报键值
-				input_sync(g_pax_gpio_set->input);
-				input_report_key(g_pax_gpio_set->input, KEY_CHANNELUP, 0);
-				input_sync(g_pax_gpio_set->input);
+				input_report_key(g_xxxxx_gpio_set->input, KEY_CHANNELUP, 1); //上报键值
+				input_sync(g_xxxxx_gpio_set->input);
+				input_report_key(g_xxxxx_gpio_set->input, KEY_CHANNELUP, 0);
+				input_sync(g_xxxxx_gpio_set->input);
 			}
 			else {
-				input_report_key(g_pax_gpio_set->input, KEY_CHANNELDOWN, 1);
-				input_sync(g_pax_gpio_set->input);
-				input_report_key(g_pax_gpio_set->input, KEY_CHANNELDOWN, 0);
-				input_sync(g_pax_gpio_set->input);
+				input_report_key(g_xxxxx_gpio_set->input, KEY_CHANNELDOWN, 1);
+				input_sync(g_xxxxx_gpio_set->input);
+				input_report_key(g_xxxxx_gpio_set->input, KEY_CHANNELDOWN, 0);
+				input_sync(g_xxxxx_gpio_set->input);
 			}
-            PAX_GPIO_DBG("SET_POGO_DEV_STATE: send pogo dev input event %d",power_en);
+            xxx_GPIO_DBG("SET_POGO_DEV_STATE: send pogo dev input event %d",power_en);
            break;
 
 		default:
@@ -116,7 +116,7 @@ static int r15_status_notify_call(struct notifier_block *self, unsigned long eve
 
 ```log
 adb dumpsys input :
-   1: pax_gpios
+   1: xxxxx_gpios
       Classes: 0x00000001
       Path: /dev/input/event4
       Enabled: true
@@ -160,10 +160,10 @@ adb dumpsys input :
      private long startTime = -1l;
      private static Queue<Long> queue = new LinkedBlockingQueue<Long>();
 
-+    //[FEATURE]-Add-BEGIN by (lib@paxsz.com) 2022/04/11
++    //[FEATURE]-Add-BEGIN by (lib@xxxxx.com) 2022/04/11
 +    private static final int POGE_PIN_INSERT_TIME = 200;
 +    private int insertState = -1;
-+    //[FEATURE]-Add-END by (lib@paxsz.com) 2021/04/11
++    //[FEATURE]-Add-END by (lib@xxxxx.com) 2021/04/11
 +
 
      // private boolean isGoogleSetupEnable(){
@@ -175,7 +175,7 @@ adb dumpsys input :
 
 public int interceptKeyBeforeQueueing(KeyEvent event, int policyFlags) {
 
-+            //[FEATURE]-Add-BEGIN by (lib@paxsz.com) 2022/04/11
++            //[FEATURE]-Add-BEGIN by (lib@xxxxx.com) 2022/04/11
 +            case KeyEvent.KEYCODE_CHANNEL_DOWN:
 +                if (!down){
 +                    mHandler.removeCallbacks(pogoOutRunable);
@@ -188,12 +188,12 @@ public int interceptKeyBeforeQueueing(KeyEvent event, int policyFlags) {
 +                    mHandler.postDelayed(pogoInsertRunable,POGE_PIN_INSERT_TIME);
 +                }
 +                break;
-+            //[FEATURE]-Add-END by (lib@paxsz.com) 2022/04/11
++            //[FEATURE]-Add-END by (lib@xxxxx.com) 2022/04/11
              case KeyEvent.KEYCODE_MEDIA_PLAY:
              case KeyEvent.KEYCODE_MEDIA_PAUSE:
              case KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE:
 @@ -4301,8 +4321,37 @@ public class PhoneWindowManager implements WindowManagerPolicy {
-         intent.setPackage(SystemProperties.get("persist.sys.wake.package","com.pax.paydroid.tester"));
+         intent.setPackage(SystemProperties.get("persist.sys.wake.package","com.xxxxx.paydroid.tester"));
          mContext.sendBroadcastAsUser(intent, UserHandle.ALL);
      }
 
@@ -217,12 +217,12 @@ public int interceptKeyBeforeQueueing(KeyEvent event, int policyFlags) {
 +            return;
 +        }
 +        insertState = isInsert?1:0;
-+        Intent intent = new Intent("com.paxdroid.usbserial.insert.state");
++        Intent intent = new Intent("com.xxxxxdroid.usbserial.insert.state");
 +        intent.putExtra("device","R15");
 +        intent.putExtra("state", isInsert?1:0);//1表示R15在线 0表示R15不在线
 +        mContext.sendStickyBroadcastAsUser(intent, UserHandle.ALL);
 +    }
-     //[FEATURE]-Add-END by (lib@paxsz.com) 2021/03/23
+     //[FEATURE]-Add-END by (lib@xxxxx.com) 2021/03/23
 ```
 
 ### 2.uevent事件方式
@@ -411,7 +411,7 @@ out:
 
 * 测试：
 ```log
-A6650:/sys/class/authinfo/sp_authinfo # cat uevent
+A665x:/sys/class/authinfo/sp_authinfo # cat uevent
 AUTHINFO_SUPPLY_SPPOWERFLAG=1
 AUTHINFO_SUPPLY_SECMODE=3
 AUTHINFO_SUPPLY_BOOTLEVEL=1

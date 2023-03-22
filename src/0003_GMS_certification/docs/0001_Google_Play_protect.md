@@ -146,18 +146,18 @@ The certificate uses the MD5withRSA signature algorithm which is considered a se
 
 # 修改方案
 
-为了保证系统安全，更新新的platform key，如果测试或者其他应用需要系统权限，需要此key进行打包,使用pax公司paxdroid平台的签名方式，首先需要替换平台签名秘钥，然后在Android.mk文件中修改设置项，更换如下秘钥：
+为了保证系统安全，更新新的platform key，如果测试或者其他应用需要系统权限，需要此key进行打包,使用xxxxx公司xxxxxdroid平台的签名方式，首先需要替换平台签名秘钥，然后在Android.mk文件中修改设置项，更换如下秘钥：
 
 ```
-device/mediateksample/k62v1_64_pax/security/
+device/mediateksample/k62v1_64_xxxxx/security/
 media.pk8       networkstack.pk8       platform.pk8       README          releasekey.x509.pem  shared.x509.pem  testkey.x509.pem
 media.x509.pem  networkstack.x509.pem  platform.x509.pem  releasekey.pk8  shared.pk8           testkey.pk8
 ```
 
 
 ```diff
---- a/paxdroid/packages/apps/edm/Android.mk
-+++ b/paxdroid/packages/apps/edm/Android.mk
+--- a/xxxxxdroid/packages/apps/edm/Android.mk
++++ b/xxxxxdroid/packages/apps/edm/Android.mk
 @@ -6,7 +6,7 @@ LOCAL_MODULE_TAGS := optional
  LOCAL_MODULE_SUFFIX := $(COMMON_ANDROID_PACKAGE_SUFFIX)
  #LOCAL_PRIVILEGED_MODULE :=
@@ -169,11 +169,11 @@ media.x509.pem  networkstack.x509.pem  platform.x509.pem  releasekey.pk8  shared
  LOCAL_DEX_PREOPT := false
 ```
 
-修改后查看签名信息,Owner变成了paxdroid platform key：
+修改后查看签名信息,Owner变成了xxxxxdroid platform key：
 ```
 keytool -printcert -file  CERT.RSA
-Owner: EMAILADDRESS=paxdroid@paxsz.com, CN=PAX, OU=PAX, O=PAX, L=ShenZhen, ST=GuangDong, C=CN
-Issuer: EMAILADDRESS=paxdroid@paxsz.com, CN=PAX, OU=PAX, O=PAX, L=ShenZhen, ST=GuangDong, C=CN
+Owner: EMAILADDRESS=xxxxxdroid@xxxxx.com, CN=xxx, OU=xxx, O=xxx, L=ShenZhen, ST=GuangDong, C=CN
+Issuer: EMAILADDRESS=xxxxxdroid@xxxxx.com, CN=xxx, OU=xxx, O=xxx, L=ShenZhen, ST=GuangDong, C=CN
 Serial number: 9ddf91dc799bf205
 Valid from: Tue Sep 07 16:31:15 CST 2021 until: Sat Jan 23 16:31:15 CST 2049
 Certificate fingerprints:

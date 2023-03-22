@@ -13,7 +13,7 @@ M8项目目前的机器，不接皮套，在电量较低（比如低于50%），
 ```log
 行 43: 05-09 20:11:37.849534 <5>[11494.196315]  (4)[13047:kworker/u16:5][MUSB]otg_tcp_notifier_call 497: TCP_NOTIFY_DR_SWAP, new role=0
 行 137: 05-09 20:11:41.719300 <6>[11498.066081] -(6)[243:irq/28-mt6370_p]pogo_dev_state: 1  //pogo在线
-行 149: 05-09 20:11:41.719784 <7>[11498.066565] -(6)[243:irq/28-mt6370_p][pax_gpio]: SET_POGO_DEV_STATE: send pogo dev input event 1
+行 149: 05-09 20:11:41.719784 <7>[11498.066565] -(6)[243:irq/28-mt6370_p][xxx_gpio]: SET_POGO_DEV_STATE: send pogo dev input event 1
 行 153: 05-09 20:11:41.720672 <5>[11498.067453]  (7)[112:pd_dbg_info]<11498.067>TCPC-TYPEC:[CC_Alert] 0/0
 行 198: 05-09 20:11:41.749180 <5>[11498.095961]  (7)[112:pd_dbg_info]<11498.067>TCPC-TCPC:[Warning] ps_changed 2 ->1
 行 200: 05-09 20:11:41.749180 <5>[11498.095961] <11498.067>TCPC-TYPEC:Detach_CC (HardReset), compatible apple TA
@@ -33,7 +33,7 @@ M8项目目前的机器，不接皮套，在电量较低（比如低于50%），
 行 463: 05-09 20:11:42.027694 <5>[11498.374475]  (4)[112:pd_dbg_info]<11498.374>TCPC-TCPC:bat_update_work_func battery update soc = 46
 行 464: 05-09 20:11:42.027694 <5>[11498.374475] <11498.374>TCPC-TCPC:bat_update_work_func Battery Discharging
 行 541: 05-09 20:11:42.924184 <6>[11499.270965] -(0)[0:swapper/0]pogo_dev_state: 1
-行 547: 05-09 20:11:42.924441 <7>[11499.271222] -(0)[0:swapper/0][pax_gpio]: SET_POGO_DEV_STATE: send pogo dev input event 1
+行 547: 05-09 20:11:42.924441 <7>[11499.271222] -(0)[0:swapper/0][xxx_gpio]: SET_POGO_DEV_STATE: send pogo dev input event 1
 行 1941: 05-09 20:11:47.554548 <5>[11503.901329]  (5)[112:pd_dbg_info]<11503.900>TCPC-TCPC:ps_change=2
 行 1945: 05-09 20:11:47.581210 <5>[11503.927991]  (5)[112:pd_dbg_info]<11503.901>TCPC-TYPEC:norp_src=1
 行 1949: 05-09 20:11:47.619094 <5>[11503.965875]  (5)[112:pd_dbg_info]<11503.965>TCPC-TCPC:Wakeup

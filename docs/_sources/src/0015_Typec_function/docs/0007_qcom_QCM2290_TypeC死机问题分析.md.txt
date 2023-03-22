@@ -7,17 +7,17 @@ qcom qcm2290 TypeC 死机调试过程。
 
 # 分析过程
 
-当换成typec通知pax_charger进行vbus和plug状态时，发现机器拔插还是容易死机。如下是插入host时直接挂了：
+当换成typec通知xxx_charger进行vbus和plug状态时，发现机器拔插还是容易死机。如下是插入host时直接挂了：
 ```log
-console:/ $ [   46.908242] pax-pd-manager soc:pax_pd_manager: pd_tcp_notifier_call event = 12
+console:/ $ [   46.908242] xxx-pd-manager soc:xxx_pd_manager: pd_tcp_notifier_call event = 12
 
-console:/ $ [   47.130891] pax-pd-manager soc:pax_pd_manager: pd_tcp_notifier_call event = 9
-[   47.138396] pax-pd-manager soc:pax_pd_manager: pd_tcp_notifier_call source vbus 0mV
-[   47.146293] pax-pd-manager soc:pax_pd_manager: pd_tcp_notifier_call - source vbus 0v output
+console:/ $ [   47.130891] xxx-pd-manager soc:xxx_pd_manager: pd_tcp_notifier_call event = 9
+[   47.138396] xxx-pd-manager soc:xxx_pd_manager: pd_tcp_notifier_call source vbus 0mV
+[   47.146293] xxx-pd-manager soc:xxx_pd_manager: pd_tcp_notifier_call - source vbus 0v output
 [   47.154859] set vbus status: 0
 
-[   47.269901] pax-pd-manager soc:pax_pd_manager: pd_tcp_notifier_call event = 10
-[   47.277482] pax-pd-manager soc:pax_pd_manager: pd_tcp_notifier_call sink vbus 5000mV 100mA type(0x01)
+[   47.269901] xxx-pd-manager soc:xxx_pd_manager: pd_tcp_notifier_call event = 10
+[   47.277482] xxx-pd-manager soc:xxx_pd_manager: pd_tcp_notifier_call sink vbus 5000mV 100mA type(0x01)
 ```
 
 发现typec端是非租塞的srcu通知，而charger注册的是blocking阻塞式的，如下：
@@ -74,7 +74,7 @@ static int tcpc_check_notify_time(struct tcpc_device *tcpc,
 	return queue_work(tcpc->evt_wq, &tn_work->work) ? 0 : -EAGAIN;
 }
 
-pax通知：
+xxx通知：
 static BLOCKING_NOTIFIER_HEAD(mp2721_notify_list);
 
 /**
@@ -152,7 +152,7 @@ EXPORT_SYMBOL_GPL(mp2721_notify_call_chain);
 [    7.840505] <    7.837>TCPC-TYPEC:typec_init: TrySRC
 [    7.841025] tcpc_device_irq_enable : tcpc irq enable OK!
 [    7.843973] husb311_set_low_power_mode - write HUSB311_REG_BMC_CTRL=0x7
-[    7.844142] pax-pd-manager soc:pax_pd_manager: pd_tcp_notifier_call event = 12
+[    7.844142] xxx-pd-manager soc:xxx_pd_manager: pd_tcp_notifier_call event = 12
 [    7.865011] ALSA device list:
 [    7.867992]   No soundcards found.
 [    7.868093] ///PD dbg info 250d
@@ -184,11 +184,11 @@ EXPORT_SYMBOL_GPL(mp2721_notify_call_chain);
 [    8.003264] <    7.967>TCPC-TYPEC:[Try] Ignore
 [    8.019163] cc_detach
 [    8.066502] ///PD dbg info 75d
-[    8.069785] pax-pd-manager soc:pax_pd_manager: pd_tcp_notifier_call event = 9
-[    8.076980] pax-pd-manager soc:pax_pd_manager: pd_tcp_notifier_call source vbus 0mV
+[    8.069785] xxx-pd-manager soc:xxx_pd_manager: pd_tcp_notifier_call event = 9
+[    8.076980] xxx-pd-manager soc:xxx_pd_manager: pd_tcp_notifier_call source vbus 0mV
 [    8.084780] <    8.066>TCPC-TYPEC:[CC_Change] 0/0
 [    8.084780] <    8.066>TCPC-TYPEC:** TryWait.SNK
-[    8.084849] pax-pd-manager soc:pax_pd_manager: pd_tcp_notifier_call - source vbus 0v output
+[    8.084849] xxx-pd-manager soc:xxx_pd_manager: pd_tcp_notifier_call - source vbus 0v output
 [    8.102495] set_vbus_status status 0
 [    8.106105] Unable to handle kernel read from unreadable memory at virtual address 0000003a20942000
 [    8.114678] init: [libfs_mgr]superblock s_max_mnt_count:65535,/dev/block/by-name/metadata

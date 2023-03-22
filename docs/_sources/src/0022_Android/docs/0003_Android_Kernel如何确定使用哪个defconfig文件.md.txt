@@ -17,15 +17,15 @@ device/qcom/bengal_32/AndroidBoard.mk
 35:          KERNEL_DEFCONFIG := vendor/bengal_defconfig
 
 mtk:
-device/mediateksample/k62v1_64_pax/vnd_k62v1_64_pax.mk
+device/mediateksample/k62v1_64_xxx/vnd_k62v1_64_xxx.mk
 ifeq ($(TARGET_BUILD_VARIANT), eng)
-KERNEL_DEFCONFIG ?= k62v1_64_pax_debug_defconfig
+KERNEL_DEFCONFIG ?= k62v1_64_xxx_debug_defconfig
 endif
 ifeq ($(TARGET_BUILD_VARIANT), user)
-KERNEL_DEFCONFIG ?= k62v1_64_pax_defconfig
+KERNEL_DEFCONFIG ?= k62v1_64_xxx_defconfig
 endif
 ifeq ($(TARGET_BUILD_VARIANT), userdebug)
-KERNEL_DEFCONFIG ?= k62v1_64_pax_defconfig userdebug.config
+KERNEL_DEFCONFIG ?= k62v1_64_xxx_defconfig userdebug.config
 endif
 ```
 

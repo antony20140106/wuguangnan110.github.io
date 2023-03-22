@@ -1,10 +1,10 @@
 # 概述
 
-由于M50项目的key用完了，只能用M8的key。
+由于M5x项目的key用完了，只能用M8的key。
 
 # 实验过程
 
-* 万鑫提供M50的key下载地址如下：
+* 万鑫提供M5x的key下载地址如下：
 ```
 url=http://192.168.199.3:8446/vturkey  巴西
 url=http://172.20.62.11:8446/vturkey    巴西tectoy
@@ -38,9 +38,9 @@ keybox_uuid=6109_a96ab590b693bc1dae449b1ca25299fe5bbcd025f92644453f5c60f2f1f3207
  [09 25 14:12:31][INFO]<__kpha_init>: Load Config from "G:\M8项目\GMS\SN_Writer_Tool_exe_v10.2104.0.0-4363\tee_stuff\kph_in\kph_env.ini" OK.
  [09 25 14:12:31][INFO]<kpha_detect_server_mode>: version: 3.4.1
  [09 25 14:12:31][INFO]<__kpha_init>: META Version: 3.4.1
- [09 25 14:12:32][INFO]<get_cert_name>: certname: PAX_M8_mt6765.dat
- [09 25 14:12:32][WARN]<local_read>: fopen(G:\M8项目\GMS\SN_Writer_Tool_exe_v10.2104.0.0-4363\tee_stuff\kph_in\PAX_M8_mt6765.dat) failed: No such file or directory
- [09 25 14:12:32][WARN]<__kpha_init>: PAX_M8_mt6765.dat not exist, certname_len : 17
+ [09 25 14:12:32][INFO]<get_cert_name>: certname: xxx_M8_mt6765.dat
+ [09 25 14:12:32][WARN]<local_read>: fopen(G:\M8项目\GMS\SN_Writer_Tool_exe_v10.2104.0.0-4363\tee_stuff\kph_in\xxx_M8_mt6765.dat) failed: No such file or directory
+ [09 25 14:12:32][WARN]<__kpha_init>: xxx_M8_mt6765.dat not exist, certname_len : 17
  [09 25 14:12:32][INFO]<__kpha_init>: KPH: DEVICE [SN: <7CC02E0500000000> CHIPID: <b52f26ad4fba5f1ac44b7c01564c13b6>] start
  [09 25 14:12:32][INFO]<__kpha_init>: __kpha_init device_status version 2 >= 2, use truststore API to get truststore type
  [09 25 14:12:32][INFO]<__kpha_init>: TRUSTSTORE_TYPE: 4 TRUSTSTORE_status: 1
@@ -75,12 +75,12 @@ keybox_uuid=6109_a96ab590b693bc1dae449b1ca25299fe5bbcd025f92644453f5c60f2f1f3207
 11:33:22> [09 25 11:32:57][INFO]<__kpha_init>: TRUSTSTORE_TYPE: 4 TRUSTSTORE_status: 1
 11:33:22> [09 25 11:32:57][INFO]<__kpha_init>: __kpha_init device_status version 2 >= 2, use truststore API to get truststore type
 11:33:22> [09 25 11:32:57][INFO]<__kpha_init>: KPH: DEVICE [SN: <7CC02E0500000000> CHIPID: <b52f26ad4fba5f1ac44b7c01564c13b6>] start
-11:33:22> [09 25 11:32:57][WARN]<__kpha_init>: PAX_M8_mt6765.dat not exist, certname_len : 17
-11:33:22> [09 25 11:32:57][WARN]<local_read>: fopen(G:\PPQ_MP_M50_20210826\bin\MTK\MTKSNWriter\tee_stuff\kph_in\PAX_M8_mt6765.dat) failed: No such file or directory
-11:33:22> [09 25 11:32:57][INFO]<get_cert_name>: certname: PAX_M8_mt6765.dat
+11:33:22> [09 25 11:32:57][WARN]<__kpha_init>: xxx_M8_mt6765.dat not exist, certname_len : 17
+11:33:22> [09 25 11:32:57][WARN]<local_read>: fopen(G:\PPQ_MP_M5x_20210826\bin\MTK\MTKSNWriter\tee_stuff\kph_in\xxx_M8_mt6765.dat) failed: No such file or directory
+11:33:22> [09 25 11:32:57][INFO]<get_cert_name>: certname: xxx_M8_mt6765.dat
 11:33:22> [09 25 11:32:56][INFO]<__kpha_init>: META Version: 3.4.1
 11:33:22> [09 25 11:32:56][INFO]<kpha_detect_server_mode>: version: 3.4.1
-11:33:22> [09 25 11:32:56][INFO]<__kpha_init>: Load Config from "G:\PPQ_MP_M50_20210826\bin\MTK\MTKSNWriter\tee_stuff\kph_in\kph_env.ini" OK.
+11:33:22> [09 25 11:32:56][INFO]<__kpha_init>: Load Config from "G:\PPQ_MP_M5x_20210826\bin\MTK\MTKSNWriter\tee_stuff\kph_in\kph_env.ini" OK.
 11:33:22> [09 25 11:32:56][INFO]<__kpha_init>: KPH: Begin. 4363
 11:33:21>setkeybox=0%
 11:33:21>setkeybox

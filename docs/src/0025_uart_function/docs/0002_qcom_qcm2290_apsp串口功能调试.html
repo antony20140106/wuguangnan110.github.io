@@ -85,7 +85,7 @@
 </section>
 <section id="apsp">
 <h1>APSP串口不通<a class="headerlink" href="#apsp" title="此标题的永久链接"></a></h1>
-<p>目前AP端的串口程序都是A6650项目可用的，但是在ABL阶段使用流控功能出现握手失败。</p>
+<p>目前AP端的串口程序都是A665x项目可用的，但是在ABL阶段使用流控功能出现握手失败。</p>
 <p>原因是SP端RTS功能未打开，当AP发送时RTS未拉低，SP端发送，AP不接收。</p>
 </section>
 <section id="k">
@@ -96,11 +96,11 @@
 <span class="w"> </span>       CLANG35_GCC_TOOLCHAIN := $(ANDROID_TOP)/prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-$(TARGET_GCC_VERSION)<span class="w"></span>
 <span class="w"> </span>endif<span class="w"></span>
 
-<span class="gi">+#[feature]-add-begin xielianxiong@paxsz.com,for M9200 abl</span><span class="w"></span>
-<span class="gi">+ifeq ($(M9200),true)</span><span class="w"></span>
-<span class="gi">+       M9200 := M9200=1</span><span class="w"></span>
+<span class="gi">+#[feature]-add-begin xielianxiong@xxxxx.com,for M92xx abl</span><span class="w"></span>
+<span class="gi">+ifeq ($(M92xx),true)</span><span class="w"></span>
+<span class="gi">+       M92xx := M92xx=1</span><span class="w"></span>
 <span class="gi">+endif</span><span class="w"></span>
-<span class="gi">+#[feature]-add-end xielianxiong@paxsz.com,for M9200 abl</span><span class="w"></span>
+<span class="gi">+#[feature]-add-end xielianxiong@xxxxx.com,for M92xx abl</span><span class="w"></span>
 <span class="gi">+</span><span class="w"></span>
 
 <span class="w"> </span># ABL ELF output<span class="w"></span>
@@ -111,7 +111,7 @@
 <span class="w"> </span>               BOARD_BOOTLOADER_PRODUCT_NAME=$(BOARD_BOOTLOADER_PRODUCT_NAME) \<span class="w"></span>
 <span class="gd">-               USERDATAIMAGE_FILE_SYSTEM_TYPE=$(USERDATAIMAGE_FILE_SYSTEM_TYPE)</span><span class="w"></span>
 <span class="gi">+               USERDATAIMAGE_FILE_SYSTEM_TYPE=$(USERDATAIMAGE_FILE_SYSTEM_TYPE) \</span><span class="w"></span>
-<span class="gi">+               $(M9200)</span><span class="w"></span>
+<span class="gi">+               $(M92xx)</span><span class="w"></span>
 <span class="gh">diff --git a/UM.9.15/bootable/bootloader/edk2/MdePkg/Library/UartQupv3Lib/UartXBL.c b/UM.9.15/bootable/bootloader/edk2/MdePkg/Library/UartQupv3Lib/UartXBL.c</span><span class="w"></span>
 <span class="gh">index bea319ce553..9cf597fcd2c 100755</span><span class="w"></span>
 <span class="gd">--- a/UM.9.15/bootable/bootloader/edk2/MdePkg/Library/UartQupv3Lib/UartXBL.c</span><span class="w"></span>
@@ -128,7 +128,7 @@
 <span class="w"> </span>{<span class="w"></span>
 <span class="w"> </span>   uart_open_config uart5_c;<span class="w"></span>
 
-<span class="gi">+#ifdef M9200</span><span class="w"></span>
+<span class="gi">+#ifdef M92xx</span><span class="w"></span>
 <span class="gi">+   uart5_c.baud_rate = 750000;//3000000;</span><span class="w"></span>
 <span class="gi">+#else</span><span class="w"></span>
 <span class="w"> </span>   uart5_c.baud_rate = 3000000;<span class="w"></span>
@@ -142,11 +142,11 @@
 <span class="w"> </span>  !if $(USERDATAIMAGE_FILE_SYSTEM_TYPE)<span class="w"></span>
 <span class="w"> </span>      GCC:*_*_*_CC_FLAGS = -DUSERDATA_FS_TYPE=\&quot;$(USERDATAIMAGE_FILE_SYSTEM_TYPE)\&quot;<span class="w"></span>
 <span class="w"> </span>  !endif<span class="w"></span>
-<span class="gi">+#[feature]-add-begin xielianxiong@paxsz.com,20221202,abl define M9200</span><span class="w"></span>
-<span class="gi">+  !if $(M9200) == 1</span><span class="w"></span>
-<span class="gi">+      GCC:*_*_*_CC_FLAGS = -DM9200</span><span class="w"></span>
+<span class="gi">+#[feature]-add-begin xielianxiong@xxxxx.com,20221202,abl define M92xx</span><span class="w"></span>
+<span class="gi">+  !if $(M92xx) == 1</span><span class="w"></span>
+<span class="gi">+      GCC:*_*_*_CC_FLAGS = -DM92xx</span><span class="w"></span>
 <span class="gi">+  !endif</span><span class="w"></span>
-<span class="gi">+#[feature]-add-end xielianxiong@paxsz.com,20221202,abl define M9200</span><span class="w"></span>
+<span class="gi">+#[feature]-add-end xielianxiong@xxxxx.com,20221202,abl define M92xx</span><span class="w"></span>
 
 <span class="w"> </span>[PcdsFixedAtBuild.common]<span class="w"></span>
 
@@ -158,11 +158,11 @@
 <span class="w"> </span>export LLVM_SAFESTACK_USE_PTR := $(LLVM_SAFESTACK_USE_PTR)<span class="w"></span>
 <span class="w"> </span>export LLVM_SAFESTACK_COLORING := $(LLVM_SAFESTACK_COLORING)<span class="w"></span>
 
-<span class="gi">+#[feature]-add-begin xielianxiong@paxsz.com,20221202,abl define M9200</span><span class="w"></span>
+<span class="gi">+#[feature]-add-begin xielianxiong@xxxxx.com,20221202,abl define M92xx</span><span class="w"></span>
 <span class="gi">+ifeq &quot;$(TARGET_PRODUCT)&quot; &quot;bengal_32go&quot;</span><span class="w"></span>
-<span class="gi">+export M9200 := true</span><span class="w"></span>
+<span class="gi">+export M92xx := true</span><span class="w"></span>
 <span class="gi">+endif</span><span class="w"></span>
-<span class="gi">+#[feature]-add-end xielianxiong@paxsz.com,20221202,abl define M9200</span><span class="w"></span>
+<span class="gi">+#[feature]-add-end xielianxiong@xxxxx.com,20221202,abl define M92xx</span><span class="w"></span>
 <span class="gi">+</span><span class="w"></span>
 <span class="w"> </span>.PHONY: all cleanall<span class="w"></span>
 
@@ -171,7 +171,7 @@
 <span class="w"> </span>       -D ENABLE_SYSTEMD_BOOTSLOT=$(ENABLE_SYSTEMD_BOOTSLOT) \<span class="w"></span>
 <span class="w"> </span>       -D RW_ROOTFS=$(RW_ROOTFS) \<span class="w"></span>
 <span class="w"> </span>       -D USERDATAIMAGE_FILE_SYSTEM_TYPE=$(USERDATAIMAGE_FILE_SYSTEM_TYPE) \<span class="w"></span>
-<span class="gi">+       -D M9200=$(M9200) \</span><span class="w"></span>
+<span class="gi">+       -D M92xx=$(M92xx) \</span><span class="w"></span>
 <span class="w"> </span>       -j build_modulepkg.log $*<span class="w"></span>
 
 <span class="w"> </span>       cp $(BUILD_ROOT)/FV/FVMAIN_COMPACT.Fv $(ABL_FV_IMG)<span class="w"></span>
@@ -187,13 +187,13 @@
 <div class="highlight-c notranslate"><div class="highlight"><pre><span></span>* CmdFlash
   └── if(is_sp_partition(PartitionName)) //判断下载名称是否为cfg、sp_boot、sp_reboot、sp_monitor、exsn、sp_mac、sp_time、sp_test
       ├── if(StrnCmp(PartitionName, L&quot;exsn&quot;, StrLen(L&quot;exsn&quot;)) == 0)
-      │   └── verify_pax_image(mFlashDataBuffer,mFlashNumDataBytes,0) //校验
+      │   └── verify_xxxxx_image(mFlashDataBuffer,mFlashNumDataBytes,0) //校验
       │       ├── memcpy(ucInfo, addr+len-16, 16); if (memcmp(ucInfo, &quot;SIGNED_VER:00001&quot;, 16)) //校验最后16字节是不是SIGNED_VER:00001字符
       │       ├── compute_sha(addr,len-284,hash); //计算exsn hash
       │       └── RSARecover(&amp;mf_puk[4], 256, &amp;mf_puk[260], 4, (uchar *)pTEncry_Digest, (uchar *)pTDigset); //RSA加解密运算函数
-      ├── if ( (StrnCmp(PartitionName, LPAX_CFG_PARTITION_NAME, StrLen(LPAX_CFG_PARTITION_NAME)) == 0) //#define LPAX_CFG_PARTITION_NAME     L&quot;pax_cfg&quot; #define LCFG_PARTITION_NAME         L&quot;cfg&quot;
-      │   ├── verify_pax_image(mFlashDataBuffer,mFlashNumDataBytes,0) 
-      │   └── Status = HandleRawImgFlash (LPAX_CFG_PARTITION_NAME,ARRAY_SIZE (LPAX_CFG_PARTITION_NAME),mFlashDataBuffer, mFlashNumDataBytes);
+      ├── if ( (StrnCmp(PartitionName, Lxxx_CFG_PARTITION_NAME, StrLen(Lxxx_CFG_PARTITION_NAME)) == 0) //#define Lxxx_CFG_PARTITION_NAME     L&quot;xxxxx_cfg&quot; #define LCFG_PARTITION_NAME         L&quot;cfg&quot;
+      │   ├── verify_xxxxx_image(mFlashDataBuffer,mFlashNumDataBytes,0) 
+      │   └── Status = HandleRawImgFlash (Lxxx_CFG_PARTITION_NAME,ARRAY_SIZE (Lxxx_CFG_PARTITION_NAME),mFlashDataBuffer, mFlashNumDataBytes);
       └── if (sp_download_all(PartitionName, mFlashDataBuffer, mFlashNumDataBytes) &lt; 0)
           ├── if(409600 &gt; sz)return -1;//sp monitor almost 500KB
           ├── if(StrnCmp(DownloadName, L&quot;sp_monitor&quot;, StrLen(L&quot;sp_monitor&quot;)) ==0 )
@@ -210,7 +210,7 @@
           │           │   ├── uchar cmd = CMD_TRANSE_FILE;
           │           │   ├── makePackage(g_tx_buf, cmd, tmp_buf, size);
           │           │   └── puts_sp(g_tx_buf, len);
-          │           │       └── pax_serial_putc(tx_buff, len);
+          │           │       └── xxxxx_serial_putc(tx_buff, len);
           │           │           ├── for (i = 0; i &lt; count; i++) len = uart5_write((UINT8*)buf+i*TXFIFO_SIZE,TXFIFO_SIZE);  MicroSecondDelay(250);//3M,3000000// #define TXFIFO_SIZE 64  所有数据64个byte为一个包 ，for循环发送
           │           │           ├── len = uart5_write((UINT8*)buf+count*TXFIFO_SIZE,bytes_to_tx % TXFIFO_SIZE); //最后一个64byte包
           │           │           └── MicroSecondDelay(250);//3M,3000000 延迟0.25ms
@@ -220,10 +220,10 @@
           │               └── uchar cmd = CMD_WRITE_FILE_TO_FLASH; // E4指令， sp将串口接收数据下载到flash
           ├── else if(StrnCmp(DownloadName, L&quot;sp_boot&quot;, StrLen(L&quot;sp_boot&quot;)) ==0 )
           │   └── downloadSpBoot(data, sz);
-          ├── pax_serial_flush(); //缓冲区清空
-          │   └── pax_serial_getc(buf, 512);
+          ├── xxxxx_serial_flush(); //缓冲区清空
+          │   └── xxxxx_serial_getc(buf, 512);
           │       └── uart5_read((UINT8 *)buf, bytes_to_rx);
-          └── pax_sp_reset(); //sp复位
+          └── xxxxx_sp_reset(); //sp复位
               ├── TLMMProtocol-&gt;GpioOut((UINT32)EFI_GPIO_CFG(32, 0, GPIO_OUTPUT, GPIO_NO_PULL, GPIO_8MA), GPIO_HIGH_VALUE);
               └── TLMMProtocol-&gt;GpioOut((UINT32)EFI_GPIO_CFG(32, 0, GPIO_OUTPUT, GPIO_NO_PULL, GPIO_8MA), GPIO_LOW_VALUE);
 </pre></div>
@@ -334,9 +334,9 @@ HAL库已经有几年了，但还是有很多工程师都使用标准外设库�
 <section id="id1">
 <h2>解决方案<a class="headerlink" href="#id1" title="此标题的永久链接"></a></h2>
 <p>暂时没有找到qcm2290平台fifo是否为空和是否传输完成标志，只能通过延时的方式。</p>
-<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="n">uint32</span><span class="w"> </span><span class="nf">pax_serial_putc</span><span class="p">(</span><span class="kt">void</span><span class="o">*</span><span class="w"> </span><span class="n">buf</span><span class="p">,</span><span class="w"> </span><span class="n">uint32</span><span class="w"> </span><span class="n">bytes_to_tx</span><span class="p">)</span><span class="w"></span>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="n">uint32</span><span class="w"> </span><span class="nf">xxxxx_serial_putc</span><span class="p">(</span><span class="kt">void</span><span class="o">*</span><span class="w"> </span><span class="n">buf</span><span class="p">,</span><span class="w"> </span><span class="n">uint32</span><span class="w"> </span><span class="n">bytes_to_tx</span><span class="p">)</span><span class="w"></span>
 <span class="p">{</span><span class="w"></span>
-<span class="c1">//[feature]-add-begin xielianxiong@paxsz.com,20220910,for txfifo only 64byte</span>
+<span class="c1">//[feature]-add-begin xielianxiong@xxxxx.com,20220910,for txfifo only 64byte</span>
 <span class="w">    </span><span class="cp">#define TXFIFO_SIZE 64</span>
 <span class="w">    </span><span class="n">uint32</span><span class="w"> </span><span class="n">i</span><span class="p">;</span><span class="w"></span>
 <span class="w">    </span><span class="n">uint32</span><span class="w"> </span><span class="n">len</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
@@ -347,7 +347,7 @@ HAL库已经有几年了，但还是有很多工程师都使用标准外设库�
 <span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">count</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
 <span class="w">         </span><span class="n">len</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">uart5_write</span><span class="p">((</span><span class="n">UINT8</span><span class="o">*</span><span class="p">)</span><span class="n">buf</span><span class="o">+</span><span class="n">i</span><span class="o">*</span><span class="n">TXFIFO_SIZE</span><span class="p">,</span><span class="n">TXFIFO_SIZE</span><span class="p">);</span><span class="w"></span>
 <span class="w">         </span><span class="n">totalcount</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">totalcount</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">len</span><span class="p">;</span><span class="w"></span>
-<span class="cp">#ifdef M9200</span>
+<span class="cp">#ifdef M92xx</span>
 <span class="w">         </span><span class="n">MicroSecondDelay</span><span class="p">(</span><span class="mi">1300</span><span class="p">);</span><span class="c1">//750000</span>
 <span class="cp">#else</span>
 <span class="w">         </span><span class="n">MicroSecondDelay</span><span class="p">(</span><span class="mi">250</span><span class="p">);</span><span class="c1">//3M,3000000</span>
@@ -356,13 +356,13 @@ HAL库已经有几年了，但还是有很多工程师都使用标准外设库�
 <span class="w">    </span><span class="n">len</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">uart5_write</span><span class="p">((</span><span class="n">UINT8</span><span class="o">*</span><span class="p">)</span><span class="n">buf</span><span class="o">+</span><span class="n">count</span><span class="o">*</span><span class="n">TXFIFO_SIZE</span><span class="p">,</span><span class="n">bytes_to_tx</span><span class="w"> </span><span class="o">%</span><span class="w"> </span><span class="n">TXFIFO_SIZE</span><span class="p">);</span><span class="c1">//size;</span>
 <span class="w">    </span><span class="n">totalcount</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">totalcount</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">len</span><span class="p">;</span><span class="w"></span>
 <span class="w">    </span><span class="c1">//DEBUG((EFI_D_ERROR, &quot;victor, totalcount = %d,len = %d,\n&quot;, totalcount,len));</span>
-<span class="cp">#ifdef M9200</span>
+<span class="cp">#ifdef M92xx</span>
 <span class="w">    </span><span class="n">MicroSecondDelay</span><span class="p">(</span><span class="mi">2300</span><span class="p">);</span><span class="c1">//750000</span>
 <span class="cp">#else</span>
 <span class="w">    </span><span class="n">MicroSecondDelay</span><span class="p">(</span><span class="mi">250</span><span class="p">);</span><span class="c1">//3M,3000000</span>
 <span class="cp">#endif</span>
 <span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">totalcount</span><span class="p">;</span><span class="w"></span>
-<span class="c1">//[feature]-add-begin xielianxiong@paxsz.com,20220910,for txfifo only 64byte</span>
+<span class="c1">//[feature]-add-begin xielianxiong@xxxxx.com,20220910,for txfifo only 64byte</span>
 <span class="p">}</span><span class="w"></span>
 </pre></div>
 </div>

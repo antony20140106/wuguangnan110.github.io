@@ -15,7 +15,7 @@ Android系统源码全编译时，都会通过PRODUCT_PACKAGES来控制源码模
  #   If a module is built for 2nd arch, its required module resolves to
  #   32-bit variant, if it exits. See the select-bitness-of-required-modules definition.
  # $(1): product makefile
-+#[FEATURE]-Add by wugangnan@paxsz.com, 2022/11/06, add PRODUCT_PACKAGES_REMOVE for delete unuse package
++#[FEATURE]-Add by xxx@xxxxx.com, 2022/11/06, add PRODUCT_PACKAGES_REMOVE for delete unuse package
  define product-installed-files
    $(eval _pif_modules := \
      $(call get-product-var,$(1),PRODUCT_PACKAGES) \
@@ -36,9 +36,9 @@ index edd24ae4a74..d936d3b9d8e 100644
  _product_single_value_vars += PRODUCT_NAME
  _product_single_value_vars += PRODUCT_MODEL
 
-+#[NEW FEATURE]-BEGIN by wugangnan@paxsz.com 2022-11-06,remove unused module
++#[NEW FEATURE]-BEGIN by xxx@xxxxx.com 2022-11-06,remove unused module
 +_product_single_value_vars += PRODUCT_PACKAGES_REMOVE
-+#[NEW FEATURE]-END by wugangnan@paxsz.com 2022-11-06,remove unused module
++#[NEW FEATURE]-END by xxx@xxxxx.com 2022-11-06,remove unused module
 
 --- a/UM.9.15/device/qcom/bengal/bengal.mk
 +++ b/UM.9.15/device/qcom/bengal/bengal.mk
@@ -46,8 +46,8 @@ index edd24ae4a74..d936d3b9d8e 100644
  PRODUCT_PACKAGES += libqlmodem
  PRODUCT_PACKAGES += android.hardware.quectelat@1.0-service
 
-+#[NEW FEATURE]-BEGIN by wugangnan@paxsz.com 2022-11-06,remove unused module
++#[NEW FEATURE]-BEGIN by xxx@xxxxx.com 2022-11-06,remove unused module
 +PRODUCT_PACKAGES_REMOVE += \
 +    hvdcp_opti
-+#[NEW FEATURE]-BEGIN by wugangnan@paxsz.com 2022-11-06,remove unused module
++#[NEW FEATURE]-BEGIN by xxx@xxxxx.com 2022-11-06,remove unused module
 ```

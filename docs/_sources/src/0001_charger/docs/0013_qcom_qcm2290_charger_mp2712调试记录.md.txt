@@ -1,22 +1,22 @@
 # 概述
 
-高通A6650 charger mp2721调试记录，该款ic不做bc1.2检测，没有adc采样功能，电流电压检测都将放到电池IC里面。 
+高通A665x charger mp2721调试记录，该款ic不做bc1.2检测，没有adc采样功能，电流电压检测都将放到电池IC里面。 
 
 # 参考
 
 * [0012_移远提供外置电量计移植培训](refers/0012_移远提供外置电量计移植培训)
-* [mp2721_datasheet](H:/wugn/md/pax_kearning_doc/docs/0001_charger/docs/refers/mp2721_datasheet)
-* [prolin_mp2723_kernel4.14参考代码](H:/wugn/md/pax_kearning_doc/docs/0001_charger/docs/refers/prolin_mp2723_kernel4.14参考代码)
+* [mp2721_datasheet](H:/wugn/md/xxx_kearning_doc/docs/0001_charger/docs/refers/mp2721_datasheet)
+* [prolin_mp2723_kernel4.14参考代码](H:/wugn/md/xxx_kearning_doc/docs/0001_charger/docs/refers/prolin_mp2723_kernel4.14参考代码)
 
 ```C++
 172.16.2.28
-pax/pax123456
+xxx/xxx123456
 
 A77 A950代码：
-/home/pax/6.A77_qcm/qcm2290 
+/home/xxx/6.A77_qcm/qcm2290 
 
 展讯平台代码：
-/home/pax/9.A920Pro_8581/uis8581e_x64/idh.code/bsp/kernel/kernel4.14/drivers/power/supply
+/home/xxx/9.A920Pro_8581/uis8581e_x64/idh.code/bsp/kernel/kernel4.14/drivers/power/supply
 
 移远提醒：设备树配这个属性  ，关闭平台内部充电
 --- a/UM.9.15/vendor/qcom/proprietary/devicetree-4.19/qcom/scuba-iot-idp.dtsi
@@ -244,8 +244,8 @@ i2cset -f -y 0 0x3f 0x08 0x1f b
 [Sun Apr 24 17:40:25 2022] < 5875.144>TCPC-PE-EVT:ps_rdy\x0a< 5875.144>TCPC-TCPC:sink_vbus: 12000 mV, 1500 mA\x0a< 5875.144>TCPC-PE:PD -> SNK_
 READY (CUN)\x0a< 5875.
 [Sun Apr 24 17:40:25 2022] 144>Enable PD_TIMER_SNK_FLOW_DELAY
-[Sun Apr 24 17:40:25 2022] PAX_CHG: miss_fault 0:wugn charge fault:0
-[Sun Apr 24 17:40:25 2022] PAX_CHG: mp2721_charger_irq_workfunc:charge fault:BOOST_OVP, status:Not charging
+[Sun Apr 24 17:40:25 2022] xxx_CHG: miss_fault 0:wugn charge fault:0
+[Sun Apr 24 17:40:25 2022] xxx_CHG: mp2721_charger_irq_workfunc:charge fault:BOOST_OVP, status:Not charging
 ```
 有一种方案，需要用cc协议判断是sink还是source来判断打开关闭otg功能。
 
@@ -296,6 +296,32 @@ When the converter operates in input current loop or input voltage limit loop, t
 当转换器在输入电流环路或输入电压限制环路中运行时，IINDPM_STAT 或 VINDPM_STAT 设置为 1，随后有一个 INT 脉冲中断（可屏蔽）。
 
 也就是说这个是为了保护电压电流的。
+
+## NVDC Battery MOSFET (BATTFET)
+
+BATTFET采用NVDC结构，将系统与电池隔离，控制电池充放电。借助电源路径管理，该设备通过利用输入源、电池或两者来确定系统 (SYS) 输出的优先级。
+
+* 当电池深度放电后，插入适配器，芯片会控制 SYS 电压略高于 SYS_MIN，从而在给电池充电的同时保证系统负载的供电。
+* 当系统负载加重，导致输入电流达到限流值时，充电电流将会自动减小，以保证系统的优先供电。
+* 如果系统负载继续加重，导致充电电流减小至 0 ，电池可以反向给系统供电。
+* 最小 SYS 电压可通过 REG06h 寄存器中的 SYS_MIN 位设置.
+
+![0013_0052.png](images/0013_0052.png)
+
+* 当电池电压高于 SYS_MIN 时， REG12h 寄存器中的 VSYS_STAT 寄存器显示 1，否则显示 0。
+
+![0013_0053.png](images/0013_0053.png)
+
+* REG16h 寄存器中的 BFET_STAT 位指示电池的充放电状态。
+
+![0013_0054.png](images/0013_0054.png)
+
+
+1. 当 VBATT 低于最小系统电压设置 (VSYS_MIN) 时，VSYS 被调节至 (VSYS_MIN + VTRACK)，其中 VTRACK 通常为 150mV。 根据 VBATT，BATTFET 以线性模式工作，以使用涓流充电、预充电或快速充电电流为电池充电。
+2. 一旦 VBATT 超过 VSYS_MIN，BATTFET 就会完全开启，VSYS 和 VBATT 之间的电压差就是 BATTFET 电阻压降。
+3. 当充电被禁用或终止时，VSYS 始终被调节为 VTRACK 加上 VSYS_MIN 和 VBATT 之间的较高值。 在这种情况下，VTRACK 通常为 100mV。
+
+![0013_0055.png](images/0013_0055.png)
 
 ### 寄存器介绍
 
@@ -698,7 +724,7 @@ bengal:/sys #
  genfscon sysfs /devices/platform/soc/soc:qcom,msm-audio-apr/soc:qcom,msm-audio-apr:qcom,q6core-audio/soc:qcom,msm-audio-apr:qcom,q6core-audio:bolero-cdc/va-macro/va_swr_ctrl/wakeup u:object_r:sysfs_wakeup:s0
  genfscon sysfs /devices/platform/soc/b300000.qcom,turing/wakeup u:object_r:sysfs_wakeup:s0
 +
-+#PAX charger mp2721
++#xxx charger mp2721
 +genfscon sysfs /devices/platform/soc/4a80000.i2c/i2c-0/0-003f/power_supply/mp2721_charger u:object_r:vendor_sysfs_battery_supply:s0
 ```
 修改之后能够正确上报充电状态，log及权限变更如下：
@@ -829,7 +855,7 @@ static void mp2721_plug_in(struct mp2721 *mp)
 ![0013_0023.png](images/0013_0023.png)
 
 
-第二次使用M50电池测试就正常了：
+第二次使用M5x电池测试就正常了：
 充电电流2A 电压5V，满充时间：2小时29分钟，回充电流200ma，暂无回充。
 
 充满时电压：4.358v
@@ -845,15 +871,15 @@ CV:4.4V
 [Sun Apr 24 17:40:40 2022] mp2721_info tcpc_notifier_call, old_state = UNATTACHED, new_state = ATTACHED_SNK
 [Sun Apr 24 17:40:40 2022] tcpc_notifier_call USB Plug in, pol = 0
 [Sun Apr 24 17:40:40 2022] handle_typec_attach: ++ en:1
-[Sun Apr 24 17:40:40 2022] PAX_CHG: mp2721_set_otg_enable en:0 enable_otg:0
+[Sun Apr 24 17:40:40 2022] xxx_CHG: mp2721_set_otg_enable en:0 enable_otg:0
 
 这个时间去获取充电类型还是unknown：
-[Sun Apr 24 21:55:22 2022] pax_tcpc_notifier_call USB Plug in, pol = 0
-[Sun Apr 24 21:55:22 2022] PAX_CHG_2721: mp2721_charge_type:get mp2721_info charge type:0
+[Sun Apr 24 21:55:22 2022] xxx_tcpc_notifier_call USB Plug in, pol = 0
+[Sun Apr 24 21:55:22 2022] xxx_CHG_2721: mp2721_charge_type:get mp2721_info charge type:0
 
-按照原始逻辑，pax_charger会唤醒线程去开启bc1.2检测：
-[Sun Apr 24 17:40:40 2022] pax_tcpc_notifier_call USB Plug in, pol = 0
-[Sun Apr 24 17:40:40 2022] PAX_CHG: _wake_up_charger:
+按照原始逻辑，xxx_charger会唤醒线程去开启bc1.2检测：
+[Sun Apr 24 17:40:40 2022] xxx_tcpc_notifier_call USB Plug in, pol = 0
+[Sun Apr 24 17:40:40 2022] xxx_CHG: _wake_up_charger:
 ```
 
 其次是PD选择5v3a档位，然后选择9v2a：
@@ -870,36 +896,36 @@ CV:4.4V
 * if(noti->typec_state.new_state == TYPEC_ATTACHED_SNK)
   * _wake_up_charger(info); //info->charger_thread_timeout = true;使能充电线程
     * charger_routine_thread(void *arg)
-      * pax_is_charger_on(struct pax_charger *info)
-	    * chr_type = pax_charger_dev_get_charger_type(info->chg1_dev);
+      * xxx_is_charger_on(struct xxx_charger *info)
+	    * chr_type = xxx_charger_dev_get_charger_type(info->chg1_dev);
 		  * if (chr_type != POWER_SUPPLY_USB_TYPE_UNKNOWN)
-		    * pax_charger_plug_in(info, chr_type);
+		    * xxx_charger_plug_in(info, chr_type);
 			  * info->charger_thread_polling = true;
 
 charger_routine_thread(void *arg)
 {
 	if (info->charger_thread_polling == true)
-		pax_charger_start_timer(info);	
-		  * pax_charger_alarm_timer_func(struct alarm *alarm, ktime_t now)
+		xxx_charger_start_timer(info);	
+		  * xxx_charger_alarm_timer_func(struct alarm *alarm, ktime_t now)
 		    * _wake_up_charger(info);
 }
 ```
 
 由于在typec状态是`TYPEC_ATTACHED_SNK`时获取bc1.2状态，线程跑起来后识别还是unknown类型，不会继续启动plug_in指令，也就不会再次启动timer去唤醒线程了，所以必须在能识别bc1.2的时候去执行`_wake_up_charger`启动线程，才会正常执行`plug_in`操作。
 
-* 正确做法是当mp2721中断上来后去读取bc1.2的状态才是ok的，此时通知pax_charger去wakeup线程：
+* 正确做法是当mp2721中断上来后去读取bc1.2的状态才是ok的，此时通知xxx_charger去wakeup线程：
 
 ```C++
-pax_charger.c:
+xxx_charger.c:
 #include "mp2721_notify.h"
-static int pax_plug_status_notifier(struct notifier_block *self, unsigned long event, void *value)
+static int xxx_plug_status_notifier(struct notifier_block *self, unsigned long event, void *value)
 {
 	int plug_en = 0;
-	struct pax_charger *info;
+	struct xxx_charger *info;
 	struct power_supply *psy;
 
-	psy = power_supply_get_by_name("pax-master-charger");	
-	info = (struct pax_charger *)power_supply_get_drvdata(psy);
+	psy = power_supply_get_by_name("xxx-master-charger");	
+	info = (struct xxx_charger *)power_supply_get_drvdata(psy);
 
 	switch (event) {
 		   case SET_PLUG_EN:
@@ -916,9 +942,9 @@ static int pax_plug_status_notifier(struct notifier_block *self, unsigned long e
 }
 
 
-static int pax_charger_probe(struct platform_device *pdev)
+static int xxx_charger_probe(struct platform_device *pdev)
 {
-	info->plug_nb.notifier_call = pax_plug_status_notifier;
+	info->plug_nb.notifier_call = xxx_plug_status_notifier;
 	ret = mp2721_notify_register_client(&info->plug_nb);
 	if (ret < 0) {
 		return 0;
@@ -994,14 +1020,14 @@ static void mp2721_charger_irq_workfunc(struct work_struct *work)
 log打印如下：
 ```log
 [Sun Apr 24 16:38:30 2022] rt-pd-manager soc:rt_pd_manager: pd_tcp_notifier_call sink vbus 5000mV 3000mA type(0x01)
-[Sun Apr 24 16:38:30 2022] PAX_CHG_MP2721: mp2721_info tcpc_notifier_call, old_state = UNATTACHED, new_state = ATTACHED_SNK
-[Sun Apr 24 16:38:30 2022] PAX_CHG_MP2721: handle_typec_attach: ++ en:1
+[Sun Apr 24 16:38:30 2022] xxx_CHG_MP2721: mp2721_info tcpc_notifier_call, old_state = UNATTACHED, new_state = ATTACHED_SNK
+[Sun Apr 24 16:38:30 2022] xxx_CHG_MP2721: handle_typec_attach: ++ en:1
 [Sun Apr 24 16:38:30 2022] rt-pd-manager soc:rt_pd_manager: pd_tcp_notifier_call Charger plug in, polarity = 1
-[Sun Apr 24 16:38:30 2022] PAX_CHG_MP2721: mp2721_set_otg_enable en:0 enable_otg:0
-[Sun Apr 24 16:38:30 2022] pax_tcpc_notifier_call USB Plug in, pol = 1
-[Sun Apr 24 16:38:30 2022] PAX_CHG_MP2721: mp2721_charge_type:get mp2721_info charge type:0
-[Sun Apr 24 16:38:30 2022] PAX_CHG_MP2721: typec_attach_thread: attach:1 charge_type = 0
-[Sun Apr 24 16:38:30 2022] PAX_CHG_MP2721: mp2721_charge_type:get mp2721_info charge type:0
+[Sun Apr 24 16:38:30 2022] xxx_CHG_MP2721: mp2721_set_otg_enable en:0 enable_otg:0
+[Sun Apr 24 16:38:30 2022] xxx_tcpc_notifier_call USB Plug in, pol = 1
+[Sun Apr 24 16:38:30 2022] xxx_CHG_MP2721: mp2721_charge_type:get mp2721_info charge type:0
+[Sun Apr 24 16:38:30 2022] xxx_CHG_MP2721: typec_attach_thread: attach:1 charge_type = 0
+[Sun Apr 24 16:38:30 2022] xxx_CHG_MP2721: mp2721_charge_type:get mp2721_info charge type:0
 [Sun Apr 24 16:38:30 2022] ///PD dbg info 672d
 [Sun Apr 24 16:38:30 2022] < 2672.629>TCPC-TCPC:tcpci_alert_power_status_changed_v10 ++\x0a< 2672.630>TCPC-TCPC:ps_change=2\x0a< 2672.631>TCPC-TYPEC:wait_ps=Disa
 [Sun Apr 24 16:38:30 2022] ble\x0a< 2672.631>TCPC-TYPEC:** Attached.SNK\x0a< 2672.633>TCPC-TCPC:wake_lock=1\x0a< 2672.633>TCPC-TCPC:sink_vbus: 5000 mV, 3000 mA\x0a< 26
@@ -1011,9 +1037,9 @@ log打印如下：
 [Sun Apr 24 16:38:30 2022] 5>Enable PD_TIMER_SINK_WAIT_CAP
 [Sun Apr 24 16:38:30 2022] ///PD dbg info 49d
 [Sun Apr 24 16:38:30 2022] < 2672.730>TCPC-TCPC:Alert:0x0004, Mask:0x230fff
-[Sun Apr 24 16:38:30 2022] PAX_CHG_MP2721: mp2721_info tcpc_notifier_call, old_state = UNATTACHED, new_state = Not charging
-[Sun Apr 24 16:38:30 2022] PAX_CHG_MP2721: tcpc_notifier_call sink vbus 9000mV 277mA type(0x86)
-[Sun Apr 24 16:38:30 2022] PAX_CHG_MP2721: mp2721_enable_vbus_ovp en:0 //在这里关闭ovp
+[Sun Apr 24 16:38:30 2022] xxx_CHG_MP2721: mp2721_info tcpc_notifier_call, old_state = UNATTACHED, new_state = Not charging
+[Sun Apr 24 16:38:30 2022] xxx_CHG_MP2721: tcpc_notifier_call sink vbus 9000mV 277mA type(0x86)
+[Sun Apr 24 16:38:30 2022] xxx_CHG_MP2721: mp2721_enable_vbus_ovp en:0 //在这里关闭ovp
 [Sun Apr 24 16:38:30 2022] rt-pd-manager soc:rt_pd_manager: pd_tcp_notifier_call sink vbus 9000mV 277mA type(0x86)
 [Sun Apr 24 16:38:30 2022] get prop 122 is not supported in usb
 [Sun Apr 24 16:38:30 2022] ///PD dbg info 979d
@@ -1036,8 +1062,8 @@ log打印如下：
 [Sun Apr 24 16:38:30 2022] 72.778>TCPC-TYPEC:Attached-> SINK(repeat)
 [Sun Apr 24 16:38:30 2022] ///PD dbg info 49d
 [Sun Apr 24 16:38:30 2022] < 2672.901>TCPC-TCPC:Alert:0x0004, Mask:0x230fff
-[Sun Apr 24 16:38:30 2022] PAX_CHG_MP2721: tcpc_notifier_call sink vbus 9000mV 2000mA type(0x84)
-[Sun Apr 24 16:38:30 2022] PAX_CHG_MP2721: mp2721_enable_vbus_ovp en:0
+[Sun Apr 24 16:38:30 2022] xxx_CHG_MP2721: tcpc_notifier_call sink vbus 9000mV 2000mA type(0x84)
+[Sun Apr 24 16:38:30 2022] xxx_CHG_MP2721: mp2721_enable_vbus_ovp en:0
 [Sun Apr 24 16:38:30 2022] rt-pd-manager soc:rt_pd_manager: pd_tcp_notifier_call sink vbus 9000mV 2000mA type(0x84)
 [Sun Apr 24 16:38:30 2022] get prop 122 is not supported in usb
 [Sun Apr 24 16:38:30 2022] set prop 122 is not supported
@@ -1057,8 +1083,8 @@ log打印如下：
 [Sun Apr 24 16:38:31 2022] Mask:0x230fff\x0a< 2673.222>TCPC-PE-EVT:no_support\x0a< 2673.222>TCPC-PE:PD -> SNK_READY (CUN)\x0a< 2673.223>TCPC-DPM:from_pe: 1, evt:29
 [Sun Apr 24 16:38:31 2022] , reaction:0x10000\x0a< 2673.223>TCPC-PE-EVT:tcp_event(disc_id), 29\x0a< 2673.223>TCPC-PE:VDM -> D_UID_REQ (CUN)\x0a< 2673.227>TCPC-TCPC:
 [Sun Apr 24 16:38:31 2022] Alert:0x0040, Mask:0x230fff\x0a< 2673.228>TCPC-PE-EVT:good_crc\x0a< 2673.228>Enable PD_TIMER_VDM_RESPONSE
-[Sun Apr 24 16:38:31 2022] PAX_CHG_MP2721: tcpc_notifier_call PD active
-[Sun Apr 24 16:38:31 2022] PAX_CHG_MP2721: tcpc_notifier_call sink vbus -1593946106mV -26329mA type(0xFF)
+[Sun Apr 24 16:38:31 2022] xxx_CHG_MP2721: tcpc_notifier_call PD active
+[Sun Apr 24 16:38:31 2022] xxx_CHG_MP2721: tcpc_notifier_call sink vbus -1593946106mV -26329mA type(0xFF)
 [Sun Apr 24 16:38:31 2022] rt-pd-manager soc:rt_pd_manager: pd_tcp_notifier_call pd state = 6
 [Sun Apr 24 16:38:31 2022] set prop 125 is not supported
 [Sun Apr 24 16:38:31 2022] set prop 122 is not supported
@@ -1071,7 +1097,7 @@ log打印如下：
 [Sun Apr 24 16:38:31 2022] -EVT:vdm_not_support\x0a< 2673.238>TCPC-PE:VDM -> D_UID_N (CUN)\x0a< 2673.238>TCPC-PE:DPM_Immediately\x0a< 2673.238>TCPC-PE-EVT:dpm_ack\x0a<
 [Sun Apr 24 16:38:31 2022] 2673.238>TCPC-PE:VDM -> SNK_READY (CUN)\x0a< 2673.238>TCPC-DPM:dp_dfp_u_notify_pe_ready\x0a< 2673.238>TCPC-DPM:PE_READY\x0a< 2673.238>TC
 [Sun Apr 24 16:38:31 2022] PC-PE:pd_state=6
-[Sun Apr 24 16:38:31 2022] PAX_CHG_MP2721: mp2721_charge_type:get mp2721_info charge type:8
+[Sun Apr 24 16:38:31 2022] xxx_CHG_MP2721: mp2721_charge_type:get mp2721_info charge type:8
 [Sun Apr 24 16:38:31 2022] SET_PLUG_EN: 0
 [Sun Apr 24 16:38:31 2022] type=1400 audit(1650789512.259:189): avc: denied { read } for comm="Binder:506_2" name="wakeup28" dev="sysfs" ino=36309 scontext=u:r:system_suspend:s0 tcontext=u:object_r:s
 ysfs:s0 tclass=dir permissive=0
@@ -1085,15 +1111,15 @@ ysfs:s0 tclass=dir permissive=0
 ysfs:s0 tclass=dir permissive=0
 [Sun Apr 24 16:38:31 2022] audit: audit_lost=55 audit_rate_limit=5 audit_backlog_limit=64
 [Sun Apr 24 16:38:31 2022] audit: rate limit exceeded
-[Sun Apr 24 16:38:31 2022] PAX_CHG_MP2721: mp2721_charge_type:get mp2721_info charge type:8
-[Sun Apr 24 16:38:31 2022] PAX_CHG: pax_is_charger_on chr_type = 2
-[Sun Apr 24 16:38:31 2022] PAX_CHG: pax_charger_plug_in
-[Sun Apr 24 16:38:31 2022] PAX_CHG: pax_is_charger_on plug in, type:2
-[Sun Apr 24 16:38:31 2022] PAX_CHG_MP2721: mp2721_plug_in:adapter plug in
-[Sun Apr 24 16:38:31 2022] PAX_CHG_MP2721: mp2721_adjust_vin_limit:Set absolute vindpm threshold 4500 successfully
-[Sun Apr 24 16:38:31 2022] PAX_CHG_MP2721: mp2721_plug_in: Set input current limit to 2000mA successfully
-[Sun Apr 24 16:38:31 2022] PAX_CHG_MP2721: chg_dump: CHG [online: 1, type: DCP, status: Charging, fault: OK, health: Good, ICHG = 4000mA, AICR = 2000mA, MIVR = 4440mV, IEOC = 240mA, CV = 4350mV]
-[Sun Apr 24 16:38:31 2022] PAX_CHG: charger_routine_thread end , 0
+[Sun Apr 24 16:38:31 2022] xxx_CHG_MP2721: mp2721_charge_type:get mp2721_info charge type:8
+[Sun Apr 24 16:38:31 2022] xxx_CHG: xxx_is_charger_on chr_type = 2
+[Sun Apr 24 16:38:31 2022] xxx_CHG: xxx_charger_plug_in
+[Sun Apr 24 16:38:31 2022] xxx_CHG: xxx_is_charger_on plug in, type:2
+[Sun Apr 24 16:38:31 2022] xxx_CHG_MP2721: mp2721_plug_in:adapter plug in
+[Sun Apr 24 16:38:31 2022] xxx_CHG_MP2721: mp2721_adjust_vin_limit:Set absolute vindpm threshold 4500 successfully
+[Sun Apr 24 16:38:31 2022] xxx_CHG_MP2721: mp2721_plug_in: Set input current limit to 2000mA successfully
+[Sun Apr 24 16:38:31 2022] xxx_CHG_MP2721: chg_dump: CHG [online: 1, type: DCP, status: Charging, fault: OK, health: Good, ICHG = 4000mA, AICR = 2000mA, MIVR = 4440mV, IEOC = 240mA, CV = 4350mV]
+[Sun Apr 24 16:38:31 2022] xxx_CHG: charger_routine_thread end , 0
 ```
 
 ## 8.电压升高至9v死机
@@ -1115,14 +1141,14 @@ ysfs:s0 tclass=dir permissive=0
 [Sun Apr 24 15:55:16 2022] <   78.215>TCPC-TYPEC:Attached-> NULL(repeat)
 [Sun Apr 24 15:55:16 2022] mp2721_info tcpc_notifier_call, old_state = UNATTACHED, new_state = (null)
 [Sun Apr 24 15:55:16 2022] tcpc_notifier_call sink vbus 5000mV 3000mA type(0x01)
-[Sun Apr 24 15:55:16 2022] PAX_CHG_MP2721: mp2721_enable_vbus_ovp en:1
+[Sun Apr 24 15:55:16 2022] xxx_CHG_MP2721: mp2721_enable_vbus_ovp en:1
 [Sun Apr 24 15:55:16 2022] rt-pd-manager soc:rt_pd_manager: pd_tcp_notifier_call sink vbus 5000mV 3000mA type(0x01)
 [Sun Apr 24 15:55:16 2022] mp2721_info tcpc_notifier_call, old_state = UNATTACHED, new_state = ATTACHED_SNK
 [Sun Apr 24 15:55:16 2022] handle_typec_attach: ++ en:1
 [Sun Apr 24 15:55:16 2022] rt-pd-manager soc:rt_pd_manager: pd_tcp_notifier_call Charger plug in, polarity = 1
-[Sun Apr 24 15:55:16 2022] PAX_CHG_MP2721: mp2721_set_otg_enable en:0 enable_otg:0
+[Sun Apr 24 15:55:16 2022] xxx_CHG_MP2721: mp2721_set_otg_enable en:0 enable_otg:0
 [Sun Apr 24 15:55:16 2022] typec_attach_thread: attach:1 charge_type = 0
-[Sun Apr 24 15:55:16 2022] pax_tcpc_notifier_call USB Plug in, pol = 1
+[Sun Apr 24 15:55:16 2022] xxx_tcpc_notifier_call USB Plug in, pol = 1
 [Sun Apr 24 15:55:16 2022] ///PD dbg info 721d
 [Sun Apr 24 15:55:16 2022] <   78.246>TCPC-TCPC:Alert:0x0002, Mask:0x23067f\x0a<   78.246>TCPC-TCPC:tcpci_alert_power_status_changed_v10 ++\x0a<   78.247>TCPC-TC
 [Sun Apr 24 15:55:16 2022] PC:ps_change=2\x0a<   78.248>TCPC-TYPEC:wait_ps=Disable\x0a<   78.248>TCPC-TYPEC:** Attached.SNK\x0a<   78.249>TCPC-TCPC:wake_lock=1\x0a<
@@ -1137,7 +1163,7 @@ ysfs:s0 tclass=dir permissive=0
 [Sun Apr 24 15:55:16 2022] <   78.348>TCPC-TCPC:Alert:0x0004, Mask:0x23067f
 [Sun Apr 24 15:55:16 2022] mp2721_info tcpc_notifier_call, old_state = UNATTACHED, new_state = Not charging
 [Sun Apr 24 15:55:16 2022] tcpc_notifier_call sink vbus 9000mV 277mA type(0x86)
-[Sun Apr 24 15:55:16 2022] PAX_CHG_MP2721: mp2721_enable_vbus_ovp en:0
+[Sun Apr 24 15:55:16 2022] xxx_CHG_MP2721: mp2721_enable_vbus_ovp en:0
 [Sun Apr 24 15:55:16 2022] rt-pd-manager soc:rt_pd_manager: pd_tcp_notifier_call sink vbus 9000mV 277mA type(0x86)
 [Sun Apr 24 15:55:16 2022] ///PD dbg info 979d
 [Sun Apr 24 15:55:16 2022] <   78.350>TCPC-PE-EVT:src_cap\x0a<   78.350>TCPC-PE:PD -> SNK_EVA_CAP (CUN)\x0a<   78.350>TCPC-PE:pd_rev=2\x0a<   78.350>TCPC-DPM:Policy
@@ -1169,10 +1195,10 @@ ysfs:s0 tclass=dir permissive=0
 
 死机打印如下：
 ```log
-    3.983122] PAX_CHG_MP2721: failed to read 0x07
+    3.983122] xxx_CHG_MP2721: failed to read 0x07
 [    3.987867] i2c_geni 4a80000.i2c: i2c error :-107
-[    3.992622] PAX_CHG_MP2721: mp2721_init_device:Failed to set watchdog timer:-107
-[    4.000048] PAX_CHG_MP2721: device init failure: -107
+[    3.992622] xxx_CHG_MP2721: mp2721_init_device:Failed to set watchdog timer:-107
+[    4.000048] xxx_CHG_MP2721: device init failure: -107
 [    4.005697] i2c_geni 4a88000.i2c: Bus frequency is set to 400000Hz
 [    4.030863] reg-cooling-device soc:qcom,rpm-smd:rpm-regulator-smpa2:cx-cdev-lvl: Linked as a consumer to regulator.18
 [    4.042151] reg-cooling-device soc:qcom,rpm-smd:rpm-regulator-ldoa1:mx-cdev-lvl: Linked as a consumer to regulator.22
@@ -1312,7 +1338,7 @@ static int mp2721_set_aicr(struct charger_device *chg_dev, int curr)
 查看寄存器表：
 ```shell
 开机打印：
-[    3.337015] PAX_CHG_MP2721: mp2721_parse_dt() iin_limit:2000mA
+[    3.337015] xxx_CHG_MP2721: mp2721_parse_dt() iin_limit:2000mA
 
 console:/sys/class/power_supply/usb # cat registers
 Charger IC:
@@ -1731,32 +1757,32 @@ fae建议示波器查看IC Vbus和SW脚工作情况：
 但是我们I2C代码是在完成bc1.2后就开始设置电流和打开充电功能，而且我们是先读取寄存器状态再写，如果读取出错了就完了,log如下，在enable_charger时如果刚好
 是拔出状态，此时去读取09寄存器值为0，然后写1，那这时buck就被手动关闭了。
 ```C++
-[  514.906840] pax_is_charger_on chr_type = 4
-[  514.906848] PAX_CHG: _wake_up_charger:
-[  514.908143] pax_is_charger_on chr_type = 4
+[  514.906840] xxx_is_charger_on chr_type = 4
+[  514.906848] xxx_CHG: _wake_up_charger:
+[  514.908143] xxx_is_charger_on chr_type = 4
 [  514.912539] init: Untracked pid 9005 exited with status 0
 [  514.915385] <  514.906>TCPC-TCPC:Alert:0x0002, Mask:0x230fff
 [  514.917614] pd_tcp_notifier_call event = TYPEC_STATE
 [  514.917617] tcpc_notifier_call, old_state = ATTACHED_SNK, new_state = UNATTACHED
 [  514.917619] pd_tcp_notifier_call Charger plug out
 [  514.917655] charger soc:charger: usb_dwork_handler Idle
-[  514.917963] PAX_CHG: support_fast_charging = 0
-[  514.917968] PAX_CHG: is_typec_adapter rp = 0 pd_type = 0
-[  514.917974] PAX_CHG: chg:-1,-1,2000,500 type:4:0 usb_unlimited:0 usbif:0 usbsm:0 aicl:-1 atm:0 bm:0 b:1
-[  514.917978] PAX_CHG: do_algorithm input_current_limit:2000 charging_current_limit:500
-[  514.918277] PAX_CHG_MP2721: reg :1  read data:0x13
-[  514.918453] PAX_CHG_MP2721: reg :1  write data:0x13
-[  514.918739] PAX_CHG_MP2721: reg :2  read data:0x6
-[  514.918913] PAX_CHG_MP2721: reg :2  write data:0x6
-[  514.919199] PAX_CHG_MP2721: reg :5  read data:0x1f
-[  514.922350] PAX_CHG: handle_typec_attach_dettach: ++ en:0
-[  514.923676] PAX_CHG_MP2721: reg :5  write data:0x1f
+[  514.917963] xxx_CHG: support_fast_charging = 0
+[  514.917968] xxx_CHG: is_typec_adapter rp = 0 pd_type = 0
+[  514.917974] xxx_CHG: chg:-1,-1,2000,500 type:4:0 usb_unlimited:0 usbif:0 usbsm:0 aicl:-1 atm:0 bm:0 b:1
+[  514.917978] xxx_CHG: do_algorithm input_current_limit:2000 charging_current_limit:500
+[  514.918277] xxx_CHG_MP2721: reg :1  read data:0x13
+[  514.918453] xxx_CHG_MP2721: reg :1  write data:0x13
+[  514.918739] xxx_CHG_MP2721: reg :2  read data:0x6
+[  514.918913] xxx_CHG_MP2721: reg :2  write data:0x6
+[  514.919199] xxx_CHG_MP2721: reg :5  read data:0x1f
+[  514.922350] xxx_CHG: handle_typec_attach_dettach: ++ en:0
+[  514.923676] xxx_CHG_MP2721: reg :5  write data:0x1f
 [  514.925271] USB cable not connected
 [  514.926409] android_work: sent uevent USB_STATE=DISCONNECTED
 [  514.927108] ipa ipa3_cfg_ep_ctrl:4812 pipe setting delay is not supported
-[  514.927636] PAX_CHG_MP2721: mp2721_irq_disable:
+[  514.927636] xxx_CHG_MP2721: mp2721_irq_disable:
 [  514.928433] mp2721 0-003f: mp2721_set_property() set charge_type:0, ret:0
-[  514.928437] PAX_CHG_MP2721: mp2721_set_property() pd_status:0
+[  514.928437] xxx_CHG_MP2721: mp2721_set_property() pd_status:0
 [  514.928998] pd_tcp_notifier_call event = PD_STATE
 [  514.929003] charger soc:charger: pd_tcp_notifier_call pd state = 0
 [  514.948245] ///PD dbg info 392d
@@ -1774,7 +1800,7 @@ fae建议示波器查看IC Vbus和SW脚工作情况：
 [  514.956321] <  514.922>TCPC-PE:pd_state=0
 [  514.956321] <  514.927>TCPC-TYPEC:** Unattached.SNK
 [  514.962525] pd_tcp_notifier_call event = SINK_VBUS
-[  514.970832] PAX_CHG_MP2721: reg :9  read data:0x0
+[  514.970832] xxx_CHG_MP2721: reg :9  read data:0x0
 [  514.972005] charger soc:charger: pd_tcp_notifier_call sink vbus 0mV 0mA type(0x00)
 [  514.972113] charger fault = 73305
 [  514.981457] husb311_set_low_power_mode - write HUSB311_REG_BMC_CTRL=0x7
@@ -1789,7 +1815,7 @@ fae建议示波器查看IC Vbus和SW脚工作情况：
 [  514.985974] <
 [  514.985976]   514.969>TCPC-TYPEC:[CC_Alert] 0/5
 [  514.989581] pd_tcp_notifier_call event = SOURCE_VBUS
-[  514.992560] PAX_CHG_MP2721: reg :9  write data:0x1
+[  514.992560] xxx_CHG_MP2721: reg :9  write data:0x1
 ```
 
 目前发现plugin和select_current两处都有做`enable_charger`操作，而select_current这里要慢一些，快速拔插操作容易造成冲突，而没有usb插入09寄存器buck和chg是都关闭了的状态，如果刚好拔出的时候去enable charger，读取的肯定是0，所以select_current这里的操作要关闭。
@@ -1811,46 +1837,46 @@ Reg[0x09] = 0x50
 
 * 解决方案：
 ```diff
---- a/UM.9.15/kernel/msm-4.19/drivers/misc/pax/power/pax_algorithm_charger.c
-+++ b/UM.9.15/kernel/msm-4.19/drivers/misc/pax/power/pax_algorithm_charger.c
+--- a/UM.9.15/kernel/msm-4.19/drivers/misc/xxx/power/xxx_algorithm_charger.c
++++ b/UM.9.15/kernel/msm-4.19/drivers/misc/xxx/power/xxx_algorithm_charger.c
 
-@@ -344,8 +353,8 @@ static int do_algorithm(struct pax_charger *info)
+@@ -344,8 +353,8 @@ static int do_algorithm(struct xxx_charger *info)
                 if (pdata->input_current_limit == 0 ||
                                 pdata->charging_current_limit == 0)
-                        pax_charger_dev_enable(info->chg1_dev, false);
+                        xxx_charger_dev_enable(info->chg1_dev, false);
 -               else
--                       pax_charger_dev_enable(info->chg1_dev, true);
+-                       xxx_charger_dev_enable(info->chg1_dev, true);
 +               //else
-+               //      pax_charger_dev_enable(info->chg1_dev, true);
++               //      xxx_charger_dev_enable(info->chg1_dev, true);
         }
 
 ```
 
 寄存器乱了，具体不知道什么原因，比如05寄存器，放在那里充电不动自动变了：
 ```C++
-[ 2133.353704] PAX_CHG: chg:-1,-1,2000,500 type:4:0 usb_unlimited:0 usbif:0 usbsm:0 aicl:-1 atm:0 bm:0 b:1
-[ 2133.363551] PAX_CHG: do_algorithm input_current_limit:2000 charging_current_limit:500
-[ 2133.372015] PAX_CHG_MP2721: reg :1  read data:0x13
-[ 2133.377342] PAX_CHG_MP2721: reg :1  write data:0x13
-[ 2133.383144] PAX_CHG_MP2721: reg :2  read data:0xc6
-[ 2133.389030] PAX_CHG_MP2721: reg :2  write data:0xc6
-[ 2133.395067] PAX_CHG_MP2721: reg :5  read data:0xdf
-[ 2133.400205] PAX_CHG_MP2721: reg :5  write data:0xdf
+[ 2133.353704] xxx_CHG: chg:-1,-1,2000,500 type:4:0 usb_unlimited:0 usbif:0 usbsm:0 aicl:-1 atm:0 bm:0 b:1
+[ 2133.363551] xxx_CHG: do_algorithm input_current_limit:2000 charging_current_limit:500
+[ 2133.372015] xxx_CHG_MP2721: reg :1  read data:0x13
+[ 2133.377342] xxx_CHG_MP2721: reg :1  write data:0x13
+[ 2133.383144] xxx_CHG_MP2721: reg :2  read data:0xc6
+[ 2133.389030] xxx_CHG_MP2721: reg :2  write data:0xc6
+[ 2133.395067] xxx_CHG_MP2721: reg :5  read data:0xdf
+[ 2133.400205] xxx_CHG_MP2721: reg :5  write data:0xdf
 [ 2133.408187] chg_dump: CHG [online: 1, type: SDP, status: Charging, fault: 0x0, ICHG = 480mA, AICR = 2000mA, MIVR = 4360mV, IEOC = 240mA, CV = 4375mV]
-[ 2133.421738] PAX_CHG: charger_routine_thread end , 0
-[ 2138.342269] pax_charger_alarm_timer_func: not suspend, wake up charger
-[ 2138.348857] PAX_CHG: _wake_up_charger:
-[ 2138.353155] pax_is_charger_on chr_type = 4
-[ 2138.358363] PAX_CHG: support_fast_charging = 0
-[ 2138.363033] PAX_CHG: is_typec_adapter rp = 500 pd_type = 0
-[ 2138.368837] PAX_CHG: chg:-1,-1,2000,500 type:4:0 usb_unlimited:0 usbif:0 usbsm:0 aicl:-1 atm:0 bm:0 b:1
-[ 2138.378690] PAX_CHG: do_algorithm input_current_limit:2000 charging_current_limit:500
-[ 2138.393598] PAX_CHG_MP2721: reg :1  read data:0xf4
-[ 2138.399601] PAX_CHG_MP2721: reg :1  write data:0x13
-[ 2138.415108] PAX_CHG_MP2721: reg :2  read data:0xf6
-[ 2138.423285] PAX_CHG_MP2721: reg :2  write data:0xc6
-[ 2138.431435] PAX_CHG_MP2721: reg :5  read data:0xb
-[ 2138.437692] PAX_CHG_MP2721: reg :5  write data:0x1f
+[ 2133.421738] xxx_CHG: charger_routine_thread end , 0
+[ 2138.342269] xxx_charger_alarm_timer_func: not suspend, wake up charger
+[ 2138.348857] xxx_CHG: _wake_up_charger:
+[ 2138.353155] xxx_is_charger_on chr_type = 4
+[ 2138.358363] xxx_CHG: support_fast_charging = 0
+[ 2138.363033] xxx_CHG: is_typec_adapter rp = 500 pd_type = 0
+[ 2138.368837] xxx_CHG: chg:-1,-1,2000,500 type:4:0 usb_unlimited:0 usbif:0 usbsm:0 aicl:-1 atm:0 bm:0 b:1
+[ 2138.378690] xxx_CHG: do_algorithm input_current_limit:2000 charging_current_limit:500
+[ 2138.393598] xxx_CHG_MP2721: reg :1  read data:0xf4
+[ 2138.399601] xxx_CHG_MP2721: reg :1  write data:0x13
+[ 2138.415108] xxx_CHG_MP2721: reg :2  read data:0xf6
+[ 2138.423285] xxx_CHG_MP2721: reg :2  write data:0xc6
+[ 2138.431435] xxx_CHG_MP2721: reg :5  read data:0xb
+[ 2138.437692] xxx_CHG_MP2721: reg :5  write data:0x1f
 ```
 
 目前解决方案是直接写死：
@@ -1892,64 +1918,64 @@ static int mp2721_set_cv(struct charger_device *chg_dev, u32 volt)
 
 刚开机发现`Reg[0x11] = 0x22`，也就是输入电压太低触发了`VINDPM occurred`，我们ICC电池电流设置的是4A，貌似太大了，设置成480ma试试。
 ```log
-[    3.557103] PAX_CHG_MP2721: ==_set_input_vol_limit, mivr=4360 mV
-[    3.563323] PAX_CHG_MP2721: reg :4  write data:0xf6
+[    3.557103] xxx_CHG_MP2721: ==_set_input_vol_limit, mivr=4360 mV
+[    3.563323] xxx_CHG_MP2721: reg :4  write data:0xf6
 [    3.569181] _enable_vbus_ovp en:0
-[    3.574211] PAX_CHG_MP2721: mp2721_info Reg[0x00] = 0x0b
-[    3.579841] PAX_CHG_MP2721: mp2721_info Reg[0x01] = 0x13
-[    3.585471] PAX_CHG_MP2721: mp2721_info Reg[0x02] = 0xe5
-[    3.591118] PAX_CHG_MP2721: mp2721_info Reg[0x03] = 0xa7
-[    3.596747] PAX_CHG_MP2721: mp2721_info Reg[0x04] = 0xf6
-[    3.602374] PAX_CHG_MP2721: mp2721_info Reg[0x05] = 0x1e
-[    3.608003] PAX_CHG_MP2721: mp2721_info Reg[0x06] = 0xa4
-[    3.613647] PAX_CHG_MP2721: mp2721_info Reg[0x07] = 0x0b
-[    3.619275] PAX_CHG_MP2721: mp2721_info Reg[0x08] = 0x2f
-[    3.624905] PAX_CHG_MP2721: mp2721_info Reg[0x09] = 0x53
-[    3.630535] PAX_CHG_MP2721: mp2721_info Reg[0x0a] = 0x23
-[    3.636176] PAX_CHG_MP2721: mp2721_info Reg[0x0b] = 0x10
-[    3.641807] PAX_CHG_MP2721: mp2721_info Reg[0x0c] = 0x11
-[    3.647436] PAX_CHG_MP2721: mp2721_info Reg[0x0d] = 0x60
-[    3.653079] PAX_CHG_MP2721: mp2721_info Reg[0x0e] = 0x99
-[    3.658708] PAX_CHG_MP2721: mp2721_info Reg[0x0f] = 0x00
-[    3.664339] PAX_CHG_MP2721: mp2721_info Reg[0x10] = 0x44
-[    3.669981] PAX_CHG_MP2721: mp2721_info Reg[0x11] = 0x22
-[    3.675616] PAX_CHG_MP2721: mp2721_info Reg[0x12] = 0x74
-[    3.681246] PAX_CHG_MP2721: mp2721_info Reg[0x13] = 0x60
-[    3.686876] PAX_CHG_MP2721: mp2721_info Reg[0x14] = 0x00
-[    3.692519] PAX_CHG_MP2721: mp2721_info Reg[0x15] = 0x00
-[    3.698149] PAX_CHG_MP2721: mp2721_info Reg[0x16] = 0x00
-[    3.704344] PAX_CHG_MP2721: mp2721_charger_probe:irq = 195
-[    3.705608] PAX_CHG_MP2721: mp2721_irq_disable:
+[    3.574211] xxx_CHG_MP2721: mp2721_info Reg[0x00] = 0x0b
+[    3.579841] xxx_CHG_MP2721: mp2721_info Reg[0x01] = 0x13
+[    3.585471] xxx_CHG_MP2721: mp2721_info Reg[0x02] = 0xe5
+[    3.591118] xxx_CHG_MP2721: mp2721_info Reg[0x03] = 0xa7
+[    3.596747] xxx_CHG_MP2721: mp2721_info Reg[0x04] = 0xf6
+[    3.602374] xxx_CHG_MP2721: mp2721_info Reg[0x05] = 0x1e
+[    3.608003] xxx_CHG_MP2721: mp2721_info Reg[0x06] = 0xa4
+[    3.613647] xxx_CHG_MP2721: mp2721_info Reg[0x07] = 0x0b
+[    3.619275] xxx_CHG_MP2721: mp2721_info Reg[0x08] = 0x2f
+[    3.624905] xxx_CHG_MP2721: mp2721_info Reg[0x09] = 0x53
+[    3.630535] xxx_CHG_MP2721: mp2721_info Reg[0x0a] = 0x23
+[    3.636176] xxx_CHG_MP2721: mp2721_info Reg[0x0b] = 0x10
+[    3.641807] xxx_CHG_MP2721: mp2721_info Reg[0x0c] = 0x11
+[    3.647436] xxx_CHG_MP2721: mp2721_info Reg[0x0d] = 0x60
+[    3.653079] xxx_CHG_MP2721: mp2721_info Reg[0x0e] = 0x99
+[    3.658708] xxx_CHG_MP2721: mp2721_info Reg[0x0f] = 0x00
+[    3.664339] xxx_CHG_MP2721: mp2721_info Reg[0x10] = 0x44
+[    3.669981] xxx_CHG_MP2721: mp2721_info Reg[0x11] = 0x22
+[    3.675616] xxx_CHG_MP2721: mp2721_info Reg[0x12] = 0x74
+[    3.681246] xxx_CHG_MP2721: mp2721_info Reg[0x13] = 0x60
+[    3.686876] xxx_CHG_MP2721: mp2721_info Reg[0x14] = 0x00
+[    3.692519] xxx_CHG_MP2721: mp2721_info Reg[0x15] = 0x00
+[    3.698149] xxx_CHG_MP2721: mp2721_info Reg[0x16] = 0x00
+[    3.704344] xxx_CHG_MP2721: mp2721_charger_probe:irq = 195
+[    3.705608] xxx_CHG_MP2721: mp2721_irq_disable:
 [    3.710413] bq27z746_i2c_probe enter
-[    3.714464] PAX_CHG_MP2721: mp2721_charger_irq_workfunc:mp2721 irq
+[    3.714464] xxx_CHG_MP2721: mp2721_charger_irq_workfunc:mp2721 irq
 [    3.721200] bq27z746_i2c_probe enter
-[    3.725449] PAX_CHG_MP2721: mp2721_irq_enable:
-[    3.727984] pax_battery_device_register: name=bq27z746
-[    3.732355] PAX_CHG_MP2721: mp2721_irq_disable:
-[    3.737621] [PAX_CHG] bq27z746_i2c_probe: success
-[    3.742058] PAX_CHG_MP2721: mp2721_charger_irq_workfunc:mp2721 irq
+[    3.725449] xxx_CHG_MP2721: mp2721_irq_enable:
+[    3.727984] xxx_battery_device_register: name=bq27z746
+[    3.732355] xxx_CHG_MP2721: mp2721_irq_disable:
+[    3.737621] [xxx_CHG] bq27z746_i2c_probe: success
+[    3.742058] xxx_CHG_MP2721: mp2721_charger_irq_workfunc:mp2721 irq
 [    3.746959] aws5480_i2c_probe enter
-[    3.754186] PAX_CHG_MP2721: mp2721_irq_enable:
-[    3.756824] [PAX_AUDIO_SWITCH]:aws5480_reg_read_byte_data read reg: 0 data: 09
-[    3.761016] PAX_CHG_MP2721: mp2721_irq_disable:
+[    3.754186] xxx_CHG_MP2721: mp2721_irq_enable:
+[    3.756824] [xxx_AUDIO_SWITCH]:aws5480_reg_read_byte_data read reg: 0 data: 09
+[    3.761016] xxx_CHG_MP2721: mp2721_irq_disable:
 [    3.768258] device type: 0x9
-[    3.772811] PAX_CHG_MP2721: mp2721_charger_irq_workfunc:mp2721 irq
+[    3.772811] xxx_CHG_MP2721: mp2721_charger_irq_workfunc:mp2721 irq
 [    3.775700] aws5480_i2c_probe enter
-[    3.783078] PAX_CHG_MP2721: mp2721_irq_enable:
-[    3.785496] [PAX_AUDIO_SWITCH] aws5480_i2c_probe: success
-[    3.789967] PAX_CHG_MP2721: mp2721_irq_disable:
+[    3.783078] xxx_CHG_MP2721: mp2721_irq_enable:
+[    3.785496] [xxx_AUDIO_SWITCH] aws5480_i2c_probe: success
+[    3.789967] xxx_CHG_MP2721: mp2721_irq_disable:
 [    3.796075] i2c_geni 4a88000.i2c: Bus frequency is set to 400000Hz
-[    3.799874] PAX_CHG_MP2721: mp2721_charger_irq_workfunc:mp2721 irq
-[    3.813365] PAX_CHG_MP2721: mp2721_irq_enable:
+[    3.799874] xxx_CHG_MP2721: mp2721_charger_irq_workfunc:mp2721 irq
+[    3.813365] xxx_CHG_MP2721: mp2721_irq_enable:
 [    3.815704] Couldn't parse device tree rc=-517
 ```
 
 修改如下：
 ```diff
-diff --git a/UM.9.15/vendor/qcom/proprietary/devicetree-4.19/qcom/a6650/a6650-scuba-iot-idp-overlay.dts b/UM.9.15/vendor/qcom/proprietary/devicetree-4.19/qcom/a6650/a6650-scuba-iot-idp-overlay.dts
+diff --git a/UM.9.15/vendor/qcom/proprietary/devicetree-4.19/qcom/a665x/a665x-scuba-iot-idp-overlay.dts b/UM.9.15/vendor/qcom/proprietary/devicetree-4.19/qcom/a665x/a665x-scuba-iot-idp-overlay.dts
 index 692edd65080..24cebade8a7 100755
---- a/UM.9.15/vendor/qcom/proprietary/devicetree-4.19/qcom/a6650/a6650-scuba-iot-idp-overlay.dts
-+++ b/UM.9.15/vendor/qcom/proprietary/devicetree-4.19/qcom/a6650/a6650-scuba-iot-idp-overlay.dts
+--- a/UM.9.15/vendor/qcom/proprietary/devicetree-4.19/qcom/a665x/a665x-scuba-iot-idp-overlay.dts
++++ b/UM.9.15/vendor/qcom/proprietary/devicetree-4.19/qcom/a665x/a665x-scuba-iot-idp-overlay.dts
 @@ -316,8 +316,8 @@
                 pinctrl-0 = <&charge_interrupt_pincfg>;
                 charger_name = "primary_chg";
@@ -1989,62 +2015,62 @@ allow system_suspend vendor_sysfs_usb_supply:file { read open getattr };
 
 healthd会周期性的读取charger的online状态，目前使用0x12寄存器的`VIN_READY`和`VIN_GOOD`作为online状态上报，正常充电过程偶发性online状态变为0，打印如下：
 ```
-[ 9587.718781] PAX_CHG: reg :19  read data:0x4
-[ 9587.725189] PAX_CHG: reg :18  read data:0x1
-[ 9587.729473] PAX_CHG: CHG [online: 1, type: DCP, status: Charging, fault: 0x0, ICHG = 4160mA, AICR = 2000mA, MIVR = 4360mV, IEOC = 240mA, CV = 4350mV]
-[ 9592.297240] PAX_CHG: reg :17  read data:0x0
-[ 9592.558891] PAX_CHG: reg :1  read data:0xa7
-[ 9592.570196] PAX_CHG: reg :18  read data:0x0
-[ 9592.574668] PAX_BMS:bms_info_update clear NC_DISABLE_CHG_BY_USER flag
-[ 9592.587299] PAX_CHG: Battery: [ status:Charging, health:Good, present:1, tech:Li-ion, capcity:100,cap_rm:4992 mah, vol:4331 mv, temp:32, curr:393 ma, ui_soc:100 ]
-[ 9592.590094] PAX_BMS: CHG [online: 0, type: 5, vol: 5000000, cur: 16800000, time: 8643], BAT [present: 1, status: 1, vol: 4331000, cur: 393000, resistance: 0, temp: 320, soc: 99], OTHER [skin_temp: 0, chg_vote: 0x0, notify_code: 0x0],
-[ 9592.606761] PAX_CHG: reg :18  read data:0x1
-[ 9592.627644] PAX_CHG: reg :1  read data:0x13
-[ 9592.633466] PAX_CHG: reg :18  read data:0x1
-[ 9592.638089] PAX_CHG: reg :1  read data:0x13
-[ 9592.644875] PAX_CHG: _wake_up_charger:
-[ 9592.648768] PAX_CHG: pax_is_charger_on chr_type = [DCP] last_chr_type = [DCP]
-[ 9592.665917] PAX_CHG: [SW_JEITA] Battery Normal Temperature between 15 and 45 !!
-[ 9592.673742] PAX_CHG: [SW_JEITA]preState:3 newState:3 tmp:32 cv:0
-[ 9592.679949] PAX_CHG: tmp:32 (jeita:1 sm:3 cv:0 en:1) thm_sm:1 en:1 can_en:1
-[ 9592.687856] PAX_CHG: reg :19  read data:0x4
-[ 9592.692156] PAX_CHG: chg:-1,-1,2000,4160 type:5:6 aicl:-1 bootmode:0 pd:1
-[ 9592.698993] PAX_CHG: pax_charger_update, delay<30>
-[ 9592.703822] PAX_CHG: do_algorithm input_current_limit:2000 charging_current_limit:4160
-[ 9592.716386] PAX_CHG: reg :2  read data:0x34
-[ 9592.721370] PAX_CHG: reg :1  read data:0x13
-[ 9592.726244] PAX_CHG: reg :3  read data:0x7
-[ 9592.731999] PAX_CHG: reg :4  read data:0x6
-[ 9592.737734] PAX_CHG: reg :18  read data:0x1
-[ 9592.742911] PAX_CHG: reg :19  read data:0x4
-[ 9592.747859] PAX_CHG: reg :5  read data:0x1e
-[ 9592.753548] PAX_CHG: reg :19  read data:0x4
-[ 9592.759285] PAX_CHG: reg :18  read data:0x1
-[ 9592.770881] PAX_CHG: reg :18  read data:0x0
-[ 9592.775213] PAX_CHG: CHG [online: 0, type: DCP, status: Charging, fault: 0x0, ICHG = 4160mA, AICR = 2000mA, MIVR = 4360mV, IEOC = 240mA, CV = 4350mV]
-[ 9592.776812] PAX_CHG: reg :18  read data:0x0
-[ 9592.798955] PAX_CHG: reg :18  read data:0x0
-[ 9592.904710] PAX_CHG: Battery: [ status:Charging, health:Good, present:1, tech:Li-ion, capcity:100,cap_rm:4992 mah, vol:4331 mv, temp:32, curr:393 ma, ui_soc:100 ]
-[ 9592.919331] PAX_CHG: pax_battery_external_power_changed event, online:1, status:1, cur_chr_type:5
-[ 9592.928369] PAX_BMS:bms_wakeup
-[ 9592.936667] PAX_CHG: reg :19  read data:0x4
-[ 9592.941354] PAX_CHG: reg :18  read data:0x1
-[ 9592.945737] PAX_BMS:pax_bms_external_power_changed online = 1
-[ 9592.945996] PAX_CHG: reg :1  read data:0x13
-[ 9592.970563] PAX_CHG: reg :18  read data:0x1
-[ 9592.977977] PAX_CHG: reg :18  read data:0x0
-[ 9592.978803] PAX_BMS: CHG [online: 1, type: 5, vol: 5000000, cur: 2000000, time: 8643], BAT [present: 1, status: 1, vol: 4331000, cur: 393000, resistance: 0, temp: 320, soc: 100], OTHER [skin_temp: 0, chg_vote: 0x0, notify_code: 0x0],
-[ 9593.003589] PAX_CHG: reg :18  read data:0x1
-[ 9593.008738] PAX_CHG: reg :18  read data:0x1
-[ 9593.013878] PAX_CHG: reg :18  read data:0x1
-[ 9593.019134] PAX_CHG: reg :1  read data:0x13
-[ 9593.052298] PAX_CHG: reg :19  read data:0x4
-[ 9593.057877] PAX_CHG: reg :1  read data:0x13
-[ 9593.064422] PAX_CHG: reg :1  read data:0x13
-[ 9593.073285] PAX_CHG: reg :18  read data:0x1
-[ 9593.084352] PAX_CHG: reg :1  read data:0x13
-[ 9593.092224] PAX_CHG: reg :18  read data:0x1
-[ 9593.098341] PAX_CHG: reg :1  read data:0x13
+[ 9587.718781] xxx_CHG: reg :19  read data:0x4
+[ 9587.725189] xxx_CHG: reg :18  read data:0x1
+[ 9587.729473] xxx_CHG: CHG [online: 1, type: DCP, status: Charging, fault: 0x0, ICHG = 4160mA, AICR = 2000mA, MIVR = 4360mV, IEOC = 240mA, CV = 4350mV]
+[ 9592.297240] xxx_CHG: reg :17  read data:0x0
+[ 9592.558891] xxx_CHG: reg :1  read data:0xa7
+[ 9592.570196] xxx_CHG: reg :18  read data:0x0
+[ 9592.574668] xxx_BMS:bms_info_update clear NC_DISABLE_CHG_BY_USER flag
+[ 9592.587299] xxx_CHG: Battery: [ status:Charging, health:Good, present:1, tech:Li-ion, capcity:100,cap_rm:4992 mah, vol:4331 mv, temp:32, curr:393 ma, ui_soc:100 ]
+[ 9592.590094] xxx_BMS: CHG [online: 0, type: 5, vol: 5000000, cur: 16800000, time: 8643], BAT [present: 1, status: 1, vol: 4331000, cur: 393000, resistance: 0, temp: 320, soc: 99], OTHER [skin_temp: 0, chg_vote: 0x0, notify_code: 0x0],
+[ 9592.606761] xxx_CHG: reg :18  read data:0x1
+[ 9592.627644] xxx_CHG: reg :1  read data:0x13
+[ 9592.633466] xxx_CHG: reg :18  read data:0x1
+[ 9592.638089] xxx_CHG: reg :1  read data:0x13
+[ 9592.644875] xxx_CHG: _wake_up_charger:
+[ 9592.648768] xxx_CHG: xxx_is_charger_on chr_type = [DCP] last_chr_type = [DCP]
+[ 9592.665917] xxx_CHG: [SW_JEITA] Battery Normal Temperature between 15 and 45 !!
+[ 9592.673742] xxx_CHG: [SW_JEITA]preState:3 newState:3 tmp:32 cv:0
+[ 9592.679949] xxx_CHG: tmp:32 (jeita:1 sm:3 cv:0 en:1) thm_sm:1 en:1 can_en:1
+[ 9592.687856] xxx_CHG: reg :19  read data:0x4
+[ 9592.692156] xxx_CHG: chg:-1,-1,2000,4160 type:5:6 aicl:-1 bootmode:0 pd:1
+[ 9592.698993] xxx_CHG: xxx_charger_update, delay<30>
+[ 9592.703822] xxx_CHG: do_algorithm input_current_limit:2000 charging_current_limit:4160
+[ 9592.716386] xxx_CHG: reg :2  read data:0x34
+[ 9592.721370] xxx_CHG: reg :1  read data:0x13
+[ 9592.726244] xxx_CHG: reg :3  read data:0x7
+[ 9592.731999] xxx_CHG: reg :4  read data:0x6
+[ 9592.737734] xxx_CHG: reg :18  read data:0x1
+[ 9592.742911] xxx_CHG: reg :19  read data:0x4
+[ 9592.747859] xxx_CHG: reg :5  read data:0x1e
+[ 9592.753548] xxx_CHG: reg :19  read data:0x4
+[ 9592.759285] xxx_CHG: reg :18  read data:0x1
+[ 9592.770881] xxx_CHG: reg :18  read data:0x0
+[ 9592.775213] xxx_CHG: CHG [online: 0, type: DCP, status: Charging, fault: 0x0, ICHG = 4160mA, AICR = 2000mA, MIVR = 4360mV, IEOC = 240mA, CV = 4350mV]
+[ 9592.776812] xxx_CHG: reg :18  read data:0x0
+[ 9592.798955] xxx_CHG: reg :18  read data:0x0
+[ 9592.904710] xxx_CHG: Battery: [ status:Charging, health:Good, present:1, tech:Li-ion, capcity:100,cap_rm:4992 mah, vol:4331 mv, temp:32, curr:393 ma, ui_soc:100 ]
+[ 9592.919331] xxx_CHG: xxx_battery_external_power_changed event, online:1, status:1, cur_chr_type:5
+[ 9592.928369] xxx_BMS:bms_wakeup
+[ 9592.936667] xxx_CHG: reg :19  read data:0x4
+[ 9592.941354] xxx_CHG: reg :18  read data:0x1
+[ 9592.945737] xxx_BMS:xxx_bms_external_power_changed online = 1
+[ 9592.945996] xxx_CHG: reg :1  read data:0x13
+[ 9592.970563] xxx_CHG: reg :18  read data:0x1
+[ 9592.977977] xxx_CHG: reg :18  read data:0x0
+[ 9592.978803] xxx_BMS: CHG [online: 1, type: 5, vol: 5000000, cur: 2000000, time: 8643], BAT [present: 1, status: 1, vol: 4331000, cur: 393000, resistance: 0, temp: 320, soc: 100], OTHER [skin_temp: 0, chg_vote: 0x0, notify_code: 0x0],
+[ 9593.003589] xxx_CHG: reg :18  read data:0x1
+[ 9593.008738] xxx_CHG: reg :18  read data:0x1
+[ 9593.013878] xxx_CHG: reg :18  read data:0x1
+[ 9593.019134] xxx_CHG: reg :1  read data:0x13
+[ 9593.052298] xxx_CHG: reg :19  read data:0x4
+[ 9593.057877] xxx_CHG: reg :1  read data:0x13
+[ 9593.064422] xxx_CHG: reg :1  read data:0x13
+[ 9593.073285] xxx_CHG: reg :18  read data:0x1
+[ 9593.084352] xxx_CHG: reg :1  read data:0x13
+[ 9593.092224] xxx_CHG: reg :18  read data:0x1
+[ 9593.098341] xxx_CHG: reg :1  read data:0x13
 [ 9593.359185] ext_spk_switch_put: set Ext_Spk_Switch val 1
 [ 9593.381195] msm_pcm_chmap_ctl_put: substream ref_count:0 invalid
 [ 9593.417533] send_afe_cal_type: No cal sent for cal_index 0, port_id = 0xb030! ret -22
@@ -2061,8 +2087,8 @@ VIN_UV和VIN_OV对应关系如下：
 
 用示波器看并没有跳变，不知道什么原因，由于VIN_RD和VIN_GD状态不稳定，charger online属性改为读取DPDM_STAT状态，修改如下：
 ```diff
---- a/UM.9.15/kernel/msm-4.19/drivers/misc/pax/power/mp2721_charger.c
-+++ b/UM.9.15/kernel/msm-4.19/drivers/misc/pax/power/mp2721_charger.c
+--- a/UM.9.15/kernel/msm-4.19/drivers/misc/xxx/power/mp2721_charger.c
++++ b/UM.9.15/kernel/msm-4.19/drivers/misc/xxx/power/mp2721_charger.c
 
 +/**********Reg11**********/
 +
@@ -2092,30 +2118,30 @@ VIN_UV和VIN_OV对应关系如下：
 
 经测试还是会偶发性掉线，就突然online变成0，打印如下：
 ```log
-11-02 11:56:33.103 E/PAX_CHG (    0): CHG [online: 0, type: SDP, status: Not charging, fault: 0x14060, ICHG = 480mA, AICR = 2000mA, MIVR = 4360mV, IEOC = 240mA, CV = 4375mV]
-11-02 11:56:33.104 E/PAX_BMS (    0): CHG [online: 0, type: 4, vol: 5000000, cur: 16800000, time: 0], BAT [present: 1, status: 3, vol: 4044000, cur: -63000, resistance: 0, temp: 310, soc: 78], OTHER [skin_temp: 0, chg_vote: 0x0, notify_code: 0x0],
-11-02 11:56:38.093 E/PAX_CHG (    0): pax_is_charger_on chr_type = [SDP] last_chr_type = [SDP]
-11-02 11:56:38.095 E/PAX_CHG (    0): [SW_JEITA] Battery Normal Temperature between 15 and 45 !!
-11-02 11:56:38.095 E/PAX_CHG (    0): [SW_JEITA]preState:3 newState:3 tmp:31 cv:0
-11-02 11:56:38.095 E/PAX_CHG (    0): tmp:31 (jeita:1 sm:3 cv:0 en:1) thm_sm:1 en:1 can_en:1
-11-02 11:56:38.096 E/PAX_CHG (    0): chg:-1,-1,2000,500 type:4:1 aicl:-1 bootmode:0 pd:0
-11-02 11:56:38.096 E/PAX_CHG (    0): do_algorithm input_current_limit:2000 charging_current_limit:500
-11-02 11:56:38.101 E/PAX_CHG (    0): CHG [online: 1, type: SDP, status: Not charging, fault: 0x0, ICHG = 480mA, AICR = 2000mA, MIVR = 4360mV, IEOC = 240mA, CV = 4375mV]
-11-02 11:56:38.224 E/PAX_BMS (    0): CHG [online: 1, type: 4, vol: 5000000, cur: 2000000, time: 0], BAT [present: 1, status: 3, vol: 4044000, cur: -63000, resistance: 0, temp: 310, soc: 78], OTHER [skin_temp: 0, chg_vote: 0x0, notify_code: 0x0],
-11-02 11:56:38.502 E/PAX_BAT (    0): [status:Not charging, health:Good, present:1, tech:Li-ion, capcity:78,cap_rm:3545 mah, vol:4044 mv, temp:32, curr:-63 ma, ui_soc:78]
+11-02 11:56:33.103 E/xxx_CHG (    0): CHG [online: 0, type: SDP, status: Not charging, fault: 0x14060, ICHG = 480mA, AICR = 2000mA, MIVR = 4360mV, IEOC = 240mA, CV = 4375mV]
+11-02 11:56:33.104 E/xxx_BMS (    0): CHG [online: 0, type: 4, vol: 5000000, cur: 16800000, time: 0], BAT [present: 1, status: 3, vol: 4044000, cur: -63000, resistance: 0, temp: 310, soc: 78], OTHER [skin_temp: 0, chg_vote: 0x0, notify_code: 0x0],
+11-02 11:56:38.093 E/xxx_CHG (    0): xxx_is_charger_on chr_type = [SDP] last_chr_type = [SDP]
+11-02 11:56:38.095 E/xxx_CHG (    0): [SW_JEITA] Battery Normal Temperature between 15 and 45 !!
+11-02 11:56:38.095 E/xxx_CHG (    0): [SW_JEITA]preState:3 newState:3 tmp:31 cv:0
+11-02 11:56:38.095 E/xxx_CHG (    0): tmp:31 (jeita:1 sm:3 cv:0 en:1) thm_sm:1 en:1 can_en:1
+11-02 11:56:38.096 E/xxx_CHG (    0): chg:-1,-1,2000,500 type:4:1 aicl:-1 bootmode:0 pd:0
+11-02 11:56:38.096 E/xxx_CHG (    0): do_algorithm input_current_limit:2000 charging_current_limit:500
+11-02 11:56:38.101 E/xxx_CHG (    0): CHG [online: 1, type: SDP, status: Not charging, fault: 0x0, ICHG = 480mA, AICR = 2000mA, MIVR = 4360mV, IEOC = 240mA, CV = 4375mV]
+11-02 11:56:38.224 E/xxx_BMS (    0): CHG [online: 1, type: 4, vol: 5000000, cur: 2000000, time: 0], BAT [present: 1, status: 3, vol: 4044000, cur: -63000, resistance: 0, temp: 310, soc: 78], OTHER [skin_temp: 0, chg_vote: 0x0, notify_code: 0x0],
+11-02 11:56:38.502 E/xxx_BAT (    0): [status:Not charging, health:Good, present:1, tech:Li-ion, capcity:78,cap_rm:3545 mah, vol:4044 mv, temp:32, curr:-63 ma, ui_soc:78]
 11-02 11:56:38.509 W/audit   (    0): audit_lost=3786 audit_rate_limit=5 audit_backlog_limit=64
 ```
 
 修改成加入typec attach进行判断：
 ```diff
---- a/UM.9.15/kernel/msm-4.19/drivers/misc/pax/power/paxpd-charger-manager.c
-+++ b/UM.9.15/kernel/msm-4.19/drivers/misc/pax/power/paxpd-charger-manager.c
+--- a/UM.9.15/kernel/msm-4.19/drivers/misc/xxx/power/xxxpd-charger-manager.c
++++ b/UM.9.15/kernel/msm-4.19/drivers/misc/xxx/power/xxxpd-charger-manager.c
 @@ -1382,7 +1382,7 @@ static int psy_charger_get_property(struct power_supply *psy,
 
         switch (psp) {
         case POWER_SUPPLY_PROP_ONLINE:
--               val->intval = pax_charger_dev_is_online(info->chg1_dev);
-+               val->intval = pax_charger_dev_is_online(info->chg1_dev) | (info->attach ? 1 : 0);
+-               val->intval = xxx_charger_dev_is_online(info->chg1_dev);
++               val->intval = xxx_charger_dev_is_online(info->chg1_dev) | (info->attach ? 1 : 0);
                 break;
 ```
 
@@ -2123,13 +2149,13 @@ VIN_UV和VIN_OV对应关系如下：
 
 异常寄存器如下：
 ```log
-[Thu Feb  2 01:08:18 2023] PAX_CHG: pax_is_charger_on chr_type = [SDP] last_chr_type = [SDP]
-[Thu Feb  2 01:08:18 2023] PAX_CHG: [SW_JEITA] Battery Normal Temperature between 15 and 45 !!
-[Thu Feb  2 01:08:18 2023] PAX_CHG: [SW_JEITA]preState:3 newState:3 tmp:25 cv:0
-[Thu Feb  2 01:08:18 2023] PAX_CHG: tmp:25 (jeita:1 sm:3 cv:0 en:1) thm_sm:1 en:1 can_en:1
-[Thu Feb  2 01:08:18 2023] PAX_CHG: chg:-1,-1,500,500 type:4:1 aicl:-1 bootmode:0 pd:0
-[Thu Feb  2 01:08:18 2023] PAX_CHG: do_algorithm input_current_limit:500 charging_current_limit:500
-[Thu Feb  2 01:08:18 2023] PAX_CHG: CHG [online: 0, type: SDP, status: Not charging, fault: 0x0, ICHG = 480mA, AICR = 500mA, MIVR = 4200mV, IEOC = 240mA, CV = 4375mV]
+[Thu Feb  2 01:08:18 2023] xxx_CHG: xxx_is_charger_on chr_type = [SDP] last_chr_type = [SDP]
+[Thu Feb  2 01:08:18 2023] xxx_CHG: [SW_JEITA] Battery Normal Temperature between 15 and 45 !!
+[Thu Feb  2 01:08:18 2023] xxx_CHG: [SW_JEITA]preState:3 newState:3 tmp:25 cv:0
+[Thu Feb  2 01:08:18 2023] xxx_CHG: tmp:25 (jeita:1 sm:3 cv:0 en:1) thm_sm:1 en:1 can_en:1
+[Thu Feb  2 01:08:18 2023] xxx_CHG: chg:-1,-1,500,500 type:4:1 aicl:-1 bootmode:0 pd:0
+[Thu Feb  2 01:08:18 2023] xxx_CHG: do_algorithm input_current_limit:500 charging_current_limit:500
+[Thu Feb  2 01:08:18 2023] xxx_CHG: CHG [online: 0, type: SDP, status: Not charging, fault: 0x0, ICHG = 480mA, AICR = 500mA, MIVR = 4200mV, IEOC = 240mA, CV = 4375mV]
 
 Charger IC:
 Reg[0x00] = 0x0b

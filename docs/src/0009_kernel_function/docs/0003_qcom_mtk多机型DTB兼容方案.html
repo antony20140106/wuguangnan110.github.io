@@ -68,7 +68,7 @@
 <li><a class="reference internal" href="#build-dtb-mk">build_dtb.mk分析</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#build-dtboimage-mk-dws-m50-dtb-merg-dtboimg-cfg">build_dtboimage.mk分析（dws M50.dtb.merg dtboimg.cfg编译流程）</a><ul>
+<li><a class="reference internal" href="#build-dtboimage-mk-dws-m5x-dtb-merg-dtboimg-cfg">build_dtboimage.mk分析（dws M5x.dtb.merg dtboimg.cfg编译流程）</a><ul>
 <li><a class="reference internal" href="#id11">build_dtb.mk分析</a></li>
 </ul>
 </li>
@@ -171,7 +171,7 @@
 <h2>ABL加载dtbo<a class="headerlink" href="#abldtbo" title="此标题的永久链接"></a></h2>
 <p>首先看一下dtb和dtbo里面的内容：</p>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>dtbo:
-m9200-scuba-iot-idp-overlay.dts
+m92xx-scuba-iot-idp-overlay.dts
 /dts-v1/<span class="p">;</span>
 /plugin/<span class="p">;</span>
 
@@ -187,18 +187,18 @@ m9200-scuba-iot-idp-overlay.dts
 	qcom,board-id <span class="o">=</span> &lt;<span class="m">34</span> <span class="m">0</span>&gt;<span class="p">;</span>
 
 	soc <span class="o">{</span>
-		pax_board_info <span class="o">{</span>
-			<span class="nv">compatible</span> <span class="o">=</span> <span class="s2">&quot;pax,board_info&quot;</span><span class="p">;</span>
-			pax,main_board <span class="o">=</span> <span class="s2">&quot;V01&quot;</span><span class="p">;</span>
-			pax,port_board <span class="o">=</span> <span class="s2">&quot;V01&quot;</span><span class="p">;</span>
-			pax,terminal_name <span class="o">=</span> <span class="s2">&quot;M9200&quot;</span><span class="p">;</span>
+		xxxxx_board_info <span class="o">{</span>
+			<span class="nv">compatible</span> <span class="o">=</span> <span class="s2">&quot;xxxxx,board_info&quot;</span><span class="p">;</span>
+			xxxxx,main_board <span class="o">=</span> <span class="s2">&quot;V01&quot;</span><span class="p">;</span>
+			xxxxx,port_board <span class="o">=</span> <span class="s2">&quot;V01&quot;</span><span class="p">;</span>
+			xxxxx,terminal_name <span class="o">=</span> <span class="s2">&quot;M92xx&quot;</span><span class="p">;</span>
 		<span class="o">}</span><span class="p">;</span>
 	<span class="o">}</span><span class="p">;</span>
 
 <span class="o">}</span><span class="p">;</span>
 
 dtb:
-m9200-scuba-iot-idp.dts
+m92xx-scuba-iot-idp.dts
 /dts-v1/<span class="p">;</span>
 
 <span class="c1">#include &quot;scuba-iot.dtsi&quot;</span>
@@ -209,11 +209,11 @@ m9200-scuba-iot-idp.dts
 	qcom,board-id <span class="o">=</span> &lt;<span class="m">34</span> <span class="m">0</span>&gt;<span class="p">;</span>
 
 	soc <span class="o">{</span>
-		pax_board_info <span class="o">{</span>
-			<span class="nv">compatible</span> <span class="o">=</span> <span class="s2">&quot;pax,board_info&quot;</span><span class="p">;</span>
-			pax,main_board <span class="o">=</span> <span class="s2">&quot;V01&quot;</span><span class="p">;</span>
-			pax,port_board <span class="o">=</span> <span class="s2">&quot;V01&quot;</span><span class="p">;</span>
-			pax,terminal_name <span class="o">=</span> <span class="s2">&quot;M9200&quot;</span><span class="p">;</span>
+		xxxxx_board_info <span class="o">{</span>
+			<span class="nv">compatible</span> <span class="o">=</span> <span class="s2">&quot;xxxxx,board_info&quot;</span><span class="p">;</span>
+			xxxxx,main_board <span class="o">=</span> <span class="s2">&quot;V01&quot;</span><span class="p">;</span>
+			xxxxx,port_board <span class="o">=</span> <span class="s2">&quot;V01&quot;</span><span class="p">;</span>
+			xxxxx,terminal_name <span class="o">=</span> <span class="s2">&quot;M92xx&quot;</span><span class="p">;</span>
 		<span class="o">}</span><span class="p">;</span>
 	<span class="o">}</span><span class="p">;</span>
 <span class="o">}</span><span class="p">;</span>
@@ -233,19 +233,19 @@ m9200-scuba-iot-idp.dts
           │       └── if (HeaderVersion  == BOOT_HEADER_VERSION_THREE)
           │           └── ImageBuffer = BootParamlistPtr-&gt;VendorImageBuffer; //从vendor_boot.img中获取dtb
           └── SocDtb = GetSocDtb (ImageBuffer,ImageSize,BootParamlistPtr-&gt;DtbOffset, (VOID *)BootParamlistPtr-&gt;DeviceTreeLoadAddr); //获取dtb
-              ├── ReadDtbFindMatch (&amp;CurDtbInfo, &amp;BestDtbInfo, BIT(SOC_MATCH) | BIT(PAX_BOARD_INFO_MATCH) //匹配dtb
+              ├── ReadDtbFindMatch (&amp;CurDtbInfo, &amp;BestDtbInfo, BIT(SOC_MATCH) | BIT(xxx_BOARD_INFO_MATCH) //匹配dtb
               │   ├── PlatProp = (CONST CHAR8 *)fdt_getprop (Dtb, RootOffset, &quot;qcom,msm-id&quot;,&amp;LenPlatId); //读取dtb中的qcom,msm-id
               │   ├── BoardProp = (CONST CHAR8 *)fdt_getprop (Dtb, RootOffset, &quot;qcom,board-id&quot;,&amp;LenBoardId);//读取dtb中的qcom,board-id
               │   ├── GetBoardMatchDtb (CurDtbInfo, BoardProp, LenBoardId); //和xbl中读出来的对比，Get the properties like variant id, subtype from Dtb then compare the dtb vs Board
               │   ├── (CONST CHAR8 *)fdt_getprop (Dtb, RootOffset, &quot;qcom,pmic-id&quot;, &amp;LenPmicId);
               │   ├── ReadBestPmicMatch (PmicProp, PmicMaxIdx, PmicEntCount, &amp;BestPmicInfo);// 对比qcom,pmic-id，dts中没这个
-              │   └── GetPaxBoardInfoMatchDtb(CurDtbInfo); //pax加的
-              │       ├── RootOffset = fdt_path_offset(Dtb, &quot;/soc/pax_board_info&quot;); //找到soc=pax_board_info的dtb
-              │       ├── MainBoardProp = (CONST CHAR8 *)fdt_getprop(Dtb, RootOffset, &quot;pax,main_board&quot;,
-              │       ├── PortBoardProp = (CONST CHAR8 *)fdt_getprop(Dtb, RootOffset, &quot;pax,port_board&quot;,
-              │       ├── TerminalNameProp = (CONST CHAR8 *)fdt_getprop(Dtb, RootOffset, &quot;pax,terminal_name&quot;, //读取dts中三个dtb属性
+              │   └── GetPaxBoardInfoMatchDtb(CurDtbInfo); //xxxxx加的
+              │       ├── RootOffset = fdt_path_offset(Dtb, &quot;/soc/xxxxx_board_info&quot;); //找到soc=xxxxx_board_info的dtb
+              │       ├── MainBoardProp = (CONST CHAR8 *)fdt_getprop(Dtb, RootOffset, &quot;xxxxx,main_board&quot;,
+              │       ├── PortBoardProp = (CONST CHAR8 *)fdt_getprop(Dtb, RootOffset, &quot;xxxxx,port_board&quot;,
+              │       ├── TerminalNameProp = (CONST CHAR8 *)fdt_getprop(Dtb, RootOffset, &quot;xxxxx,terminal_name&quot;, //读取dts中三个dtb属性
               │       ├── if (getCfgTermialName(Buff) &lt; 0) //对比terminal_name
-              │       │   └── return getCfgItemValStr(&quot;TERMINAL_NAME&quot;, buf); //pax_lib.c 我们terminal_name、port_board、main_board都是从sp配置文件中获取的
+              │       │   └── return getCfgItemValStr(&quot;TERMINAL_NAME&quot;, buf); //xxxxx_lib.c 我们terminal_name、port_board、main_board都是从sp配置文件中获取的
               │       ├── if (AsciiStrnCmp(Buff, TerminalName, TerminalNamePropLen))
               │       │   └── return EFI_NOT_FOUND;
               │       ├── if (getCfgMainBoard(Buff) &lt; 0)
@@ -438,7 +438,7 @@ m9200-scuba-iot-idp.dts
 <section id="id7">
 <h2>参考<a class="headerlink" href="#id7" title="此标题的永久链接"></a></h2>
 <ul class="simple">
-<li><p><a class="reference download internal" download="" href="../../../_downloads/a50d7d5ee7295b4c8ccf053e287502cc/0001-Title-board-id-M50-M8-dts.patch"><span class="xref download myst">0001-Title-board-id-M50-M8-dts.patch</span></a></p></li>
+<li><p><span class="xref myst">0001-Title-board-id-M5x-M8-dts.patch</span></p></li>
 <li><p><a class="reference download internal" download="" href="../../../_downloads/8c4be613c60ebb9056d029d492bbaca1/0001-a800-dts%E5%85%BC%E5%AE%B9.patch"><span class="xref download myst">0001-a800-dts兼容.patch</span></a></p></li>
 <li><p><a class="reference download internal" download="" href="../../../_downloads/4d758631362b2c0b64ec934e64809011/%E5%9F%BA%E4%BA%8EMTK6762%E5%B9%B3%E5%8F%B0Android%E9%80%82%E9%85%8D%E5%A4%9A%E6%9C%BA%E5%9E%8B%E6%96%B9%E6%A1%88v2.docx"><span class="xref download myst">基于MTK6762平台Android适配多机型方案v2.docx</span></a></p></li>
 <li><p><a class="reference external" href="https://blog.csdn.net/zhangdaxia2/article/details/100109684/">Android DTO和dtbo简介</a></p></li>
@@ -540,7 +540,7 @@ A800_MT6761_V05_V03.dts
 * NOTE: This function is for the internal projects of MT6771.
 *        -----------------------------------------
 *       |   ID4          ID5      PCB_ID          |
-*       |   Low          Low      M50             |
+*       |   Low          Low      M5x             |
 *       |   Low          High     M8              |
 *       |   High         Low      M8              |
 *       |   High         High     M8              |
@@ -554,13 +554,13 @@ int customized_get_odm_mdtbo_index(void)
         int idx = 0;
         int board_id = getBoardIDVals();
 
-        /*[FEATURE]-Add-BEGIN by zengjianfeng@paxsz.com, 2021/05/13, for multi dts */
+        /*[FEATURE]-Add-BEGIN by zengjianfeng@xxxxx.com, 2021/05/13, for multi dts */
         dprintf(INFO, &quot;get board id vals: 0x%02x\n&quot;, board_id);
 
         if ((board_id &amp; (0x03 &lt;&lt; 3)) &gt; 0)
                 idx = 1;
         dprintf(INFO, &quot;dtb index: 0x%02x\n&quot;, idx);
-        /*[FEATURE]-Add-END by zengjianfeng@paxsz.com, 2021/05/13, for multi dts */
+        /*[FEATURE]-Add-END by zengjianfeng@xxxxx.com, 2021/05/13, for multi dts */
 
         return idx;
 }
@@ -570,21 +570,21 @@ int customized_get_odm_mdtbo_index(void)
 <section id="kernel">
 <h2>Kernel修改<a class="headerlink" href="#kernel" title="此标题的永久链接"></a></h2>
 <p>修改<code class="docutils literal notranslate"><span class="pre">MTK_PROJECT_DTB_NAMES</span></code>，增加两个dtb。</p>
-<div class="highlight-diff notranslate"><div class="highlight"><pre><span></span><span class="gd">--- a/device/mediateksample/k62v1_64_pax/ProjectConfig.mk</span><span class="w"></span>
-<span class="gi">+++ b/device/mediateksample/k62v1_64_pax/ProjectConfig.mk</span><span class="w"></span>
+<div class="highlight-diff notranslate"><div class="highlight"><pre><span></span><span class="gd">--- a/device/mediateksample/k62v1_64_xxxxx/ProjectConfig.mk</span><span class="w"></span>
+<span class="gi">+++ b/device/mediateksample/k62v1_64_xxxxx/ProjectConfig.mk</span><span class="w"></span>
 <span class="gu">@@ -521,7 +521,7 @@ MTK_BT_HEARING_AID_SUPPORT = no</span><span class="w"></span>
 <span class="w"> </span>MTK_CAM_VPU_DSDN = no<span class="w"></span>
 <span class="w"> </span>MTK_AI_CAM_SUPPORT = no<span class="w"></span>
 <span class="w"> </span>MTK_BIP_UICC_SERVER_MODE = no<span class="w"></span>
 <span class="gd">-MTK_PROJECT_DTB_NAMES =</span><span class="w"></span>
-<span class="gi">+MTK_PROJECT_DTB_NAMES = mediatek/M50 mediatek/M8</span><span class="w"></span>
+<span class="gi">+MTK_PROJECT_DTB_NAMES = mediatek/M5x mediatek/M8</span><span class="w"></span>
 </pre></div>
 </div>
 </section>
 <section id="id9">
 <h2>结果验证<a class="headerlink" href="#id9" title="此标题的永久链接"></a></h2>
-<p>M8和M50的cmdline如下：</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>M50:
+<p>M8和M5x的cmdline如下：</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>M5x:
 cmdline:
 androidboot.dtbo_idx=0
 
@@ -620,14 +620,14 @@ wugn@jcrj-tf-compile:core$ tree
 
 
 merge目录：
-out/target/product/k62v1_64_pax/obj/KERNEL_OBJ/arch/arm64/boot/dts/mediatek
+out/target/product/k62v1_64_xxxxx/obj/KERNEL_OBJ/arch/arm64/boot/dts/mediatek
 wugn@jcrj-tf-compile:mediatek$ tree
 .
 ├── auto2712p1v1-ivi-boot.dtb
 ├── auto2712p1v1-ivi-nand-boot.dtb
-├── M50.dtb
-├── M50.dtb.merge
-├── M50.dts
+├── M5x.dtb
+├── M5x.dtb.merge
+├── M5x.dts
 ├── M8.dtb
 ├── M8.dtb.merge
 ├── M8.dts
@@ -636,7 +636,7 @@ wugn@jcrj-tf-compile:mediatek$ tree
 └── mt6765.dts
 
 mt6765.dtb及dtbo.img生成目录：
-out/target/product/k62v1_64_pax/obj/PACKAGING/dtb
+out/target/product/k62v1_64_xxxxx/obj/PACKAGING/dtb
 wugn@jcrj-tf-compile:PACKAGING$ tree dtb*
 dtb
 ├── mtk_dtb
@@ -648,7 +648,7 @@ dtboimage
 </div>
 <section id="dtbdtbo">
 <h3>dtb和dtbo定义<a class="headerlink" href="#dtbdtbo" title="此标题的永久链接"></a></h3>
-<p>mtk中dtb和dtbo编译脚本如下，<code class="docutils literal notranslate"><span class="pre">MTK_DTBOIMAGE_DTS</span></code>是<code class="docutils literal notranslate"><span class="pre">mediatek/M50</span> <span class="pre">mediatek/M8</span></code>：</p>
+<p>mtk中dtb和dtbo编译脚本如下，<code class="docutils literal notranslate"><span class="pre">MTK_DTBOIMAGE_DTS</span></code>是<code class="docutils literal notranslate"><span class="pre">mediatek/M5x</span> <span class="pre">mediatek/M8</span></code>：</p>
 <div class="highlight-makefile notranslate"><div class="highlight"><pre><span></span><span class="c">### DTB build template</span>
 <span class="nv">MTK_DTBIMAGE_DTS</span> <span class="o">:=</span> <span class="k">$(</span>addsuffix .dts,<span class="k">$(</span>addprefix <span class="k">$(</span>KERNEL_DIR<span class="k">)</span>/arch/<span class="k">$(</span>KERNEL_TARGET_ARCH<span class="k">)</span>/boot/dts/,<span class="k">$(</span>PLATFORM_DTB_NAME<span class="k">)))</span>
 <span class="cp">include device/mediatek/build/core/build_dtbimage.mk</span>
@@ -679,7 +679,7 @@ endif
 <section id="build-dtbimage-mk-mt6765-dtb">
 <h3>build_dtbimage.mk分析（mt6765.dtb编译流程）<a class="headerlink" href="#build-dtbimage-mk-mt6765-dtb" title="此标题的永久链接"></a></h3>
 <ul class="simple">
-<li><p>该脚本主要生成dtb文件<code class="docutils literal notranslate"><span class="pre">mt6765.dtb</span></code>,然后改名为<code class="docutils literal notranslate"><span class="pre">mtk_dtb</span></code>,目录<code class="docutils literal notranslate"><span class="pre">out/target/product/k62v1_64_pax/obj/PACKAGING/dtb</span></code>，代码如下：</p></li>
+<li><p>该脚本主要生成dtb文件<code class="docutils literal notranslate"><span class="pre">mt6765.dtb</span></code>,然后改名为<code class="docutils literal notranslate"><span class="pre">mtk_dtb</span></code>,目录<code class="docutils literal notranslate"><span class="pre">out/target/product/k62v1_64_xxxxx/obj/PACKAGING/dtb</span></code>，代码如下：</p></li>
 </ul>
 <div class="highlight-makefile notranslate"><div class="highlight"><pre><span></span>ifdef MTK_DTBIMAGE_DTS
 
@@ -778,7 +778,7 @@ include $(LINUX_KERNEL_VERSION)/kenv.mk
 endif
 
 ifeq ($(KERNEL_TARGET_ARCH),arm64) 
-#目录out/target/product/k62v1_64_pax/obj/KERNEL_OBJ/arch/arm64/boot/dts/mediatek
+#目录out/target/product/k62v1_64_xxxxx/obj/KERNEL_OBJ/arch/arm64/boot/dts/mediatek
 #将目录下dts换成dtb后缀
 # my_kernel_dtb_stem = mt6765.dtb
 my_kernel_dtb_stem := mediatek/$(notdir $(patsubst %.dts,%.dtb,$(LOCAL_SRC_FILES)))
@@ -832,26 +832,26 @@ LOCAL_SRC_FILES :=
 </div>
 </section>
 </section>
-<section id="build-dtboimage-mk-dws-m50-dtb-merg-dtboimg-cfg">
-<h3>build_dtboimage.mk分析（dws M50.dtb.merg dtboimg.cfg编译流程）<a class="headerlink" href="#build-dtboimage-mk-dws-m50-dtb-merg-dtboimg-cfg" title="此标题的永久链接"></a></h3>
+<section id="build-dtboimage-mk-dws-m5x-dtb-merg-dtboimg-cfg">
+<h3>build_dtboimage.mk分析（dws M5x.dtb.merg dtboimg.cfg编译流程）<a class="headerlink" href="#build-dtboimage-mk-dws-m5x-dtb-merg-dtboimg-cfg" title="此标题的永久链接"></a></h3>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">build_dtboimage.mk</span></code>:</p></li>
 </ul>
 <p>1.利用DrvGen.py生成dws的dts：</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">obj</span><span class="o">/</span><span class="n">KERNEL_OBJ</span><span class="o">/</span><span class="n">arch</span><span class="o">/</span><span class="n">arm64</span><span class="o">/</span><span class="n">boot</span><span class="o">/</span><span class="n">dts</span><span class="o">/</span><span class="n">k62v1_64_pax</span><span class="o">/</span><span class="n">M8</span><span class="o">/</span><span class="n">cust</span><span class="o">.</span><span class="n">dtsi</span>
-<span class="n">obj</span><span class="o">/</span><span class="n">KERNEL_OBJ</span><span class="o">/</span><span class="n">arch</span><span class="o">/</span><span class="n">arm64</span><span class="o">/</span><span class="n">boot</span><span class="o">/</span><span class="n">dts</span><span class="o">/</span><span class="n">k62v1_64_pax</span><span class="o">/</span><span class="n">M50</span><span class="o">/</span><span class="n">cust</span><span class="o">.</span><span class="n">dtsi</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">obj</span><span class="o">/</span><span class="n">KERNEL_OBJ</span><span class="o">/</span><span class="n">arch</span><span class="o">/</span><span class="n">arm64</span><span class="o">/</span><span class="n">boot</span><span class="o">/</span><span class="n">dts</span><span class="o">/</span><span class="n">k62v1_64_xxxxx</span><span class="o">/</span><span class="n">M8</span><span class="o">/</span><span class="n">cust</span><span class="o">.</span><span class="n">dtsi</span>
+<span class="n">obj</span><span class="o">/</span><span class="n">KERNEL_OBJ</span><span class="o">/</span><span class="n">arch</span><span class="o">/</span><span class="n">arm64</span><span class="o">/</span><span class="n">boot</span><span class="o">/</span><span class="n">dts</span><span class="o">/</span><span class="n">k62v1_64_xxxxx</span><span class="o">/</span><span class="n">M5x</span><span class="o">/</span><span class="n">cust</span><span class="o">.</span><span class="n">dtsi</span>
 </pre></div>
 </div>
-<p>2.生成merge文件M50.dtb.merge（M50.dtb + mt6762.dtb）
+<p>2.生成merge文件M5x.dtb.merge（M5x.dtb + mt6762.dtb）
 3.生成cfg文件，这个文件指定了DTBO由哪个DTS文件生成，内容如下：</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">dtboimg</span><span class="o">.</span><span class="n">cfg</span><span class="p">:</span>
-<span class="n">out</span><span class="o">/</span><span class="n">target</span><span class="o">/</span><span class="n">product</span><span class="o">/</span><span class="n">k62v1_64_pax</span><span class="o">/</span><span class="n">obj</span><span class="o">/</span><span class="n">KERNEL_OBJ</span><span class="o">/</span><span class="n">arch</span><span class="o">/</span><span class="n">arm64</span><span class="o">/</span><span class="n">boot</span><span class="o">/</span><span class="n">dts</span><span class="o">/</span><span class="n">mediatek</span><span class="o">/</span><span class="n">M50</span><span class="o">.</span><span class="n">dtb</span>
+<span class="n">out</span><span class="o">/</span><span class="n">target</span><span class="o">/</span><span class="n">product</span><span class="o">/</span><span class="n">k62v1_64_xxxxx</span><span class="o">/</span><span class="n">obj</span><span class="o">/</span><span class="n">KERNEL_OBJ</span><span class="o">/</span><span class="n">arch</span><span class="o">/</span><span class="n">arm64</span><span class="o">/</span><span class="n">boot</span><span class="o">/</span><span class="n">dts</span><span class="o">/</span><span class="n">mediatek</span><span class="o">/</span><span class="n">M5x</span><span class="o">.</span><span class="n">dtb</span>
  <span class="nb">id</span><span class="o">=</span><span class="mi">0</span>
-<span class="n">out</span><span class="o">/</span><span class="n">target</span><span class="o">/</span><span class="n">product</span><span class="o">/</span><span class="n">k62v1_64_pax</span><span class="o">/</span><span class="n">obj</span><span class="o">/</span><span class="n">KERNEL_OBJ</span><span class="o">/</span><span class="n">arch</span><span class="o">/</span><span class="n">arm64</span><span class="o">/</span><span class="n">boot</span><span class="o">/</span><span class="n">dts</span><span class="o">/</span><span class="n">mediatek</span><span class="o">/</span><span class="n">M8</span><span class="o">.</span><span class="n">dtb</span>
+<span class="n">out</span><span class="o">/</span><span class="n">target</span><span class="o">/</span><span class="n">product</span><span class="o">/</span><span class="n">k62v1_64_xxxxx</span><span class="o">/</span><span class="n">obj</span><span class="o">/</span><span class="n">KERNEL_OBJ</span><span class="o">/</span><span class="n">arch</span><span class="o">/</span><span class="n">arm64</span><span class="o">/</span><span class="n">boot</span><span class="o">/</span><span class="n">dts</span><span class="o">/</span><span class="n">mediatek</span><span class="o">/</span><span class="n">M8</span><span class="o">.</span><span class="n">dtb</span>
  <span class="nb">id</span><span class="o">=</span><span class="mi">1</span>
 
 <span class="n">dtbimg</span><span class="o">.</span><span class="n">cfg</span><span class="p">:</span>
-<span class="n">out</span><span class="o">/</span><span class="n">target</span><span class="o">/</span><span class="n">product</span><span class="o">/</span><span class="n">k62v1_64_pax</span><span class="o">/</span><span class="n">obj</span><span class="o">/</span><span class="n">PACKAGING</span><span class="o">/</span><span class="n">dtb</span><span class="o">/</span><span class="n">mtk_dtb</span>
+<span class="n">out</span><span class="o">/</span><span class="n">target</span><span class="o">/</span><span class="n">product</span><span class="o">/</span><span class="n">k62v1_64_xxxxx</span><span class="o">/</span><span class="n">obj</span><span class="o">/</span><span class="n">PACKAGING</span><span class="o">/</span><span class="n">dtb</span><span class="o">/</span><span class="n">mtk_dtb</span>
  <span class="nb">id</span><span class="o">=</span><span class="mi">0</span>
 </pre></div>
 </div>
@@ -877,7 +877,7 @@ $(2)/cust.dtsi: $(DRVGEN_TOOL) $(1) $(DRVGEN_FIG)
 	python $$(drvgen_tool) $(1) $$(prj_path) $$(prj_path) cust_dtsi
 endef
 
-#第二步：利用命令grep -m 1 &#39;#include [&lt;\&quot;].*\/cust\.dtsi[&gt;\&quot;]&#39; M50.dts | sed &#39;s/#include [&lt;&quot;]//g&#39; | sed &#39;s/\/cust\.dtsi[&gt;&quot;]//g&#39; | sed &#39;s/\/\*//g&#39; | sed &#39;s/\*\///g&#39; | sed &#39;s/ //g&#39; 输出base_prj = k62v1_64_pax/M50，将并生成M50.dtb.merge
+#第二步：利用命令grep -m 1 &#39;#include [&lt;\&quot;].*\/cust\.dtsi[&gt;\&quot;]&#39; M5x.dts | sed &#39;s/#include [&lt;&quot;]//g&#39; | sed &#39;s/\/cust\.dtsi[&gt;&quot;]//g&#39; | sed &#39;s/\/\*//g&#39; | sed &#39;s/\*\///g&#39; | sed &#39;s/ //g&#39; 输出base_prj = k62v1_64_xxxxx/M5x，将并生成M5x.dtb.merge
 MTK_DTBOIMAGE_DTB :=
 MTK_DTBOIMAGE_DTSI :=
 $(foreach i,$(MTK_DTBOIMAGE_DTS),\
@@ -927,15 +927,15 @@ endif#MTK_DTBOIMAGE_DTS
 </div>
 <section id="id11">
 <h4>build_dtb.mk分析<a class="headerlink" href="#id11" title="此标题的永久链接"></a></h4>
-<p>该脚本功能是用make命令在kernel中生成M50.dtb和M50.dtb.merge（M50.dtb + mt6762.dtb）:</p>
+<p>该脚本功能是用make命令在kernel中生成M5x.dtb和M5x.dtb.merge（M5x.dtb + mt6762.dtb）:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>160939 = 49565 + 111374
--rw-rw-r-- 1 wugn wugn 160939 Jul 11 22:24 M50.dtb.merge
--rw-rw-r-- 1 wugn wugn  49565 Jul 11 22:24 M50.dtb
+-rw-rw-r-- 1 wugn wugn 160939 Jul 11 22:24 M5x.dtb.merge
+-rw-rw-r-- 1 wugn wugn  49565 Jul 11 22:24 M5x.dtb
 -rw-rw-r-- 1 wugn wugn 111374 Jul 11 22:24 mt6765.dtb
 
 编译log：
 [ 19% 27973/140679] dtbo_check: 
-out/target/product/k62v1_64_pax/obj/KERNEL_OBJ/arch/arm64/boot/dts/mediatek/M50.dtb.merge
+out/target/product/k62v1_64_xxxxx/obj/KERNEL_OBJ/arch/arm64/boot/dts/mediatek/M5x.dtb.merge
 </pre></div>
 </div>
 <ul class="simple">
@@ -955,22 +955,22 @@ include $(LINUX_KERNEL_VERSION)/kenv.mk
 endif
 
 ifeq ($(KERNEL_TARGET_ARCH),arm64) 
-#目录out/target/product/k62v1_64_pax/obj/KERNEL_OBJ/arch/arm64/boot/dts/mediatek \
+#目录out/target/product/k62v1_64_xxxxx/obj/KERNEL_OBJ/arch/arm64/boot/dts/mediatek \
 #将目录下dts换成dtb后缀 \
-# my_kernel_dtb_stem = M50.dtb
+# my_kernel_dtb_stem = M5x.dtb
 my_kernel_dtb_stem := mediatek/$(notdir $(patsubst %.dts,%.dtb,$(LOCAL_SRC_FILES)))
 else
 my_kernel_dtb_stem := $(notdir $(patsubst %.dts,%.dtb,$(LOCAL_SRC_FILES)))
 endif
 
-# my_kernel_dts = M50
+# my_kernel_dts = M5x
 ifeq ($(KERNEL_TARGET_ARCH),arm64)
 my_kernel_dts := $(KERNEL_OUT)/arch/$(KERNEL_TARGET_ARCH)/boot/dts/mediatek/$(notdir $(LOCAL_SRC_FILES))
 else
 my_kernel_dts := $(KERNEL_OUT)/arch/$(KERNEL_TARGET_ARCH)/boot/dts/$(notdir $(LOCAL_SRC_FILES))
 endif
 
-# my_kernel_dtb = M50.dtb
+# my_kernel_dtb = M5x.dtb
 my_kernel_dtb := $(KERNEL_OUT)/arch/$(KERNEL_TARGET_ARCH)/boot/dts/$(my_kernel_dtb_stem)
 
 # cp $(LOCAL_SRC_FILES) $(my_kernel_dts)

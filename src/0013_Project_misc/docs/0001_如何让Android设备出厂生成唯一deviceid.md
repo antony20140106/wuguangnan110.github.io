@@ -10,18 +10,18 @@ Android出厂唯一serialno分析
 
 ## 概述
 
-在无SN的情况下，执行pax_adb devices命令，多台M8等机型获取的device ID是一样的，这就导致工厂在资源包下载、应用下载的时候不支持一拖多，效率很低，现在很多项目都已经修改了软件，支持无SN的情况下，多台终端获取ID不一样，如A930等，麻烦后续版本增加支持，对生产至关重要，谢谢！
+在无SN的情况下，执行xxxxx_adb devices命令，多台M8等机型获取的device ID是一样的，这就导致工厂在资源包下载、应用下载的时候不支持一拖多，效率很低，现在很多项目都已经修改了软件，支持无SN的情况下，多台终端获取ID不一样，如A930等，麻烦后续版本增加支持，对生产至关重要，谢谢！
 
 ![0001_默认id.png](images/0001_id.png)
 
-* 1.目前`pax_adb devices`指令获取的序列号是如下属性定义的，在mtk平台就是写serialno。
+* 1.目前`xxxxx_adb devices`指令获取的序列号是如下属性定义的，在mtk平台就是写serialno。
 
 ```log
-gPAYPHONEM50:/ $ getprop | grep 9HJJDADU7PPFDYU8
+gPAYPHONEM5x:/ $ getprop | grep 9HJJDADU7PPFDYU8
 [ro.boot.bt.serialno]: [9HJJDADU7PPFDYU8]
 [ro.boot.serialno]: [9HJJDADU7PPFDYU8]
 [ro.serialno]: [9HJJDADU7PPFDYU8]
-[ro.vendor.pax.fac.sn]: [9HJJDADU7PPFDYU8]
+[ro.vendor.xxxxx.fac.sn]: [9HJJDADU7PPFDYU8]
 ```
 
 ## 代码修改
@@ -63,7 +63,7 @@ gPAYPHONEM50:/ $ getprop | grep 9HJJDADU7PPFDYU8
 -       sn_buf[len] = '\0';
 -#endif  // CONFIG_MTK_USB_UNIQUE_SERIAL
 -
-+// [NEW FEATURE]-BEGIN by wugangnan@paxsz.com 2021-03-03, add default random sereialno by hash the key with chip id
++// [NEW FEATURE]-BEGIN by xxx@xxxxx.com 2021-03-03, add default random sereialno by hash the key with chip id
  #ifdef SERIAL_NUM_FROM_BARCODE
         len = (unsigned int)read_product_info(sn_buf, pn_buf);  // sn_buf[] may be changed.
         if (len == 0) {
@@ -83,7 +83,7 @@ gPAYPHONEM50:/ $ getprop | grep 9HJJDADU7PPFDYU8
 +               sn_buf[len] = '\0';
 +       }
 +#endif  // CONFIG_MTK_USB_UNIQUE_SERIAL
-+// [NEW FEATURE]-END by wugangnan@paxsz.com 2021-03-03, add default random sereialno by hash the key with chip id
++// [NEW FEATURE]-END by xxx@xxxxx.com 2021-03-03, add default random sereialno by hash the key with chip id
 
 -       //pal_log_err("Serial #: \"%s\"\n", sn_buf);
 +       pal_log_err("Serial #2: \"%s\"\n", sn_buf);

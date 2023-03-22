@@ -1,6 +1,6 @@
 # 概述
 
-将高通A6650平台的dts整合在一起。
+将高通A665x平台的dts整合在一起。
 
 # 参考
 
@@ -14,27 +14,27 @@
 
 ```
 ifeq ($(CONFIG_BUILD_ARM64_DT_OVERLAY),y)
-dts-dirs += a6650
-dts-dirs += m9200
+dts-dirs += a665x
+dts-dirs += m92xx
 endif
 ```
 
 * 目录结构：
 
 ```
-wugn@jcrj-tf-compile:qcom$ tree a6650/
-a6650/
-├── a6650-scuba-iot.dts
-├── a6650-scuba-iot-idp-overlay.dts
+wugn@jcrj-tf-compile:qcom$ tree a665x/
+a665x/
+├── a665x-scuba-iot.dts
+├── a665x-scuba-iot-idp-overlay.dts
 ├── Makefile
 ```
 
-* a6650目录下Makefile如下：
+* a665x目录下Makefile如下：
 
 ```
 ifeq ($(CONFIG_BUILD_ARM64_DT_OVERLAY),y)
-dtbo-$(CONFIG_ARCH_SCUBA) += a6650-scuba-iot-idp-overlay.dtbo
-a6650-scuba-iot-idp-overlay.dtbo-base := a6650-scuba-iot.dtb
+dtbo-$(CONFIG_ARCH_SCUBA) += a665x-scuba-iot-idp-overlay.dtbo
+a665x-scuba-iot-idp-overlay.dtbo-base := a665x-scuba-iot.dtb
 endif
 
 always		:= $(dtb-y)
@@ -95,10 +95,10 @@ scuba-iot.dtsi
 将以上关联的dtsi文件全部加进来，目前目录如下：
 
 ```c
-wugn@jcrj-tf-compile:a6650$ tree
+wugn@jcrj-tf-compile:a665x$ tree
 .
-├── a6650-scuba-iot.dts
-├── a6650-scuba-iot-idp-overlay.dts
+├── a665x-scuba-iot.dts
+├── a665x-scuba-iot-idp-overlay.dts
 ├── camera
 │   ├── scuba-camera.dtsi
 │   └── scuba-camera-sensor-idp.dtsi
@@ -149,7 +149,7 @@ wugn@jcrj-tf-compile:a6650$ tree
 Copying kernel image to prebuilt
 =============
 Copying target dtb/dtbo files to prebuilt
-cp: bad '/home/wugn/A6650-project/UM.9.15/out/target/product/bengal/obj/kernel/msm-4.19/arch/arm64/boot/dts/vendor/qcom/*.dtb': No such file or directory
+cp: bad '/home/wugn/A665x-project/UM.9.15/out/target/product/bengal/obj/kernel/msm-4.19/arch/arm64/boot/dts/vendor/qcom/*.dtb': No such file or directory
 [ 93% 2501/2665] target SharedLib: libril-qc-hal-qmi (out/target/product/bengal/obj/SHARED_LIBRARIES/libril-qc-hal-qmi_intermediates/LINKED/libril-qc-hal-qmi.so)
 [ 93% 2502/2665] target SharedLib: camera.qcom (out/target/product/bengal/obj/SHARED_LIBRARIES/camera.qcom_intermediates/LINKED/camera.qcom.so)
 ninja: build stopped: subcommand failed.
@@ -160,28 +160,28 @@ ninja: build stopped: subcommand failed.
 ```
 wugn@jcrj-tf-compile:qcom$ tree
 .
-├── a6650
-│   ├── a6650-scuba-iot.dtb
-│   ├── a6650-scuba-iot-idp-overlay.dtbo
+├── a665x
+│   ├── a665x-scuba-iot.dtb
+│   ├── a665x-scuba-iot-idp-overlay.dtbo
 │   └── modules.order
-├── m9200
-│   ├── m9200-scuba-iot.dtb
-│   ├── m9200-scuba-iot-idp-overlay.dtbo
+├── m92xx
+│   ├── m92xx-scuba-iot.dtb
+│   ├── m92xx-scuba-iot-idp-overlay.dtbo
 │   └── modules.order
 └── modules.order
 ```
 
-定位到脚本，原因是生成的dtb文件都放进a6650文件夹里面，找不到路径`device/qcom/kernelscripts/buildkernel.sh +185`修改如下，将`a6650`和`m9200`两个文件夹下的`dtb`和`dtbo`都拷贝过去：
+定位到脚本，原因是生成的dtb文件都放进a665x文件夹里面，找不到路径`device/qcom/kernelscripts/buildkernel.sh +185`修改如下，将`a665x`和`m92xx`两个文件夹下的`dtb`和`dtbo`都拷贝过去：
 
 ```shell
-PAX_DTBO_FILE="
-a6650
-m9200
+xxx_DTBO_FILE="
+a665x
+m92xx
 "
 
 copy_all_to_prebuilt()
 {
-    for FILE in $PAX_DTBO_FILE
+    for FILE in $xxx_DTBO_FILE
     do
             #cp -p -r ${OUT_DIR}/${IMAGE_FILE_PATH}/dts/vendor/qcom/*.dtb ${PREBUILT_OUT}/${IMAGE_FILE_PATH}/dts/vendor/qcom/
             #if [[ -e ${OUT_DIR}/${IMAGE_FILE_PATH}/dts/vendor/qcom/*.dtbo ]]; then
@@ -189,7 +189,7 @@ copy_all_to_prebuilt()
             if [[ -e ${OUT_DIR}/${IMAGE_FILE_PATH}/dts/vendor/qcom/$FILE/*.dtbo ]]; then
                     cp -p -r ${OUT_DIR}/${IMAGE_FILE_PATH}/dts/vendor/qcom/$FILE/*.dtbo ${PREBUILT_OUT}/${IMAGE_FILE_PATH}/dts/vendor/qcom/
             fi
-            echo "${OUT_DIR}/$PAX_DTBO_FILE copied to ${PREBUILT_OUT}"
+            echo "${OUT_DIR}/$xxx_DTBO_FILE copied to ${PREBUILT_OUT}"
     done
 }
 ```
@@ -202,14 +202,14 @@ copy_all_to_prebuilt()
 Copying kernel image to prebuilt
 =============
 Copying target dtb/dtbo files to prebuilt
-/home/wugn/A6650-project/UM.9.15/out/target/product/bengal/obj/kernel/msm-4.19/
-a6650
-m9200
- copied to /home/wugn/A6650-project/UM.9.15/kernel/ship_prebuilt/primary_kernel
-/home/wugn/A6650-project/UM.9.15/out/target/product/bengal/obj/kernel/msm-4.19/
-a6650
-m9200
- copied to /home/wugn/A6650-project/UM.9.15/kernel/ship_prebuilt/primary_kernel
+/home/wugn/A665x-project/UM.9.15/out/target/product/bengal/obj/kernel/msm-4.19/
+a665x
+m92xx
+ copied to /home/wugn/A665x-project/UM.9.15/kernel/ship_prebuilt/primary_kernel
+/home/wugn/A665x-project/UM.9.15/out/target/product/bengal/obj/kernel/msm-4.19/
+a665x
+m92xx
+ copied to /home/wugn/A665x-project/UM.9.15/kernel/ship_prebuilt/primary_kernel
 =============
 Copying arch-specific generated headers to prebuilt
 =============
@@ -234,22 +234,22 @@ cat: out/target/product/bengal/obj/kernel/msm-4.19/arch/arm64/boot/dts/vendor/qc
 ```shell
 copy_all_to_prebuilt()
 {
-	#[NEW FEATURE]-BEGIN by wugangnan@paxsz.com 2022-07-08, for multi dtb
-	PAX_DTB_FILE=`find ${OUT_DIR}/${IMAGE_FILE_PATH}/dts/vendor/qcom -name "*.dtb"`
-	PAX_DTBO_FILE=`find ${OUT_DIR}/${IMAGE_FILE_PATH}/dts/vendor/qcom -name "*.dtbo"`
+	#[NEW FEATURE]-BEGIN by xxx@xxxxx.com 2022-07-08, for multi dtb
+	xxx_DTB_FILE=`find ${OUT_DIR}/${IMAGE_FILE_PATH}/dts/vendor/qcom -name "*.dtb"`
+	xxx_DTBO_FILE=`find ${OUT_DIR}/${IMAGE_FILE_PATH}/dts/vendor/qcom -name "*.dtbo"`
 
-	for FILE in $PAX_DTB_FILE
+	for FILE in $xxx_DTB_FILE
 	do
 		mv ${FILE} ${OUT_DIR}/${IMAGE_FILE_PATH}/dts/vendor/qcom/
 		echo "${FILE} move to ${OUT_DIR}/${IMAGE_FILE_PATH}/dts/vendor/qcom/"
 	done
-	for FILE in $PAX_DTBO_FILE
+	for FILE in $xxx_DTBO_FILE
 	do
 		if [[ -e ${FILE} ]]; then
 			mv ${FILE} ${OUT_DIR}/${IMAGE_FILE_PATH}/dts/vendor/qcom/
 		fi
 		echo "${FILE} move to ${OUT_DIR}/${IMAGE_FILE_PATH}/dts/vendor/qcom/"
 	done
-	#[NEW FEATURE]-END by wugangnan@paxsz.com 2022-07-08, for multi dtb
+	#[NEW FEATURE]-END by xxx@xxxxx.com 2022-07-08, for multi dtb
 }
 ```

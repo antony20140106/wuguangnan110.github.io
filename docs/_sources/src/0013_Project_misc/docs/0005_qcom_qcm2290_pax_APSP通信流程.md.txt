@@ -5,7 +5,7 @@ AP/SP在ABL和init阶段。
 # sp_init ABL流程
 
 sp_init通过串口操作sp是在ABL阶段，主要有以下几个功能：
-* fastboot write pax nv
+* fastboot write xxxxx nv
 * fastboot flash 
 * init uart get cfg/authorinfo获取
 
@@ -13,25 +13,25 @@ sp_init通过串口操作sp是在ABL阶段，主要有以下几个功能：
 
 下面先看ap串口如何读取sp中的cfg和authinfo信息，分为以下几个步骤：
 * 1. 从cfg分区读取cfg信息。
-* 2. 从pax_nvram分区获取paxsp spsn spexsn ethmac wifimac。
+* 2. 从xxxxx_nvram分区获取xxxxxsp spsn spexsn ethmac wifimac。
 * 3. 如果支持sp则从sp再读一遍上面两个信息。
 ```C++
 * LinuxLoaderEntry //ABL入口
   └── sp_init();
-      ├── pax_sp_cfg_init()
+      ├── xxxxx_sp_cfg_init()
       │   ├── processGetAuthinfo();
-      │   │   ├── 从pax_nvram分区获取authinfo
+      │   │   ├── 从xxxxx_nvram分区获取authinfo
       │   │   └── authinfo_setup();
-      │   │       ├── StrnCpyS (Pname, ARRAY_SIZE (Pname),(CHAR16 *)LPAX_NVRAM_NAME, StrLen ((CHAR16 *)LPAX_NVRAM_NAME));
-      │   │       ├── pax_nvram_ptr =  AllocatePages (ALIGN_PAGES (PAX_PARTITION_SIZE, ALIGNMENT_MASK_4KB));
-      │   │       ├── LoadImageFromPartition (pax_nvram_ptr, &ImageSize,Pname);
-      │   │       ├── OtpReadSecMode(buff,pax_nvram_ptr);//从nvram分区里读取SecMode状态
-      │   │       ├── memcpy(&g_authinfo.AppDebugStatus,pax_nvram_ptr+BBL_APP_STATUS_OFFSET,BBL_APP_STATUS_SIZE); //应用调试态信息
-      │   │       └── memcpy(&g_authinfo.FirmDebugStatus,pax_nvram_ptr+BBL_FIRM_STATUS_OFFSET,BBL_FIRM_STATUS_SIZE); //固件调试态信息
+      │   │       ├── StrnCpyS (Pname, ARRAY_SIZE (Pname),(CHAR16 *)Lxxx_NVRAM_NAME, StrLen ((CHAR16 *)Lxxx_NVRAM_NAME));
+      │   │       ├── xxxxx_nvram_ptr =  AllocatePages (ALIGN_PAGES (xxx_PARTITION_SIZE, ALIGNMENT_MASK_4KB));
+      │   │       ├── LoadImageFromPartition (xxxxx_nvram_ptr, &ImageSize,Pname);
+      │   │       ├── OtpReadSecMode(buff,xxxxx_nvram_ptr);//从nvram分区里读取SecMode状态
+      │   │       ├── memcpy(&g_authinfo.AppDebugStatus,xxxxx_nvram_ptr+BBL_APP_STATUS_OFFSET,BBL_APP_STATUS_SIZE); //应用调试态信息
+      │   │       └── memcpy(&g_authinfo.FirmDebugStatus,xxxxx_nvram_ptr+BBL_FIRM_STATUS_OFFSET,BBL_FIRM_STATUS_SIZE); //固件调试态信息
       │   ├── 从cfg分区读取cfg信息
       │   ├── processGetCfginfo();
-      │   │   ├── #define LPAX_CFG_PARTITION_NAME     L"pax_cfg"
-      │   │   ├── StrnCpyS (Pname, ARRAY_SIZE (Pname),(CHAR16 *)LPAX_CFG_PARTITION_NAME, StrLen ((CHAR16 *)LPAX_CFG_PARTITION_NAME));
+      │   │   ├── #define Lxxx_CFG_PARTITION_NAME     L"xxxxx_cfg"
+      │   │   ├── StrnCpyS (Pname, ARRAY_SIZE (Pname),(CHAR16 *)Lxxx_CFG_PARTITION_NAME, StrLen ((CHAR16 *)Lxxx_CFG_PARTITION_NAME));
       │   │   ├── LoadImageFromPartition (ImageBuffer, &ImageSize,Pname);
       │   │   ├── #define SIGN_FLAG       "SIGNED_VER:00001"
       │   │   └── for(ImageSize = 0,p = ImageBuffer;ImageSize < MAX_PARAM_DATA - SIGN_FLAG_LENGTH + 1 ;ImageSize++,p++){
@@ -40,41 +40,41 @@ sp_init通过串口操作sp是在ABL阶段，主要有以下几个功能：
       │   │           └── find = parseAndSaveSpCfgFileInfo(ImageBuffer, ImageSize);
       │   │               ├── #define MAX_PARAM_DATA 2048
       │   │               └── memcpy(&cfginfo, pCfgDataBuf, cfgDataLen > MAX_PARAM_DATA ? MAX_PARAM_DATA : cfgDataLen); //直接拷贝2048 bit过来
-      │   ├── 从pax_nvram分区获取paxsp spsn spexsn ethmac wifimac
+      │   ├── 从xxxxx_nvram分区获取xxxxxsp spsn spexsn ethmac wifimac
       │   └── initOtherCfg(); 
-      │       ├── #define LPAX_NVRAM_NAME             L"pax_nvram"
-      │       ├── StrnCpyS (Pname, ARRAY_SIZE (Pname),(CHAR16 *)LPAX_NVRAM_NAME, StrLen ((CHAR16 *)LPAX_NVRAM_NAME)); 
-      │       ├── ImageBuffer =  AllocatePages (ALIGN_PAGES (PAX_PARTITION_SIZE, ALIGNMENT_MASK_4KB));
-      │       ├── LoadImageFromPartition (ImageBuffer, &ImageSize,Pname); //指针指向pax_nvram分区
-      │       ├── memcpy(char_len,ImageBuffer+UBOOT_EXSN_OFFSET,2); //获取paxsp exsn数据长度的buffer
-      │       ├── memset(g_other_cfg.paxspexsn, 0, sizeof(g_other_cfg.paxspexsn)); //赋值给g_other_cfg结构体
-      │       └── memcpy(g_other_cfg.paxspexsn,ImageBuffer+UBOOT_EXSN_OFFSET+2,g_other_cfg.paxspexsn_len);//获取paxsp exsn数据buffer
+      │       ├── #define Lxxx_NVRAM_NAME             L"xxxxx_nvram"
+      │       ├── StrnCpyS (Pname, ARRAY_SIZE (Pname),(CHAR16 *)Lxxx_NVRAM_NAME, StrLen ((CHAR16 *)Lxxx_NVRAM_NAME)); 
+      │       ├── ImageBuffer =  AllocatePages (ALIGN_PAGES (xxx_PARTITION_SIZE, ALIGNMENT_MASK_4KB));
+      │       ├── LoadImageFromPartition (ImageBuffer, &ImageSize,Pname); //指针指向xxxxx_nvram分区
+      │       ├── memcpy(char_len,ImageBuffer+UBOOT_EXSN_OFFSET,2); //获取xxxxxsp exsn数据长度的buffer
+      │       ├── memset(g_other_cfg.xxxxxspexsn, 0, sizeof(g_other_cfg.xxxxxspexsn)); //赋值给g_other_cfg结构体
+      │       └── memcpy(g_other_cfg.xxxxxspexsn,ImageBuffer+UBOOT_EXSN_OFFSET+2,g_other_cfg.xxxxxspexsn_len);//获取xxxxxsp exsn数据buffer
       └── if (is_sp_support()) //如果支持sp则从sp再读一遍
           ├── sp_info_reset();
-          └── ret = pax_sp_uart_init();
+          └── ret = xxxxx_sp_uart_init();
               ├── sp_uart_init();
               │   └── uart5_initialize(); //硬件初始化
-              ├── pax_serial_flush();
+              ├── xxxxx_serial_flush();
               ├── sp_get_info();//重要，串口读取sp cfg信息
               │   ├── shakeHandSP(); //AP/SP握手
               │   └── ret = processGetCfgInfo()
               │       └── processCmd(CMD_GET_COMMON_INFO, buf, sizeof(buf)); //向sp发送0xE9命令
               │           ├── makePackage(g_tx_buf, cmd, param, param_len); //做包
               │           ├── puts_sp(g_tx_buf, len); //发送指令
-              │           │   └── pax_serial_putc(tx_buff, len); //写一个byte函数
+              │           │   └── xxxxx_serial_putc(tx_buff, len); //写一个byte函数
               │           │       └── uart5_write((UINT8*)buf+count*TXFIFO_SIZE,bytes_to_tx % TXFIFO_SIZE);
               │           └── ret = receivePackage(cmd, g_rx_buf, &g_rx_index, &g_rx_size);
               │               └── receiveMsg(cmd_ref, recvmsg, pos, size, true);
               │                   └── gets_sp(tmp_buf, 1, 8000); //接收string
               │                       └── ret = getc_sp(&ch); /
               │                           ├── while ((len > 0) && (timeout > 0))
-              │                           └── pax_serial_getc(&buf, 1); //接收byte
+              │                           └── xxxxx_serial_getc(&buf, 1); //接收byte
               │                               └── uart5_read((UINT8 *)buf, bytes_to_rx);
               ├── debugAuthInfo(); //输出打印
               └── ShowCfginfo();
 ```
 
-* `pax_cfg_sp.c`看一下`g_other_cfg`/`g_authinfo`/`g_cfg_info`结构体，g_cfg_info还要分解:
+* `xxxxx_cfg_sp.c`看一下`g_other_cfg`/`g_authinfo`/`g_cfg_info`结构体，g_cfg_info还要分解:
 ```C++
 typedef struct _cfg_info
 {
@@ -115,7 +115,7 @@ typedef struct _POS_AUTH_INFO
         uchar AuthDownSn;
         uchar MachineType;
         uchar AesKey[8];
-        ushort Customer;//pax ==0 &&255
+        ushort Customer;//xxxxx ==0 &&255
         ushort NowPukLevel;/*now puk level*/
 #define AUTH_RES_NUM 0x0E
         ushort reserve[AUTH_RES_NUM];
@@ -124,16 +124,16 @@ typedef struct _POS_AUTH_INFO
 
 typedef struct _other_cfg_info 
 {
-    char paxspexsn[MAX_OTHER_CFG_LENGTH];
-    char paxspexsn_len;
-    char paxspsn[MAX_OTHER_CFG_LENGTH];
-    char paxspsn_len;
-    char paxspmac[MAC_NV_LENGTH*2+5];//ethmac
-    char paxspmac_len;
-    char paxbtmac[MAC_NV_LENGTH*2+5];
-    char paxbtmac_len;
-    char paxwifimac[MAC_NV_LENGTH*2+5];
-    char paxwifimac_len;
+    char xxxxxspexsn[MAX_OTHER_CFG_LENGTH];
+    char xxxxxspexsn_len;
+    char xxxxxspsn[MAX_OTHER_CFG_LENGTH];
+    char xxxxxspsn_len;
+    char xxxxxspmac[MAC_NV_LENGTH*2+5];//ethmac
+    char xxxxxspmac_len;
+    char xxxxxbtmac[MAC_NV_LENGTH*2+5];
+    char xxxxxbtmac_len;
+    char xxxxxwifimac[MAC_NV_LENGTH*2+5];
+    char xxxxxwifimac_len;
 }t_other_cfg_info;
 ```
 
@@ -271,7 +271,7 @@ static int processCmd(uchar cmd, uchar *param, uint param_len)
 #define PROCESS_TRY_CNT 3
 
         /* flush */
-        //pax_serial_flush();
+        //xxxxx_serial_flush();
 
         len = makePackage(g_tx_buf, cmd, param, param_len);
 
@@ -306,37 +306,37 @@ authinfo.SnDownLoadSum = 0
 authinfo.UsPukLevel = 3
 authinfo.Customer = 255
 ShowCfginfo
-g_cfg_info.cfgContent :TOUCH_SCREEN=257 LCD=257 FPM=11 WIFI=36 WIFI_PA=04 CAMERA_NUMBER=01 CAMERA_FRONT=80 MAIN_BOARD=V01 PORT_BOARD=V01 PN=A6650-AA200-260A-2N0-EA CONFIG_FILE_VER=2570000_V1.0 TERMINAL_NAME=A6650
+g_cfg_info.cfgContent :TOUCH_SCREEN=257 LCD=257 FPM=11 WIFI=36 WIFI_PA=04 CAMERA_NUMBER=01 CAMERA_FRONT=80 MAIN_BOARD=V01 PORT_BOARD=V01 PN=A665x-AA200-260A-2N0-EA CONFIG_FILE_VER=2570000_V1.0 TERMINAL_NAME=A665x
 ```
 
 # fastboot flash命令定制
 
-看一下fastboot flash命令定制烧录spexsn/sp_reboot命令，pax_cfg/cfg分区、sp_monitor/sp_boot镜像流程：
+看一下fastboot flash命令定制烧录spexsn/sp_reboot命令，xxxxx_cfg/cfg分区、sp_monitor/sp_boot镜像流程：
 * `UM.9.15/bootable/bootloader/edk2/QcomModulePkg/Library/FastbootLib/FastbootCmds.c`:
 * 1. 判断modem镜像和关键字是否匹配。
-* 2. 目前只做了cfg和pax_cfg分区烧录，sp exsn烧录，sp_reboot命令。
+* 2. 目前只做了cfg和xxxxx_cfg分区烧录，sp exsn烧录，sp_reboot命令。
 ```C++
 * FastbootCommandSetup (IN VOID *Base, IN UINT64 Size)
   └── {"flash:", CmdFlash},
-      ├── Ret = is_overlay_partition(PartitionName); //判断烧录命令是否带_pax_，比如 paydroidboot flash modem_a_pax_A6650_EM NON-HLOS_EM.bin
-      │   └── Token = StrStr(partitionName,L"_pax_");
-      └── if(StrnCmp(PartitionName+Ret+5, Buff16, StrLen(Buff16)) == 0){// only flash match Terminal name,else return; +5 means _pax_
-          └── if(StrLen(PartitionName) > (Ret+5+StrLen(Buff16))){//partition_name + _pax_ + TermialName. something more after  terminalname,like modem_a_pax_A6650_EM
+      ├── Ret = is_overlay_partition(PartitionName); //判断烧录命令是否带_xxxxx_，比如 paydroidboot flash modem_a_xxxxx_A665x_EM NON-HLOS_EM.bin
+      │   └── Token = StrStr(partitionName,L"_xxxxx_");
+      └── if(StrnCmp(PartitionName+Ret+5, Buff16, StrLen(Buff16)) == 0){// only flash match Terminal name,else return; +5 means _xxxxx_
+          └── if(StrLen(PartitionName) > (Ret+5+StrLen(Buff16))){//partition_name + _xxxxx_ + TermialName. something more after  terminalname,like modem_a_xxxxx_A665x_EM
               ├── if(getCfgBaseBand(Buff) < 0 ) 
               │   ├── getCfgItemValStr("BASEBAND", buf); //获取BASEBAND关键字 例如BASEBAND="77"
-              │   ├── #define BASEBAND_A6650_EM_CFG  "77"
-              │   └── if((0 == AsciiStrCmp(Buff, BASEBAND_A6650_EM_CFG) && NULL != StrStr(PartitionName, L"A6650_EM"))||(0 == AsciiStrCmp(Buff, BASEBAND_A6650_NA_CFG) && NULL != StrStr(PartitionName, L"A6650_NA"))) //如果BASEBAND="77" 且命令带有A6650_EM字符，满足条件
+              │   ├── #define BASEBAND_A665x_EM_CFG  "77"
+              │   └── if((0 == AsciiStrCmp(Buff, BASEBAND_A665x_EM_CFG) && NULL != StrStr(PartitionName, L"A665x_EM"))||(0 == AsciiStrCmp(Buff, BASEBAND_A665x_NA_CFG) && NULL != StrStr(PartitionName, L"A665x_NA"))) //如果BASEBAND="77" 且命令带有A665x_EM字符，满足条件
               │       └── SetMem(PartitionName+Ret, MAX_GPT_NAME_SIZE-Ret, 0); //烧录
               └── if(is_sp_partition(PartitionName)) //是否支持SP
-                  ├── if ( (StrnCmp(PartitionName, LPAX_CFG_PARTITION_NAME, StrLen(LPAX_CFG_PARTITION_NAME)) == 0)|| (StrnCmp(PartitionName, LCFG_PARTITION_NAME, StrLen(LCFG_PARTITION_NAME)) == 0) ) //cfg和pax_cfg分区烧录
-                  │   └── HandleRawImgFlash (LPAX_CFG_PARTITION_NAME,ARRAY_SIZE (LPAX_CFG_PARTITION_NAME),mFlashDataBuffer, mFlashNumDataBytes);
-                  ├── else if (paxnv_download_all(PartitionName, mFlashDataBuffer, mFlashNumDataBytes)) //sp exsn烧录
+                  ├── if ( (StrnCmp(PartitionName, Lxxx_CFG_PARTITION_NAME, StrLen(Lxxx_CFG_PARTITION_NAME)) == 0)|| (StrnCmp(PartitionName, LCFG_PARTITION_NAME, StrLen(LCFG_PARTITION_NAME)) == 0) ) //cfg和xxxxx_cfg分区烧录
+                  │   └── HandleRawImgFlash (Lxxx_CFG_PARTITION_NAME,ARRAY_SIZE (Lxxx_CFG_PARTITION_NAME),mFlashDataBuffer, mFlashNumDataBytes);
+                  ├── else if (xxxxxnv_download_all(PartitionName, mFlashDataBuffer, mFlashNumDataBytes)) //sp exsn烧录
                   │   └── if(StrnCmp(DownloadName, L"exsn", StrLen(L"exsn")) ==  0 )
                   │       └── writeToPartitionPax(aucTempbuf,len+2,UBOOT_EXSN_OFFSET);
                   └── if (EFI_SUCCESS == Status || (StrnCmp(PartitionName, L"sp_reboot", StrLen(L"sp_reboot")) == 0)) //sp重启命令
                       └── sp_download_all(PartitionName, mFlashDataBuffer, mFlashNumDataBytes)
                           └── else if(StrnCmp(DownloadName, L"sp_reboot", StrLen(L"sp_reboot")) ==0 )
-                              └── pax_sp_reset();
+                              └── xxxxx_sp_reset();
 ```
 
 # SP属性通过cmdline到kernel
@@ -344,21 +344,21 @@ g_cfg_info.cfgContent :TOUCH_SCREEN=257 LCD=257 FPM=11 WIFI=36 WIFI_PA=04 CAMERA
 SP属性通过cmdline到kernel具体实现方式和哪些cmdline请参考：
 * [0024_mtk_qcom_添加cmdline实现方案.md](/0009_kernel_function/docs/0024_mtk_qcom_添加cmdline实现方案.md)
 
-# 根据cmdline设置pax属性流程(ro.pax.product.id等)
+# 根据cmdline设置xxxxx属性流程(ro.xxxxx.product.id等)
 
-* 首先了解一下`ro.pax.product.id`设置流程：
+* 首先了解一下`ro.xxxxx.product.id`设置流程：
 * `system/core/init/init.cpp`:
 ```C++
 * SecondStageMain(int argc, char** argv)
   └── PropertyInit();
       └── ProcessKernelCmdline();
           └── if (StartsWith(key, ANDROIDBOOT_PREFIX)) //constexpr auto ANDROIDBOOT_PREFIX = "androidboot."sv;
-              └── pax_import_kernel_nv(key,value);
-                  └── if (!strcmp(name, "TERMINAL_NAME")) //system/core/init/pax_init.cpp
-                      ├── InitPropertySet("ro.boot.paxproduct", value.c_str());
+              └── xxxxx_import_kernel_nv(key,value);
+                  └── if (!strcmp(name, "TERMINAL_NAME")) //system/core/init/xxxxx_init.cpp
+                      ├── InitPropertySet("ro.boot.xxxxxproduct", value.c_str());
                       └── InitPropertySet("ro.fac.cfg.TERMINAL_NAME", value.c_str());
 ```
-* `core/init/pax_init.cpp`具体内容如下：
+* `core/init/xxxxx_init.cpp`具体内容如下：
 ```C++
 #include <string.h>
 #include <stdio.h>
@@ -367,42 +367,42 @@ SP属性通过cmdline到kernel具体实现方式和哪些cmdline请参考：
 #include <android-base/properties.h>
 #include <android-base/logging.h>
 #include "property_service.h"
-#include "pax_init.h"
+#include "xxxxx_init.h"
 
 namespace android {
 namespace init {
 
-void pax_import_kernel_nv(const std::string &key, const std::string& value)
+void xxxxx_import_kernel_nv(const std::string &key, const std::string& value)
 {
         const char *name = key.c_str();
         if (!strcmp(name, "TERMINAL_NAME"))
         {
                 InitPropertySet("ro.boot.boardname", value.c_str());
                 InitPropertySet("ro.fac.cfg.TERMINAL_NAME", value.c_str());
-        InitPropertySet("ro.boot.paxproduct", value.c_str());
+        InitPropertySet("ro.boot.xxxxxproduct", value.c_str());
         }
-        else if (!strcmp(name, "paxboot_mode"))
+        else if (!strcmp(name, "xxxxxboot_mode"))
         {
-                InitPropertySet("ro.paxboot.mode", value.c_str());
+                InitPropertySet("ro.xxxxxboot.mode", value.c_str());
         }
     else if (!strcmp(name, "TOUCH_SCREEN"))
     {
         InitPropertySet("ro.touch.screen", value.c_str());
         InitPropertySet("ro.fac.cfg.TOUCH_SCREEN", value.c_str());
     }
-        else if(!strcmp(name, "paxspsn"))
+        else if(!strcmp(name, "xxxxxspsn"))
         {
-                InitPropertySet("pax.sp.SN", value.c_str()); //sn number
+                InitPropertySet("xxxxx.sp.SN", value.c_str()); //sn number
                 if(value != ""){
                         InitPropertySet("ro.fac.sn", value.c_str());
                         InitPropertySet("ro.serialno", value.c_str());//new
                 }
         }
         //ro.fac.exsn
-        else if(!strcmp(name, "paxspexsn"))
+        else if(!strcmp(name, "xxxxxspexsn"))
         {
                 InitPropertySet("ro.fac.exsn", value.c_str());//new
-                InitPropertySet("pax.sp.exsn", value.c_str());
+                InitPropertySet("xxxxx.sp.exsn", value.c_str());
         }
         else if(!strcmp(name, "MAIN_BOARD"))
         {
@@ -565,24 +565,24 @@ void pax_import_kernel_nv(const std::string &key, const std::string& value)
         {
                 InitPropertySet("ro.fac.cfg.RF_PARA_10", value.c_str());
         }
-        else if(!strcmp(name, "paxspmac"))
+        else if(!strcmp(name, "xxxxxspmac"))
         {
                 InitPropertySet("ro.fac.mac", value.c_str());
-        InitPropertySet("pax.sp.mac", value.c_str());
+        InitPropertySet("xxxxx.sp.mac", value.c_str());
         }
         else if(!strcmp(name, "MSR_VER"))
         {
-                InitPropertySet("pax.ctrl.magchipver", value.c_str());
+                InitPropertySet("xxxxx.ctrl.magchipver", value.c_str());
         }
         else if(!strcmp(name, "BIOS"))
         {
-                InitPropertySet("pax.ctrl.spbootver", value.c_str());
-                InitPropertySet("pax.sp.BIOS",value.c_str());
+                InitPropertySet("xxxxx.ctrl.spbootver", value.c_str());
+                InitPropertySet("xxxxx.sp.BIOS",value.c_str());
         }
         else if(!strcmp(name, "MONITOR"))
         {
-                InitPropertySet("pax.ctrl.spver", value.c_str());//Ftest need
-                InitPropertySet("pax.sp.MONITOR", value.c_str());//Ftest need
+                InitPropertySet("xxxxx.ctrl.spver", value.c_str());//Ftest need
+                InitPropertySet("xxxxx.sp.MONITOR", value.c_str());//Ftest need
         }
         else if(!strcmp(name, "BATTERY"))
         {
@@ -591,49 +591,49 @@ void pax_import_kernel_nv(const std::string &key, const std::string& value)
         else if(!strcmp(name, "AppDebugStatus"))
         {
                 if(!strcmp(value.c_str(), "1")){
-                        InitPropertySet("pax.config.apkruntime", "false");
-                        InitPropertySet("ro.pax.disable.app_rt.verify","true");
+                        InitPropertySet("xxxxx.config.apkruntime", "false");
+                        InitPropertySet("ro.xxxxx.disable.app_rt.verify","true");
                 }else {
-                        InitPropertySet("pax.config.apkruntime", "true");
-                        InitPropertySet("ro.pax.disable.app_rt.verify","false");
+                        InitPropertySet("xxxxx.config.apkruntime", "true");
+                        InitPropertySet("ro.xxxxx.disable.app_rt.verify","false");
                 }
 
         }else if(!strcmp(name, "has_battery_removed"))
         {
                 if(!strcmp(value.c_str(), "1")){
-                        InitPropertySet("pax.config.nobattery", "true");
+                        InitPropertySet("xxxxx.config.nobattery", "true");
                 }else{
-                        InitPropertySet("pax.config.nobattery", "false");
+                        InitPropertySet("xxxxx.config.nobattery", "false");
                 }
         }
-        else if(!strcmp(name, "paxbtmac"))//btmac
+        else if(!strcmp(name, "xxxxxbtmac"))//btmac
         {
         InitPropertySet("ro.fac.btmac", value.c_str());
-        InitPropertySet("pax.bt.mac", value.c_str());
+        InitPropertySet("xxxxx.bt.mac", value.c_str());
         }
-        else if(!strcmp(name, "paxwifimac"))//wifimac
+        else if(!strcmp(name, "xxxxxwifimac"))//wifimac
         {
         InitPropertySet("ro.fac.wifimac", value.c_str());
-        InitPropertySet("pax.wifi.mac", value.c_str());
+        InitPropertySet("xxxxx.wifi.mac", value.c_str());
         }
     else if(!strcmp(name, "msm_drm.dsi_display0"))//dpi
     {
         InitPropertySet("ro.sf.lcd_density", value.substr(value.size()-4,3));
     }
-    else if(!strcmp(name, "paxctrllog"))//paxctrllog
+    else if(!strcmp(name, "xxxxxctrllog"))//xxxxxctrllog
     {
-        InitPropertySet("pax.ctrl.log", value.c_str());
+        InitPropertySet("xxxxx.ctrl.log", value.c_str());
     }
 
-//[FEATURE]-Add-BEGIN by (xielianxiong@paxsz.com), 2021/12/29 for apk verify pax signature
-#ifdef PAXDROID_PCI
-    InitPropertySet("sys.paxdroid.debug", "no");
-#elif PAXDROID_RELEASE
-    InitPropertySet("sys.paxdroid.debug", "no");
+//[FEATURE]-Add-BEGIN by (xielianxiong@xxxxx.com), 2021/12/29 for apk verify xxxxx signature
+#ifdef xxxDROID_PCI
+    InitPropertySet("sys.xxxxxdroid.debug", "no");
+#elif xxxDROID_RELEASE
+    InitPropertySet("sys.xxxxxdroid.debug", "no");
 #else
-    InitPropertySet("sys.paxdroid.debug", "no");
+    InitPropertySet("sys.xxxxxdroid.debug", "no");
 #endif
-//[FEATURE]-Add-end by (xielianxiong@paxsz.com), 2021/12/29 for apk verify pax signature
+//[FEATURE]-Add-end by (xielianxiong@xxxxx.com), 2021/12/29 for apk verify xxxxx signature
 
 }
 
@@ -650,7 +650,7 @@ void pax_import_kernel_nv(const std::string &key, const std::string& value)
 ![0005_0000.png](images/0005_0000.png)
 
 我们dtb是从sp中读取三个变量，去匹配相应的dtb：
-* `m9200-scuba-iot.dts`:
+* `m92xx-scuba-iot.dts`:
 ```shell
 /dts-v1/;
 
@@ -662,11 +662,11 @@ void pax_import_kernel_nv(const std::string &key, const std::string& value)
         qcom,board-id = <34 2>;
 
         soc {
-                pax_board_info {
-                        compatible = "pax,board_info";
-                        pax,main_board = "V01";
-                        pax,port_board = "V01";
-                        pax,terminal_name = "M9200";
+                xxxxx_board_info {
+                        compatible = "xxxxx,board_info";
+                        xxxxx,main_board = "V01";
+                        xxxxx,port_board = "V01";
+                        xxxxx,terminal_name = "M92xx";
                 };
         };
 };
@@ -678,10 +678,10 @@ void pax_import_kernel_nv(const std::string &key, const std::string& value)
 [12:02:19:204]Error: Appended Soc Device Tree blob not found
 
 //正常：
-Get Pax Board info success[V01:V01:A6650].
-Cmp Pax Terminal Name Failed[A6650:M9200].
-Get Pax Board info success[V01:V01:A6650].
-Cmp Pax Terminal Name Failed[A6650:M9200].
+Get Pax Board info success[V01:V01:A665x].
+Cmp Pax Terminal Name Failed[A665x:M92xx].
+Get Pax Board info success[V01:V01:A665x].
+Cmp Pax Terminal Name Failed[A665x:M92xx].
 Override DTB: GetBlkIOHandles failed loading user_dtbo!
 ```
 
@@ -694,6 +694,6 @@ gms分支里面匹配dts都是写死的，改成9200的就行了：
    CHAR8 MainBoard[MAX_BOARDINFO_SIZE] = {0};
    CHAR8 PortBoard[MAX_BOARDINFO_SIZE] = {0};;
    CHAR8 TerminalName[MAX_BOARDINFO_SIZE] = {0};;
--  CHAR8 Buff[MAX_BOARDINFO_SIZE] = {"A6650"};
-+  CHAR8 Buff[MAX_BOARDINFO_SIZE] = {"M9200"};
+-  CHAR8 Buff[MAX_BOARDINFO_SIZE] = {"A665x"};
++  CHAR8 Buff[MAX_BOARDINFO_SIZE] = {"M92xx"};
 ```

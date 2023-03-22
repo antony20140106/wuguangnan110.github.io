@@ -1,6 +1,6 @@
 # README
 
-Android HIDL绑定方式分析，bms采用直通型，paxserver是采用绑定模式。
+Android HIDL绑定方式分析，bms采用直通型，xxxserver是采用绑定模式。
 
 # refers
 

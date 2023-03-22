@@ -162,7 +162,7 @@ Panel需要在DSI PHY寄存器中为bitclk设置PHY值。80-NH713-1_DSI.zip压�
 
 ### 1.增加panel，填写uefiPanelList配置
 
-* `A6650_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/SocPkg/AgattiPkg/Library/MDPPlatformLib/MDPPlatformLib.c`:
+* `A665x_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/SocPkg/AgattiPkg/Library/MDPPlatformLib/MDPPlatformLib.c`:
 
 ```C++
 static PlatformDSIDetectParams uefiPanelList[] = { 
@@ -651,8 +651,8 @@ ff 05
 * `BOOT.XF.4.1\boot_images\QcomPkg\Include\Library` MDPPlatformLib.h中定义了 `MDPPlatformPanelType`：
 
 ```diff
---- a/A6650_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/Include/Library/MDPPlatformLib.h
-+++ b/A6650_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/Include/Library/MDPPlatformLib.h
+--- a/A665x_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/Include/Library/MDPPlatformLib.h
++++ b/A665x_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/Include/Library/MDPPlatformLib.h
 @@ -108,20 +108,14 @@ typedef enum {
    MDPPLATFORM_PANEL_BOE_AMOLED_FHD_DSC_CMD,               /* BOE AMOLED fhd plus cmd panel DSC mode single dsi */
    MDPPLATFORM_PANEL_TRULY_RM69298_AMOLED_FHD_CMD,         /* Truly rm69298 amoled fhd cmd panel single dsi */
@@ -684,8 +684,8 @@ ff 05
 * `BOOT.XF.4.1\boot_images\QcomPkg\SocPkg\AgattiPkg\Library\MDPPlatformLib`:
 
 ```diff
---- a/A6650_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/SocPkg/AgattiPkg/Library/MDPPlatformLib/MDPPlatformLibPanelConfig.h
-+++ b/A6650_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/SocPkg/AgattiPkg/Library/MDPPlatformLib/MDPPlatformLibPanelConfig.h
+--- a/A665x_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/SocPkg/AgattiPkg/Library/MDPPlatformLib/MDPPlatformLibPanelConfig.h
++++ b/A665x_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/SocPkg/AgattiPkg/Library/MDPPlatformLib/MDPPlatformLibPanelConfig.h
 @@ -208,6 +208,16 @@ MDPPlatformPanelFunctionTable sMDPPlatformPanelFunction[MDPPLATFORM_PANEL_MAX] =
      Panel_Default_Peripheral_Power,                                       // pPanel_Peripheral_Power
      Panel_Default_Brightness_Enable,                                  // pPanel_Brightness_Enable
@@ -726,8 +726,8 @@ _NONE,    PLL_OVERRIDE_NONE, DISP_MODE_SINGLE_DSI,                DISP_MODE_SING
 * [Online GUID](https://www.guidgenerator.com/online-guid-generator.aspx)
 
 ```diff
---- a/A6650_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/SocPkg/AgattiPkg/LAA/Core.fdf
-+++ b/A6650_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/SocPkg/AgattiPkg/LAA/Core.fdf
+--- a/A665x_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/SocPkg/AgattiPkg/LAA/Core.fdf
++++ b/A665x_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/SocPkg/AgattiPkg/LAA/Core.fdf
 @@ -444,6 +444,11 @@ FvNameGuid         = 631008B0-B2D1-410A-8B49-2C5C4D8ECC7E
      SECTION UI = "Panel_ili9881d_720p_video.xml"
      SECTION RAW = QcomPkg/Settings/Panel/Panel_ili9881d_720p_video.xml
@@ -877,8 +877,8 @@ wugn DisplayDxe: Resolution 640x480 (1 intf) pPanelInfo->eSelectedPanel = 30
 后面发现原装屏在`QcomPkg/SocPkg/AgattiPkg/LAA/Core.fdf`路径下配置了如下信息，新屏增加如下即可：
 
 ```diff
---- a/A6650_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/SocPkg/AgattiPkg/LAA/Core.fdf
-+++ b/A6650_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/SocPkg/AgattiPkg/LAA/Core.fdf
+--- a/A665x_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/SocPkg/AgattiPkg/LAA/Core.fdf
++++ b/A665x_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/SocPkg/AgattiPkg/LAA/Core.fdf
 @@ -444,6 +444,11 @@ FvNameGuid         = 631008B0-B2D1-410A-8B49-2C5C4D8ECC7E
      SECTION UI = "Panel_ili9881d_720p_video.xml"
      SECTION RAW = QcomPkg/Settings/Panel/Panel_ili9881d_720p_video.xml
@@ -927,7 +927,7 @@ xbl调通了，kernel继续报错重启如下，没找到panel，没找到reset 
 dts里面检索一下ili9881d，按照ili9881d的dts全部重新配置 一遍：
 
 ```log
-wugn@jcrj-tf-compile:a6650$ ack ili9881d
+wugn@jcrj-tf-compile:a665x$ ack ili9881d
 scuba-sde-display.dtsi
 6:#include "dsi-panel-ili9881d-720p-video.dtsi"
 145:&dsi_ili9881d_720p_video {
@@ -944,8 +944,8 @@ scuba-iot-idp.dtsi
 重新整合一下dts如下：
 
 ```diff
---- a/UM.9.15/vendor/qcom/proprietary/devicetree-4.19/qcom/a6650/a6650-scuba-iot-idp-overlay.dts
-+++ b/UM.9.15/vendor/qcom/proprietary/devicetree-4.19/qcom/a6650/a6650-scuba-iot-idp-overlay.dts
+--- a/UM.9.15/vendor/qcom/proprietary/devicetree-4.19/qcom/a665x/a665x-scuba-iot-idp-overlay.dts
++++ b/UM.9.15/vendor/qcom/proprietary/devicetree-4.19/qcom/a665x/a665x-scuba-iot-idp-overlay.dts
 @@ -3,6 +3,7 @@
 
  #include <dt-bindings/interrupt-controller/arm-gic.h>
@@ -1086,7 +1086,7 @@ ff 05
 </DSIInitSequence>
 ```
 
-## 4.多屏兼容调试
+## 5.多屏兼容调试
 
 * 目前是只读到了DA并且匹配上了，其他的都是0：
 ```log
@@ -1110,12 +1110,12 @@ FindPanelIndex: Panel Id=29 found
 
 代码中只要读到一个寄存器匹配上就直接跳出了，修改需要3个寄存器同时满足匹配才算match ok：
 ```diff
---- a/A6650_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/SocPkg/AgattiPkg/Library/MDPPlatformLib/MDPPlatformLib.c
-+++ b/A6650_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/SocPkg/AgattiPkg/Library/MDPPlatformLib/MDPPlatformLib.c
+--- a/A665x_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/SocPkg/AgattiPkg/Library/MDPPlatformLib/MDPPlatformLib.c
++++ b/A665x_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/SocPkg/AgattiPkg/Library/MDPPlatformLib/MDPPlatformLib.c
 @@ -178,40 +178,38 @@ static PlatformDSIDetectParams uefiPanelList[] = {
        0                                                      // uFlags
      },
-     //[M9200]modified by tfl for tfl for LCD bringup  20221108 --end
+     //[M92xx]modified by tfl for tfl for LCD bringup  20221108 --end
 -  */  {
 -      0x06,                                                  // uCmdType
 -      0x05,                                                  // total number of retry on failures
@@ -1204,3 +1204,15 @@ FindPanelIndex: Panel Id=29 found
 +      if(TRUE == bMatch && id_num == 3)
        {
 ```
+
+## 休眠唤醒不亮屏(时序调试)
+
+在调试FR8720M屏的时候发现休眠唤醒会花屏，查看datasheet如下，第一张是上下电，第二张是唤醒休眠：
+
+![0001_0005.png](images/0001_0005.png)
+
+* 我们测试的唤醒时序如下：
+
+![0001_0006.png](images/0001_0006.png)
+
+* 

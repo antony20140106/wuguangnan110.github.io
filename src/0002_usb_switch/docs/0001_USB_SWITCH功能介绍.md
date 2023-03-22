@@ -6,7 +6,7 @@ M8项目USB_SWITCH功能介绍。
 
 * 驱动代码：
 
-[pax_usb_switch.c](refers/pax_usb_switch.c)
+[xxxxx_usb_switch.c](refers/xxxxx_usb_switch.c)
 
 ## 硬件架构
 
@@ -193,12 +193,12 @@ static int musb_fb_notifier_call(struct notifier_block *self, unsigned long even
 usb_switch亮灭屏逻辑其实和usb20切换逻辑一样。
 
 ```C++
-static int pax_usb_fb_notifier_call(struct notifier_block *self, unsigned long event, void *data)
+static int xxxxx_usb_fb_notifier_call(struct notifier_block *self, unsigned long event, void *data)
 {
 	struct fb_event *evdata = data;
 	int blank;
 	struct usb_switch_data *usb_sdata = (struct usb_switch_data *)container_of(
-			self, struct usb_switch_data, pax_usb_fb_notifier);
+			self, struct usb_switch_data, xxxxx_usb_fb_notifier);
 
 	if (event != FB_EVENT_BLANK)
 		return 0;
@@ -257,29 +257,29 @@ static int otg_tcp_notifier_call(struct notifier_block *nb,
 				noti->typec_state.old_state,
 				noti->typec_state.new_state);
 
-		/* Add-BEGIN by (shanliangliang@paxsz.com), 2021/08/15 add for M8 usb otg */
+		/* Add-BEGIN by (xxx@xxxxx.com), 2021/08/15 add for M8 usb otg */
 		mtk_musb->typec_state = noti->typec_state.new_state;
-		/* Add-END by (shanliangliang@paxsz.com), 2021/08/15 add for M8 usb otg */
+		/* Add-END by (xxx@xxxxx.com), 2021/08/15 add for M8 usb otg */
 
 		if (noti->typec_state.old_state == TYPEC_UNATTACHED &&
 			noti->typec_state.new_state == TYPEC_ATTACHED_SRC) { //M8 typec识别成source，比如接U盘，切host
 			DBG(0, "OTG Plug in\n");
 			mt_usb_dev_disconnect();
 			mt_usb_host_connect(100);
-		/* Add-BEGIN by (shanliangliang@paxsz.com), 2021/09/23 add for M8 usb otg */
+		/* Add-BEGIN by (xxx@xxxxx.com), 2021/09/23 add for M8 usb otg */
 		} else if (noti->typec_state.old_state == TYPEC_UNATTACHED &&
 			noti->typec_state.new_state == TYPEC_ATTACHED_SNK) { //pogo pin不在位，接了电脑或者充电器，识别成sink，断开host。
 			if (!((mtk_musb->pogo_dev_detect_type == POGO_DETECT_BY_EXT_PIN) && (mtk_musb->pogo_dev_state == POGO_DEV_STATE_ONLINE))) {
 				mt_usb_host_disconnect(0);
 				mt_usb_connect();
 			}
-		/* Add-END by (shanliangliang@paxsz.com), 2021/09/23 add for M8 usb otg */
+		/* Add-END by (xxx@xxxxx.com), 2021/09/23 add for M8 usb otg */
 		} else if ((noti->typec_state.old_state == TYPEC_ATTACHED_SRC ||
 			noti->typec_state.old_state == TYPEC_ATTACHED_SNK ||
 			noti->typec_state.old_state ==
 					TYPEC_ATTACHED_NORP_SRC) &&
 			noti->typec_state.new_state == TYPEC_UNATTACHED) { 
-			/* Add-BEGIN by (shanliangliang@paxsz.com), 2021/08/15 add for M8 usb otg */
+			/* Add-BEGIN by (xxx@xxxxx.com), 2021/08/15 add for M8 usb otg */
 				if (mtk_musb->default_mode != MUSB_HOST) { 
 					if (is_host_active(mtk_musb)) {
 						DBG(0, "OTG Plug out\n");
@@ -331,7 +331,7 @@ static int otg_tcp_notifier_call(struct notifier_block *nb,
 					}
 				}
 
-		/* Add-END by (shanliangliang@paxsz.com), 2021/08/15 add for M8 usb otg */
+		/* Add-END by (xxx@xxxxx.com), 2021/08/15 add for M8 usb otg */
 #ifdef CONFIG_MTK_UART_USB_SWITCH
 		} else if ((noti->typec_state.new_state ==
 					TYPEC_ATTACHED_SNK ||
@@ -451,7 +451,7 @@ static int tcpc_notifier_call(struct notifier_block *nb,  unsigned long action, 
 * 驱动提供应用层接口set_usb_switch_mode手动切换host/device，原因是pogo dev接入后，当接入电脑时，为了不切device断开r15，而让用户手动切。
 
 ```C++
-* static int pax_usb_swtich_probe(struct platform_device *pdev)
+* static int xxxxx_usb_swtich_probe(struct platform_device *pdev)
   * pogo_detect_init(data);
     * ret = request_irq(irq, pogo_detect_irq_handle, IRQF_TRIGGER_RISING|IRQF_TRIGGER_FALLING|IRQF_NO_SUSPEND|IRQF_NO_THREAD, 
 	* data->r15_nb.notifier_call = r15_status_notifier_call; //
@@ -477,7 +477,7 @@ static irqreturn_t pogo_detect_irq_handle(int irq, void *dev_id)
 			CLR_BIT(usb_switch_status,0);
 		}
 
-#ifdef CONFIG_PAX_GPIOS_CONTROL
+#ifdef CONFIG_xxx_GPIOS_CONTROL
 		r15_status_notify_call_chain(SET_POGO_DEV_STATE, &status); //发送pogo dev通知
 #endif
 		pr_err("level: %d usb_switch_status: %d\n", level,usb_switch_status);
@@ -491,7 +491,7 @@ pogo dev拔插事件处理：
 static int set_usb_switch_mode(int value)
 {
 	int val;
-	PAX_GPIO_DBG("set_usb_switch_mode = %d",value);
+	xxx_GPIO_DBG("set_usb_switch_mode = %d",value);
 
 	if (!value)
 		val = USB_MODE_DEV;
@@ -545,7 +545,7 @@ static int r15_status_notifier_call(struct notifier_block *self, unsigned long e
 ```C++
 void mt_usb_otg_init(struct musb *musb)
 {
-	#ifdef CONFIG_PAX_GPIOS_CONTROL
+	#ifdef CONFIG_xxx_GPIOS_CONTROL
 		musb->r15_state = R15_STATUS_OFFLINE;
 		r15_status_notify_register_client(&musb_r15_st_notifier);
 	#else
@@ -553,7 +553,7 @@ void mt_usb_otg_init(struct musb *musb)
 	#endif
 }
 
-#ifdef CONFIG_PAX_GPIOS_CONTROL
+#ifdef CONFIG_xxx_GPIOS_CONTROL
 static int musb_r15_st_notifier_call(struct notifier_block *self, unsigned long event, void *data)
 {
 	int state;

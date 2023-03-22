@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="zh-CN" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>wugn</title>
+
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script src="../../../_static/translations.js"></script>
+        <script src="../../../_static/js/baidutongji.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="索引" href="../../../genindex.html" />
+    <link rel="search" title="搜索" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../index.html" class="icon icon-home"> wugn_note
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="在文档中搜索" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">刷入VTS失败问题分析</a></li>
+<li><a class="reference internal" href="#id1">参考</a></li>
+<li><a class="reference internal" href="#id2">现象描述</a></li>
+<li><a class="reference internal" href="#id3">问题原因</a></li>
+<li><a class="reference internal" href="#id4">实验结果</a></li>
+<li><a class="reference internal" href="#id5">物理分区和实际分区大小</a></li>
+<li><a class="reference internal" href="#id6">板级配置大小修改</a></li>
+<li><a class="reference internal" href="#id7">修改方案</a></li>
+</ul>
+</div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">wugn_note</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs"> 
+<li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+<li>刷入VTS失败问题分析</li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.forward()">Forward</a></li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.back()">Go Back</a> | </li>
+<li style="float: right;margin-left: 10px;"><a href="/index.html">Home</a> | </li>
+
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="vts">
+<h1>刷入VTS失败问题分析<a class="headerlink" href="#vts" title="此标题的永久链接"></a></h1>
+<p>分析一下system镜像变大导致fastboot烧录失败问题</p>
+</section>
+<section id="id1">
+<h1>参考<a class="headerlink" href="#id1" title="此标题的永久链接"></a></h1>
+<ul class="simple">
+<li><p><a class="reference external" href="https://www.jianshu.com/p/e417e021433d">android10 （Q） go版本刷GSI失败（MTK平台）</a></p></li>
+<li><p><a class="reference external" href="https://blog.csdn.net/Codeliang666/article/details/113768069">[Linux Device Driver] 分区大小导致的adb remount失败解决方法</a></p></li>
+<li><p><a class="reference external" href="https://blog.csdn.net/llq520/article/details/114811131">如何通过紧急刷机模式dump几乎任何高通机型的存储设备</a></p></li>
+</ul>
+</section>
+<section id="id2">
+<h1>现象描述<a class="headerlink" href="#id2" title="此标题的永久链接"></a></h1>
+<p>fastboot烧录system时提示空间不够：</p>
+<div class="highlight-log notranslate"><div class="highlight"><pre><span></span>正常烧录：
+C:\Users\xxx&gt;adb reboot fastboot
+
+C:\Users\xxx&gt;fastboot delete-logical-partition product_a
+&lt; waiting for any device &gt;
+Deleting &#39;product_a&#39;                               OKAY [  0.008s]
+Finished. Total time: 0.013s
+
+C:\Users\xxx&gt;fastboot delete-logical-partition product
+Deleting &#39;product&#39;                                 OKAY [  0.045s]
+Finished. Total time: 0.046s
+
+C:\Users\xxx&gt;fastboot create-logical-partition product 0
+Creating &#39;product&#39;                                 OKAY [  0.045s]
+Finished. Total time: 0.047s
+
+C:\Users\xxx&gt;fastboot flash boot Z:\gms_branch_m92xx\A665x-project\UM.9.15\out\target\product\bengal_32go\boot-debug.img
+Sending &#39;boot&#39; (15768 KB)                          OKAY [  0.369s]
+Writing &#39;boot&#39;                                     OKAY [  1.220s]
+Finished. Total time: 1.816s
+
+C:\Users\xxx&gt;fastboot flash system \\FUBOCHEN-PC\12-12gsi\system.img
+Invalid sparse file format at header magic
+Resizing &#39;system&#39;                                  OKAY [  0.006s]
+Sending sparse &#39;system&#39; 1/5 (262104 KB)            OKAY [  6.074s]
+Writing &#39;system&#39;                                   OKAY [  3.173s]
+Sending sparse &#39;system&#39; 2/5 (262100 KB)            OKAY [  6.121s]
+Writing &#39;system&#39;                                   OKAY [  2.106s]
+Sending sparse &#39;system&#39; 3/5 (262120 KB)            OKAY [  6.071s]
+Writing &#39;system&#39;                                   OKAY [  2.091s]
+Sending sparse &#39;system&#39; 4/5 (262140 KB)            OKAY [  6.087s]
+Writing &#39;system&#39;                                   OKAY [  2.109s]
+Sending sparse &#39;system&#39; 5/5 (48696 KB)             OKAY [  1.138s]
+Writing &#39;system&#39;                                   OKAY [  0.975s]
+Finished. Total time: 178.025s
+
+空间不足：
+C:\Users\xxx&gt;fastboot flash system \\FUBOCHEN-PC\gms_package\system.img
+Invalid sparse file format at header magic
+Resizing &#39;system&#39;                                  FAILED (remote: &#39;Not enough space to resize partition&#39;)
+fastboot: error: Command failed
+</pre></div>
+</div>
+</section>
+<section id="id3">
+<h1>问题原因<a class="headerlink" href="#id3" title="此标题的永久链接"></a></h1>
+<p>以下这次提交导致super分区变大。</p>
+<div class="highlight-diff notranslate"><div class="highlight"><pre><span></span><span class="w">commit 79db4c8db8b9e808bb0e9685750ebeb3d1c07f06</span>
+<span class="w">Author: fubochen &lt;fubochen@xxxxx.com&gt;</span>
+<span class="w">Date:   Wed Feb 8 20:21:52 2023 +0800</span>
+
+<span class="w"> </span>   [Title]:解决gts GtsPlacementTestCases问题<span class="w"></span>
+
+<span class="w"> </span>   [Summary]:2g go预置得GMS应用和go 预置得不一样导致报如下error:<span class="w"></span>
+<span class="w"> </span>   Full packages are required on the system partition for 2GB Android Go<span class="w"></span>
+<span class="w"> </span>   devices<span class="w"></span>
+
+<span class="w"> </span>   [Test Plan]: run gts -m GtsPlacementTestCases -t<span class="w"></span>
+<span class="w"> </span>   com.google.android.placement.gts.InstalledAppsTest#testAppsInstalled<span class="w"></span>
+
+<span class="w"> </span>   [Module]: gms<span class="w"></span>
+
+<span class="w"> </span>   [Model]: M92xx<span class="w"></span>
+
+<span class="w"> </span>   [author]: fubochen@xxxxx.com<span class="w"></span>
+
+<span class="w"> </span>   [date]: 2023-02-08<span class="w"></span>
+
+<span class="gh">diff --git a/QSSI.12/device/qcom/qssi_32go/qssi_32go.mk b/QSSI.12/device/qcom/qssi_32go/qssi_32go.mk</span><span class="w"></span>
+<span class="gh">index 437de589527..06c65e0ae63 100755</span><span class="w"></span>
+<span class="gd">--- a/QSSI.12/device/qcom/qssi_32go/qssi_32go.mk</span><span class="w"></span>
+<span class="gi">+++ b/QSSI.12/device/qcom/qssi_32go/qssi_32go.mk</span><span class="w"></span>
+<span class="gu">@@ -308,7 +308,7 @@ BUILD_GMS := true</span><span class="w"></span>
+<span class="w"> </span>BUILD_AGO_GMS := true<span class="w"></span>
+<span class="w"> </span>ifeq ($(strip $(BUILD_GMS)), true)<span class="w"></span>
+<span class="w"> </span>    ifeq ($(strip $(BUILD_AGO_GMS)), true)<span class="w"></span>
+<span class="gd">-        $(call inherit-product-if-exists, vendor/partner_gms/products/gms_go.mk)</span><span class="w"></span>
+<span class="gi">+        $(call inherit-product-if-exists, vendor/partner_gms/products/gms_go_2gb.mk)</span><span class="w"></span>
+<span class="w"> </span>    else<span class="w"></span>
+<span class="w"> </span>        $(call inherit-product-if-exists, vendor/partner_gms/products/gms.mk)<span class="w"></span>
+<span class="w"> </span>    endif<span class="w"></span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>增加预置应用大小大概在300M左右，分区大小前后对比如下：</p></li>
+</ul>
+<table class="colwidths-auto docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>NO.</p></th>
+<th class="head"><p>old</p></th>
+<th class="head"><p>new</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>system</p></td>
+<td><p>647 MB</p></td>
+<td><p>643 MB</p></td>
+</tr>
+<tr class="row-odd"><td><p>product</p></td>
+<td><p>889 MB</p></td>
+<td><p>1.15 GB</p></td>
+</tr>
+<tr class="row-even"><td><p>super</p></td>
+<td><p>2.04 GB</p></td>
+<td><p>2.32 GB</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="id4">
+<h1>实验结果<a class="headerlink" href="#id4" title="此标题的永久链接"></a></h1>
+</section>
+<section id="id5">
+<h1>物理分区和实际分区大小<a class="headerlink" href="#id5" title="此标题的永久链接"></a></h1>
+<p>物理分区大小存在于<code class="docutils literal notranslate"><span class="pre">rawprogram0_update_unsparse_m92xx.xml</span></code>文件中，改文件用于制作Qfil软件的解包原料，里面包含了分区表信息，其中size_in_KB表示物理分区大小<code class="docutils literal notranslate"><span class="pre">4706304kb</span></code></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span> <span class="o">&lt;</span><span class="n">program</span> <span class="n">SECTOR_SIZE_IN_BYTES</span><span class="o">=</span><span class="s2">&quot;512&quot;</span> <span class="n">file_sector_offset</span><span class="o">=</span><span class="s2">&quot;0&quot;</span> <span class="n">filename</span><span class="o">=</span><span class="s2">&quot;super.img&quot;</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;super&quot;</span> <span class="n">num_partition_sectors</span><span class="o">=</span><span class="s2">&quot;9412608&quot;</span> <span class="n">partofsingleimage</span><span class="o">=</span><span class="s2">&quot;false&quot;</span> <span class="n">physical_partition_number</span><span class="o">=</span><span class="s2">&quot;0&quot;</span> <span class="n">readbackverify</span><span class="o">=</span><span class="s2">&quot;false&quot;</span> <span class="n">size_in_KB</span><span class="o">=</span><span class="s2">&quot;4706304.0&quot;</span> 
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>Partition Manager查看实际super分区大小：</p></li>
+</ul>
+<p>请注意看你手机的最后一个分区的 Start LBA 和 LBA number，分别是起始扇区和扇区长度。
+以super分区为例，它的 Start LBA 和 LBA number 分别是 0x3A0100 和 0x529700。将扇区数乘以512可以得到super存储的实际容量，本例super的实际容量为 5412608× 512 = 2,771,255,296字节，约为2.58G。</p>
+<p><img alt="0011_0000.png" src="../../../_images/0011_00002.png" /></p>
+</section>
+<section id="id6">
+<h1>板级配置大小修改<a class="headerlink" href="#id6" title="此标题的永久链接"></a></h1>
+<p>板级设置super分区大小主要是<code class="docutils literal notranslate"><span class="pre">BOARD_SUPER_PARTITION_SIZE</span></code>和<code class="docutils literal notranslate"><span class="pre">BOARD_QTI_DYNAMIC_PARTITIONS_SIZE</span></code>两个大小配置，并且有固定的计算公式：</p>
+<ul class="simple">
+<li><p>BOARD_SUPER_PARTITION_SIZE = 物理分区</p></li>
+<li><p>BOARD_QTI_DYNAMIC_PARTITIONS_SIZE分两种：</p>
+<ul>
+<li><p>AB分区：BOARD_QTI_DYNAMIC_PARTITIONS_SIZE = (BOARD_SUPER_PARTITION_SIZE/2) - 4MB</p></li>
+<li><p>非AB分区：BOARD_QTI_DYNAMIC_PARTITIONS_SIZE = BOARD_SUPER_PARTITION_SIZE - 4MB</p></li>
+</ul>
+</li>
+<li><p>之前固定成了2,771,255,296字节，现在改成和物理分区大小匹配：</p></li>
+</ul>
+<div class="highlight-diff notranslate"><div class="highlight"><pre><span></span><span class="gd">--- a/UM.9.15/device/qcom/bengal_32go/BoardConfig.mk</span><span class="w"></span>
+<span class="gi">+++ b/UM.9.15/device/qcom/bengal_32go/BoardConfig.mk</span><span class="w"></span>
+<span class="gu">@@ -67,7 +67,7 @@ ifeq ($(ENABLE_AB), true)</span><span class="w"></span>
+<span class="w"> </span>   BOARD_SUPER_PARTITION_SIZE := 12884901888<span class="w"></span>
+<span class="w"> </span>   TARGET_RECOVERY_FSTAB := device/qcom/bengal_32go/recovery_AB_dynamic_partition.fstab<span class="w"></span>
+<span class="w"> </span>else<span class="w"></span>
+<span class="gd">-   BOARD_SUPER_PARTITION_SIZE := 2771255296 #1946157056 #4294967296</span><span class="w"></span>
+<span class="gi">+   BOARD_SUPER_PARTITION_SIZE := 4819255296</span><span class="w"></span>
+<span class="w"> </span>   TARGET_RECOVERY_FSTAB := device/qcom/bengal_32go/recovery_non-AB_dynamic_partition.fstab<span class="w"></span>
+<span class="w"> </span>endif<span class="w"></span>
+<span class="w"> </span>ifeq ($(BOARD_KERNEL_SEPARATED_DTBO),true)<span class="w"></span>
+<span class="gu">@@ -76,7 +76,7 @@ ifeq ($(BOARD_KERNEL_SEPARATED_DTBO),true)</span><span class="w"></span>
+<span class="w"> </span>endif<span class="w"></span>
+<span class="w"> </span>BOARD_SUPER_PARTITION_GROUPS := qti_dynamic_partitions<span class="w"></span>
+<span class="w"> </span># BOARD_QTI_DYNAMIC_PARTITIONS_SIZE = (BOARD_SUPER_PARTITION_SIZE/2) - 4MB<span class="w"></span>
+<span class="gd">-BOARD_QTI_DYNAMIC_PARTITIONS_SIZE := 2771255296 #4290772992 modify by tian from 1941962752 +250m</span><span class="w"></span>
+<span class="gi">+BOARD_QTI_DYNAMIC_PARTITIONS_SIZE := 4815060992 #modify by tian from 1941962752 +250m</span><span class="w"></span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>修改后还是不行，提示<code class="docutils literal notranslate"><span class="pre">Failed</span> <span class="pre">to</span> <span class="pre">write</span> <span class="pre">partition</span> <span class="pre">table</span></code>：</p></li>
+</ul>
+<div class="highlight-log notranslate"><div class="highlight"><pre><span></span>C:\Users\xxx&gt;fastboot flash system \\FUBOCHEN-PC\gms_package\system.img
+&lt; waiting for any device &gt;
+Invalid sparse file format at header magic
+Resizing &#39;system&#39;                                  FAILED (remote: &#39;Failed to write partition table&#39;)
+fastboot: error: Command failed
+</pre></div>
+</div>
+<p>串口打印如下：</p>
+<div class="highlight-log notranslate"><div class="highlight"><pre><span></span>[  199.736693] fastbootd: Fastboot command: getvar:has-slot:system
+[  199.817462] fastbootd: Fastboot command: getvar:max-download-size
+
+[  210.968506] fastbootd: Fastboot command: getvar:is-logical:system
+[  211.017713] fastbootd: Fastboot command: resize-logical-partition:system:1191292928
+[  211.026909] fastbootd: [liblp]Device size does not match (got 2771255296, expected 4819255296)
+[  211.035660] fastbootd: [liblp]Partition system will resize from 677744640 bytes to 1191292928 bytes
+[  211.045101] fastbootd: [liblp]Block device super size mismatch (expected 4819255296, got 2771255296)
+</pre></div>
+</div>
+<p>从上面的log看，应该是配置的super image大小与下载xml配置的不同。</p>
+<p>突然想起之前修改cached分区大小问题，分区大小我们这边修改无效，只有广和通修改并更新底包才有效。</p>
+</section>
+<section id="id7">
+<h1>修改方案<a class="headerlink" href="#id7" title="此标题的永久链接"></a></h1>
+<ul class="simple">
+<li><p>super分区的扇区大小改为<code class="docutils literal notranslate"><span class="pre">num_partition_sectors=&quot;9412608&quot;</span></code>，并且需要更新<code class="docutils literal notranslate"><span class="pre">gpt_backup0.bin</span></code>和<code class="docutils literal notranslate"><span class="pre">gpt_main0.bin</span></code>文件，不然无法生效。</p></li>
+</ul>
+<div class="highlight-diff notranslate"><div class="highlight"><pre><span></span><span class="gd">--- a/QSSI.12/vendor/xxxxx/PayDroid/M92xx/rawprogram0_update_unsparse_m92xx.xml</span><span class="w"></span>
+<span class="gi">+++ b/QSSI.12/vendor/xxxxx/PayDroid/M92xx/rawprogram0_update_unsparse_m92xx.xml</span><span class="w"></span>
+<span class="gu">@@ -47,10 +47,10 @@</span><span class="w"></span>
+<span class="w"> </span>  &lt;program SECTOR_SIZE_IN_BYTES=&quot;512&quot; file_sector_offset=&quot;0&quot; filename=&quot;&quot; label=&quot;catecontentfv&quot; num_partition_sectors=&quot;2048&quot; partofsingleimage=&quot;false&quot; physical_partition_number=&quot;0&quot; readbackverify=&quot;false&quot; size_in_KB=&quot;1024.0&quot; sparse=&quot;false&quot; start_byte_hex=&quot;0x694c7000&quot; start_sector=&quot;3450424&quot;/&gt;<span class="w"></span>
+<span class="w"> </span>  &lt;program SECTOR_SIZE_IN_BYTES=&quot;512&quot; file_sector_offset=&quot;0&quot; filename=&quot;&quot; label=&quot;uefivarstore&quot; num_partition_sectors=&quot;1024&quot; partofsingleimage=&quot;false&quot; physical_partition_number=&quot;0&quot; readbackverify=&quot;false&quot; size_in_KB=&quot;512.0&quot; sparse=&quot;false&quot; start_byte_hex=&quot;0x695c7000&quot; start_sector=&quot;3452472&quot;/&gt;<span class="w"></span>
+<span class="w"> </span>  &lt;program SECTOR_SIZE_IN_BYTES=&quot;512&quot; file_sector_offset=&quot;0&quot; filename=&quot;&quot; label=&quot;fsc&quot; num_partition_sectors=&quot;256&quot; partofsingleimage=&quot;false&quot; physical_partition_number=&quot;0&quot; readbackverify=&quot;false&quot; size_in_KB=&quot;128.0&quot; sparse=&quot;false&quot; start_byte_hex=&quot;0x74000000&quot; start_sector=&quot;3801088&quot;/&gt;<span class="w"></span>
+<span class="gd">-  &lt;program SECTOR_SIZE_IN_BYTES=&quot;512&quot; file_sector_offset=&quot;0&quot; filename=&quot;super.img&quot; label=&quot;super&quot; num_partition_sectors=&quot;5412608&quot; partofsingleimage=&quot;false&quot; physical_partition_number=&quot;0&quot; readbackverify=&quot;false&quot; size_in_KB=&quot;2706304.0&quot; sparse=&quot;true&quot; start_byte_hex=&quot;0x74020000&quot; start_sector=&quot;3801344&quot;/&gt;</span><span class="w"></span>
+<span class="gd">-  &lt;program SECTOR_SIZE_IN_BYTES=&quot;512&quot; file_sector_offset=&quot;0&quot; filename=&quot;&quot; label=&quot;xxxxx_nvram&quot; num_partition_sectors=&quot;4096&quot; partofsingleimage=&quot;false&quot; physical_partition_number=&quot;0&quot; readbackverify=&quot;false&quot; size_in_KB=&quot;2048.0&quot; sparse=&quot;true&quot; start_byte_hex=&quot;0x119300000&quot; start_sector=&quot;9213952&quot;/&gt;</span><span class="w"></span>
+<span class="gd">-  &lt;program SECTOR_SIZE_IN_BYTES=&quot;512&quot; file_sector_offset=&quot;0&quot; filename=&quot;&quot; label=&quot;xxxxx_cfg&quot; num_partition_sectors=&quot;4096&quot; partofsingleimage=&quot;false&quot; physical_partition_number=&quot;0&quot; readbackverify=&quot;false&quot; size_in_KB=&quot;2048.0&quot; sparse=&quot;true&quot; start_byte_hex=&quot;0x119500000&quot; start_sector=&quot;9218048&quot;/&gt;</span><span class="w"></span>
+<span class="gd">-  &lt;program SECTOR_SIZE_IN_BYTES=&quot;512&quot; file_sector_offset=&quot;0&quot; filename=&quot;userdata.img&quot; label=&quot;userdata&quot; num_partition_sectors=&quot;0&quot; partofsingleimage=&quot;false&quot; physical_partition_number=&quot;0&quot; readbackverify=&quot;false&quot; size_in_KB=&quot;0&quot; sparse=&quot;true&quot; start_byte_hex=&quot;0x119700000&quot; start_sector=&quot;9222144&quot;/&gt;</span><span class="w"></span>
+<span class="gi">+  &lt;program SECTOR_SIZE_IN_BYTES=&quot;512&quot; file_sector_offset=&quot;0&quot; filename=&quot;super.img&quot; label=&quot;super&quot; num_partition_sectors=&quot;9412608&quot; partofsingleimage=&quot;false&quot; physical_partition_number=&quot;0&quot; readbackverify=&quot;false&quot; size_in_KB=&quot;4706304.0&quot; sparse=&quot;true&quot; start_byte_hex=&quot;0x74020000&quot; start_sector=&quot;3801344&quot;/&gt;</span><span class="w"></span>
+<span class="gi">+  &lt;program SECTOR_SIZE_IN_BYTES=&quot;512&quot; file_sector_offset=&quot;0&quot; filename=&quot;&quot; label=&quot;xxxxx_nvram&quot; num_partition_sectors=&quot;4096&quot; partofsingleimage=&quot;false&quot; physical_partition_number=&quot;0&quot; readbackverify=&quot;false&quot; size_in_KB=&quot;2048.0&quot; sparse=&quot;true&quot; start_byte_hex=&quot;0x193420000&quot; start_sector=&quot;13213952&quot;/&gt;</span><span class="w"></span>
+<span class="gi">+  &lt;program SECTOR_SIZE_IN_BYTES=&quot;512&quot; file_sector_offset=&quot;0&quot; filename=&quot;&quot; label=&quot;xxxxx_cfg&quot; num_partition_sectors=&quot;4096&quot; partofsingleimage=&quot;false&quot; physical_partition_number=&quot;0&quot; readbackverify=&quot;false&quot; size_in_KB=&quot;2048.0&quot; sparse=&quot;true&quot; start_byte_hex=&quot;0x193620000&quot; start_sector=&quot;13218048&quot;/&gt;</span><span class="w"></span>
+<span class="gi">+  &lt;program SECTOR_SIZE_IN_BYTES=&quot;512&quot; file_sector_offset=&quot;0&quot; filename=&quot;userdata.img&quot; label=&quot;userdata&quot; num_partition_sectors=&quot;0&quot; partofsingleimage=&quot;false&quot; physical_partition_number=&quot;0&quot; readbackverify=&quot;false&quot; size_in_KB=&quot;0&quot; sparse=&quot;true&quot; start_byte_hex=&quot;0x193820000&quot; start_sector=&quot;13222144&quot;/&gt;</span><span class="w"></span>
+</pre></div>
+</div>
+<p><img alt="0011_0001.png" src="../../../_images/0011_00011.png" /></p>
+<p>计算公式：9412608 x 512 = 4819255296字节，刚好是和物理分区大小<code class="docutils literal notranslate"><span class="pre">4706304kb</span></code>相等。</p>
+</section>
+
+
+           </div>
+             <div class="articleComments">
+                <comments>
+  <script src="https://utteranc.es/client.js"
+    repo="iswbm/magic-python"
+    issue-term="pathname"
+    theme="github-light"
+    crossorigin="anonymous"
+    async>
+  </script>
+</comments>
+             </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; 版权所有 2022, wugn.</p>
+  </div>
+
+  利用 <a href="https://www.sphinx-doc.org/">Sphinx</a> 构建，使用了 
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">主题</a>
+    由 <a href="https://readthedocs.org">Read the Docs</a>开发.
+  
+
+<script charset="UTF-8" id="LA_COLLECT" src="//sdk.51.la/js-sdk-pro.min.js"></script>
+<script>LA.init({id: "JoV5csIHTGhHiGQ4",ck: "JoV5csIHTGhHiGQ4"})</script>
+
+<br/>
+<script id="LA-DATA-WIDGET" crossorigin="anonymous" charset="UTF-8" src="https://v6-widget.51.la/v6/JoV5csIHTGhHiGQ4/quote.js?theme=#4C8AC2,#BB2626,#040000,#333333,#AE3535,#1690FF,14&f=14"></script>
+
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,6 +1,6 @@
 # 豆荚TEE兼容方案实现
 
-由于M50/M8项目需要更换TEE，从瓶钵换成豆荚，需要重新做兼容。
+由于M5x/M8项目需要更换TEE，从瓶钵换成豆荚，需要重新做兼容。
 
 # 参考
 
@@ -21,7 +21,7 @@
 +                                       " to read this property. (the value  \"%s\")  current name %s uid=%d",
 +                                       name, value,getprogname(),getuid());
          if(strcmp(value,"M8") == 0 && strcmp(name,"ro.boot.terminal_name") != 0 && getuid() == 1000 && strcmp(getprogname(),"teed") == 0){
-             char m8[] = {"M50"};
+             char m8[] = {"M5x"};
              memset(value,0,ret);
 @@ -233,6 +237,16 @@ int SystemProperties::Get(const char* name, char* value) {
                              name, value,getprogname(),getuid());
@@ -44,10 +44,10 @@
 
 * 开机打印发现`uid=1000`依旧是1000，而且服务进程名称为`teei_daemon`：
 ```
-2022-10-09 14:56:05.150 10306-10306/? E/libc: print the The property name length for "ro.product.device"  to read this property. (the value  "PAYPHONEM50")  current name teei_daemon uid=1000
+2022-10-09 14:56:05.150 10306-10306/? E/libc: print the The property name length for "ro.product.device"  to read this property. (the value  "PAYPHONEM5x")  current name teei_daemon uid=1000
 ```
 
-* 按照如上修改后M50成功骗过tee进入，打印如下：
+* 按照如上修改后M5x成功骗过tee进入，打印如下：
 ```
 <6>[    5.205476] .(4)[345:init]BOOTPROF:      5205.461165:INIT:Mount_END --late
 <6>[    5.206471] .(3)[430:teei_daemon]BOOTPROF:      5206.461627:TEEI BOOT Decrypt Unlocked
@@ -62,7 +62,7 @@
 <6>[    5.208539] -(0)[249:teei_log_thread][TZ_LOG] uTSecMan| model:PAYTABLETM8
 <6>[    5.219310] -(7)[249:teei_log_thread][TZ_LOG] uTSecMan| config protocol is 1
 <6>[    5.219331] -(7)[249:teei_log_thread][TZ_LOG] uTSecMan| config version is 1
-<6>[    5.219339] -(7)[249:teei_log_thread][TZ_LOG] uTSecMan| config brand is PAX
+<6>[    5.219339] -(7)[249:teei_log_thread][TZ_LOG] uTSecMan| config brand is xxx
 <6>[    5.219347] -(7)[249:teei_log_thread][TZ_LOG] uTSecMan| config model number is 2
 <6>[    5.219356] -(7)[249:teei_log_thread][TZ_LOG] uTSecMan| verify device model success, index:1
 <6>[    5.219365] -(7)[249:teei_log_thread][TZ_LOG] uTSecMan| verify config file model info success
@@ -76,8 +76,8 @@
 
 1. TA存放位置发生改变，豆荚的放到`vendor/thh/ta`，而瓶钵的是`vendor/app/t6/`：
 ```diff
---- a/paxdroid/hardware/libhardware/modules/fingerprint/betterlife_tee/Android.mk
-+++ b/paxdroid/hardware/libhardware/modules/fingerprint/betterlife_tee/Android.mk
+--- a/xxxxxdroid/hardware/libhardware/modules/fingerprint/betterlife_tee/Android.mk
++++ b/xxxxxdroid/hardware/libhardware/modules/fingerprint/betterlife_tee/Android.mk
 @@ -143,14 +143,27 @@ include $(BUILD_PREBUILT)
  ifeq ($(strip $(BTL_FINGERPRINT_TEE)),trustkernel)
      include $(CLEAR_VARS)
@@ -85,7 +85,7 @@
 -    LOCAL_MODULE := f74c8d0d-4284-4acf-d0c425260610b3bd
 +    LOCAL_MODULE := f74c8d0d42844acfd0c425260610b3bd
      LOCAL_CHECK_ELF_FILES := false
-     #LOCAL_MODULE_OWER := pax
+     #LOCAL_MODULE_OWER := xxxxx
 -    LOCAL_SRC_FILES := ta/f74c8d0d-4284-4acf-d0c425260610b3bd.ta
 +    LOCAL_SRC_FILES := ta/f74c8d0d42844acfd0c425260610b3bd.ta
      LOCAL_MODULE_CLASS := ETC
@@ -99,7 +99,7 @@
 +    LOCAL_MODULE_TAGS := optional
 +    LOCAL_MODULE := f74c8d0d42844acfd0c425260610b3bd
 +    LOCAL_CHECK_ELF_FILES := false
-+    #LOCAL_MODULE_OWER := pax
++    #LOCAL_MODULE_OWER := xxxxx
 +    LOCAL_SRC_FILES := ta/f74c8d0d42844acfd0c425260610b3bd.ta
 +    LOCAL_MODULE_CLASS := ETC
 +    LOCAL_MODULE_PATH := $(TARGET_OUT_VENDOR)/thh/ta
@@ -110,10 +110,10 @@
 
 二供指纹改动如下：
 ```diff
---- a/paxdroid/hardware/libhardware/modules/fingerprint/chipsailing/tee/csfinger_product_64bit.mk
-+++ b/paxdroid/hardware/libhardware/modules/fingerprint/chipsailing/tee/csfinger_product_64bit.mk
-@@ -3,7 +3,7 @@ CS_LOCAL_SO_PATH := paxdroid/hardware/libhardware/modules/fingerprint/chipsailin
- CONFIG_LOCAL_PATH := paxdroid/hardware/libhardware/modules/fingerprint/chipsailing/tee
+--- a/xxxxxdroid/hardware/libhardware/modules/fingerprint/chipsailing/tee/csfinger_product_64bit.mk
++++ b/xxxxxdroid/hardware/libhardware/modules/fingerprint/chipsailing/tee/csfinger_product_64bit.mk
+@@ -3,7 +3,7 @@ CS_LOCAL_SO_PATH := xxxxxdroid/hardware/libhardware/modules/fingerprint/chipsailin
+ CONFIG_LOCAL_PATH := xxxxxdroid/hardware/libhardware/modules/fingerprint/chipsailing/tee
 
  FINGERPRINT_HARDWARE_MODULE_ID := chipsailing.fingerprint
 -TEE_PLATFORM := TRUSTKERNEL
@@ -146,8 +146,8 @@ PAYTABLETM8_EEA:/ # kill 849
 
 尝试增加selinux权限：
 ```diff
---- a/paxdroid/device/sepolicy/vendor/fingerpint/betterlife/hal_btlfpserver.te
-+++ b/paxdroid/device/sepolicy/vendor/fingerpint/betterlife/hal_btlfpserver.te
+--- a/xxxxxdroid/device/sepolicy/vendor/fingerpint/betterlife/hal_btlfpserver.te
++++ b/xxxxxdroid/device/sepolicy/vendor/fingerpint/betterlife/hal_btlfpserver.te
 @@ -30,6 +30,7 @@ hal_client_domain(btlfpserver, hal_allocator)
 
  # Purpose : Allow to use kernel driver
@@ -162,8 +162,8 @@ btlfpserver: type=1400 audit(0.0:52): avc: denied { read write } for name="isee_
 
 继续增加：
 ```diff
---- a/paxdroid/device/sepolicy/vendor/fingerpint/betterlife/hal_btlfpserver.te
-+++ b/paxdroid/device/sepolicy/vendor/fingerpint/betterlife/hal_btlfpserver.te
+--- a/xxxxxdroid/device/sepolicy/vendor/fingerpint/betterlife/hal_btlfpserver.te
++++ b/xxxxxdroid/device/sepolicy/vendor/fingerpint/betterlife/hal_btlfpserver.te
 @@ -30,6 +30,8 @@ hal_client_domain(btlfpserver, hal_allocator)
 
  # Purpose : Allow to use kernel driver
@@ -260,7 +260,7 @@ RAM_CONSOLE mrdump_addr:0x10E800, mrdump_size:0x1400, dram_addr:0x47C80000, dram
 RAM_CONSOLE pstore_addr:0x47C90000, pstore_size:0xE0000, pstore_console_size:0x40000, pstore_pmsg_size:0x10000
 RAM_CONSOLE mrdump_mini_header_addr:0x47D70000, mrdump_mini_header_size:0x10000, magic1:0x61646472, magic2:0x73697A65
 BOOT_REASON: 4
-11 pax_new_board: 1
+11 xxxxx_new_board: 1
 BOOT_MODE: 0
 MEM_SIZE: 0x2B08
 MEM_SIZE: 0x2B1A
@@ -518,16 +518,16 @@ void platform_set_boot_args_by_atag(unsigned int *ptr)
         sprintf(cmdline_tmpbuf, "%s%s%d", CMDLINE_TMP_CONCAT_SIZE, "androidboot.lcm.id=", lcm_id);
         cmdline_append(cmdline_tmpbuf);
 +
-+// [NEW FEATURE]-BEGIN by wugangnan@paxsz.com 2022-10-17,  for compatible tee for new machine
-+       if (!strcmp(g_boot_arg->socid, "pax_new_board"))
++// [NEW FEATURE]-BEGIN by xxx@xxxxx.com 2022-10-17,  for compatible tee for new machine
++       if (!strcmp(g_boot_arg->socid, "xxxxx_new_board"))
 +       {
-+               sprintf(cmdline_tmpbuf, "%s%s%d", CMDLINE_TMP_CONCAT_SIZE, "androidboot.pax.newmachine=", 1);
++               sprintf(cmdline_tmpbuf, "%s%s%d", CMDLINE_TMP_CONCAT_SIZE, "androidboot.xxxxx.newmachine=", 1);
 +               cmdline_append(cmdline_tmpbuf);
 +       }
-+       pal_log_err("[%s]pax_socid (%s)\n",
++       pal_log_err("[%s]xxxxx_socid (%s)\n",
 +               __func__,
 +               g_boot_arg->socid);
-+// [NEW FEATURE]-END by wugangnan@paxsz.com 2022-10-17,  for compatible tee for new machine
++// [NEW FEATURE]-END by xxx@xxxxx.com 2022-10-17,  for compatible tee for new machine
 
         switch (g_boot_mode) {
         case NORMAL_BOOT:
@@ -548,10 +548,10 @@ index 00846c09bf9..7015473a533 100644
      tags->hdr.size = boot_tag_size(boot_tag_soc_id);
      tags->hdr.tag  = BOOT_TAG_SOC_ID;
 -    memcpy(tags->u.socid.id, p_bldr_param->socid, SOC_ID_LEN);
-+       // [NEW FEATURE]-BEGIN by wugangnan@paxsz.com 2022-10-17,  for compatible tee for new machine
++       // [NEW FEATURE]-BEGIN by xxx@xxxxx.com 2022-10-17,  for compatible tee for new machine
 +       //memcpy(tags->u.socid.id, p_bldr_param->socid, SOC_ID_LEN);
-+    memcpy(tags->u.socid.id, "pax_new_board", SOC_ID_LEN);
-+       // [NEW FEATURE]-END by wugangnan@paxsz.com 2022-10-17,  for compatible tee for new machine
++    memcpy(tags->u.socid.id, "xxxxx_new_board", SOC_ID_LEN);
++       // [NEW FEATURE]-END by xxx@xxxxx.com 2022-10-17,  for compatible tee for new machine
      ptr += tags->hdr.size;
 ```
 
@@ -571,11 +571,11 @@ ifeq ($(strip $(MICROTRUST_TEE_SUPPORT)), yes)
   PRODUCT_PACKAGES += libTEECommon
   PRODUCT_PACKAGES += kmsetkey.beanpod
   PRODUCT_PACKAGES += gatekeeper.beanpod
-  # lib@paxsz.com dynamic set the property start
+  # lib@xxxxx.com dynamic set the property start
   #PRODUCT_PROPERTY_OVERRIDES += ro.hardware.kmsetkey=beanpod
   #PRODUCT_PROPERTY_OVERRIDES += ro.hardware.gatekeeper=beanpod
   #PRODUCT_PROPERTY_OVERRIDES += ro.vendor.mtk_microtrust_tee_support=1
-  #lib@paxsz.com dynamic set the property end
+  #lib@xxxxx.com dynamic set the property end
   ifeq ($(strip $(MTK_SEC_VIDEO_PATH_SUPPORT)), yes)
     ifeq ($(strip $(MTK_TEE_GP_SUPPORT)),yes)
       PRODUCT_PACKAGES += AVCSecureVdecCA
@@ -589,18 +589,18 @@ ifeq ($(strip $(MICROTRUST_TEE_SUPPORT)), yes)
     PRODUCT_PACKAGES += keymaster_server4
     PRODUCT_PACKAGES += gatekeeper_server
     PRODUCT_PACKAGES += km_key_manager_ta
-    #[NEW FEATURE]-BEGIN by wugangnan@paxsz.com 2022-10-13, add beapond TEE
+    #[NEW FEATURE]-BEGIN by xxx@xxxxx.com 2022-10-13, add beapond TEE
     PRODUCT_PACKAGES += isee_model.json
     PRODUCT_PACKAGES += 93feffccd8ca11e796c7c7a21acb4932.ta
-    #[NEW FEATURE]-END by wugangnan@paxsz.com 2022-10-13, add beapond TEE
+    #[NEW FEATURE]-END by xxx@xxxxx.com 2022-10-13, add beapond TEE
   endif
 endif #MICROTRUST_TEE_SUPPORT
 
 //瓶钵
 ifeq ($(strip $(TRUSTKERNEL_TEE_SUPPORT)), yes)
-# FEATURE]-BEGIN by wugangnan@paxsz.com 2022-10-17, add trustkernel tee build for trustkernel and microtrust tee compatible
+# FEATURE]-BEGIN by xxx@xxxxx.com 2022-10-17, add trustkernel tee build for trustkernel and microtrust tee compatible
   PRODUCT_PACKAGES += android.hardware.keymaster@4.0-service.trustkernel
-# FEATURE]-END by wugangnan@paxsz.com 2022-10-17, add trustkernel tee build for trustkernel and microtrust tee compatible
+# FEATURE]-END by xxx@xxxxx.com 2022-10-17, add trustkernel tee build for trustkernel and microtrust tee compatible
   PRODUCT_PACKAGES += teed
   PRODUCT_PACKAGES += pld
   PRODUCT_PACKAGES += kph
@@ -611,11 +611,11 @@ ifeq ($(strip $(TRUSTKERNEL_TEE_SUPPORT)), yes)
 
 
   PRODUCT_PACKAGES += kmsetkey.trustkernel
-  #FEATURE]-BEGIN by lib@paxsz.com 2022-10-17, dynmaic set the property in init.cpp
+  #FEATURE]-BEGIN by lib@xxxxx.com 2022-10-17, dynmaic set the property in init.cpp
   #PRODUCT_PROPERTY_OVERRIDES += ro.hardware.kmsetkey=trustkernel
   #PRODUCT_PROPERTY_OVERRIDES += ro.hardware.gatekeeper=trustkernel
   #PRODUCT_PROPERTY_OVERRIDES += ro.vendor.mtk_trustkernel_tee_support=1
-  #FEATURE]-END by lib@paxsz.com 2022-10-17,
+  #FEATURE]-END by lib@xxxxx.com 2022-10-17,
   PRODUCT_PACKAGES += gatekeeper.trustkernel
 
   # for check keybox and productline state
@@ -672,7 +672,7 @@ include $(BUILD_PREBUILT)
 -TRUSTZONE_modules_to_check += $(TRUSTKERNEL_modules_to_check)
 -endif
 -endif
-+# FEATURE]-BEGIN by wugangnan@paxsz.com 2022-10-17, delete trustkernel tee build for trustkernel and microtrust tee compatible
++# FEATURE]-BEGIN by xxx@xxxxx.com 2022-10-17, delete trustkernel tee build for trustkernel and microtrust tee compatible
 +#ifeq ($(TRUSTKERNEL_TEE_SUPPORT),yes)
 +#ifneq ($(wildcard $(MTK_PATH_SOURCE)/trustzone/trustkernel/source),)
 +#include $(TRUSTZONE_CUSTOM_BUILD_PATH)/trustkernel_config.mk
@@ -680,7 +680,7 @@ include $(BUILD_PREBUILT)
 +#TRUSTZONE_modules_to_check += $(TRUSTKERNEL_modules_to_check)
 +#endif
 +#endif
-+# FEATURE]-END by wugangnan@paxsz.com 2022-10-17, delete trustkernel tee build for trustkernel and microtrust tee compatible
++# FEATURE]-END by xxx@xxxxx.com 2022-10-17, delete trustkernel tee build for trustkernel and microtrust tee compatible
 ```
 在编译时，会调用到这个编译文件，在该文件中，就是将bl31.bin和tee.raw拼在了一起，其中raw是`./trustkernel/source/bsp/platform/mt6765/tee/tee.bin`，形成了tee.img。
 
@@ -688,17 +688,17 @@ include $(BUILD_PREBUILT)
 
 pl阶段不烧录，主要因为他只能启动豆荚tee os，所以需要将瓶钵的都去掉。
 ```diff
---- a/vendor/mediatek/proprietary/bootable/bootloader/preloader/custom/k62v1_64_pax/cust_bldr.mak
-+++ b/vendor/mediatek/proprietary/bootable/bootloader/preloader/custom/k62v1_64_pax/cust_bldr.mak
+--- a/vendor/mediatek/proprietary/bootable/bootloader/preloader/custom/k62v1_64_xxxxx/cust_bldr.mak
++++ b/vendor/mediatek/proprietary/bootable/bootloader/preloader/custom/k62v1_64_xxxxx/cust_bldr.mak
 @@ -32,7 +32,10 @@ ifeq ($(strip $(MTK_TEE_SUPPORT)),yes)
      CFG_GOOGLE_TRUSTY_SUPPORT = 0
    endif
    ifeq ($(strip $(TRUSTKERNEL_TEE_SUPPORT)),yes)
 -    CFG_TRUSTKERNEL_TEE_SUPPORT = 1
-+# [NEW FEATURE]-BEGIN by wugangnan@paxsz.com 2022-10-17,  for trustkernel and microtrust tee compatible
++# [NEW FEATURE]-BEGIN by xxx@xxxxx.com 2022-10-17,  for trustkernel and microtrust tee compatible
 +    #CFG_TRUSTKERNEL_TEE_SUPPORT = 1
 +       CFG_TRUSTKERNEL_TEE_SUPPORT = 0
-+# [NEW FEATURE]-END by wugangnan@paxsz.com 2022-10-17,  for trustkernel and microtrust tee compatible
++# [NEW FEATURE]-END by xxx@xxxxx.com 2022-10-17,  for trustkernel and microtrust tee compatible
 ```
 
 ## googlekey写入判断属性
@@ -721,8 +721,8 @@ pl阶段不烧录，主要因为他只能启动豆荚tee os，所以需要将瓶
 
 * 兼容修改如下：
 ```diff
---- a/paxdroid/hardware/libhardware/modules/systool/systool.c
-+++ b/paxdroid/hardware/libhardware/modules/systool/systool.c
+--- a/xxxxxdroid/hardware/libhardware/modules/systool/systool.c
++++ b/xxxxxdroid/hardware/libhardware/modules/systool/systool.c
 @@ -950,10 +950,13 @@ int32_t getGoogleKeyValue(){
      char productionline[PROPERTY_VALUE_MAX] = {0};
      char deployedpass[] = "true";
@@ -758,7 +758,7 @@ fae分析是数组和bin文件不匹配，解密失败了，打印如下：
 <6>[    8.594552] -(7)[252:teei_log_thread][TZ_LOG] SST_S   | vfs cap alloc success
 <6>[    8.594561] -(7)[252:teei_log_thread][TZ_LOG] kmsetkey| google keybox rpmb solution, VERSION:1.0
 <6>[    8.594567] -(7)[252:teei_log_thread][TZ_LOG] kmsetkey| 
-<6>[    8.594580] -(7)[252:teei_log_thread][TZ_LOG] kmsetkey| km_key_manager_ta  PAX_mt6762_R_isee350_persist_M8  Subject:Merge  from  trunk  202210081409  sunchenghao
+<6>[    8.594580] -(7)[252:teei_log_thread][TZ_LOG] kmsetkey| km_key_manager_ta  xxx_mt6762_R_isee350_persist_M8  Subject:Merge  from  trunk  202210081409  sunchenghao
 <6>[    8.595703] -(7)[252:teei_log_thread][TZ_LOG] kmsetkey| ~~~~~~ kb_store enter ~~~~~~
 <6>[    8.607514] -(7)[252:teei_log_thread][TZ_LOG] kmsetkey| keybox already stored
 <6>[    8.607539] -(7)[252:teei_log_thread][TZ_LOG] kmsetkey| [keybox_crypto.c:188/kb_rsa_decrypt]<err>rsa dec failed, -65530
@@ -789,9 +789,9 @@ fae分析是数组和bin文件不匹配，解密失败了，打印如下：
      }
  }
 
-+static void pax_init_tee_param(){
++static void xxxxx_init_tee_param(){
 +    std::string error;
-+     std::string machineId = android::base::GetProperty("ro.boot.pax.newmachine", "0");
++     std::string machineId = android::base::GetProperty("ro.boot.xxxxx.newmachine", "0");
 +     if(machineId == "1"){
 +         PropertySet("ro.hardware.gatekeeper","beanpod",&error);
 +         PropertySet("ro.hardware.kmsetkey","beanpod",&error);
@@ -810,12 +810,12 @@ fae分析是数组和bin文件不匹配，解密失败了，打印如下：
                         << "' while loading .prop files" << error;
          }
      }
-+    //[FEATURE]-Add-BEGIN by (lib@paxsz.com),2 2022/10/20, init tee param
-+    pax_init_tee_param();
-+    //[FEATURE]-Add-BEGIN by lib@paxsz.com,2022/10/20,init tee param
++    //[FEATURE]-Add-BEGIN by (lib@xxxxx.com),2 2022/10/20, init tee param
++    xxxxx_init_tee_param();
++    //[FEATURE]-Add-BEGIN by lib@xxxxx.com,2022/10/20,init tee param
 
-     //[FEATURE]-Add-BEGIN by (wugangnan@paxsz.com),2 021/10/21, set ro.pax.product.id for pax usb pid
-     pax_property_set_usb_pid();
+     //[FEATURE]-Add-BEGIN by (xxx@xxxxx.com),2 021/10/21, set ro.xxxxx.product.id for xxxxx usb pid
+     xxxxx_property_set_usb_pid();
 ```
 
 ## OTA升级失败
@@ -843,7 +843,7 @@ fae分析是数组和bin文件不匹配，解密失败了，打印如下：
 请按照如下方法升级豆荚TEE OS：
 1. 先下载1027或更新版本。
 2. paydroid tool解压出Uniphiz包。
-3. 替换附件提供的M50_M8_Release_Android_scatter.txt。
+3. 替换附件提供的M5x_M8_Release_Android_scatter.txt。
 4. 再解压Uniphiz包中的tee.zip包出来。
 5. 用paydroid tool升级。
 6. 使用sn writer工具写入googlekey。

@@ -138,7 +138,7 @@ namespace Marathon_Pace_Calculation
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Marathon_Pace_Calculation"
         mc:Ignorable="d"
-        Title="Marathon Pace Calculation V1.0    Author : wugangnan   E-Mail : 569542647@qq.com"  Height="587.677" Width="607.507">
+        Title="Marathon Pace Calculation V1.0    Author : xxx   E-Mail : 569542647@qq.com"  Height="587.677" Width="607.507">
     <Grid>
         <Grid.ColumnDefinitions> 
             <ColumnDefinition Width="449*"/>

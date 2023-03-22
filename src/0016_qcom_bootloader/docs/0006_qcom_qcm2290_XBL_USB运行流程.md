@@ -148,7 +148,7 @@ QcomPkg/SocPkg/AgattiPkg/LAA/Core.dsc:
 
 ## 1.fastboot模式下不识别USB
 
-由于a6650项目没有接CC脚到pm2250上面，而默认配置的又是typec功能，所有不会触发SNK ATTACH事件，正常开发板接了CC会有以下打印：
+由于a665x项目没有接CC脚到pm2250上面，而默认配置的又是typec功能，所有不会触发SNK ATTACH事件，正常开发板接了CC会有以下打印：
 ```log
 连接USB:
 connectionUsbConfigPortsQueryConnectionChange: UFP and Type-C

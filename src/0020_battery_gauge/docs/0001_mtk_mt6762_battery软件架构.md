@@ -407,7 +407,7 @@ static void mtk_battery_external_power_changed(struct power_supply *psy)
 		if (!online.intval)
 			bs_data->bat_status = POWER_SUPPLY_STATUS_DISCHARGING;
 		else {
-//FEATURE-MOD-BEGIN by shanliangliang@paxsz.com, 2021/09/23
+//FEATURE-MOD-BEGIN by xxx@xxxxx.com, 2021/09/23
 #if 0
 			if (status.intval == POWER_SUPPLY_STATUS_NOT_CHARGING)
 				bs_data->bat_status =
@@ -419,11 +419,11 @@ static void mtk_battery_external_power_changed(struct power_supply *psy)
 			if (POWER_SUPPLY_STATUS_FULL != status.intval)
 				bs_data->bat_status = status.intval;
 #endif
-//FEATURE-MOD-BEGIN by shanliangliang@paxsz.com, 2021/09/23
+//FEATURE-MOD-BEGIN by xxx@xxxxx.com, 2021/09/23
 			fg_sw_bat_cycle_accu(gm);
 		}
 
-		//[FEATRUE]-MOD-BEGIN by shanliangliang@paxsz.com, 2021-09-23
+		//[FEATRUE]-MOD-BEGIN by xxx@xxxxx.com, 2021-09-23
 		if (status.intval == POWER_SUPPLY_STATUS_FULL
 			&& gm->b_EOC != true) {
 			bm_err("POWER_SUPPLY_STATUS_FULL\n");
@@ -436,7 +436,7 @@ static void mtk_battery_external_power_changed(struct power_supply *psy)
 		} else if (status.intval != POWER_SUPPLY_STATUS_FULL) {
 			gm->b_EOC = false;
 		}
-		//[FEATRUE]-MOD-END by shanliangliang@paxsz.com, 2021-09-23
+		//[FEATRUE]-MOD-END by xxx@xxxxx.com, 2021-09-23
 
 		battery_update(gm);
 

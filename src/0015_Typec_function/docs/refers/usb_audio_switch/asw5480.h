@@ -11,6 +11,6 @@
 #define ASW5480_SwitchStatus  0x06
 //#define AWS5480_DP_R_Switch_Status 
 
-extern int pax_set_audio_switch(bool on);
-extern int pax_get_audio_switch(void);
+extern int xxx_set_audio_switch(bool on);
+extern int xxx_get_audio_switch(void);
 #endif

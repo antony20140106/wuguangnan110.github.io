@@ -142,8 +142,8 @@ void Pax_ChargerEnable(BOOLEAN enable)
 
 * `QcomPkg/Drivers/QcomChargerDxe/PaxCharger.h`:
 ```C++
-#ifndef _PAX_CHARGER_H_
-#define _PAX_CHARGER_H_
+#ifndef _xxx_CHARGER_H_
+#define _xxx_CHARGER_H_
 
 extern void Pax_ChargerEnable(BOOLEAN enable);
 
@@ -152,8 +152,8 @@ extern void Pax_ChargerEnable(BOOLEAN enable);
 
 * 需要使用到`I2CApiLib`库里面的i2c接口:
 ```diff
---- a/A6650_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/Drivers/QcomChargerDxe/QcomChargerDxeLA.inf
-+++ b/A6650_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/Drivers/QcomChargerDxe/QcomChargerDxeLA.inf
+--- a/A665x_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/Drivers/QcomChargerDxe/QcomChargerDxeLA.inf
++++ b/A665x_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/Drivers/QcomChargerDxe/QcomChargerDxeLA.inf
 @@ -35,6 +35,7 @@
    QcomChargerPlatform.c
    QcomChargerPlatform_File.c

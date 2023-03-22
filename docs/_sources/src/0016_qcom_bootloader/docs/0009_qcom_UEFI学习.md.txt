@@ -137,27 +137,27 @@ PmicQg_GetBatteryStatus
 
 2. 增加函数定义：
 ```diff
---- a/A6650_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/Include/Library/HALDSILib.h
-+++ b/A6650_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/Include/Library/HALDSILib.h
+--- a/A665x_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/Include/Library/HALDSILib.h
++++ b/A665x_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/Include/Library/HALDSILib.h
 @@ -212,5 +212,9 @@ MDP_Status DsiPanelShutdown(MDP_Panel_AttrType    *pPanelInfo);
  *//* -------------------------------------------------------------------- */
  MDP_Status DsiPanelDumpRegisters(void);
 
-+//[NEW FEATURE]-BEGIN by wugangnan@paxsz.com 2023-02-03, set lcd/tp id to kernel cmdline
++//[NEW FEATURE]-BEGIN by xxx@xxxxx.com 2023-02-03, set lcd/tp id to kernel cmdline
 +void Set_PanelDisplayId(uint32 DisplayId);
 +uint32 Get_PanelDisplayId(void);
-+//[NEW FEATURE]-END by wugangnan@paxsz.com 2023-02-03, set lcd/tp id to kernel cmdline
++//[NEW FEATURE]-END by xxx@xxxxx.com 2023-02-03, set lcd/tp id to kernel cmdline
 
  #endif  /* #define HALDSILIB_H */
-diff --git a/A6650_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/Library/HALDSILib/dsiDriver.c b/A6650_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/Library/HALDSILib/dsiDriver.c
+diff --git a/A665x_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/Library/HALDSILib/dsiDriver.c b/A665x_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/Library/HALDSILib/dsiDriver.c
 index 77741e25c5e..8c1b9ac6184 100755
---- a/A6650_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/Library/HALDSILib/dsiDriver.c
-+++ b/A6650_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/Library/HALDSILib/dsiDriver.c
+--- a/A665x_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/Library/HALDSILib/dsiDriver.c
++++ b/A665x_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/Library/HALDSILib/dsiDriver.c
 @@ -1461,7 +1461,18 @@ static MDP_Status SendPanelXMLSequence(DSI_DriverCtx *pDriverCtx, void *pDSIComm
    return eStatus;
  }
 
-+//[NEW FEATURE]-BEGIN by wugangnan@paxsz.com 2023-02-03, set lcd/tp id to kernel cmdline
++//[NEW FEATURE]-BEGIN by xxx@xxxxx.com 2023-02-03, set lcd/tp id to kernel cmdline
 +static uint32 PaxDisplayId = 0;
 +void Set_PanelDisplayId(uint32 DisplayId)
 +{
@@ -168,13 +168,13 @@ index 77741e25c5e..8c1b9ac6184 100755
 +{
 +    return PaxDisplayId;
 +}
-+//[NEW FEATURE]-END by wugangnan@paxsz.com 2023-02-03, set lcd/tp id to kernel cmdline
++//[NEW FEATURE]-END by xxx@xxxxx.com 2023-02-03, set lcd/tp id to kernel cmdline
 ```
 
 3. 包含`HALDSILib.h`即可调用：
 ```diff
---- a/A6650_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/Library/MDPLib/DisplayUtils.c
-+++ b/A6650_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/Library/MDPLib/DisplayUtils.c
+--- a/A665x_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/Library/MDPLib/DisplayUtils.c
++++ b/A665x_Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/Library/MDPLib/DisplayUtils.c
 @@ -69,7 +69,6 @@
  #include "HALDSILib.h"
 
@@ -182,7 +182,7 @@ index 77741e25c5e..8c1b9ac6184 100755
      LocalAsciiStrnCat(*ppStr, PANEL_CONFIG_STR_LEN_MAX, (CHAR8 *)psDTInfo->DTLabel);
      (*ppStr) += AsciiStrLen(psDTInfo->DTLabel);
 
-+    //[NEW FEATURE]-BEGIN by wugangnan@paxsz.com 2023-02-03, set lcd/tp id to kernel cmdline
++    //[NEW FEATURE]-BEGIN by xxx@xxxxx.com 2023-02-03, set lcd/tp id to kernel cmdline
 +    PanelDisplayId = Get_PanelDisplayId();
 +    PanelTPID = PanelDisplayId >> 10;
 +    PanelLCDID = PanelDisplayId & 0x3FF;
@@ -195,7 +195,7 @@ index 77741e25c5e..8c1b9ac6184 100755
 +    LocalAsciiStrnCat(lcd_id, PANEL_CONFIG_STR_LEN_MAX, lcd_id_value);
 +    LocalAsciiStrnCat(*ppStr, PANEL_CONFIG_STR_LEN_MAX, lcd_id);
 +    (*ppStr) += AsciiStrLen(lcd_id);
-+    //[NEW FEATURE]-END by wugangnan@paxsz.com 2023-02-03, set lcd/tp id to kernel cmdline
++    //[NEW FEATURE]-END by xxx@xxxxx.com 2023-02-03, set lcd/tp id to kernel cmdline
 +
      if (uTopology)
 ```

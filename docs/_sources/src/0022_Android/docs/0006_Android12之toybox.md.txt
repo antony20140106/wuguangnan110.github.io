@@ -45,7 +45,7 @@
 
 * stty工具显示不支持750k波特率，打印如下：
 ```shell
-1|M9200:/ # stty -F /dev/ttyHS1 speed 750000 cs8 -parenb -cstopb
+1|M92xx:/ # stty -F /dev/ttyHS1 speed 750000 cs8 -parenb -cstopb
 9600
 stty: unknown speed: 750000
 ```
@@ -66,9 +66,9 @@ stty: unknown speed: 750000
 
 * 修改后能够设置：
 ```shell
-M9200:/ # stty -F /dev/ttyHS1 speed 750000 cs8 -parenb -cstopb
+M92xx:/ # stty -F /dev/ttyHS1 speed 750000 cs8 -parenb -cstopb
 750000
-M9200:/ # stty -F /dev/ttyHS1 -a
+M92xx:/ # stty -F /dev/ttyHS1 -a
 speed 750000 baud; rows 0; columns 0; line = 0;
 intr = ^C; quit = ^\; erase = ^?; kill = ^U; eof = ^D; eol = <undef>; eol2 = <undef>; swtch = <undef>; start = ^Q;
 stop = ^S; susp = ^Z; rprnt = ^R; werase = ^W; lnext = ^V; discard = ^O; min = 1; time = 0;

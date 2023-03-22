@@ -276,7 +276,7 @@ static struct platform_driver mt6370_pmu_charger = {
 
 还有一种更简单的方法，通过psy设备名获取，但是可移植性不强，如下：
 ```C++
-qphy->usb_psy = power_supply_get_by_name("pax-usb");
+qphy->usb_psy = power_supply_get_by_name("xxx-usb");
 ```
 
 
@@ -284,16 +284,16 @@ qphy->usb_psy = power_supply_get_by_name("pax-usb");
 
 我们可以在注册psy设备时，将结构体数据保存在power_supply提供的drv_data中
 ```C++
-static void pax_charger_external_power_changed(struct power_supply *psy)
+static void xxx_charger_external_power_changed(struct power_supply *psy)
 {
-	struct pax_charger *info;
+	struct xxx_charger *info;
 	union power_supply_propval prop, prop2;
 	int ret;
 
-	info = (struct pax_charger *)power_supply_get_drvdata(psy);
+	info = (struct xxx_charger *)power_supply_get_drvdata(psy);
 }
 
-static int pax_charger_probe(struct platform_device *pdev)
+static int xxx_charger_probe(struct platform_device *pdev)
 {
 	info->psy_cfg1.drv_data = info;
 	info->psy1 = power_supply_register(&pdev->dev, &info->psy_desc1,

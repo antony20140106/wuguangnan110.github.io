@@ -13,8 +13,8 @@ Core.fdf:UEFI的配置文件
 # 打印
 
 ```
-Active Platform          = /home/wugn/A6650-project/Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/SocPkg/AgattiPkg/LAA/Core.dsc
-Flash Image Definition   = /home/wugn/A6650-project/Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/SocPkg/AgattiPkg/LAA/Core.fdf
+Active Platform          = /home/wugn/A665x-project/Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/SocPkg/AgattiPkg/LAA/Core.dsc
+Flash Image Definition   = /home/wugn/A665x-project/Unpacking_Tool/BOOT.XF.4.1/boot_images/QcomPkg/SocPkg/AgattiPkg/LAA/Core.fdf
 ```
 
 # 总览
@@ -486,7 +486,7 @@ DefaultBDSBootApp = "LinuxLoader"
 4. 打印UEFI固件版本号
 5. 选UEFI启动类型，判断顺序为 UFS > EMMC > SPI
 
-a6650打印版本号如下：
+a665x打印版本号如下：
 ```log
 UEFI Ver   : 5.0.220730.BOOT.XF.4.1-00343-KAMORTALAZ-1
 Platform           : IDP
@@ -858,7 +858,7 @@ authinfo.SnDownLoadSum = 0
 authinfo.UsPukLevel = 3
 authinfo.Customer = 255
 ShowCfginfo
-g_cfg_info.cfgContent :TOUCH_SCREEN=257 LCD=257 FPM=11 WIFI=36 WIFI_PA=04 CAMERA_NUMBER=01 CAMERA_FRONT=80 MAIN_BOARD=V01 PORT_BOARD=V01 PN=A6650-AA200-260A-2N0-EA CONFIG_FILE_VER=2570000_V1.0 TERMINAL_NAME=A6650
+g_cfg_info.cfgContent :TOUCH_SCREEN=257 LCD=257 FPM=11 WIFI=36 WIFI_PA=04 CAMERA_NUMBER=01 CAMERA_FRONT=80 MAIN_BOARD=V01 PORT_BOARD=V01 PN=A665x-AA200-260A-2N0-EA CONFIG_FILE_VER=2570000_V1.0 TERMINAL_NAME=A665x
 KeyPress:1539461080, BootReason:0
 Fastboot=0, Recovery:0
 GetVmData: No Vm data present! Status = (0x3)
@@ -881,10 +881,10 @@ VB2: Authenticate complete! boot state is: orange
 VB2: boot state: orange(1)
 Memory Base Address: 0x40000000
 Decompressing kernel image total time: 447 ms
-Get Pax Board info success[V01:V01:A6650].
-Cmp Pax Terminal Name Failed[A6650:A7000].
-Get Pax Board info success[V01:V01:A6650].
-Cmp Pax Terminal Name Failed[A6650:A7000].
+Get Pax Board info success[V01:V01:A665x].
+Cmp Pax Terminal Name Failed[A665x:A7000].
+Get Pax Board info success[V01:V01:A665x].
+Cmp Pax Terminal Name Failed[A665x:A7000].
 Override DTB: GetBlkIOHandles failed loading user_dtbo!
 Apply Overlay total time: 229 ms
 victor,UpdateCmdLine in

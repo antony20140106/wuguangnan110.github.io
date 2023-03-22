@@ -8,7 +8,7 @@
 
 # 分析
 
-我们A6650项目目前编译的项目名为`bengal`，首先看看其目录下`AndroidProducts.mk`内容：
+我们A665x项目目前编译的项目名为`bengal`，首先看看其目录下`AndroidProducts.mk`内容：
 ```shell
 wugn@jcrj-tf-compile:UM.9.15$ cat device/qcom/bengal/AndroidProducts.mk
 PRODUCT_MAKEFILES := \

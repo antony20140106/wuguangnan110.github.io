@@ -46,6 +46,7 @@
 <li><a class="reference internal" href="#id1">常用指令</a></li>
 <li><a class="reference internal" href="#id2">测试服务器使用代理网络提示网络失败</a></li>
 <li><a class="reference internal" href="#qcm2290-googlekey">QCM2290 googlekey写入方法</a></li>
+<li><a class="reference internal" href="#go">go版本性能测试</a></li>
 </ul>
 </div>
         </div>
@@ -99,7 +100,10 @@
 <p>fail测试项的xml文件内容如下</p>
 <div class="highlight-xml notranslate"><div class="highlight"><pre><span></span><span class="cp">&lt;?xml version=&#39;1.0&#39; encoding=&#39;UTF-8&#39; standalone=&#39;no&#39; ?&gt;</span>
 <span class="nt">&lt;SubPlan</span> <span class="na">version=</span><span class="s">&quot;2.0&quot;</span><span class="nt">&gt;</span>
-  <span class="nt">&lt;Entry</span> <span class="na">include=</span><span class="s">&quot;CtsAppTestCases android.app.cts.NotificationManagerTest#testNotify&quot;</span> <span class="nt">/&gt;</span>
+  <span class="nt">&lt;Entry</span> <span class="na">include=</span><span class="s">&quot;armeabi-v7a CtsCameraTestCases android.hardware.camera2.cts.StillCaptureTest#testAeCompensation[1]&quot;</span> <span class="nt">/&gt;</span>
+  <span class="nt">&lt;Entry</span> <span class="na">include=</span><span class="s">&quot;armeabi-v7a CtsCameraTestCases android.hardware.camera2.cts.CaptureRequestTest#testEdgeModeControl[1]&quot;</span> <span class="nt">/&gt;</span>
+  <span class="nt">&lt;Entry</span> <span class="na">include=</span><span class="s">&quot;armeabi-v7a CtsCameraTestCases android.hardware.camera2.cts.CaptureRequestTest#testNoiseReductionModeControl[1]&quot;</span> <span class="nt">/&gt;</span>
+  <span class="nt">&lt;Entry</span> <span class="na">include=</span><span class="s">&quot;armeabi-v7a CtsCameraTestCases android.hardware.camera2.cts.CaptureRequestTest#testAntiBandingModes[1]&quot;</span> <span class="nt">/&gt;</span>
 <span class="nt">&lt;/SubPlan&gt;</span>
 </pre></div>
 </div>
@@ -239,12 +243,16 @@ FAILED            : 0
 </ul>
 <ol class="arabic simple">
 <li><p>烧录 userdebug 版固件</p></li>
-<li><p>将 keybox 文件推到机器里面
-#/ adb root
-#/ adb push keybox.xml /data/</p></li>
+<li><p>将 keybox 文件推到机器里面</p></li>
+</ol>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">adb</span> <span class="n">root</span>
+<span class="n">adb</span> <span class="n">push</span> <span class="n">keybox</span><span class="o">.</span><span class="n">xml</span> <span class="o">/</span><span class="n">data</span><span class="o">/</span>
+</pre></div>
+</div>
+<ol class="arabic simple" start="3">
 <li><p>初始化 RPMB</p></li>
 </ol>
-<div class="highlight-log notranslate"><div class="highlight"><pre><span></span>M9200:/ # qseecom_sample_client v smplat64 14 1
+<div class="highlight-log notranslate"><div class="highlight"><pre><span></span>M92xx:/ # qseecom_sample_client v smplat64 14 1
 Note: Command line arguments do not belong to legacy test
         -------------------------------------------------------
          WARNING!!! You are about to provision the RPMB key.
@@ -261,24 +269,30 @@ RPMB key provisioning completed
 <ol class="arabic simple" start="4">
 <li><p>下载 Attestation key</p></li>
 </ol>
+<p>一定要测<code class="docutils literal notranslate"><span class="pre">cd</span> <span class="pre">data</span></code>，然后保证每台机器<code class="docutils literal notranslate"><span class="pre">xxxM92xx_GL000061</span></code>不一样。</p>
 <p><img alt="0010_0002.png" src="../../../_images/0010_00021.png" /></p>
-<div class="highlight-log notranslate"><div class="highlight"><pre><span></span>M9200:/ # cd data
-M9200:/ # LD_LIBRARY_PATH=/vendor/lib/hw KmInstallKeybox m9200_keybox100.xml PAXM9200_GL000061 true                                      &lt;
-Brand: PAX
-Device: M9200
-Product: M9200_GL
+<p>执行命令：</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">cd</span> <span class="n">data</span>
+<span class="n">LD_LIBRARY_PATH</span><span class="o">=/</span><span class="n">vendor</span><span class="o">/</span><span class="n">lib</span><span class="o">/</span><span class="n">hw</span> <span class="n">KmInstallKeybox</span> <span class="n">keybox</span><span class="o">.</span><span class="n">xml</span> <span class="n">xxxM92xx_GL000061</span> <span class="n">true</span> 
+</pre></div>
+</div>
+<div class="highlight-log notranslate"><div class="highlight"><pre><span></span>M92xx:/ # cd data
+M92xx:/ # LD_LIBRARY_PATH=/vendor/lib/hw KmInstallKeybox m92xx_keybox100.xml xxxM92xx_GL000061 true                                      &lt;
+Brand: xxx
+Device: M92xx
+Product: M92xx_GL
 SerialNum: 18226e22
-Manufacturer: PAX
-Model: M9200
+Manufacturer: xxx
+Model: M92xx
 Imei: 869529060003785
 Meid:
 Number of keyboxes 100
-myDeviceID: PAXM9200_GL000061
-keyboxCtx.device_id.data: PAXM9200_GL000001
-myDeviceID: PAXM9200_GL000061
+myDeviceID: xxxM92xx_GL000061
+keyboxCtx.device_id.data: xxxM92xx_GL000001
+myDeviceID: xxxM92xx_GL000061
 ···省略···
-keyboxCtx.device_id.data: PAXM9200_GL000061
-KeyMaster Attestation Key Provisioning success for KeyIDPAXM9200_GL000061
+keyboxCtx.device_id.data: xxxM92xx_GL000061
+KeyMaster Attestation Key Provisioning success for KeyIDxxxM92xx_GL000061
 TEE done
 InstallKeybox is done!
 </pre></div>
@@ -287,6 +301,66 @@ InstallKeybox is done!
 <li><p>已经写过的报错-1004：</p></li>
 </ol>
 <p><img alt="0010_0003.png" src="../../../_images/0010_0003.png" /></p>
+<ol class="arabic simple" start="6">
+<li><p>判断key是否写入：</p></li>
+</ol>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>ls /mnt/vendor/persist/data/
+查看子目录是否有 key 文件。
+
+M92xx:/ # ls /mnt/vendor/persist/data/
+DdHdVQd1FIOARksZgXG27GJ1A5UjYCGhP-ZoGvseqsY_
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>如何重刷googlekey：</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>擦除rpmb分区和persist分区
+qseecom_sample_client v smplap64 15 1  选y
+fastboot flash persist.img
+adb root 
+adb push G:\M92xx\gms\keybox100.xml /data
+adb shell进入：
+qseecom_sample_client v smplat64 14 1 
+选1 报错不用管
+LD_LIBRARY_PATH=/vendor/lib/hw KmInstallKeybox keybox100.xml ZOLONM92xx_ZL000002 false
+</pre></div>
+</div>
+</section>
+<section id="go">
+<h1>go版本性能测试<a class="headerlink" href="#go" title="此标题的永久链接"></a></h1>
+<ul class="simple">
+<li><p>Test case: app-start-cold-1p:</p></li>
+</ul>
+<p>它向一个null数组元素获取长度导致空指针异常了:</p>
+<div class="highlight-log notranslate"><div class="highlight"><pre><span></span>02-25 19:44:35.722 10130 29318 29335 I TestRunner: started: testOpen(android.platform.test.scenario.apts.OpenApps)
+02-25 19:44:35.887  root 29350 29350 D ProcessState: Binder ioctl to enable oneway spam detection failed: Invalid argument
+02-25 19:44:36.042  root 29355 29355 D ProcessState: Binder ioctl to enable oneway spam detection failed: Invalid argument
+02-25 19:44:36.285  root 29362 29362 D ProcessState: Binder ioctl to enable oneway spam detection failed: Invalid argument
+02-25 19:44:36.898 10130 29318 29345 I PermissionGranterRule: Attempting to grant runtime permissions for com.google.android.apps.mapslite
+02-25 19:44:36.903 10130 29318 29335 E TestRunner: failed: testOpen(android.platform.test.scenario.apts.OpenApps)
+02-25 19:44:36.904 10130 29318 29335 E TestRunner: ----- begin exception -----
+02-25 19:44:36.907 10130 29318 29335 E TestRunner: java.lang.NullPointerException: Attempt to get length of null array
+02-25 19:44:36.907 10130 29318 29335 E TestRunner: 	at android.platform.test.rule.external.PermissionGranterRule.getPermissionByPackage(PermissionGranterRule.java:98)
+02-25 19:44:36.907 10130 29318 29335 E TestRunner: 	at android.platform.test.rule.external.PermissionGranterRule.grantRuntimePermissionFor(PermissionGranterRule.java:72)
+02-25 19:44:36.907 10130 29318 29335 E TestRunner: 	at android.platform.test.rule.external.PermissionGranterRule.starting(PermissionGranterRule.java:66)
+02-25 19:44:36.907 10130 29318 29335 E TestRunner: 	at android.platform.test.rule.TestWatcher$1.evaluate(TestWatcher.java:47)
+02-25 19:44:36.907 10130 29318 29335 E TestRunner: 	at android.platform.test.rule.TestWatcher$1.evaluate(TestWatcher.java:48)
+02-25 19:44:36.907 10130 29318 29335 E TestRunner: 	at org.junit.rules.RunRules.evaluate(RunRules.java:20)
+02-25 19:44:36.907 10130 29318 29335 E TestRunner: 	at org.junit.internal.runners.statements.FailOnTimeout$CallableStatement.call(FailOnTimeout.java:148)
+02-25 19:44:36.907 10130 29318 29335 E TestRunner: 	at org.junit.internal.runners.statements.FailOnTimeout$CallableStatement.call(FailOnTimeout.java:142)
+02-25 19:44:36.907 10130 29318 29335 E TestRunner: 	at java.util.concurrent.FutureTask.run(FutureTask.java:266)
+02-25 19:44:36.907 10130 29318 29335 E TestRunner: 	at java.lang.Thread.run(Thread.java:920)
+02-25 19:44:36.908 10130 29318 29335 E TestRunner: ----- end exception -----
+02-25 19:44:36.915 10130 29318 29335 I TestRunner: finished: testOpen(android.platform.test.scenario.apts.OpenApps)
+02-25 19:44:36.927 10130 29318 29335 I TestRunner: run finished: 1 tests, 1 failed, 0 ignored
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>app-start-cache-3p:</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>
+</pre></div>
+</div>
 </section>
 
 

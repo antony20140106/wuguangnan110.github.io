@@ -51,7 +51,7 @@ make <non-system images>
 
 +PRODUCT_PACKAGES += tptool
 ```
-* 2. 将应用放到`vendor/pax/tptool`目录，Android.bp内容必须加`vendor: true`或者Android.mk中增加`LOCAL_PROPRIETARY_MODULE := true`：
+* 2. 将应用放到`vendor/xxxxx/tptool`目录，Android.bp内容必须加`vendor: true`或者Android.mk中增加`LOCAL_PROPRIETARY_MODULE := true`：
 ```
 Android.bp  tptool.cpp
 
@@ -72,10 +72,10 @@ system应用如下：
    PRODUCT_ENFORCE_ARTIFACT_PATH_REQUIREMENTS := true
  endif
 
-+#[NEW FEATURE]-BEGIN by wugangnan@paxsz.com 2022-10-10 for BMS notify function
++#[NEW FEATURE]-BEGIN by xxx@xxxxx.com 2022-10-10 for BMS notify function
 +PRODUCT_PACKAGES += \
 +    batterywarning
-+#[NEW FEATURE]-END by wugangnan@paxsz.com 2022-10-10 for BMS notify function
++#[NEW FEATURE]-END by xxx@xxxxx.com 2022-10-10 for BMS notify function
 
 --- /dev/null
 +++ b/QSSI.12/frameworks/opt/batterywarning/Android.bp

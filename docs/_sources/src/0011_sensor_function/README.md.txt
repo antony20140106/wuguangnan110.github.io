@@ -13,7 +13,7 @@ NO.|文件名称|摘要
 0016| [qcom_SEE架构复合传感器介绍](docs/0016_qcom_SEE架构复合传感器介绍.md) | qcom平台虚拟传感器介绍。
 0015| [SensorHub_虚拟传感器手势库](docs/0015_SensorHub_虚拟传感器手势库.md) | SensorHub 虚拟传感器介绍。
 0014| [SensorHub_Factory_Calibration流程](docs/0014_SensorHub_Factory_Calibration流程.md) | SensorHub工厂模式下校准流程分析。
-0013| [SensorHub产品兼容方案](docs/0013_SensorHub产品兼容方案.md) | SensorHub兼容M50、M8功能开发。
+0013| [SensorHub产品兼容方案](docs/0013_SensorHub产品兼容方案.md) | SensorHub兼容M5x、M8功能开发。
 0012| [Magn_Sensor_MMC5603磁感调试过程及介绍](docs/0012_Magn_Sensor_MMC5603磁感调试过程及介绍.md) | 磁感sensor MMC5603 sensorhub调试记录
 0011| [A_Manual_Backlight](docs/0011_A_Manual_Backlight.md) | 手动背光控制APP、Service、HIDL、Driver工作流程
 0010| [Android_Auto_Brightness](docs/0010_Android_Auto_Brightness.md) | 理解SystemUI中的亮度调节以及自动亮度调节调用流程

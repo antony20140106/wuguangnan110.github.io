@@ -60,7 +60,8 @@
 </ul>
 </li>
 <li><a class="reference internal" href="#jeita">JEITA功能</a></li>
-<li><a class="reference internal" href="#dynamic-power-management">DYNAMIC POWER MANAGEMENT(动态电源管理)</a><ul>
+<li><a class="reference internal" href="#dynamic-power-management">DYNAMIC POWER MANAGEMENT(动态电源管理)</a></li>
+<li><a class="reference internal" href="#nvdc-battery-mosfet-battfet">NVDC Battery MOSFET (BATTFET)</a><ul>
 <li><a class="reference internal" href="#id9">寄存器介绍</a></li>
 <li><a class="reference internal" href="#supplement-mode">SUPPLEMENT MODE（补充模式）</a></li>
 </ul>
@@ -125,7 +126,7 @@
              
   <section id="id1">
 <h1>概述<a class="headerlink" href="#id1" title="此标题的永久链接"></a></h1>
-<p>高通A6650 charger mp2721调试记录，该款ic不做bc1.2检测，没有adc采样功能，电流电压检测都将放到电池IC里面。</p>
+<p>高通A665x charger mp2721调试记录，该款ic不做bc1.2检测，没有adc采样功能，电流电压检测都将放到电池IC里面。</p>
 </section>
 <section id="id2">
 <h1>参考<a class="headerlink" href="#id2" title="此标题的永久链接"></a></h1>
@@ -135,13 +136,13 @@
 <li><p><span class="xref myst">prolin_mp2723_kernel4.14参考代码</span></p></li>
 </ul>
 <div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span>172.16.2.28
-pax/pax123456
+xxx/xxx123456
 
 A77 A950代码：
-/home/pax/6.A77_qcm/qcm2290 
+/home/xxx/6.A77_qcm/qcm2290 
 
 展讯平台代码：
-/home/pax/9.A920Pro_8581/uis8581e_x64/idh.code/bsp/kernel/kernel4.14/drivers/power/supply
+/home/xxx/9.A920Pro_8581/uis8581e_x64/idh.code/bsp/kernel/kernel4.14/drivers/power/supply
 
 移远提醒：设备树配这个属性  ，关闭平台内部充电
 --- a/UM.9.15/vendor/qcom/proprietary/devicetree-4.19/qcom/scuba-iot-idp.dtsi
@@ -360,8 +361,8 @@ i2cset -f -y 0 0x3f 0x08 0x1f b
 [Sun Apr 24 17:40:25 2022] &lt; 5875.144&gt;TCPC-PE-EVT:ps_rdy\x0a&lt; 5875.144&gt;TCPC-TCPC:sink_vbus: 12000 mV, 1500 mA\x0a&lt; 5875.144&gt;TCPC-PE:PD -&gt; SNK_
 READY (CUN)\x0a&lt; 5875.
 [Sun Apr 24 17:40:25 2022] 144&gt;Enable PD_TIMER_SNK_FLOW_DELAY
-[Sun Apr 24 17:40:25 2022] PAX_CHG: miss_fault 0:wugn charge fault:0
-[Sun Apr 24 17:40:25 2022] PAX_CHG: mp2721_charger_irq_workfunc:charge fault:BOOST_OVP, status:Not charging
+[Sun Apr 24 17:40:25 2022] xxx_CHG: miss_fault 0:wugn charge fault:0
+[Sun Apr 24 17:40:25 2022] xxx_CHG: mp2721_charger_irq_workfunc:charge fault:BOOST_OVP, status:Not charging
 </pre></div>
 </div>
 <p>有一种方案，需要用cc协议判断是sink还是source来判断打开关闭otg功能。</p>
@@ -408,6 +409,31 @@ When the converter operates in input current loop or input voltage limit loop, t
 ==如果充电电流降至零，系统电压会由于输入功率限制而开始下降。 一旦系统电压低于电池电压，IC 自动进入补充模式（下面有介绍）。==
 当转换器在输入电流环路或输入电压限制环路中运行时，IINDPM_STAT 或 VINDPM_STAT 设置为 1，随后有一个 INT 脉冲中断（可屏蔽）。</p>
 <p>也就是说这个是为了保护电压电流的。</p>
+</section>
+<section id="nvdc-battery-mosfet-battfet">
+<h2>NVDC Battery MOSFET (BATTFET)<a class="headerlink" href="#nvdc-battery-mosfet-battfet" title="此标题的永久链接"></a></h2>
+<p>BATTFET采用NVDC结构，将系统与电池隔离，控制电池充放电。借助电源路径管理，该设备通过利用输入源、电池或两者来确定系统 (SYS) 输出的优先级。</p>
+<ul class="simple">
+<li><p>当电池深度放电后，插入适配器，芯片会控制 SYS 电压略高于 SYS_MIN，从而在给电池充电的同时保证系统负载的供电。</p></li>
+<li><p>当系统负载加重，导致输入电流达到限流值时，充电电流将会自动减小，以保证系统的优先供电。</p></li>
+<li><p>如果系统负载继续加重，导致充电电流减小至 0 ，电池可以反向给系统供电。</p></li>
+<li><p>最小 SYS 电压可通过 REG06h 寄存器中的 SYS_MIN 位设置.</p></li>
+</ul>
+<p><img alt="0013_0052.png" src="../../../_images/0013_0052.png" /></p>
+<ul class="simple">
+<li><p>当电池电压高于 SYS_MIN 时， REG12h 寄存器中的 VSYS_STAT 寄存器显示 1，否则显示 0。</p></li>
+</ul>
+<p><img alt="0013_0053.png" src="../../../_images/0013_0053.png" /></p>
+<ul class="simple">
+<li><p>REG16h 寄存器中的 BFET_STAT 位指示电池的充放电状态。</p></li>
+</ul>
+<p><img alt="0013_0054.png" src="../../../_images/0013_0054.png" /></p>
+<ol class="arabic simple">
+<li><p>当 VBATT 低于最小系统电压设置 (VSYS_MIN) 时，VSYS 被调节至 (VSYS_MIN + VTRACK)，其中 VTRACK 通常为 150mV。 根据 VBATT，BATTFET 以线性模式工作，以使用涓流充电、预充电或快速充电电流为电池充电。</p></li>
+<li><p>一旦 VBATT 超过 VSYS_MIN，BATTFET 就会完全开启，VSYS 和 VBATT 之间的电压差就是 BATTFET 电阻压降。</p></li>
+<li><p>当充电被禁用或终止时，VSYS 始终被调节为 VTRACK 加上 VSYS_MIN 和 VBATT 之间的较高值。 在这种情况下，VTRACK 通常为 100mV。</p></li>
+</ol>
+<p><img alt="0013_0055.png" src="../../../_images/0013_0055.png" /></p>
 <section id="id9">
 <h3>寄存器介绍<a class="headerlink" href="#id9" title="此标题的永久链接"></a></h3>
 <ul class="simple">
@@ -793,7 +819,7 @@ bengal:/sys #
 <span class="w"> </span>genfscon sysfs /devices/platform/soc/soc:qcom,msm-audio-apr/soc:qcom,msm-audio-apr:qcom,q6core-audio/soc:qcom,msm-audio-apr:qcom,q6core-audio:bolero-cdc/va-macro/va_swr_ctrl/wakeup u:object_r:sysfs_wakeup:s0<span class="w"></span>
 <span class="w"> </span>genfscon sysfs /devices/platform/soc/b300000.qcom,turing/wakeup u:object_r:sysfs_wakeup:s0<span class="w"></span>
 <span class="gi">+</span><span class="w"></span>
-<span class="gi">+#PAX charger mp2721</span><span class="w"></span>
+<span class="gi">+#xxx charger mp2721</span><span class="w"></span>
 <span class="gi">+genfscon sysfs /devices/platform/soc/4a80000.i2c/i2c-0/0-003f/power_supply/mp2721_charger u:object_r:vendor_sysfs_battery_supply:s0</span><span class="w"></span>
 </pre></div>
 </div>
@@ -912,7 +938,7 @@ close(9)                                = 0
 <p>原因分析：
 发现该电池是4.2v满充的，4.3v以上的满充电压就过充保护了。</p>
 <p><img alt="0013_0023.png" src="../../../_images/0013_0023.png" /></p>
-<p>第二次使用M50电池测试就正常了：
+<p>第二次使用M5x电池测试就正常了：
 充电电流2A 电压5V，满充时间：2小时29分钟，回充电流200ma，暂无回充。</p>
 <p>充满时电压：4.358v
 CV:4.4V</p>
@@ -924,15 +950,15 @@ CV:4.4V</p>
 <div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span>[Sun Apr 24 17:40:40 2022] mp2721_info tcpc_notifier_call, old_state = UNATTACHED, new_state = ATTACHED_SNK
 [Sun Apr 24 17:40:40 2022] tcpc_notifier_call USB Plug in, pol = 0
 [Sun Apr 24 17:40:40 2022] handle_typec_attach: ++ en:1
-[Sun Apr 24 17:40:40 2022] PAX_CHG: mp2721_set_otg_enable en:0 enable_otg:0
+[Sun Apr 24 17:40:40 2022] xxx_CHG: mp2721_set_otg_enable en:0 enable_otg:0
 
 这个时间去获取充电类型还是unknown：
-[Sun Apr 24 21:55:22 2022] pax_tcpc_notifier_call USB Plug in, pol = 0
-[Sun Apr 24 21:55:22 2022] PAX_CHG_2721: mp2721_charge_type:get mp2721_info charge type:0
+[Sun Apr 24 21:55:22 2022] xxx_tcpc_notifier_call USB Plug in, pol = 0
+[Sun Apr 24 21:55:22 2022] xxx_CHG_2721: mp2721_charge_type:get mp2721_info charge type:0
 
-按照原始逻辑，pax_charger会唤醒线程去开启bc1.2检测：
-[Sun Apr 24 17:40:40 2022] pax_tcpc_notifier_call USB Plug in, pol = 0
-[Sun Apr 24 17:40:40 2022] PAX_CHG: _wake_up_charger:
+按照原始逻辑，xxx_charger会唤醒线程去开启bc1.2检测：
+[Sun Apr 24 17:40:40 2022] xxx_tcpc_notifier_call USB Plug in, pol = 0
+[Sun Apr 24 17:40:40 2022] xxx_CHG: _wake_up_charger:
 </pre></div>
 </div>
 <p>其次是PD选择5v3a档位，然后选择9v2a：</p>
@@ -946,35 +972,35 @@ CV:4.4V</p>
 <div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="o">*</span><span class="w"> </span><span class="k">if</span><span class="p">(</span><span class="n">noti</span><span class="o">-&gt;</span><span class="n">typec_state</span><span class="p">.</span><span class="n">new_state</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">TYPEC_ATTACHED_SNK</span><span class="p">)</span><span class="w"></span>
 <span class="w">  </span><span class="o">*</span><span class="w"> </span><span class="n">_wake_up_charger</span><span class="p">(</span><span class="n">info</span><span class="p">);</span><span class="w"> </span><span class="c1">//info-&gt;charger_thread_timeout = true;使能充电线程</span>
 <span class="w">    </span><span class="o">*</span><span class="w"> </span><span class="n">charger_routine_thread</span><span class="p">(</span><span class="kt">void</span><span class="w"> </span><span class="o">*</span><span class="n">arg</span><span class="p">)</span><span class="w"></span>
-<span class="w">      </span><span class="o">*</span><span class="w"> </span><span class="n">pax_is_charger_on</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">pax_charger</span><span class="w"> </span><span class="o">*</span><span class="n">info</span><span class="p">)</span><span class="w"></span>
-<span class="w">	    </span><span class="o">*</span><span class="w"> </span><span class="n">chr_type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pax_charger_dev_get_charger_type</span><span class="p">(</span><span class="n">info</span><span class="o">-&gt;</span><span class="n">chg1_dev</span><span class="p">);</span><span class="w"></span>
+<span class="w">      </span><span class="o">*</span><span class="w"> </span><span class="n">xxx_is_charger_on</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">xxx_charger</span><span class="w"> </span><span class="o">*</span><span class="n">info</span><span class="p">)</span><span class="w"></span>
+<span class="w">	    </span><span class="o">*</span><span class="w"> </span><span class="n">chr_type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">xxx_charger_dev_get_charger_type</span><span class="p">(</span><span class="n">info</span><span class="o">-&gt;</span><span class="n">chg1_dev</span><span class="p">);</span><span class="w"></span>
 <span class="w">		  </span><span class="o">*</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">chr_type</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">POWER_SUPPLY_USB_TYPE_UNKNOWN</span><span class="p">)</span><span class="w"></span>
-<span class="w">		    </span><span class="o">*</span><span class="w"> </span><span class="n">pax_charger_plug_in</span><span class="p">(</span><span class="n">info</span><span class="p">,</span><span class="w"> </span><span class="n">chr_type</span><span class="p">);</span><span class="w"></span>
+<span class="w">		    </span><span class="o">*</span><span class="w"> </span><span class="n">xxx_charger_plug_in</span><span class="p">(</span><span class="n">info</span><span class="p">,</span><span class="w"> </span><span class="n">chr_type</span><span class="p">);</span><span class="w"></span>
 <span class="w">			  </span><span class="o">*</span><span class="w"> </span><span class="n">info</span><span class="o">-&gt;</span><span class="n">charger_thread_polling</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">true</span><span class="p">;</span><span class="w"></span>
 
 <span class="n">charger_routine_thread</span><span class="p">(</span><span class="kt">void</span><span class="w"> </span><span class="o">*</span><span class="n">arg</span><span class="p">)</span><span class="w"></span>
 <span class="p">{</span><span class="w"></span>
 <span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">info</span><span class="o">-&gt;</span><span class="n">charger_thread_polling</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="nb">true</span><span class="p">)</span><span class="w"></span>
-<span class="w">		</span><span class="n">pax_charger_start_timer</span><span class="p">(</span><span class="n">info</span><span class="p">);</span><span class="w">	</span>
-<span class="w">		  </span><span class="o">*</span><span class="w"> </span><span class="n">pax_charger_alarm_timer_func</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">alarm</span><span class="w"> </span><span class="o">*</span><span class="n">alarm</span><span class="p">,</span><span class="w"> </span><span class="n">ktime_t</span><span class="w"> </span><span class="n">now</span><span class="p">)</span><span class="w"></span>
+<span class="w">		</span><span class="n">xxx_charger_start_timer</span><span class="p">(</span><span class="n">info</span><span class="p">);</span><span class="w">	</span>
+<span class="w">		  </span><span class="o">*</span><span class="w"> </span><span class="n">xxx_charger_alarm_timer_func</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">alarm</span><span class="w"> </span><span class="o">*</span><span class="n">alarm</span><span class="p">,</span><span class="w"> </span><span class="n">ktime_t</span><span class="w"> </span><span class="n">now</span><span class="p">)</span><span class="w"></span>
 <span class="w">		    </span><span class="o">*</span><span class="w"> </span><span class="n">_wake_up_charger</span><span class="p">(</span><span class="n">info</span><span class="p">);</span><span class="w"></span>
 <span class="p">}</span><span class="w"></span>
 </pre></div>
 </div>
 <p>由于在typec状态是<code class="docutils literal notranslate"><span class="pre">TYPEC_ATTACHED_SNK</span></code>时获取bc1.2状态，线程跑起来后识别还是unknown类型，不会继续启动plug_in指令，也就不会再次启动timer去唤醒线程了，所以必须在能识别bc1.2的时候去执行<code class="docutils literal notranslate"><span class="pre">_wake_up_charger</span></code>启动线程，才会正常执行<code class="docutils literal notranslate"><span class="pre">plug_in</span></code>操作。</p>
 <ul class="simple">
-<li><p>正确做法是当mp2721中断上来后去读取bc1.2的状态才是ok的，此时通知pax_charger去wakeup线程：</p></li>
+<li><p>正确做法是当mp2721中断上来后去读取bc1.2的状态才是ok的，此时通知xxx_charger去wakeup线程：</p></li>
 </ul>
-<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="n">pax_charger</span><span class="p">.</span><span class="n">c</span><span class="o">:</span><span class="w"></span>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="n">xxx_charger</span><span class="p">.</span><span class="n">c</span><span class="o">:</span><span class="w"></span>
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&quot;mp2721_notify.h&quot;</span><span class="cp"></span>
-<span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">pax_plug_status_notifier</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">notifier_block</span><span class="w"> </span><span class="o">*</span><span class="n">self</span><span class="p">,</span><span class="w"> </span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">long</span><span class="w"> </span><span class="n">event</span><span class="p">,</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="o">*</span><span class="n">value</span><span class="p">)</span><span class="w"></span>
+<span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">xxx_plug_status_notifier</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">notifier_block</span><span class="w"> </span><span class="o">*</span><span class="n">self</span><span class="p">,</span><span class="w"> </span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">long</span><span class="w"> </span><span class="n">event</span><span class="p">,</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="o">*</span><span class="n">value</span><span class="p">)</span><span class="w"></span>
 <span class="p">{</span><span class="w"></span>
 <span class="w">	</span><span class="kt">int</span><span class="w"> </span><span class="n">plug_en</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
-<span class="w">	</span><span class="k">struct</span><span class="w"> </span><span class="nc">pax_charger</span><span class="w"> </span><span class="o">*</span><span class="n">info</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="k">struct</span><span class="w"> </span><span class="nc">xxx_charger</span><span class="w"> </span><span class="o">*</span><span class="n">info</span><span class="p">;</span><span class="w"></span>
 <span class="w">	</span><span class="k">struct</span><span class="w"> </span><span class="nc">power_supply</span><span class="w"> </span><span class="o">*</span><span class="n">psy</span><span class="p">;</span><span class="w"></span>
 
-<span class="w">	</span><span class="n">psy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">power_supply_get_by_name</span><span class="p">(</span><span class="s">&quot;pax-master-charger&quot;</span><span class="p">);</span><span class="w">	</span>
-<span class="w">	</span><span class="n">info</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">pax_charger</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="n">power_supply_get_drvdata</span><span class="p">(</span><span class="n">psy</span><span class="p">);</span><span class="w"></span>
+<span class="w">	</span><span class="n">psy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">power_supply_get_by_name</span><span class="p">(</span><span class="s">&quot;xxx-master-charger&quot;</span><span class="p">);</span><span class="w">	</span>
+<span class="w">	</span><span class="n">info</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">xxx_charger</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="n">power_supply_get_drvdata</span><span class="p">(</span><span class="n">psy</span><span class="p">);</span><span class="w"></span>
 
 <span class="w">	</span><span class="k">switch</span><span class="w"> </span><span class="p">(</span><span class="n">event</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
 <span class="w">		   </span><span class="k">case</span><span class="w"> </span><span class="no">SET_PLUG_EN</span><span class="p">:</span><span class="w"></span>
@@ -991,9 +1017,9 @@ CV:4.4V</p>
 <span class="p">}</span><span class="w"></span>
 
 
-<span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">pax_charger_probe</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">platform_device</span><span class="w"> </span><span class="o">*</span><span class="n">pdev</span><span class="p">)</span><span class="w"></span>
+<span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">xxx_charger_probe</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">platform_device</span><span class="w"> </span><span class="o">*</span><span class="n">pdev</span><span class="p">)</span><span class="w"></span>
 <span class="p">{</span><span class="w"></span>
-<span class="w">	</span><span class="n">info</span><span class="o">-&gt;</span><span class="n">plug_nb</span><span class="p">.</span><span class="n">notifier_call</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pax_plug_status_notifier</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="n">info</span><span class="o">-&gt;</span><span class="n">plug_nb</span><span class="p">.</span><span class="n">notifier_call</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">xxx_plug_status_notifier</span><span class="p">;</span><span class="w"></span>
 <span class="w">	</span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mp2721_notify_register_client</span><span class="p">(</span><span class="o">&amp;</span><span class="n">info</span><span class="o">-&gt;</span><span class="n">plug_nb</span><span class="p">);</span><span class="w"></span>
 <span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ret</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
 <span class="w">		</span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
@@ -1064,14 +1090,14 @@ CV:4.4V</p>
 </div>
 <p>log打印如下：</p>
 <div class="highlight-log notranslate"><div class="highlight"><pre><span></span>[Sun Apr 24 16:38:30 2022] rt-pd-manager soc:rt_pd_manager: pd_tcp_notifier_call sink vbus 5000mV 3000mA type(0x01)
-[Sun Apr 24 16:38:30 2022] PAX_CHG_MP2721: mp2721_info tcpc_notifier_call, old_state = UNATTACHED, new_state = ATTACHED_SNK
-[Sun Apr 24 16:38:30 2022] PAX_CHG_MP2721: handle_typec_attach: ++ en:1
+[Sun Apr 24 16:38:30 2022] xxx_CHG_MP2721: mp2721_info tcpc_notifier_call, old_state = UNATTACHED, new_state = ATTACHED_SNK
+[Sun Apr 24 16:38:30 2022] xxx_CHG_MP2721: handle_typec_attach: ++ en:1
 [Sun Apr 24 16:38:30 2022] rt-pd-manager soc:rt_pd_manager: pd_tcp_notifier_call Charger plug in, polarity = 1
-[Sun Apr 24 16:38:30 2022] PAX_CHG_MP2721: mp2721_set_otg_enable en:0 enable_otg:0
-[Sun Apr 24 16:38:30 2022] pax_tcpc_notifier_call USB Plug in, pol = 1
-[Sun Apr 24 16:38:30 2022] PAX_CHG_MP2721: mp2721_charge_type:get mp2721_info charge type:0
-[Sun Apr 24 16:38:30 2022] PAX_CHG_MP2721: typec_attach_thread: attach:1 charge_type = 0
-[Sun Apr 24 16:38:30 2022] PAX_CHG_MP2721: mp2721_charge_type:get mp2721_info charge type:0
+[Sun Apr 24 16:38:30 2022] xxx_CHG_MP2721: mp2721_set_otg_enable en:0 enable_otg:0
+[Sun Apr 24 16:38:30 2022] xxx_tcpc_notifier_call USB Plug in, pol = 1
+[Sun Apr 24 16:38:30 2022] xxx_CHG_MP2721: mp2721_charge_type:get mp2721_info charge type:0
+[Sun Apr 24 16:38:30 2022] xxx_CHG_MP2721: typec_attach_thread: attach:1 charge_type = 0
+[Sun Apr 24 16:38:30 2022] xxx_CHG_MP2721: mp2721_charge_type:get mp2721_info charge type:0
 [Sun Apr 24 16:38:30 2022] ///PD dbg info 672d
 [Sun Apr 24 16:38:30 2022] &lt; 2672.629&gt;TCPC-TCPC:tcpci_alert_power_status_changed_v10 ++\x0a&lt; 2672.630&gt;TCPC-TCPC:ps_change=2\x0a&lt; 2672.631&gt;TCPC-TYPEC:wait_ps=Disa
 [Sun Apr 24 16:38:30 2022] ble\x0a&lt; 2672.631&gt;TCPC-TYPEC:** Attached.SNK\x0a&lt; 2672.633&gt;TCPC-TCPC:wake_lock=1\x0a&lt; 2672.633&gt;TCPC-TCPC:sink_vbus: 5000 mV, 3000 mA\x0a&lt; 26
@@ -1081,9 +1107,9 @@ CV:4.4V</p>
 [Sun Apr 24 16:38:30 2022] 5&gt;Enable PD_TIMER_SINK_WAIT_CAP
 [Sun Apr 24 16:38:30 2022] ///PD dbg info 49d
 [Sun Apr 24 16:38:30 2022] &lt; 2672.730&gt;TCPC-TCPC:Alert:0x0004, Mask:0x230fff
-[Sun Apr 24 16:38:30 2022] PAX_CHG_MP2721: mp2721_info tcpc_notifier_call, old_state = UNATTACHED, new_state = Not charging
-[Sun Apr 24 16:38:30 2022] PAX_CHG_MP2721: tcpc_notifier_call sink vbus 9000mV 277mA type(0x86)
-[Sun Apr 24 16:38:30 2022] PAX_CHG_MP2721: mp2721_enable_vbus_ovp en:0 //在这里关闭ovp
+[Sun Apr 24 16:38:30 2022] xxx_CHG_MP2721: mp2721_info tcpc_notifier_call, old_state = UNATTACHED, new_state = Not charging
+[Sun Apr 24 16:38:30 2022] xxx_CHG_MP2721: tcpc_notifier_call sink vbus 9000mV 277mA type(0x86)
+[Sun Apr 24 16:38:30 2022] xxx_CHG_MP2721: mp2721_enable_vbus_ovp en:0 //在这里关闭ovp
 [Sun Apr 24 16:38:30 2022] rt-pd-manager soc:rt_pd_manager: pd_tcp_notifier_call sink vbus 9000mV 277mA type(0x86)
 [Sun Apr 24 16:38:30 2022] get prop 122 is not supported in usb
 [Sun Apr 24 16:38:30 2022] ///PD dbg info 979d
@@ -1106,8 +1132,8 @@ CV:4.4V</p>
 [Sun Apr 24 16:38:30 2022] 72.778&gt;TCPC-TYPEC:Attached-&gt; SINK(repeat)
 [Sun Apr 24 16:38:30 2022] ///PD dbg info 49d
 [Sun Apr 24 16:38:30 2022] &lt; 2672.901&gt;TCPC-TCPC:Alert:0x0004, Mask:0x230fff
-[Sun Apr 24 16:38:30 2022] PAX_CHG_MP2721: tcpc_notifier_call sink vbus 9000mV 2000mA type(0x84)
-[Sun Apr 24 16:38:30 2022] PAX_CHG_MP2721: mp2721_enable_vbus_ovp en:0
+[Sun Apr 24 16:38:30 2022] xxx_CHG_MP2721: tcpc_notifier_call sink vbus 9000mV 2000mA type(0x84)
+[Sun Apr 24 16:38:30 2022] xxx_CHG_MP2721: mp2721_enable_vbus_ovp en:0
 [Sun Apr 24 16:38:30 2022] rt-pd-manager soc:rt_pd_manager: pd_tcp_notifier_call sink vbus 9000mV 2000mA type(0x84)
 [Sun Apr 24 16:38:30 2022] get prop 122 is not supported in usb
 [Sun Apr 24 16:38:30 2022] set prop 122 is not supported
@@ -1127,8 +1153,8 @@ CV:4.4V</p>
 [Sun Apr 24 16:38:31 2022] Mask:0x230fff\x0a&lt; 2673.222&gt;TCPC-PE-EVT:no_support\x0a&lt; 2673.222&gt;TCPC-PE:PD -&gt; SNK_READY (CUN)\x0a&lt; 2673.223&gt;TCPC-DPM:from_pe: 1, evt:29
 [Sun Apr 24 16:38:31 2022] , reaction:0x10000\x0a&lt; 2673.223&gt;TCPC-PE-EVT:tcp_event(disc_id), 29\x0a&lt; 2673.223&gt;TCPC-PE:VDM -&gt; D_UID_REQ (CUN)\x0a&lt; 2673.227&gt;TCPC-TCPC:
 [Sun Apr 24 16:38:31 2022] Alert:0x0040, Mask:0x230fff\x0a&lt; 2673.228&gt;TCPC-PE-EVT:good_crc\x0a&lt; 2673.228&gt;Enable PD_TIMER_VDM_RESPONSE
-[Sun Apr 24 16:38:31 2022] PAX_CHG_MP2721: tcpc_notifier_call PD active
-[Sun Apr 24 16:38:31 2022] PAX_CHG_MP2721: tcpc_notifier_call sink vbus -1593946106mV -26329mA type(0xFF)
+[Sun Apr 24 16:38:31 2022] xxx_CHG_MP2721: tcpc_notifier_call PD active
+[Sun Apr 24 16:38:31 2022] xxx_CHG_MP2721: tcpc_notifier_call sink vbus -1593946106mV -26329mA type(0xFF)
 [Sun Apr 24 16:38:31 2022] rt-pd-manager soc:rt_pd_manager: pd_tcp_notifier_call pd state = 6
 [Sun Apr 24 16:38:31 2022] set prop 125 is not supported
 [Sun Apr 24 16:38:31 2022] set prop 122 is not supported
@@ -1141,7 +1167,7 @@ CV:4.4V</p>
 [Sun Apr 24 16:38:31 2022] -EVT:vdm_not_support\x0a&lt; 2673.238&gt;TCPC-PE:VDM -&gt; D_UID_N (CUN)\x0a&lt; 2673.238&gt;TCPC-PE:DPM_Immediately\x0a&lt; 2673.238&gt;TCPC-PE-EVT:dpm_ack\x0a&lt;
 [Sun Apr 24 16:38:31 2022] 2673.238&gt;TCPC-PE:VDM -&gt; SNK_READY (CUN)\x0a&lt; 2673.238&gt;TCPC-DPM:dp_dfp_u_notify_pe_ready\x0a&lt; 2673.238&gt;TCPC-DPM:PE_READY\x0a&lt; 2673.238&gt;TC
 [Sun Apr 24 16:38:31 2022] PC-PE:pd_state=6
-[Sun Apr 24 16:38:31 2022] PAX_CHG_MP2721: mp2721_charge_type:get mp2721_info charge type:8
+[Sun Apr 24 16:38:31 2022] xxx_CHG_MP2721: mp2721_charge_type:get mp2721_info charge type:8
 [Sun Apr 24 16:38:31 2022] SET_PLUG_EN: 0
 [Sun Apr 24 16:38:31 2022] type=1400 audit(1650789512.259:189): avc: denied { read } for comm=&quot;Binder:506_2&quot; name=&quot;wakeup28&quot; dev=&quot;sysfs&quot; ino=36309 scontext=u:r:system_suspend:s0 tcontext=u:object_r:s
 ysfs:s0 tclass=dir permissive=0
@@ -1155,15 +1181,15 @@ ysfs:s0 tclass=dir permissive=0
 ysfs:s0 tclass=dir permissive=0
 [Sun Apr 24 16:38:31 2022] audit: audit_lost=55 audit_rate_limit=5 audit_backlog_limit=64
 [Sun Apr 24 16:38:31 2022] audit: rate limit exceeded
-[Sun Apr 24 16:38:31 2022] PAX_CHG_MP2721: mp2721_charge_type:get mp2721_info charge type:8
-[Sun Apr 24 16:38:31 2022] PAX_CHG: pax_is_charger_on chr_type = 2
-[Sun Apr 24 16:38:31 2022] PAX_CHG: pax_charger_plug_in
-[Sun Apr 24 16:38:31 2022] PAX_CHG: pax_is_charger_on plug in, type:2
-[Sun Apr 24 16:38:31 2022] PAX_CHG_MP2721: mp2721_plug_in:adapter plug in
-[Sun Apr 24 16:38:31 2022] PAX_CHG_MP2721: mp2721_adjust_vin_limit:Set absolute vindpm threshold 4500 successfully
-[Sun Apr 24 16:38:31 2022] PAX_CHG_MP2721: mp2721_plug_in: Set input current limit to 2000mA successfully
-[Sun Apr 24 16:38:31 2022] PAX_CHG_MP2721: chg_dump: CHG [online: 1, type: DCP, status: Charging, fault: OK, health: Good, ICHG = 4000mA, AICR = 2000mA, MIVR = 4440mV, IEOC = 240mA, CV = 4350mV]
-[Sun Apr 24 16:38:31 2022] PAX_CHG: charger_routine_thread end , 0
+[Sun Apr 24 16:38:31 2022] xxx_CHG_MP2721: mp2721_charge_type:get mp2721_info charge type:8
+[Sun Apr 24 16:38:31 2022] xxx_CHG: xxx_is_charger_on chr_type = 2
+[Sun Apr 24 16:38:31 2022] xxx_CHG: xxx_charger_plug_in
+[Sun Apr 24 16:38:31 2022] xxx_CHG: xxx_is_charger_on plug in, type:2
+[Sun Apr 24 16:38:31 2022] xxx_CHG_MP2721: mp2721_plug_in:adapter plug in
+[Sun Apr 24 16:38:31 2022] xxx_CHG_MP2721: mp2721_adjust_vin_limit:Set absolute vindpm threshold 4500 successfully
+[Sun Apr 24 16:38:31 2022] xxx_CHG_MP2721: mp2721_plug_in: Set input current limit to 2000mA successfully
+[Sun Apr 24 16:38:31 2022] xxx_CHG_MP2721: chg_dump: CHG [online: 1, type: DCP, status: Charging, fault: OK, health: Good, ICHG = 4000mA, AICR = 2000mA, MIVR = 4440mV, IEOC = 240mA, CV = 4350mV]
+[Sun Apr 24 16:38:31 2022] xxx_CHG: charger_routine_thread end , 0
 </pre></div>
 </div>
 </section>
@@ -1184,14 +1210,14 @@ ysfs:s0 tclass=dir permissive=0
 [Sun Apr 24 15:55:16 2022] &lt;   78.215&gt;TCPC-TYPEC:Attached-&gt; NULL(repeat)
 [Sun Apr 24 15:55:16 2022] mp2721_info tcpc_notifier_call, old_state = UNATTACHED, new_state = (null)
 [Sun Apr 24 15:55:16 2022] tcpc_notifier_call sink vbus 5000mV 3000mA type(0x01)
-[Sun Apr 24 15:55:16 2022] PAX_CHG_MP2721: mp2721_enable_vbus_ovp en:1
+[Sun Apr 24 15:55:16 2022] xxx_CHG_MP2721: mp2721_enable_vbus_ovp en:1
 [Sun Apr 24 15:55:16 2022] rt-pd-manager soc:rt_pd_manager: pd_tcp_notifier_call sink vbus 5000mV 3000mA type(0x01)
 [Sun Apr 24 15:55:16 2022] mp2721_info tcpc_notifier_call, old_state = UNATTACHED, new_state = ATTACHED_SNK
 [Sun Apr 24 15:55:16 2022] handle_typec_attach: ++ en:1
 [Sun Apr 24 15:55:16 2022] rt-pd-manager soc:rt_pd_manager: pd_tcp_notifier_call Charger plug in, polarity = 1
-[Sun Apr 24 15:55:16 2022] PAX_CHG_MP2721: mp2721_set_otg_enable en:0 enable_otg:0
+[Sun Apr 24 15:55:16 2022] xxx_CHG_MP2721: mp2721_set_otg_enable en:0 enable_otg:0
 [Sun Apr 24 15:55:16 2022] typec_attach_thread: attach:1 charge_type = 0
-[Sun Apr 24 15:55:16 2022] pax_tcpc_notifier_call USB Plug in, pol = 1
+[Sun Apr 24 15:55:16 2022] xxx_tcpc_notifier_call USB Plug in, pol = 1
 [Sun Apr 24 15:55:16 2022] ///PD dbg info 721d
 [Sun Apr 24 15:55:16 2022] &lt;   78.246&gt;TCPC-TCPC:Alert:0x0002, Mask:0x23067f\x0a&lt;   78.246&gt;TCPC-TCPC:tcpci_alert_power_status_changed_v10 ++\x0a&lt;   78.247&gt;TCPC-TC
 [Sun Apr 24 15:55:16 2022] PC:ps_change=2\x0a&lt;   78.248&gt;TCPC-TYPEC:wait_ps=Disable\x0a&lt;   78.248&gt;TCPC-TYPEC:** Attached.SNK\x0a&lt;   78.249&gt;TCPC-TCPC:wake_lock=1\x0a&lt;
@@ -1206,7 +1232,7 @@ ysfs:s0 tclass=dir permissive=0
 [Sun Apr 24 15:55:16 2022] &lt;   78.348&gt;TCPC-TCPC:Alert:0x0004, Mask:0x23067f
 [Sun Apr 24 15:55:16 2022] mp2721_info tcpc_notifier_call, old_state = UNATTACHED, new_state = Not charging
 [Sun Apr 24 15:55:16 2022] tcpc_notifier_call sink vbus 9000mV 277mA type(0x86)
-[Sun Apr 24 15:55:16 2022] PAX_CHG_MP2721: mp2721_enable_vbus_ovp en:0
+[Sun Apr 24 15:55:16 2022] xxx_CHG_MP2721: mp2721_enable_vbus_ovp en:0
 [Sun Apr 24 15:55:16 2022] rt-pd-manager soc:rt_pd_manager: pd_tcp_notifier_call sink vbus 9000mV 277mA type(0x86)
 [Sun Apr 24 15:55:16 2022] ///PD dbg info 979d
 [Sun Apr 24 15:55:16 2022] &lt;   78.350&gt;TCPC-PE-EVT:src_cap\x0a&lt;   78.350&gt;TCPC-PE:PD -&gt; SNK_EVA_CAP (CUN)\x0a&lt;   78.350&gt;TCPC-PE:pd_rev=2\x0a&lt;   78.350&gt;TCPC-DPM:Policy
@@ -1238,10 +1264,10 @@ ysfs:s0 tclass=dir permissive=0
 <section id="id13">
 <h2>9.没有检测到设备死机<a class="headerlink" href="#id13" title="此标题的永久链接"></a></h2>
 <p>死机打印如下：</p>
-<div class="highlight-log notranslate"><div class="highlight"><pre><span></span>    3.983122] PAX_CHG_MP2721: failed to read 0x07
+<div class="highlight-log notranslate"><div class="highlight"><pre><span></span>    3.983122] xxx_CHG_MP2721: failed to read 0x07
 [    3.987867] i2c_geni 4a80000.i2c: i2c error :-107
-[    3.992622] PAX_CHG_MP2721: mp2721_init_device:Failed to set watchdog timer:-107
-[    4.000048] PAX_CHG_MP2721: device init failure: -107
+[    3.992622] xxx_CHG_MP2721: mp2721_init_device:Failed to set watchdog timer:-107
+[    4.000048] xxx_CHG_MP2721: device init failure: -107
 [    4.005697] i2c_geni 4a88000.i2c: Bus frequency is set to 400000Hz
 [    4.030863] reg-cooling-device soc:qcom,rpm-smd:rpm-regulator-smpa2:cx-cdev-lvl: Linked as a consumer to regulator.18
 [    4.042151] reg-cooling-device soc:qcom,rpm-smd:rpm-regulator-ldoa1:mx-cdev-lvl: Linked as a consumer to regulator.22
@@ -1381,7 +1407,7 @@ ysfs:s0 tclass=dir permissive=0
 </div>
 <p>查看寄存器表：</p>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>开机打印：
-<span class="o">[</span>    <span class="m">3</span>.337015<span class="o">]</span> PAX_CHG_MP2721: mp2721_parse_dt<span class="o">()</span> iin_limit:2000mA
+<span class="o">[</span>    <span class="m">3</span>.337015<span class="o">]</span> xxx_CHG_MP2721: mp2721_parse_dt<span class="o">()</span> iin_limit:2000mA
 
 console:/sys/class/power_supply/usb <span class="c1"># cat registers</span>
 Charger IC:
@@ -1783,32 +1809,32 @@ Reg[0x16] = 0x00
 <p><img alt="0013_0043.png" src="../../../_images/0013_0043.png" /></p>
 <p>但是我们I2C代码是在完成bc1.2后就开始设置电流和打开充电功能，而且我们是先读取寄存器状态再写，如果读取出错了就完了,log如下，在enable_charger时如果刚好
 是拔出状态，此时去读取09寄存器值为0，然后写1，那这时buck就被手动关闭了。</p>
-<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="w">  </span><span class="mf">514.906840</span><span class="p">]</span><span class="w"> </span><span class="n">pax_is_charger_on</span><span class="w"> </span><span class="n">chr_type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">4</span><span class="w"></span>
-<span class="p">[</span><span class="w">  </span><span class="mf">514.906848</span><span class="p">]</span><span class="w"> </span><span class="n">PAX_CHG</span><span class="o">:</span><span class="w"> </span><span class="n">_wake_up_charger</span><span class="o">:</span><span class="w"></span>
-<span class="p">[</span><span class="w">  </span><span class="mf">514.908143</span><span class="p">]</span><span class="w"> </span><span class="n">pax_is_charger_on</span><span class="w"> </span><span class="n">chr_type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">4</span><span class="w"></span>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="w">  </span><span class="mf">514.906840</span><span class="p">]</span><span class="w"> </span><span class="n">xxx_is_charger_on</span><span class="w"> </span><span class="n">chr_type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">4</span><span class="w"></span>
+<span class="p">[</span><span class="w">  </span><span class="mf">514.906848</span><span class="p">]</span><span class="w"> </span><span class="n">xxx_CHG</span><span class="o">:</span><span class="w"> </span><span class="n">_wake_up_charger</span><span class="o">:</span><span class="w"></span>
+<span class="p">[</span><span class="w">  </span><span class="mf">514.908143</span><span class="p">]</span><span class="w"> </span><span class="n">xxx_is_charger_on</span><span class="w"> </span><span class="n">chr_type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">4</span><span class="w"></span>
 <span class="p">[</span><span class="w">  </span><span class="mf">514.912539</span><span class="p">]</span><span class="w"> </span><span class="n">init</span><span class="o">:</span><span class="w"> </span><span class="n">Untracked</span><span class="w"> </span><span class="n">pid</span><span class="w"> </span><span class="mi">9005</span><span class="w"> </span><span class="n">exited</span><span class="w"> </span><span class="n">with</span><span class="w"> </span><span class="n">status</span><span class="w"> </span><span class="mi">0</span><span class="w"></span>
 <span class="p">[</span><span class="w">  </span><span class="mf">514.915385</span><span class="p">]</span><span class="w"> </span><span class="o">&lt;</span><span class="w">  </span><span class="mf">514.906</span><span class="o">&gt;</span><span class="n">TCPC</span><span class="o">-</span><span class="n">TCPC</span><span class="o">:</span><span class="n">Alert</span><span class="o">:</span><span class="mh">0x0002</span><span class="p">,</span><span class="w"> </span><span class="n">Mask</span><span class="o">:</span><span class="mh">0x230fff</span><span class="w"></span>
 <span class="p">[</span><span class="w">  </span><span class="mf">514.917614</span><span class="p">]</span><span class="w"> </span><span class="n">pd_tcp_notifier_call</span><span class="w"> </span><span class="n">event</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">TYPEC_STATE</span><span class="w"></span>
 <span class="p">[</span><span class="w">  </span><span class="mf">514.917617</span><span class="p">]</span><span class="w"> </span><span class="n">tcpc_notifier_call</span><span class="p">,</span><span class="w"> </span><span class="n">old_state</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ATTACHED_SNK</span><span class="p">,</span><span class="w"> </span><span class="n">new_state</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">UNATTACHED</span><span class="w"></span>
 <span class="p">[</span><span class="w">  </span><span class="mf">514.917619</span><span class="p">]</span><span class="w"> </span><span class="n">pd_tcp_notifier_call</span><span class="w"> </span><span class="n">Charger</span><span class="w"> </span><span class="n">plug</span><span class="w"> </span><span class="n">out</span><span class="w"></span>
 <span class="p">[</span><span class="w">  </span><span class="mf">514.917655</span><span class="p">]</span><span class="w"> </span><span class="n">charger</span><span class="w"> </span><span class="n">soc</span><span class="o">:</span><span class="n">charger</span><span class="o">:</span><span class="w"> </span><span class="n">usb_dwork_handler</span><span class="w"> </span><span class="n">Idle</span><span class="w"></span>
-<span class="p">[</span><span class="w">  </span><span class="mf">514.917963</span><span class="p">]</span><span class="w"> </span><span class="n">PAX_CHG</span><span class="o">:</span><span class="w"> </span><span class="n">support_fast_charging</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="w"></span>
-<span class="p">[</span><span class="w">  </span><span class="mf">514.917968</span><span class="p">]</span><span class="w"> </span><span class="n">PAX_CHG</span><span class="o">:</span><span class="w"> </span><span class="n">is_typec_adapter</span><span class="w"> </span><span class="n">rp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="n">pd_type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="w"></span>
-<span class="p">[</span><span class="w">  </span><span class="mf">514.917974</span><span class="p">]</span><span class="w"> </span><span class="n">PAX_CHG</span><span class="o">:</span><span class="w"> </span><span class="n">chg</span><span class="o">:</span><span class="mi">-1</span><span class="p">,</span><span class="mi">-1</span><span class="p">,</span><span class="mi">2000</span><span class="p">,</span><span class="mi">500</span><span class="w"> </span><span class="n">type</span><span class="o">:</span><span class="mi">4</span><span class="o">:</span><span class="mi">0</span><span class="w"> </span><span class="n">usb_unlimited</span><span class="o">:</span><span class="mi">0</span><span class="w"> </span><span class="n">usbif</span><span class="o">:</span><span class="mi">0</span><span class="w"> </span><span class="n">usbsm</span><span class="o">:</span><span class="mi">0</span><span class="w"> </span><span class="n">aicl</span><span class="o">:</span><span class="mi">-1</span><span class="w"> </span><span class="n">atm</span><span class="o">:</span><span class="mi">0</span><span class="w"> </span><span class="n">bm</span><span class="o">:</span><span class="mi">0</span><span class="w"> </span><span class="n">b</span><span class="o">:</span><span class="mi">1</span><span class="w"></span>
-<span class="p">[</span><span class="w">  </span><span class="mf">514.917978</span><span class="p">]</span><span class="w"> </span><span class="n">PAX_CHG</span><span class="o">:</span><span class="w"> </span><span class="n">do_algorithm</span><span class="w"> </span><span class="n">input_current_limit</span><span class="o">:</span><span class="mi">2000</span><span class="w"> </span><span class="n">charging_current_limit</span><span class="o">:</span><span class="mi">500</span><span class="w"></span>
-<span class="p">[</span><span class="w">  </span><span class="mf">514.918277</span><span class="p">]</span><span class="w"> </span><span class="n">PAX_CHG_MP2721</span><span class="o">:</span><span class="w"> </span><span class="n">reg</span><span class="w"> </span><span class="o">:</span><span class="mi">1</span><span class="w">  </span><span class="n">read</span><span class="w"> </span><span class="n">data</span><span class="o">:</span><span class="mh">0x13</span><span class="w"></span>
-<span class="p">[</span><span class="w">  </span><span class="mf">514.918453</span><span class="p">]</span><span class="w"> </span><span class="n">PAX_CHG_MP2721</span><span class="o">:</span><span class="w"> </span><span class="n">reg</span><span class="w"> </span><span class="o">:</span><span class="mi">1</span><span class="w">  </span><span class="n">write</span><span class="w"> </span><span class="n">data</span><span class="o">:</span><span class="mh">0x13</span><span class="w"></span>
-<span class="p">[</span><span class="w">  </span><span class="mf">514.918739</span><span class="p">]</span><span class="w"> </span><span class="n">PAX_CHG_MP2721</span><span class="o">:</span><span class="w"> </span><span class="n">reg</span><span class="w"> </span><span class="o">:</span><span class="mi">2</span><span class="w">  </span><span class="n">read</span><span class="w"> </span><span class="n">data</span><span class="o">:</span><span class="mh">0x6</span><span class="w"></span>
-<span class="p">[</span><span class="w">  </span><span class="mf">514.918913</span><span class="p">]</span><span class="w"> </span><span class="n">PAX_CHG_MP2721</span><span class="o">:</span><span class="w"> </span><span class="n">reg</span><span class="w"> </span><span class="o">:</span><span class="mi">2</span><span class="w">  </span><span class="n">write</span><span class="w"> </span><span class="n">data</span><span class="o">:</span><span class="mh">0x6</span><span class="w"></span>
-<span class="p">[</span><span class="w">  </span><span class="mf">514.919199</span><span class="p">]</span><span class="w"> </span><span class="n">PAX_CHG_MP2721</span><span class="o">:</span><span class="w"> </span><span class="n">reg</span><span class="w"> </span><span class="o">:</span><span class="mi">5</span><span class="w">  </span><span class="n">read</span><span class="w"> </span><span class="n">data</span><span class="o">:</span><span class="mh">0x1f</span><span class="w"></span>
-<span class="p">[</span><span class="w">  </span><span class="mf">514.922350</span><span class="p">]</span><span class="w"> </span><span class="n">PAX_CHG</span><span class="o">:</span><span class="w"> </span><span class="n">handle_typec_attach_dettach</span><span class="o">:</span><span class="w"> </span><span class="o">++</span><span class="w"> </span><span class="n">en</span><span class="o">:</span><span class="mi">0</span><span class="w"></span>
-<span class="p">[</span><span class="w">  </span><span class="mf">514.923676</span><span class="p">]</span><span class="w"> </span><span class="n">PAX_CHG_MP2721</span><span class="o">:</span><span class="w"> </span><span class="n">reg</span><span class="w"> </span><span class="o">:</span><span class="mi">5</span><span class="w">  </span><span class="n">write</span><span class="w"> </span><span class="n">data</span><span class="o">:</span><span class="mh">0x1f</span><span class="w"></span>
+<span class="p">[</span><span class="w">  </span><span class="mf">514.917963</span><span class="p">]</span><span class="w"> </span><span class="n">xxx_CHG</span><span class="o">:</span><span class="w"> </span><span class="n">support_fast_charging</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="w"></span>
+<span class="p">[</span><span class="w">  </span><span class="mf">514.917968</span><span class="p">]</span><span class="w"> </span><span class="n">xxx_CHG</span><span class="o">:</span><span class="w"> </span><span class="n">is_typec_adapter</span><span class="w"> </span><span class="n">rp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="n">pd_type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="w"></span>
+<span class="p">[</span><span class="w">  </span><span class="mf">514.917974</span><span class="p">]</span><span class="w"> </span><span class="n">xxx_CHG</span><span class="o">:</span><span class="w"> </span><span class="n">chg</span><span class="o">:</span><span class="mi">-1</span><span class="p">,</span><span class="mi">-1</span><span class="p">,</span><span class="mi">2000</span><span class="p">,</span><span class="mi">500</span><span class="w"> </span><span class="n">type</span><span class="o">:</span><span class="mi">4</span><span class="o">:</span><span class="mi">0</span><span class="w"> </span><span class="n">usb_unlimited</span><span class="o">:</span><span class="mi">0</span><span class="w"> </span><span class="n">usbif</span><span class="o">:</span><span class="mi">0</span><span class="w"> </span><span class="n">usbsm</span><span class="o">:</span><span class="mi">0</span><span class="w"> </span><span class="n">aicl</span><span class="o">:</span><span class="mi">-1</span><span class="w"> </span><span class="n">atm</span><span class="o">:</span><span class="mi">0</span><span class="w"> </span><span class="n">bm</span><span class="o">:</span><span class="mi">0</span><span class="w"> </span><span class="n">b</span><span class="o">:</span><span class="mi">1</span><span class="w"></span>
+<span class="p">[</span><span class="w">  </span><span class="mf">514.917978</span><span class="p">]</span><span class="w"> </span><span class="n">xxx_CHG</span><span class="o">:</span><span class="w"> </span><span class="n">do_algorithm</span><span class="w"> </span><span class="n">input_current_limit</span><span class="o">:</span><span class="mi">2000</span><span class="w"> </span><span class="n">charging_current_limit</span><span class="o">:</span><span class="mi">500</span><span class="w"></span>
+<span class="p">[</span><span class="w">  </span><span class="mf">514.918277</span><span class="p">]</span><span class="w"> </span><span class="n">xxx_CHG_MP2721</span><span class="o">:</span><span class="w"> </span><span class="n">reg</span><span class="w"> </span><span class="o">:</span><span class="mi">1</span><span class="w">  </span><span class="n">read</span><span class="w"> </span><span class="n">data</span><span class="o">:</span><span class="mh">0x13</span><span class="w"></span>
+<span class="p">[</span><span class="w">  </span><span class="mf">514.918453</span><span class="p">]</span><span class="w"> </span><span class="n">xxx_CHG_MP2721</span><span class="o">:</span><span class="w"> </span><span class="n">reg</span><span class="w"> </span><span class="o">:</span><span class="mi">1</span><span class="w">  </span><span class="n">write</span><span class="w"> </span><span class="n">data</span><span class="o">:</span><span class="mh">0x13</span><span class="w"></span>
+<span class="p">[</span><span class="w">  </span><span class="mf">514.918739</span><span class="p">]</span><span class="w"> </span><span class="n">xxx_CHG_MP2721</span><span class="o">:</span><span class="w"> </span><span class="n">reg</span><span class="w"> </span><span class="o">:</span><span class="mi">2</span><span class="w">  </span><span class="n">read</span><span class="w"> </span><span class="n">data</span><span class="o">:</span><span class="mh">0x6</span><span class="w"></span>
+<span class="p">[</span><span class="w">  </span><span class="mf">514.918913</span><span class="p">]</span><span class="w"> </span><span class="n">xxx_CHG_MP2721</span><span class="o">:</span><span class="w"> </span><span class="n">reg</span><span class="w"> </span><span class="o">:</span><span class="mi">2</span><span class="w">  </span><span class="n">write</span><span class="w"> </span><span class="n">data</span><span class="o">:</span><span class="mh">0x6</span><span class="w"></span>
+<span class="p">[</span><span class="w">  </span><span class="mf">514.919199</span><span class="p">]</span><span class="w"> </span><span class="n">xxx_CHG_MP2721</span><span class="o">:</span><span class="w"> </span><span class="n">reg</span><span class="w"> </span><span class="o">:</span><span class="mi">5</span><span class="w">  </span><span class="n">read</span><span class="w"> </span><span class="n">data</span><span class="o">:</span><span class="mh">0x1f</span><span class="w"></span>
+<span class="p">[</span><span class="w">  </span><span class="mf">514.922350</span><span class="p">]</span><span class="w"> </span><span class="n">xxx_CHG</span><span class="o">:</span><span class="w"> </span><span class="n">handle_typec_attach_dettach</span><span class="o">:</span><span class="w"> </span><span class="o">++</span><span class="w"> </span><span class="n">en</span><span class="o">:</span><span class="mi">0</span><span class="w"></span>
+<span class="p">[</span><span class="w">  </span><span class="mf">514.923676</span><span class="p">]</span><span class="w"> </span><span class="n">xxx_CHG_MP2721</span><span class="o">:</span><span class="w"> </span><span class="n">reg</span><span class="w"> </span><span class="o">:</span><span class="mi">5</span><span class="w">  </span><span class="n">write</span><span class="w"> </span><span class="n">data</span><span class="o">:</span><span class="mh">0x1f</span><span class="w"></span>
 <span class="p">[</span><span class="w">  </span><span class="mf">514.925271</span><span class="p">]</span><span class="w"> </span><span class="n">USB</span><span class="w"> </span><span class="n">cable</span><span class="w"> </span><span class="n">not</span><span class="w"> </span><span class="n">connected</span><span class="w"></span>
 <span class="p">[</span><span class="w">  </span><span class="mf">514.926409</span><span class="p">]</span><span class="w"> </span><span class="n">android_work</span><span class="o">:</span><span class="w"> </span><span class="n">sent</span><span class="w"> </span><span class="n">uevent</span><span class="w"> </span><span class="n">USB_STATE</span><span class="o">=</span><span class="n">DISCONNECTED</span><span class="w"></span>
 <span class="p">[</span><span class="w">  </span><span class="mf">514.927108</span><span class="p">]</span><span class="w"> </span><span class="n">ipa</span><span class="w"> </span><span class="n">ipa3_cfg_ep_ctrl</span><span class="o">:</span><span class="mi">4812</span><span class="w"> </span><span class="n">pipe</span><span class="w"> </span><span class="n">setting</span><span class="w"> </span><span class="n">delay</span><span class="w"> </span><span class="n">is</span><span class="w"> </span><span class="n">not</span><span class="w"> </span><span class="n">supported</span><span class="w"></span>
-<span class="p">[</span><span class="w">  </span><span class="mf">514.927636</span><span class="p">]</span><span class="w"> </span><span class="n">PAX_CHG_MP2721</span><span class="o">:</span><span class="w"> </span><span class="n">mp2721_irq_disable</span><span class="o">:</span><span class="w"></span>
+<span class="p">[</span><span class="w">  </span><span class="mf">514.927636</span><span class="p">]</span><span class="w"> </span><span class="n">xxx_CHG_MP2721</span><span class="o">:</span><span class="w"> </span><span class="n">mp2721_irq_disable</span><span class="o">:</span><span class="w"></span>
 <span class="p">[</span><span class="w">  </span><span class="mf">514.928433</span><span class="p">]</span><span class="w"> </span><span class="n">mp2721</span><span class="w"> </span><span class="mi">0</span><span class="mo">-003</span><span class="n">f</span><span class="o">:</span><span class="w"> </span><span class="n">mp2721_set_property</span><span class="p">()</span><span class="w"> </span><span class="n">set</span><span class="w"> </span><span class="n">charge_type</span><span class="o">:</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">ret</span><span class="o">:</span><span class="mi">0</span><span class="w"></span>
-<span class="p">[</span><span class="w">  </span><span class="mf">514.928437</span><span class="p">]</span><span class="w"> </span><span class="n">PAX_CHG_MP2721</span><span class="o">:</span><span class="w"> </span><span class="n">mp2721_set_property</span><span class="p">()</span><span class="w"> </span><span class="n">pd_status</span><span class="o">:</span><span class="mi">0</span><span class="w"></span>
+<span class="p">[</span><span class="w">  </span><span class="mf">514.928437</span><span class="p">]</span><span class="w"> </span><span class="n">xxx_CHG_MP2721</span><span class="o">:</span><span class="w"> </span><span class="n">mp2721_set_property</span><span class="p">()</span><span class="w"> </span><span class="n">pd_status</span><span class="o">:</span><span class="mi">0</span><span class="w"></span>
 <span class="p">[</span><span class="w">  </span><span class="mf">514.928998</span><span class="p">]</span><span class="w"> </span><span class="n">pd_tcp_notifier_call</span><span class="w"> </span><span class="n">event</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">PD_STATE</span><span class="w"></span>
 <span class="p">[</span><span class="w">  </span><span class="mf">514.929003</span><span class="p">]</span><span class="w"> </span><span class="n">charger</span><span class="w"> </span><span class="n">soc</span><span class="o">:</span><span class="n">charger</span><span class="o">:</span><span class="w"> </span><span class="n">pd_tcp_notifier_call</span><span class="w"> </span><span class="n">pd</span><span class="w"> </span><span class="n">state</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="w"></span>
 <span class="p">[</span><span class="w">  </span><span class="mf">514.948245</span><span class="p">]</span><span class="w"> </span><span class="c1">///PD dbg info 392d</span>
@@ -1826,7 +1852,7 @@ Reg[0x16] = 0x00
 <span class="p">[</span><span class="w">  </span><span class="mf">514.956321</span><span class="p">]</span><span class="w"> </span><span class="o">&lt;</span><span class="w">  </span><span class="mf">514.922</span><span class="o">&gt;</span><span class="n">TCPC</span><span class="o">-</span><span class="n">PE</span><span class="o">:</span><span class="n">pd_state</span><span class="o">=</span><span class="mi">0</span><span class="w"></span>
 <span class="p">[</span><span class="w">  </span><span class="mf">514.956321</span><span class="p">]</span><span class="w"> </span><span class="o">&lt;</span><span class="w">  </span><span class="mf">514.927</span><span class="o">&gt;</span><span class="n">TCPC</span><span class="o">-</span><span class="n">TYPEC</span><span class="o">:**</span><span class="w"> </span><span class="n">Unattached</span><span class="p">.</span><span class="n">SNK</span><span class="w"></span>
 <span class="p">[</span><span class="w">  </span><span class="mf">514.962525</span><span class="p">]</span><span class="w"> </span><span class="n">pd_tcp_notifier_call</span><span class="w"> </span><span class="n">event</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">SINK_VBUS</span><span class="w"></span>
-<span class="p">[</span><span class="w">  </span><span class="mf">514.970832</span><span class="p">]</span><span class="w"> </span><span class="n">PAX_CHG_MP2721</span><span class="o">:</span><span class="w"> </span><span class="n">reg</span><span class="w"> </span><span class="o">:</span><span class="mi">9</span><span class="w">  </span><span class="n">read</span><span class="w"> </span><span class="n">data</span><span class="o">:</span><span class="mh">0x0</span><span class="w"></span>
+<span class="p">[</span><span class="w">  </span><span class="mf">514.970832</span><span class="p">]</span><span class="w"> </span><span class="n">xxx_CHG_MP2721</span><span class="o">:</span><span class="w"> </span><span class="n">reg</span><span class="w"> </span><span class="o">:</span><span class="mi">9</span><span class="w">  </span><span class="n">read</span><span class="w"> </span><span class="n">data</span><span class="o">:</span><span class="mh">0x0</span><span class="w"></span>
 <span class="p">[</span><span class="w">  </span><span class="mf">514.972005</span><span class="p">]</span><span class="w"> </span><span class="n">charger</span><span class="w"> </span><span class="n">soc</span><span class="o">:</span><span class="n">charger</span><span class="o">:</span><span class="w"> </span><span class="n">pd_tcp_notifier_call</span><span class="w"> </span><span class="n">sink</span><span class="w"> </span><span class="n">vbus</span><span class="w"> </span><span class="mi">0</span><span class="n">mV</span><span class="w"> </span><span class="mi">0</span><span class="n">mA</span><span class="w"> </span><span class="n">type</span><span class="p">(</span><span class="mh">0x00</span><span class="p">)</span><span class="w"></span>
 <span class="p">[</span><span class="w">  </span><span class="mf">514.972113</span><span class="p">]</span><span class="w"> </span><span class="n">charger</span><span class="w"> </span><span class="n">fault</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">73305</span><span class="w"></span>
 <span class="p">[</span><span class="w">  </span><span class="mf">514.981457</span><span class="p">]</span><span class="w"> </span><span class="n">husb311_set_low_power_mode</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">write</span><span class="w"> </span><span class="n">HUSB311_REG_BMC_CTRL</span><span class="o">=</span><span class="mh">0x7</span><span class="w"></span>
@@ -1841,7 +1867,7 @@ Reg[0x16] = 0x00
 <span class="p">[</span><span class="w">  </span><span class="mf">514.985974</span><span class="p">]</span><span class="w"> </span><span class="o">&lt;</span><span class="w"></span>
 <span class="p">[</span><span class="w">  </span><span class="mf">514.985976</span><span class="p">]</span><span class="w">   </span><span class="mf">514.969</span><span class="o">&gt;</span><span class="n">TCPC</span><span class="o">-</span><span class="n">TYPEC</span><span class="o">:</span><span class="p">[</span><span class="n">CC_Alert</span><span class="p">]</span><span class="w"> </span><span class="mi">0</span><span class="o">/</span><span class="mi">5</span><span class="w"></span>
 <span class="p">[</span><span class="w">  </span><span class="mf">514.989581</span><span class="p">]</span><span class="w"> </span><span class="n">pd_tcp_notifier_call</span><span class="w"> </span><span class="n">event</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">SOURCE_VBUS</span><span class="w"></span>
-<span class="p">[</span><span class="w">  </span><span class="mf">514.992560</span><span class="p">]</span><span class="w"> </span><span class="n">PAX_CHG_MP2721</span><span class="o">:</span><span class="w"> </span><span class="n">reg</span><span class="w"> </span><span class="o">:</span><span class="mi">9</span><span class="w">  </span><span class="n">write</span><span class="w"> </span><span class="n">data</span><span class="o">:</span><span class="mh">0x1</span><span class="w"></span>
+<span class="p">[</span><span class="w">  </span><span class="mf">514.992560</span><span class="p">]</span><span class="w"> </span><span class="n">xxx_CHG_MP2721</span><span class="o">:</span><span class="w"> </span><span class="n">reg</span><span class="w"> </span><span class="o">:</span><span class="mi">9</span><span class="w">  </span><span class="n">write</span><span class="w"> </span><span class="n">data</span><span class="o">:</span><span class="mh">0x1</span><span class="w"></span>
 </pre></div>
 </div>
 <p>目前发现plugin和select_current两处都有做<code class="docutils literal notranslate"><span class="pre">enable_charger</span></code>操作，而select_current这里要慢一些，快速拔插操作容易造成冲突，而没有usb插入09寄存器buck和chg是都关闭了的状态，如果刚好拔出的时候去enable charger，读取的肯定是0，所以select_current这里的操作要关闭。</p>
@@ -1863,44 +1889,44 @@ Reg[0x09] = 0x50
 <ul class="simple">
 <li><p>解决方案：</p></li>
 </ul>
-<div class="highlight-diff notranslate"><div class="highlight"><pre><span></span><span class="gd">--- a/UM.9.15/kernel/msm-4.19/drivers/misc/pax/power/pax_algorithm_charger.c</span><span class="w"></span>
-<span class="gi">+++ b/UM.9.15/kernel/msm-4.19/drivers/misc/pax/power/pax_algorithm_charger.c</span><span class="w"></span>
+<div class="highlight-diff notranslate"><div class="highlight"><pre><span></span><span class="gd">--- a/UM.9.15/kernel/msm-4.19/drivers/misc/xxx/power/xxx_algorithm_charger.c</span><span class="w"></span>
+<span class="gi">+++ b/UM.9.15/kernel/msm-4.19/drivers/misc/xxx/power/xxx_algorithm_charger.c</span><span class="w"></span>
 
-<span class="gu">@@ -344,8 +353,8 @@ static int do_algorithm(struct pax_charger *info)</span><span class="w"></span>
+<span class="gu">@@ -344,8 +353,8 @@ static int do_algorithm(struct xxx_charger *info)</span><span class="w"></span>
 <span class="w"> </span>               if (pdata-&gt;input_current_limit == 0 ||<span class="w"></span>
 <span class="w"> </span>                               pdata-&gt;charging_current_limit == 0)<span class="w"></span>
-<span class="w"> </span>                       pax_charger_dev_enable(info-&gt;chg1_dev, false);<span class="w"></span>
+<span class="w"> </span>                       xxx_charger_dev_enable(info-&gt;chg1_dev, false);<span class="w"></span>
 <span class="gd">-               else</span><span class="w"></span>
-<span class="gd">-                       pax_charger_dev_enable(info-&gt;chg1_dev, true);</span><span class="w"></span>
+<span class="gd">-                       xxx_charger_dev_enable(info-&gt;chg1_dev, true);</span><span class="w"></span>
 <span class="gi">+               //else</span><span class="w"></span>
-<span class="gi">+               //      pax_charger_dev_enable(info-&gt;chg1_dev, true);</span><span class="w"></span>
+<span class="gi">+               //      xxx_charger_dev_enable(info-&gt;chg1_dev, true);</span><span class="w"></span>
 <span class="w"> </span>       }<span class="w"></span>
 </pre></div>
 </div>
 <p>寄存器乱了，具体不知道什么原因，比如05寄存器，放在那里充电不动自动变了：</p>
-<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="w"> </span><span class="mf">2133.353704</span><span class="p">]</span><span class="w"> </span><span class="n">PAX_CHG</span><span class="o">:</span><span class="w"> </span><span class="n">chg</span><span class="o">:</span><span class="mi">-1</span><span class="p">,</span><span class="mi">-1</span><span class="p">,</span><span class="mi">2000</span><span class="p">,</span><span class="mi">500</span><span class="w"> </span><span class="n">type</span><span class="o">:</span><span class="mi">4</span><span class="o">:</span><span class="mi">0</span><span class="w"> </span><span class="n">usb_unlimited</span><span class="o">:</span><span class="mi">0</span><span class="w"> </span><span class="n">usbif</span><span class="o">:</span><span class="mi">0</span><span class="w"> </span><span class="n">usbsm</span><span class="o">:</span><span class="mi">0</span><span class="w"> </span><span class="n">aicl</span><span class="o">:</span><span class="mi">-1</span><span class="w"> </span><span class="n">atm</span><span class="o">:</span><span class="mi">0</span><span class="w"> </span><span class="n">bm</span><span class="o">:</span><span class="mi">0</span><span class="w"> </span><span class="n">b</span><span class="o">:</span><span class="mi">1</span><span class="w"></span>
-<span class="p">[</span><span class="w"> </span><span class="mf">2133.363551</span><span class="p">]</span><span class="w"> </span><span class="n">PAX_CHG</span><span class="o">:</span><span class="w"> </span><span class="n">do_algorithm</span><span class="w"> </span><span class="n">input_current_limit</span><span class="o">:</span><span class="mi">2000</span><span class="w"> </span><span class="n">charging_current_limit</span><span class="o">:</span><span class="mi">500</span><span class="w"></span>
-<span class="p">[</span><span class="w"> </span><span class="mf">2133.372015</span><span class="p">]</span><span class="w"> </span><span class="n">PAX_CHG_MP2721</span><span class="o">:</span><span class="w"> </span><span class="n">reg</span><span class="w"> </span><span class="o">:</span><span class="mi">1</span><span class="w">  </span><span class="n">read</span><span class="w"> </span><span class="n">data</span><span class="o">:</span><span class="mh">0x13</span><span class="w"></span>
-<span class="p">[</span><span class="w"> </span><span class="mf">2133.377342</span><span class="p">]</span><span class="w"> </span><span class="n">PAX_CHG_MP2721</span><span class="o">:</span><span class="w"> </span><span class="n">reg</span><span class="w"> </span><span class="o">:</span><span class="mi">1</span><span class="w">  </span><span class="n">write</span><span class="w"> </span><span class="n">data</span><span class="o">:</span><span class="mh">0x13</span><span class="w"></span>
-<span class="p">[</span><span class="w"> </span><span class="mf">2133.383144</span><span class="p">]</span><span class="w"> </span><span class="n">PAX_CHG_MP2721</span><span class="o">:</span><span class="w"> </span><span class="n">reg</span><span class="w"> </span><span class="o">:</span><span class="mi">2</span><span class="w">  </span><span class="n">read</span><span class="w"> </span><span class="n">data</span><span class="o">:</span><span class="mh">0xc6</span><span class="w"></span>
-<span class="p">[</span><span class="w"> </span><span class="mf">2133.389030</span><span class="p">]</span><span class="w"> </span><span class="n">PAX_CHG_MP2721</span><span class="o">:</span><span class="w"> </span><span class="n">reg</span><span class="w"> </span><span class="o">:</span><span class="mi">2</span><span class="w">  </span><span class="n">write</span><span class="w"> </span><span class="n">data</span><span class="o">:</span><span class="mh">0xc6</span><span class="w"></span>
-<span class="p">[</span><span class="w"> </span><span class="mf">2133.395067</span><span class="p">]</span><span class="w"> </span><span class="n">PAX_CHG_MP2721</span><span class="o">:</span><span class="w"> </span><span class="n">reg</span><span class="w"> </span><span class="o">:</span><span class="mi">5</span><span class="w">  </span><span class="n">read</span><span class="w"> </span><span class="n">data</span><span class="o">:</span><span class="mh">0xdf</span><span class="w"></span>
-<span class="p">[</span><span class="w"> </span><span class="mf">2133.400205</span><span class="p">]</span><span class="w"> </span><span class="n">PAX_CHG_MP2721</span><span class="o">:</span><span class="w"> </span><span class="n">reg</span><span class="w"> </span><span class="o">:</span><span class="mi">5</span><span class="w">  </span><span class="n">write</span><span class="w"> </span><span class="n">data</span><span class="o">:</span><span class="mh">0xdf</span><span class="w"></span>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="w"> </span><span class="mf">2133.353704</span><span class="p">]</span><span class="w"> </span><span class="n">xxx_CHG</span><span class="o">:</span><span class="w"> </span><span class="n">chg</span><span class="o">:</span><span class="mi">-1</span><span class="p">,</span><span class="mi">-1</span><span class="p">,</span><span class="mi">2000</span><span class="p">,</span><span class="mi">500</span><span class="w"> </span><span class="n">type</span><span class="o">:</span><span class="mi">4</span><span class="o">:</span><span class="mi">0</span><span class="w"> </span><span class="n">usb_unlimited</span><span class="o">:</span><span class="mi">0</span><span class="w"> </span><span class="n">usbif</span><span class="o">:</span><span class="mi">0</span><span class="w"> </span><span class="n">usbsm</span><span class="o">:</span><span class="mi">0</span><span class="w"> </span><span class="n">aicl</span><span class="o">:</span><span class="mi">-1</span><span class="w"> </span><span class="n">atm</span><span class="o">:</span><span class="mi">0</span><span class="w"> </span><span class="n">bm</span><span class="o">:</span><span class="mi">0</span><span class="w"> </span><span class="n">b</span><span class="o">:</span><span class="mi">1</span><span class="w"></span>
+<span class="p">[</span><span class="w"> </span><span class="mf">2133.363551</span><span class="p">]</span><span class="w"> </span><span class="n">xxx_CHG</span><span class="o">:</span><span class="w"> </span><span class="n">do_algorithm</span><span class="w"> </span><span class="n">input_current_limit</span><span class="o">:</span><span class="mi">2000</span><span class="w"> </span><span class="n">charging_current_limit</span><span class="o">:</span><span class="mi">500</span><span class="w"></span>
+<span class="p">[</span><span class="w"> </span><span class="mf">2133.372015</span><span class="p">]</span><span class="w"> </span><span class="n">xxx_CHG_MP2721</span><span class="o">:</span><span class="w"> </span><span class="n">reg</span><span class="w"> </span><span class="o">:</span><span class="mi">1</span><span class="w">  </span><span class="n">read</span><span class="w"> </span><span class="n">data</span><span class="o">:</span><span class="mh">0x13</span><span class="w"></span>
+<span class="p">[</span><span class="w"> </span><span class="mf">2133.377342</span><span class="p">]</span><span class="w"> </span><span class="n">xxx_CHG_MP2721</span><span class="o">:</span><span class="w"> </span><span class="n">reg</span><span class="w"> </span><span class="o">:</span><span class="mi">1</span><span class="w">  </span><span class="n">write</span><span class="w"> </span><span class="n">data</span><span class="o">:</span><span class="mh">0x13</span><span class="w"></span>
+<span class="p">[</span><span class="w"> </span><span class="mf">2133.383144</span><span class="p">]</span><span class="w"> </span><span class="n">xxx_CHG_MP2721</span><span class="o">:</span><span class="w"> </span><span class="n">reg</span><span class="w"> </span><span class="o">:</span><span class="mi">2</span><span class="w">  </span><span class="n">read</span><span class="w"> </span><span class="n">data</span><span class="o">:</span><span class="mh">0xc6</span><span class="w"></span>
+<span class="p">[</span><span class="w"> </span><span class="mf">2133.389030</span><span class="p">]</span><span class="w"> </span><span class="n">xxx_CHG_MP2721</span><span class="o">:</span><span class="w"> </span><span class="n">reg</span><span class="w"> </span><span class="o">:</span><span class="mi">2</span><span class="w">  </span><span class="n">write</span><span class="w"> </span><span class="n">data</span><span class="o">:</span><span class="mh">0xc6</span><span class="w"></span>
+<span class="p">[</span><span class="w"> </span><span class="mf">2133.395067</span><span class="p">]</span><span class="w"> </span><span class="n">xxx_CHG_MP2721</span><span class="o">:</span><span class="w"> </span><span class="n">reg</span><span class="w"> </span><span class="o">:</span><span class="mi">5</span><span class="w">  </span><span class="n">read</span><span class="w"> </span><span class="n">data</span><span class="o">:</span><span class="mh">0xdf</span><span class="w"></span>
+<span class="p">[</span><span class="w"> </span><span class="mf">2133.400205</span><span class="p">]</span><span class="w"> </span><span class="n">xxx_CHG_MP2721</span><span class="o">:</span><span class="w"> </span><span class="n">reg</span><span class="w"> </span><span class="o">:</span><span class="mi">5</span><span class="w">  </span><span class="n">write</span><span class="w"> </span><span class="n">data</span><span class="o">:</span><span class="mh">0xdf</span><span class="w"></span>
 <span class="p">[</span><span class="w"> </span><span class="mf">2133.408187</span><span class="p">]</span><span class="w"> </span><span class="n">chg_dump</span><span class="o">:</span><span class="w"> </span><span class="n">CHG</span><span class="w"> </span><span class="p">[</span><span class="n">online</span><span class="o">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">type</span><span class="o">:</span><span class="w"> </span><span class="n">SDP</span><span class="p">,</span><span class="w"> </span><span class="n">status</span><span class="o">:</span><span class="w"> </span><span class="n">Charging</span><span class="p">,</span><span class="w"> </span><span class="n">fault</span><span class="o">:</span><span class="w"> </span><span class="mh">0x0</span><span class="p">,</span><span class="w"> </span><span class="n">ICHG</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">480</span><span class="n">mA</span><span class="p">,</span><span class="w"> </span><span class="n">AICR</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">2000</span><span class="n">mA</span><span class="p">,</span><span class="w"> </span><span class="n">MIVR</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">4360</span><span class="n">mV</span><span class="p">,</span><span class="w"> </span><span class="n">IEOC</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">240</span><span class="n">mA</span><span class="p">,</span><span class="w"> </span><span class="n">CV</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">4375</span><span class="n">mV</span><span class="p">]</span><span class="w"></span>
-<span class="p">[</span><span class="w"> </span><span class="mf">2133.421738</span><span class="p">]</span><span class="w"> </span><span class="n">PAX_CHG</span><span class="o">:</span><span class="w"> </span><span class="n">charger_routine_thread</span><span class="w"> </span><span class="n">end</span><span class="w"> </span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="w"></span>
-<span class="p">[</span><span class="w"> </span><span class="mf">2138.342269</span><span class="p">]</span><span class="w"> </span><span class="n">pax_charger_alarm_timer_func</span><span class="o">:</span><span class="w"> </span><span class="n">not</span><span class="w"> </span><span class="n">suspend</span><span class="p">,</span><span class="w"> </span><span class="n">wake</span><span class="w"> </span><span class="n">up</span><span class="w"> </span><span class="n">charger</span><span class="w"></span>
-<span class="p">[</span><span class="w"> </span><span class="mf">2138.348857</span><span class="p">]</span><span class="w"> </span><span class="n">PAX_CHG</span><span class="o">:</span><span class="w"> </span><span class="n">_wake_up_charger</span><span class="o">:</span><span class="w"></span>
-<span class="p">[</span><span class="w"> </span><span class="mf">2138.353155</span><span class="p">]</span><span class="w"> </span><span class="n">pax_is_charger_on</span><span class="w"> </span><span class="n">chr_type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">4</span><span class="w"></span>
-<span class="p">[</span><span class="w"> </span><span class="mf">2138.358363</span><span class="p">]</span><span class="w"> </span><span class="n">PAX_CHG</span><span class="o">:</span><span class="w"> </span><span class="n">support_fast_charging</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="w"></span>
-<span class="p">[</span><span class="w"> </span><span class="mf">2138.363033</span><span class="p">]</span><span class="w"> </span><span class="n">PAX_CHG</span><span class="o">:</span><span class="w"> </span><span class="n">is_typec_adapter</span><span class="w"> </span><span class="n">rp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">500</span><span class="w"> </span><span class="n">pd_type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="w"></span>
-<span class="p">[</span><span class="w"> </span><span class="mf">2138.368837</span><span class="p">]</span><span class="w"> </span><span class="n">PAX_CHG</span><span class="o">:</span><span class="w"> </span><span class="n">chg</span><span class="o">:</span><span class="mi">-1</span><span class="p">,</span><span class="mi">-1</span><span class="p">,</span><span class="mi">2000</span><span class="p">,</span><span class="mi">500</span><span class="w"> </span><span class="n">type</span><span class="o">:</span><span class="mi">4</span><span class="o">:</span><span class="mi">0</span><span class="w"> </span><span class="n">usb_unlimited</span><span class="o">:</span><span class="mi">0</span><span class="w"> </span><span class="n">usbif</span><span class="o">:</span><span class="mi">0</span><span class="w"> </span><span class="n">usbsm</span><span class="o">:</span><span class="mi">0</span><span class="w"> </span><span class="n">aicl</span><span class="o">:</span><span class="mi">-1</span><span class="w"> </span><span class="n">atm</span><span class="o">:</span><span class="mi">0</span><span class="w"> </span><span class="n">bm</span><span class="o">:</span><span class="mi">0</span><span class="w"> </span><span class="n">b</span><span class="o">:</span><span class="mi">1</span><span class="w"></span>
-<span class="p">[</span><span class="w"> </span><span class="mf">2138.378690</span><span class="p">]</span><span class="w"> </span><span class="n">PAX_CHG</span><span class="o">:</span><span class="w"> </span><span class="n">do_algorithm</span><span class="w"> </span><span class="n">input_current_limit</span><span class="o">:</span><span class="mi">2000</span><span class="w"> </span><span class="n">charging_current_limit</span><span class="o">:</span><span class="mi">500</span><span class="w"></span>
-<span class="p">[</span><span class="w"> </span><span class="mf">2138.393598</span><span class="p">]</span><span class="w"> </span><span class="n">PAX_CHG_MP2721</span><span class="o">:</span><span class="w"> </span><span class="n">reg</span><span class="w"> </span><span class="o">:</span><span class="mi">1</span><span class="w">  </span><span class="n">read</span><span class="w"> </span><span class="n">data</span><span class="o">:</span><span class="mh">0xf4</span><span class="w"></span>
-<span class="p">[</span><span class="w"> </span><span class="mf">2138.399601</span><span class="p">]</span><span class="w"> </span><span class="n">PAX_CHG_MP2721</span><span class="o">:</span><span class="w"> </span><span class="n">reg</span><span class="w"> </span><span class="o">:</span><span class="mi">1</span><span class="w">  </span><span class="n">write</span><span class="w"> </span><span class="n">data</span><span class="o">:</span><span class="mh">0x13</span><span class="w"></span>
-<span class="p">[</span><span class="w"> </span><span class="mf">2138.415108</span><span class="p">]</span><span class="w"> </span><span class="n">PAX_CHG_MP2721</span><span class="o">:</span><span class="w"> </span><span class="n">reg</span><span class="w"> </span><span class="o">:</span><span class="mi">2</span><span class="w">  </span><span class="n">read</span><span class="w"> </span><span class="n">data</span><span class="o">:</span><span class="mh">0xf6</span><span class="w"></span>
-<span class="p">[</span><span class="w"> </span><span class="mf">2138.423285</span><span class="p">]</span><span class="w"> </span><span class="n">PAX_CHG_MP2721</span><span class="o">:</span><span class="w"> </span><span class="n">reg</span><span class="w"> </span><span class="o">:</span><span class="mi">2</span><span class="w">  </span><span class="n">write</span><span class="w"> </span><span class="n">data</span><span class="o">:</span><span class="mh">0xc6</span><span class="w"></span>
-<span class="p">[</span><span class="w"> </span><span class="mf">2138.431435</span><span class="p">]</span><span class="w"> </span><span class="n">PAX_CHG_MP2721</span><span class="o">:</span><span class="w"> </span><span class="n">reg</span><span class="w"> </span><span class="o">:</span><span class="mi">5</span><span class="w">  </span><span class="n">read</span><span class="w"> </span><span class="n">data</span><span class="o">:</span><span class="mh">0xb</span><span class="w"></span>
-<span class="p">[</span><span class="w"> </span><span class="mf">2138.437692</span><span class="p">]</span><span class="w"> </span><span class="n">PAX_CHG_MP2721</span><span class="o">:</span><span class="w"> </span><span class="n">reg</span><span class="w"> </span><span class="o">:</span><span class="mi">5</span><span class="w">  </span><span class="n">write</span><span class="w"> </span><span class="n">data</span><span class="o">:</span><span class="mh">0x1f</span><span class="w"></span>
+<span class="p">[</span><span class="w"> </span><span class="mf">2133.421738</span><span class="p">]</span><span class="w"> </span><span class="n">xxx_CHG</span><span class="o">:</span><span class="w"> </span><span class="n">charger_routine_thread</span><span class="w"> </span><span class="n">end</span><span class="w"> </span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="w"></span>
+<span class="p">[</span><span class="w"> </span><span class="mf">2138.342269</span><span class="p">]</span><span class="w"> </span><span class="n">xxx_charger_alarm_timer_func</span><span class="o">:</span><span class="w"> </span><span class="n">not</span><span class="w"> </span><span class="n">suspend</span><span class="p">,</span><span class="w"> </span><span class="n">wake</span><span class="w"> </span><span class="n">up</span><span class="w"> </span><span class="n">charger</span><span class="w"></span>
+<span class="p">[</span><span class="w"> </span><span class="mf">2138.348857</span><span class="p">]</span><span class="w"> </span><span class="n">xxx_CHG</span><span class="o">:</span><span class="w"> </span><span class="n">_wake_up_charger</span><span class="o">:</span><span class="w"></span>
+<span class="p">[</span><span class="w"> </span><span class="mf">2138.353155</span><span class="p">]</span><span class="w"> </span><span class="n">xxx_is_charger_on</span><span class="w"> </span><span class="n">chr_type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">4</span><span class="w"></span>
+<span class="p">[</span><span class="w"> </span><span class="mf">2138.358363</span><span class="p">]</span><span class="w"> </span><span class="n">xxx_CHG</span><span class="o">:</span><span class="w"> </span><span class="n">support_fast_charging</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="w"></span>
+<span class="p">[</span><span class="w"> </span><span class="mf">2138.363033</span><span class="p">]</span><span class="w"> </span><span class="n">xxx_CHG</span><span class="o">:</span><span class="w"> </span><span class="n">is_typec_adapter</span><span class="w"> </span><span class="n">rp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">500</span><span class="w"> </span><span class="n">pd_type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="w"></span>
+<span class="p">[</span><span class="w"> </span><span class="mf">2138.368837</span><span class="p">]</span><span class="w"> </span><span class="n">xxx_CHG</span><span class="o">:</span><span class="w"> </span><span class="n">chg</span><span class="o">:</span><span class="mi">-1</span><span class="p">,</span><span class="mi">-1</span><span class="p">,</span><span class="mi">2000</span><span class="p">,</span><span class="mi">500</span><span class="w"> </span><span class="n">type</span><span class="o">:</span><span class="mi">4</span><span class="o">:</span><span class="mi">0</span><span class="w"> </span><span class="n">usb_unlimited</span><span class="o">:</span><span class="mi">0</span><span class="w"> </span><span class="n">usbif</span><span class="o">:</span><span class="mi">0</span><span class="w"> </span><span class="n">usbsm</span><span class="o">:</span><span class="mi">0</span><span class="w"> </span><span class="n">aicl</span><span class="o">:</span><span class="mi">-1</span><span class="w"> </span><span class="n">atm</span><span class="o">:</span><span class="mi">0</span><span class="w"> </span><span class="n">bm</span><span class="o">:</span><span class="mi">0</span><span class="w"> </span><span class="n">b</span><span class="o">:</span><span class="mi">1</span><span class="w"></span>
+<span class="p">[</span><span class="w"> </span><span class="mf">2138.378690</span><span class="p">]</span><span class="w"> </span><span class="n">xxx_CHG</span><span class="o">:</span><span class="w"> </span><span class="n">do_algorithm</span><span class="w"> </span><span class="n">input_current_limit</span><span class="o">:</span><span class="mi">2000</span><span class="w"> </span><span class="n">charging_current_limit</span><span class="o">:</span><span class="mi">500</span><span class="w"></span>
+<span class="p">[</span><span class="w"> </span><span class="mf">2138.393598</span><span class="p">]</span><span class="w"> </span><span class="n">xxx_CHG_MP2721</span><span class="o">:</span><span class="w"> </span><span class="n">reg</span><span class="w"> </span><span class="o">:</span><span class="mi">1</span><span class="w">  </span><span class="n">read</span><span class="w"> </span><span class="n">data</span><span class="o">:</span><span class="mh">0xf4</span><span class="w"></span>
+<span class="p">[</span><span class="w"> </span><span class="mf">2138.399601</span><span class="p">]</span><span class="w"> </span><span class="n">xxx_CHG_MP2721</span><span class="o">:</span><span class="w"> </span><span class="n">reg</span><span class="w"> </span><span class="o">:</span><span class="mi">1</span><span class="w">  </span><span class="n">write</span><span class="w"> </span><span class="n">data</span><span class="o">:</span><span class="mh">0x13</span><span class="w"></span>
+<span class="p">[</span><span class="w"> </span><span class="mf">2138.415108</span><span class="p">]</span><span class="w"> </span><span class="n">xxx_CHG_MP2721</span><span class="o">:</span><span class="w"> </span><span class="n">reg</span><span class="w"> </span><span class="o">:</span><span class="mi">2</span><span class="w">  </span><span class="n">read</span><span class="w"> </span><span class="n">data</span><span class="o">:</span><span class="mh">0xf6</span><span class="w"></span>
+<span class="p">[</span><span class="w"> </span><span class="mf">2138.423285</span><span class="p">]</span><span class="w"> </span><span class="n">xxx_CHG_MP2721</span><span class="o">:</span><span class="w"> </span><span class="n">reg</span><span class="w"> </span><span class="o">:</span><span class="mi">2</span><span class="w">  </span><span class="n">write</span><span class="w"> </span><span class="n">data</span><span class="o">:</span><span class="mh">0xc6</span><span class="w"></span>
+<span class="p">[</span><span class="w"> </span><span class="mf">2138.431435</span><span class="p">]</span><span class="w"> </span><span class="n">xxx_CHG_MP2721</span><span class="o">:</span><span class="w"> </span><span class="n">reg</span><span class="w"> </span><span class="o">:</span><span class="mi">5</span><span class="w">  </span><span class="n">read</span><span class="w"> </span><span class="n">data</span><span class="o">:</span><span class="mh">0xb</span><span class="w"></span>
+<span class="p">[</span><span class="w"> </span><span class="mf">2138.437692</span><span class="p">]</span><span class="w"> </span><span class="n">xxx_CHG_MP2721</span><span class="o">:</span><span class="w"> </span><span class="n">reg</span><span class="w"> </span><span class="o">:</span><span class="mi">5</span><span class="w">  </span><span class="n">write</span><span class="w"> </span><span class="n">data</span><span class="o">:</span><span class="mh">0x1f</span><span class="w"></span>
 </pre></div>
 </div>
 <p>目前解决方案是直接写死：</p>
@@ -1942,63 +1968,63 @@ Reg[0x09] = 0x50
 <section id="vpdm">
 <h2>14.刚开机疯狂进入中断，且发送VPDM<a class="headerlink" href="#vpdm" title="此标题的永久链接"></a></h2>
 <p>刚开机发现<code class="docutils literal notranslate"><span class="pre">Reg[0x11]</span> <span class="pre">=</span> <span class="pre">0x22</span></code>，也就是输入电压太低触发了<code class="docutils literal notranslate"><span class="pre">VINDPM</span> <span class="pre">occurred</span></code>，我们ICC电池电流设置的是4A，貌似太大了，设置成480ma试试。</p>
-<div class="highlight-log notranslate"><div class="highlight"><pre><span></span>[    3.557103] PAX_CHG_MP2721: ==_set_input_vol_limit, mivr=4360 mV
-[    3.563323] PAX_CHG_MP2721: reg :4  write data:0xf6
+<div class="highlight-log notranslate"><div class="highlight"><pre><span></span>[    3.557103] xxx_CHG_MP2721: ==_set_input_vol_limit, mivr=4360 mV
+[    3.563323] xxx_CHG_MP2721: reg :4  write data:0xf6
 [    3.569181] _enable_vbus_ovp en:0
-[    3.574211] PAX_CHG_MP2721: mp2721_info Reg[0x00] = 0x0b
-[    3.579841] PAX_CHG_MP2721: mp2721_info Reg[0x01] = 0x13
-[    3.585471] PAX_CHG_MP2721: mp2721_info Reg[0x02] = 0xe5
-[    3.591118] PAX_CHG_MP2721: mp2721_info Reg[0x03] = 0xa7
-[    3.596747] PAX_CHG_MP2721: mp2721_info Reg[0x04] = 0xf6
-[    3.602374] PAX_CHG_MP2721: mp2721_info Reg[0x05] = 0x1e
-[    3.608003] PAX_CHG_MP2721: mp2721_info Reg[0x06] = 0xa4
-[    3.613647] PAX_CHG_MP2721: mp2721_info Reg[0x07] = 0x0b
-[    3.619275] PAX_CHG_MP2721: mp2721_info Reg[0x08] = 0x2f
-[    3.624905] PAX_CHG_MP2721: mp2721_info Reg[0x09] = 0x53
-[    3.630535] PAX_CHG_MP2721: mp2721_info Reg[0x0a] = 0x23
-[    3.636176] PAX_CHG_MP2721: mp2721_info Reg[0x0b] = 0x10
-[    3.641807] PAX_CHG_MP2721: mp2721_info Reg[0x0c] = 0x11
-[    3.647436] PAX_CHG_MP2721: mp2721_info Reg[0x0d] = 0x60
-[    3.653079] PAX_CHG_MP2721: mp2721_info Reg[0x0e] = 0x99
-[    3.658708] PAX_CHG_MP2721: mp2721_info Reg[0x0f] = 0x00
-[    3.664339] PAX_CHG_MP2721: mp2721_info Reg[0x10] = 0x44
-[    3.669981] PAX_CHG_MP2721: mp2721_info Reg[0x11] = 0x22
-[    3.675616] PAX_CHG_MP2721: mp2721_info Reg[0x12] = 0x74
-[    3.681246] PAX_CHG_MP2721: mp2721_info Reg[0x13] = 0x60
-[    3.686876] PAX_CHG_MP2721: mp2721_info Reg[0x14] = 0x00
-[    3.692519] PAX_CHG_MP2721: mp2721_info Reg[0x15] = 0x00
-[    3.698149] PAX_CHG_MP2721: mp2721_info Reg[0x16] = 0x00
-[    3.704344] PAX_CHG_MP2721: mp2721_charger_probe:irq = 195
-[    3.705608] PAX_CHG_MP2721: mp2721_irq_disable:
+[    3.574211] xxx_CHG_MP2721: mp2721_info Reg[0x00] = 0x0b
+[    3.579841] xxx_CHG_MP2721: mp2721_info Reg[0x01] = 0x13
+[    3.585471] xxx_CHG_MP2721: mp2721_info Reg[0x02] = 0xe5
+[    3.591118] xxx_CHG_MP2721: mp2721_info Reg[0x03] = 0xa7
+[    3.596747] xxx_CHG_MP2721: mp2721_info Reg[0x04] = 0xf6
+[    3.602374] xxx_CHG_MP2721: mp2721_info Reg[0x05] = 0x1e
+[    3.608003] xxx_CHG_MP2721: mp2721_info Reg[0x06] = 0xa4
+[    3.613647] xxx_CHG_MP2721: mp2721_info Reg[0x07] = 0x0b
+[    3.619275] xxx_CHG_MP2721: mp2721_info Reg[0x08] = 0x2f
+[    3.624905] xxx_CHG_MP2721: mp2721_info Reg[0x09] = 0x53
+[    3.630535] xxx_CHG_MP2721: mp2721_info Reg[0x0a] = 0x23
+[    3.636176] xxx_CHG_MP2721: mp2721_info Reg[0x0b] = 0x10
+[    3.641807] xxx_CHG_MP2721: mp2721_info Reg[0x0c] = 0x11
+[    3.647436] xxx_CHG_MP2721: mp2721_info Reg[0x0d] = 0x60
+[    3.653079] xxx_CHG_MP2721: mp2721_info Reg[0x0e] = 0x99
+[    3.658708] xxx_CHG_MP2721: mp2721_info Reg[0x0f] = 0x00
+[    3.664339] xxx_CHG_MP2721: mp2721_info Reg[0x10] = 0x44
+[    3.669981] xxx_CHG_MP2721: mp2721_info Reg[0x11] = 0x22
+[    3.675616] xxx_CHG_MP2721: mp2721_info Reg[0x12] = 0x74
+[    3.681246] xxx_CHG_MP2721: mp2721_info Reg[0x13] = 0x60
+[    3.686876] xxx_CHG_MP2721: mp2721_info Reg[0x14] = 0x00
+[    3.692519] xxx_CHG_MP2721: mp2721_info Reg[0x15] = 0x00
+[    3.698149] xxx_CHG_MP2721: mp2721_info Reg[0x16] = 0x00
+[    3.704344] xxx_CHG_MP2721: mp2721_charger_probe:irq = 195
+[    3.705608] xxx_CHG_MP2721: mp2721_irq_disable:
 [    3.710413] bq27z746_i2c_probe enter
-[    3.714464] PAX_CHG_MP2721: mp2721_charger_irq_workfunc:mp2721 irq
+[    3.714464] xxx_CHG_MP2721: mp2721_charger_irq_workfunc:mp2721 irq
 [    3.721200] bq27z746_i2c_probe enter
-[    3.725449] PAX_CHG_MP2721: mp2721_irq_enable:
-[    3.727984] pax_battery_device_register: name=bq27z746
-[    3.732355] PAX_CHG_MP2721: mp2721_irq_disable:
-[    3.737621] [PAX_CHG] bq27z746_i2c_probe: success
-[    3.742058] PAX_CHG_MP2721: mp2721_charger_irq_workfunc:mp2721 irq
+[    3.725449] xxx_CHG_MP2721: mp2721_irq_enable:
+[    3.727984] xxx_battery_device_register: name=bq27z746
+[    3.732355] xxx_CHG_MP2721: mp2721_irq_disable:
+[    3.737621] [xxx_CHG] bq27z746_i2c_probe: success
+[    3.742058] xxx_CHG_MP2721: mp2721_charger_irq_workfunc:mp2721 irq
 [    3.746959] aws5480_i2c_probe enter
-[    3.754186] PAX_CHG_MP2721: mp2721_irq_enable:
-[    3.756824] [PAX_AUDIO_SWITCH]:aws5480_reg_read_byte_data read reg: 0 data: 09
-[    3.761016] PAX_CHG_MP2721: mp2721_irq_disable:
+[    3.754186] xxx_CHG_MP2721: mp2721_irq_enable:
+[    3.756824] [xxx_AUDIO_SWITCH]:aws5480_reg_read_byte_data read reg: 0 data: 09
+[    3.761016] xxx_CHG_MP2721: mp2721_irq_disable:
 [    3.768258] device type: 0x9
-[    3.772811] PAX_CHG_MP2721: mp2721_charger_irq_workfunc:mp2721 irq
+[    3.772811] xxx_CHG_MP2721: mp2721_charger_irq_workfunc:mp2721 irq
 [    3.775700] aws5480_i2c_probe enter
-[    3.783078] PAX_CHG_MP2721: mp2721_irq_enable:
-[    3.785496] [PAX_AUDIO_SWITCH] aws5480_i2c_probe: success
-[    3.789967] PAX_CHG_MP2721: mp2721_irq_disable:
+[    3.783078] xxx_CHG_MP2721: mp2721_irq_enable:
+[    3.785496] [xxx_AUDIO_SWITCH] aws5480_i2c_probe: success
+[    3.789967] xxx_CHG_MP2721: mp2721_irq_disable:
 [    3.796075] i2c_geni 4a88000.i2c: Bus frequency is set to 400000Hz
-[    3.799874] PAX_CHG_MP2721: mp2721_charger_irq_workfunc:mp2721 irq
-[    3.813365] PAX_CHG_MP2721: mp2721_irq_enable:
+[    3.799874] xxx_CHG_MP2721: mp2721_charger_irq_workfunc:mp2721 irq
+[    3.813365] xxx_CHG_MP2721: mp2721_irq_enable:
 [    3.815704] Couldn&#39;t parse device tree rc=-517
 </pre></div>
 </div>
 <p>修改如下：</p>
-<div class="highlight-diff notranslate"><div class="highlight"><pre><span></span><span class="gh">diff --git a/UM.9.15/vendor/qcom/proprietary/devicetree-4.19/qcom/a6650/a6650-scuba-iot-idp-overlay.dts b/UM.9.15/vendor/qcom/proprietary/devicetree-4.19/qcom/a6650/a6650-scuba-iot-idp-overlay.dts</span><span class="w"></span>
+<div class="highlight-diff notranslate"><div class="highlight"><pre><span></span><span class="gh">diff --git a/UM.9.15/vendor/qcom/proprietary/devicetree-4.19/qcom/a665x/a665x-scuba-iot-idp-overlay.dts b/UM.9.15/vendor/qcom/proprietary/devicetree-4.19/qcom/a665x/a665x-scuba-iot-idp-overlay.dts</span><span class="w"></span>
 <span class="gh">index 692edd65080..24cebade8a7 100755</span><span class="w"></span>
-<span class="gd">--- a/UM.9.15/vendor/qcom/proprietary/devicetree-4.19/qcom/a6650/a6650-scuba-iot-idp-overlay.dts</span><span class="w"></span>
-<span class="gi">+++ b/UM.9.15/vendor/qcom/proprietary/devicetree-4.19/qcom/a6650/a6650-scuba-iot-idp-overlay.dts</span><span class="w"></span>
+<span class="gd">--- a/UM.9.15/vendor/qcom/proprietary/devicetree-4.19/qcom/a665x/a665x-scuba-iot-idp-overlay.dts</span><span class="w"></span>
+<span class="gi">+++ b/UM.9.15/vendor/qcom/proprietary/devicetree-4.19/qcom/a665x/a665x-scuba-iot-idp-overlay.dts</span><span class="w"></span>
 <span class="gu">@@ -316,8 +316,8 @@</span><span class="w"></span>
 <span class="w"> </span>               pinctrl-0 = &lt;&amp;charge_interrupt_pincfg&gt;;<span class="w"></span>
 <span class="w"> </span>               charger_name = &quot;primary_chg&quot;;<span class="w"></span>
@@ -2039,62 +2065,62 @@ Reg[0x09] = 0x50
 <section id="online0">
 <h2>16.充电过程偶发性online状态变为0<a class="headerlink" href="#online0" title="此标题的永久链接"></a></h2>
 <p>healthd会周期性的读取charger的online状态，目前使用0x12寄存器的<code class="docutils literal notranslate"><span class="pre">VIN_READY</span></code>和<code class="docutils literal notranslate"><span class="pre">VIN_GOOD</span></code>作为online状态上报，正常充电过程偶发性online状态变为0，打印如下：</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>[ 9587.718781] PAX_CHG: reg :19  read data:0x4
-[ 9587.725189] PAX_CHG: reg :18  read data:0x1
-[ 9587.729473] PAX_CHG: CHG [online: 1, type: DCP, status: Charging, fault: 0x0, ICHG = 4160mA, AICR = 2000mA, MIVR = 4360mV, IEOC = 240mA, CV = 4350mV]
-[ 9592.297240] PAX_CHG: reg :17  read data:0x0
-[ 9592.558891] PAX_CHG: reg :1  read data:0xa7
-[ 9592.570196] PAX_CHG: reg :18  read data:0x0
-[ 9592.574668] PAX_BMS:bms_info_update clear NC_DISABLE_CHG_BY_USER flag
-[ 9592.587299] PAX_CHG: Battery: [ status:Charging, health:Good, present:1, tech:Li-ion, capcity:100,cap_rm:4992 mah, vol:4331 mv, temp:32, curr:393 ma, ui_soc:100 ]
-[ 9592.590094] PAX_BMS: CHG [online: 0, type: 5, vol: 5000000, cur: 16800000, time: 8643], BAT [present: 1, status: 1, vol: 4331000, cur: 393000, resistance: 0, temp: 320, soc: 99], OTHER [skin_temp: 0, chg_vote: 0x0, notify_code: 0x0],
-[ 9592.606761] PAX_CHG: reg :18  read data:0x1
-[ 9592.627644] PAX_CHG: reg :1  read data:0x13
-[ 9592.633466] PAX_CHG: reg :18  read data:0x1
-[ 9592.638089] PAX_CHG: reg :1  read data:0x13
-[ 9592.644875] PAX_CHG: _wake_up_charger:
-[ 9592.648768] PAX_CHG: pax_is_charger_on chr_type = [DCP] last_chr_type = [DCP]
-[ 9592.665917] PAX_CHG: [SW_JEITA] Battery Normal Temperature between 15 and 45 !!
-[ 9592.673742] PAX_CHG: [SW_JEITA]preState:3 newState:3 tmp:32 cv:0
-[ 9592.679949] PAX_CHG: tmp:32 (jeita:1 sm:3 cv:0 en:1) thm_sm:1 en:1 can_en:1
-[ 9592.687856] PAX_CHG: reg :19  read data:0x4
-[ 9592.692156] PAX_CHG: chg:-1,-1,2000,4160 type:5:6 aicl:-1 bootmode:0 pd:1
-[ 9592.698993] PAX_CHG: pax_charger_update, delay&lt;30&gt;
-[ 9592.703822] PAX_CHG: do_algorithm input_current_limit:2000 charging_current_limit:4160
-[ 9592.716386] PAX_CHG: reg :2  read data:0x34
-[ 9592.721370] PAX_CHG: reg :1  read data:0x13
-[ 9592.726244] PAX_CHG: reg :3  read data:0x7
-[ 9592.731999] PAX_CHG: reg :4  read data:0x6
-[ 9592.737734] PAX_CHG: reg :18  read data:0x1
-[ 9592.742911] PAX_CHG: reg :19  read data:0x4
-[ 9592.747859] PAX_CHG: reg :5  read data:0x1e
-[ 9592.753548] PAX_CHG: reg :19  read data:0x4
-[ 9592.759285] PAX_CHG: reg :18  read data:0x1
-[ 9592.770881] PAX_CHG: reg :18  read data:0x0
-[ 9592.775213] PAX_CHG: CHG [online: 0, type: DCP, status: Charging, fault: 0x0, ICHG = 4160mA, AICR = 2000mA, MIVR = 4360mV, IEOC = 240mA, CV = 4350mV]
-[ 9592.776812] PAX_CHG: reg :18  read data:0x0
-[ 9592.798955] PAX_CHG: reg :18  read data:0x0
-[ 9592.904710] PAX_CHG: Battery: [ status:Charging, health:Good, present:1, tech:Li-ion, capcity:100,cap_rm:4992 mah, vol:4331 mv, temp:32, curr:393 ma, ui_soc:100 ]
-[ 9592.919331] PAX_CHG: pax_battery_external_power_changed event, online:1, status:1, cur_chr_type:5
-[ 9592.928369] PAX_BMS:bms_wakeup
-[ 9592.936667] PAX_CHG: reg :19  read data:0x4
-[ 9592.941354] PAX_CHG: reg :18  read data:0x1
-[ 9592.945737] PAX_BMS:pax_bms_external_power_changed online = 1
-[ 9592.945996] PAX_CHG: reg :1  read data:0x13
-[ 9592.970563] PAX_CHG: reg :18  read data:0x1
-[ 9592.977977] PAX_CHG: reg :18  read data:0x0
-[ 9592.978803] PAX_BMS: CHG [online: 1, type: 5, vol: 5000000, cur: 2000000, time: 8643], BAT [present: 1, status: 1, vol: 4331000, cur: 393000, resistance: 0, temp: 320, soc: 100], OTHER [skin_temp: 0, chg_vote: 0x0, notify_code: 0x0],
-[ 9593.003589] PAX_CHG: reg :18  read data:0x1
-[ 9593.008738] PAX_CHG: reg :18  read data:0x1
-[ 9593.013878] PAX_CHG: reg :18  read data:0x1
-[ 9593.019134] PAX_CHG: reg :1  read data:0x13
-[ 9593.052298] PAX_CHG: reg :19  read data:0x4
-[ 9593.057877] PAX_CHG: reg :1  read data:0x13
-[ 9593.064422] PAX_CHG: reg :1  read data:0x13
-[ 9593.073285] PAX_CHG: reg :18  read data:0x1
-[ 9593.084352] PAX_CHG: reg :1  read data:0x13
-[ 9593.092224] PAX_CHG: reg :18  read data:0x1
-[ 9593.098341] PAX_CHG: reg :1  read data:0x13
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>[ 9587.718781] xxx_CHG: reg :19  read data:0x4
+[ 9587.725189] xxx_CHG: reg :18  read data:0x1
+[ 9587.729473] xxx_CHG: CHG [online: 1, type: DCP, status: Charging, fault: 0x0, ICHG = 4160mA, AICR = 2000mA, MIVR = 4360mV, IEOC = 240mA, CV = 4350mV]
+[ 9592.297240] xxx_CHG: reg :17  read data:0x0
+[ 9592.558891] xxx_CHG: reg :1  read data:0xa7
+[ 9592.570196] xxx_CHG: reg :18  read data:0x0
+[ 9592.574668] xxx_BMS:bms_info_update clear NC_DISABLE_CHG_BY_USER flag
+[ 9592.587299] xxx_CHG: Battery: [ status:Charging, health:Good, present:1, tech:Li-ion, capcity:100,cap_rm:4992 mah, vol:4331 mv, temp:32, curr:393 ma, ui_soc:100 ]
+[ 9592.590094] xxx_BMS: CHG [online: 0, type: 5, vol: 5000000, cur: 16800000, time: 8643], BAT [present: 1, status: 1, vol: 4331000, cur: 393000, resistance: 0, temp: 320, soc: 99], OTHER [skin_temp: 0, chg_vote: 0x0, notify_code: 0x0],
+[ 9592.606761] xxx_CHG: reg :18  read data:0x1
+[ 9592.627644] xxx_CHG: reg :1  read data:0x13
+[ 9592.633466] xxx_CHG: reg :18  read data:0x1
+[ 9592.638089] xxx_CHG: reg :1  read data:0x13
+[ 9592.644875] xxx_CHG: _wake_up_charger:
+[ 9592.648768] xxx_CHG: xxx_is_charger_on chr_type = [DCP] last_chr_type = [DCP]
+[ 9592.665917] xxx_CHG: [SW_JEITA] Battery Normal Temperature between 15 and 45 !!
+[ 9592.673742] xxx_CHG: [SW_JEITA]preState:3 newState:3 tmp:32 cv:0
+[ 9592.679949] xxx_CHG: tmp:32 (jeita:1 sm:3 cv:0 en:1) thm_sm:1 en:1 can_en:1
+[ 9592.687856] xxx_CHG: reg :19  read data:0x4
+[ 9592.692156] xxx_CHG: chg:-1,-1,2000,4160 type:5:6 aicl:-1 bootmode:0 pd:1
+[ 9592.698993] xxx_CHG: xxx_charger_update, delay&lt;30&gt;
+[ 9592.703822] xxx_CHG: do_algorithm input_current_limit:2000 charging_current_limit:4160
+[ 9592.716386] xxx_CHG: reg :2  read data:0x34
+[ 9592.721370] xxx_CHG: reg :1  read data:0x13
+[ 9592.726244] xxx_CHG: reg :3  read data:0x7
+[ 9592.731999] xxx_CHG: reg :4  read data:0x6
+[ 9592.737734] xxx_CHG: reg :18  read data:0x1
+[ 9592.742911] xxx_CHG: reg :19  read data:0x4
+[ 9592.747859] xxx_CHG: reg :5  read data:0x1e
+[ 9592.753548] xxx_CHG: reg :19  read data:0x4
+[ 9592.759285] xxx_CHG: reg :18  read data:0x1
+[ 9592.770881] xxx_CHG: reg :18  read data:0x0
+[ 9592.775213] xxx_CHG: CHG [online: 0, type: DCP, status: Charging, fault: 0x0, ICHG = 4160mA, AICR = 2000mA, MIVR = 4360mV, IEOC = 240mA, CV = 4350mV]
+[ 9592.776812] xxx_CHG: reg :18  read data:0x0
+[ 9592.798955] xxx_CHG: reg :18  read data:0x0
+[ 9592.904710] xxx_CHG: Battery: [ status:Charging, health:Good, present:1, tech:Li-ion, capcity:100,cap_rm:4992 mah, vol:4331 mv, temp:32, curr:393 ma, ui_soc:100 ]
+[ 9592.919331] xxx_CHG: xxx_battery_external_power_changed event, online:1, status:1, cur_chr_type:5
+[ 9592.928369] xxx_BMS:bms_wakeup
+[ 9592.936667] xxx_CHG: reg :19  read data:0x4
+[ 9592.941354] xxx_CHG: reg :18  read data:0x1
+[ 9592.945737] xxx_BMS:xxx_bms_external_power_changed online = 1
+[ 9592.945996] xxx_CHG: reg :1  read data:0x13
+[ 9592.970563] xxx_CHG: reg :18  read data:0x1
+[ 9592.977977] xxx_CHG: reg :18  read data:0x0
+[ 9592.978803] xxx_BMS: CHG [online: 1, type: 5, vol: 5000000, cur: 2000000, time: 8643], BAT [present: 1, status: 1, vol: 4331000, cur: 393000, resistance: 0, temp: 320, soc: 100], OTHER [skin_temp: 0, chg_vote: 0x0, notify_code: 0x0],
+[ 9593.003589] xxx_CHG: reg :18  read data:0x1
+[ 9593.008738] xxx_CHG: reg :18  read data:0x1
+[ 9593.013878] xxx_CHG: reg :18  read data:0x1
+[ 9593.019134] xxx_CHG: reg :1  read data:0x13
+[ 9593.052298] xxx_CHG: reg :19  read data:0x4
+[ 9593.057877] xxx_CHG: reg :1  read data:0x13
+[ 9593.064422] xxx_CHG: reg :1  read data:0x13
+[ 9593.073285] xxx_CHG: reg :18  read data:0x1
+[ 9593.084352] xxx_CHG: reg :1  read data:0x13
+[ 9593.092224] xxx_CHG: reg :18  read data:0x1
+[ 9593.098341] xxx_CHG: reg :1  read data:0x13
 [ 9593.359185] ext_spk_switch_put: set Ext_Spk_Switch val 1
 [ 9593.381195] msm_pcm_chmap_ctl_put: substream ref_count:0 invalid
 [ 9593.417533] send_afe_cal_type: No cal sent for cal_index 0, port_id = 0xb030! ret -22
@@ -2106,8 +2132,8 @@ USB
 <p>VIN_UV和VIN_OV对应关系如下：</p>
 <p><img alt="0013_0048.png" src="../../../_images/0013_0048.png" /></p>
 <p>用示波器看并没有跳变，不知道什么原因，由于VIN_RD和VIN_GD状态不稳定，charger online属性改为读取DPDM_STAT状态，修改如下：</p>
-<div class="highlight-diff notranslate"><div class="highlight"><pre><span></span><span class="gd">--- a/UM.9.15/kernel/msm-4.19/drivers/misc/pax/power/mp2721_charger.c</span><span class="w"></span>
-<span class="gi">+++ b/UM.9.15/kernel/msm-4.19/drivers/misc/pax/power/mp2721_charger.c</span><span class="w"></span>
+<div class="highlight-diff notranslate"><div class="highlight"><pre><span></span><span class="gd">--- a/UM.9.15/kernel/msm-4.19/drivers/misc/xxx/power/mp2721_charger.c</span><span class="w"></span>
+<span class="gi">+++ b/UM.9.15/kernel/msm-4.19/drivers/misc/xxx/power/mp2721_charger.c</span><span class="w"></span>
 
 <span class="gi">+/**********Reg11**********/</span><span class="w"></span>
 <span class="gi">+</span><span class="w"></span>
@@ -2135,29 +2161,29 @@ USB
 </div>
 <p><img alt="0013_0049.png" src="../../../_images/0013_0049.png" /></p>
 <p>经测试还是会偶发性掉线，就突然online变成0，打印如下：</p>
-<div class="highlight-log notranslate"><div class="highlight"><pre><span></span>11-02 11:56:33.103 E/PAX_CHG (    0): CHG [online: 0, type: SDP, status: Not charging, fault: 0x14060, ICHG = 480mA, AICR = 2000mA, MIVR = 4360mV, IEOC = 240mA, CV = 4375mV]
-11-02 11:56:33.104 E/PAX_BMS (    0): CHG [online: 0, type: 4, vol: 5000000, cur: 16800000, time: 0], BAT [present: 1, status: 3, vol: 4044000, cur: -63000, resistance: 0, temp: 310, soc: 78], OTHER [skin_temp: 0, chg_vote: 0x0, notify_code: 0x0],
-11-02 11:56:38.093 E/PAX_CHG (    0): pax_is_charger_on chr_type = [SDP] last_chr_type = [SDP]
-11-02 11:56:38.095 E/PAX_CHG (    0): [SW_JEITA] Battery Normal Temperature between 15 and 45 !!
-11-02 11:56:38.095 E/PAX_CHG (    0): [SW_JEITA]preState:3 newState:3 tmp:31 cv:0
-11-02 11:56:38.095 E/PAX_CHG (    0): tmp:31 (jeita:1 sm:3 cv:0 en:1) thm_sm:1 en:1 can_en:1
-11-02 11:56:38.096 E/PAX_CHG (    0): chg:-1,-1,2000,500 type:4:1 aicl:-1 bootmode:0 pd:0
-11-02 11:56:38.096 E/PAX_CHG (    0): do_algorithm input_current_limit:2000 charging_current_limit:500
-11-02 11:56:38.101 E/PAX_CHG (    0): CHG [online: 1, type: SDP, status: Not charging, fault: 0x0, ICHG = 480mA, AICR = 2000mA, MIVR = 4360mV, IEOC = 240mA, CV = 4375mV]
-11-02 11:56:38.224 E/PAX_BMS (    0): CHG [online: 1, type: 4, vol: 5000000, cur: 2000000, time: 0], BAT [present: 1, status: 3, vol: 4044000, cur: -63000, resistance: 0, temp: 310, soc: 78], OTHER [skin_temp: 0, chg_vote: 0x0, notify_code: 0x0],
-11-02 11:56:38.502 E/PAX_BAT (    0): [status:Not charging, health:Good, present:1, tech:Li-ion, capcity:78,cap_rm:3545 mah, vol:4044 mv, temp:32, curr:-63 ma, ui_soc:78]
+<div class="highlight-log notranslate"><div class="highlight"><pre><span></span>11-02 11:56:33.103 E/xxx_CHG (    0): CHG [online: 0, type: SDP, status: Not charging, fault: 0x14060, ICHG = 480mA, AICR = 2000mA, MIVR = 4360mV, IEOC = 240mA, CV = 4375mV]
+11-02 11:56:33.104 E/xxx_BMS (    0): CHG [online: 0, type: 4, vol: 5000000, cur: 16800000, time: 0], BAT [present: 1, status: 3, vol: 4044000, cur: -63000, resistance: 0, temp: 310, soc: 78], OTHER [skin_temp: 0, chg_vote: 0x0, notify_code: 0x0],
+11-02 11:56:38.093 E/xxx_CHG (    0): xxx_is_charger_on chr_type = [SDP] last_chr_type = [SDP]
+11-02 11:56:38.095 E/xxx_CHG (    0): [SW_JEITA] Battery Normal Temperature between 15 and 45 !!
+11-02 11:56:38.095 E/xxx_CHG (    0): [SW_JEITA]preState:3 newState:3 tmp:31 cv:0
+11-02 11:56:38.095 E/xxx_CHG (    0): tmp:31 (jeita:1 sm:3 cv:0 en:1) thm_sm:1 en:1 can_en:1
+11-02 11:56:38.096 E/xxx_CHG (    0): chg:-1,-1,2000,500 type:4:1 aicl:-1 bootmode:0 pd:0
+11-02 11:56:38.096 E/xxx_CHG (    0): do_algorithm input_current_limit:2000 charging_current_limit:500
+11-02 11:56:38.101 E/xxx_CHG (    0): CHG [online: 1, type: SDP, status: Not charging, fault: 0x0, ICHG = 480mA, AICR = 2000mA, MIVR = 4360mV, IEOC = 240mA, CV = 4375mV]
+11-02 11:56:38.224 E/xxx_BMS (    0): CHG [online: 1, type: 4, vol: 5000000, cur: 2000000, time: 0], BAT [present: 1, status: 3, vol: 4044000, cur: -63000, resistance: 0, temp: 310, soc: 78], OTHER [skin_temp: 0, chg_vote: 0x0, notify_code: 0x0],
+11-02 11:56:38.502 E/xxx_BAT (    0): [status:Not charging, health:Good, present:1, tech:Li-ion, capcity:78,cap_rm:3545 mah, vol:4044 mv, temp:32, curr:-63 ma, ui_soc:78]
 11-02 11:56:38.509 W/audit   (    0): audit_lost=3786 audit_rate_limit=5 audit_backlog_limit=64
 </pre></div>
 </div>
 <p>修改成加入typec attach进行判断：</p>
-<div class="highlight-diff notranslate"><div class="highlight"><pre><span></span><span class="gd">--- a/UM.9.15/kernel/msm-4.19/drivers/misc/pax/power/paxpd-charger-manager.c</span><span class="w"></span>
-<span class="gi">+++ b/UM.9.15/kernel/msm-4.19/drivers/misc/pax/power/paxpd-charger-manager.c</span><span class="w"></span>
+<div class="highlight-diff notranslate"><div class="highlight"><pre><span></span><span class="gd">--- a/UM.9.15/kernel/msm-4.19/drivers/misc/xxx/power/xxxpd-charger-manager.c</span><span class="w"></span>
+<span class="gi">+++ b/UM.9.15/kernel/msm-4.19/drivers/misc/xxx/power/xxxpd-charger-manager.c</span><span class="w"></span>
 <span class="gu">@@ -1382,7 +1382,7 @@ static int psy_charger_get_property(struct power_supply *psy,</span><span class="w"></span>
 
 <span class="w"> </span>       switch (psp) {<span class="w"></span>
 <span class="w"> </span>       case POWER_SUPPLY_PROP_ONLINE:<span class="w"></span>
-<span class="gd">-               val-&gt;intval = pax_charger_dev_is_online(info-&gt;chg1_dev);</span><span class="w"></span>
-<span class="gi">+               val-&gt;intval = pax_charger_dev_is_online(info-&gt;chg1_dev) | (info-&gt;attach ? 1 : 0);</span><span class="w"></span>
+<span class="gd">-               val-&gt;intval = xxx_charger_dev_is_online(info-&gt;chg1_dev);</span><span class="w"></span>
+<span class="gi">+               val-&gt;intval = xxx_charger_dev_is_online(info-&gt;chg1_dev) | (info-&gt;attach ? 1 : 0);</span><span class="w"></span>
 <span class="w"> </span>               break;<span class="w"></span>
 </pre></div>
 </div>
@@ -2166,13 +2192,13 @@ USB
 <section id="id17">
 <h1>充电状态不对<a class="headerlink" href="#id17" title="此标题的永久链接"></a></h1>
 <p>异常寄存器如下：</p>
-<div class="highlight-log notranslate"><div class="highlight"><pre><span></span>[Thu Feb  2 01:08:18 2023] PAX_CHG: pax_is_charger_on chr_type = [SDP] last_chr_type = [SDP]
-[Thu Feb  2 01:08:18 2023] PAX_CHG: [SW_JEITA] Battery Normal Temperature between 15 and 45 !!
-[Thu Feb  2 01:08:18 2023] PAX_CHG: [SW_JEITA]preState:3 newState:3 tmp:25 cv:0
-[Thu Feb  2 01:08:18 2023] PAX_CHG: tmp:25 (jeita:1 sm:3 cv:0 en:1) thm_sm:1 en:1 can_en:1
-[Thu Feb  2 01:08:18 2023] PAX_CHG: chg:-1,-1,500,500 type:4:1 aicl:-1 bootmode:0 pd:0
-[Thu Feb  2 01:08:18 2023] PAX_CHG: do_algorithm input_current_limit:500 charging_current_limit:500
-[Thu Feb  2 01:08:18 2023] PAX_CHG: CHG [online: 0, type: SDP, status: Not charging, fault: 0x0, ICHG = 480mA, AICR = 500mA, MIVR = 4200mV, IEOC = 240mA, CV = 4375mV]
+<div class="highlight-log notranslate"><div class="highlight"><pre><span></span>[Thu Feb  2 01:08:18 2023] xxx_CHG: xxx_is_charger_on chr_type = [SDP] last_chr_type = [SDP]
+[Thu Feb  2 01:08:18 2023] xxx_CHG: [SW_JEITA] Battery Normal Temperature between 15 and 45 !!
+[Thu Feb  2 01:08:18 2023] xxx_CHG: [SW_JEITA]preState:3 newState:3 tmp:25 cv:0
+[Thu Feb  2 01:08:18 2023] xxx_CHG: tmp:25 (jeita:1 sm:3 cv:0 en:1) thm_sm:1 en:1 can_en:1
+[Thu Feb  2 01:08:18 2023] xxx_CHG: chg:-1,-1,500,500 type:4:1 aicl:-1 bootmode:0 pd:0
+[Thu Feb  2 01:08:18 2023] xxx_CHG: do_algorithm input_current_limit:500 charging_current_limit:500
+[Thu Feb  2 01:08:18 2023] xxx_CHG: CHG [online: 0, type: SDP, status: Not charging, fault: 0x0, ICHG = 480mA, AICR = 500mA, MIVR = 4200mV, IEOC = 240mA, CV = 4375mV]
 
 Charger IC:
 Reg[0x00] = 0x0b

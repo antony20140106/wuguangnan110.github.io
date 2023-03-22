@@ -24,11 +24,11 @@ bool cmdline_append(const char *append_string)
 
 * 实例：
 ```C++
-//[FEATURE]-Add-BEGIN by (wugangnan@paxsz.com), 2020/07/03, for LCD identification.
+//[FEATURE]-Add-BEGIN by (xxx@xxxxx.com), 2020/07/03, for LCD identification.
 sprintf(cmdline_tmpbuf, "%s%s%s", CMDLINE_TMP_CONCAT_SIZE, "androidboot.lcm.select=", mt_disp_get_lcm_id());
 cmdline_append(cmdline_tmpbuf);
-//[FEATURE]-Add-END by (wugangnan@paxsz.com), 2020/07/03, for LCD identification.
-pax_get_profile_id();
+//[FEATURE]-Add-END by (xxx@xxxxx.com), 2020/07/03, for LCD identification.
+xxxxx_get_profile_id();
 sprintf(cmdline_tmpbuf, "%s%s%d", CMDLINE_TMP_CONCAT_SIZE, "androidboot.battery.id=", battery_id);
 cmdline_append(cmdline_tmpbuf);
 sprintf(cmdline_tmpbuf, "%s%s%d", CMDLINE_TMP_CONCAT_SIZE, "androidboot.lcm.id=", lcm_id);
@@ -51,11 +51,11 @@ UpdateCmdLine (CONST CHAR8 *CmdLine,
                CHAR8 **FinalCmdLine,
                UINT32 HeaderVersion)
 {
-  /*Add by PAXSZ*/
+  /*Add by xxxSZ*/
   update_bootargs(PaxCmdLine);
   CmdLineLen += AsciiStrLen (PaxCmdLine);
 
-  /*Add by PAXSZ*/
+  /*Add by xxxSZ*/
   Param.PaxCmdLine = PaxCmdLine;
 
   Status = UpdateCmdLineParams (&Param, FinalCmdLine);
@@ -89,11 +89,11 @@ void update_bootargs(char *cmdline)
 	if (ptr != NULL) {
         int len = ptr - cfginfo -1; //decrease one blank
 		memset(tmpbuf, 0, sizeof(tmpbuf));
-        AsciiSPrint(tmpbuf, MAX_PATH_SIZE, " pax_config_begin=%d ",len);
+        AsciiSPrint(tmpbuf, MAX_PATH_SIZE, " xxxxx_config_begin=%d ",len);
         AsciiStrCat(cmdline, tmpbuf);
 
 		memset(tmpbuf, 0, sizeof(tmpbuf));
-        AsciiSPrint(tmpbuf, MAX_PATH_SIZE, " pax_config_end=%d ",len);
+        AsciiSPrint(tmpbuf, MAX_PATH_SIZE, " xxxxx_config_end=%d ",len);
         AsciiStrCpy(cfginfo_bak, ptr);
         AsciiStrCpy(ptr, tmpbuf);
         AsciiStrCpy(ptr + AsciiStrLen(tmpbuf), cfginfo_bak);
@@ -121,24 +121,24 @@ void update_bootargs(char *cmdline)
 #endif
 #endif
 
-//[FEATURE]-Add-BEGIN by xielianxiong@paxsz.com, 2021/12/13, for init other cmdline property
+//[FEATURE]-Add-BEGIN by xielianxiong@xxxxx.com, 2021/12/13, for init other cmdline property
 
 	memset(tmpbuf, 0, sizeof(tmpbuf));
 	if(bootargs_getvalue("EXSN=", tmpbuf, cmdline) == 0)
 	{
 		bootargs_delete("EXSN=", cmdline);
-		bootargs_add("paxspexsn=", tmpbuf, cmdline);
+		bootargs_add("xxxxxspexsn=", tmpbuf, cmdline);
 	}else if(0 == GetEXSN(tmpbuf,MAX_OTHER_CFG_LENGTH)){
-        bootargs_add("paxspexsn=", tmpbuf, cmdline);
+        bootargs_add("xxxxxspexsn=", tmpbuf, cmdline);
     }
 
 	memset(tmpbuf, 0, sizeof(tmpbuf));
 	if(bootargs_getvalue("SN=", tmpbuf, cmdline) == 0)
 	{
 		bootargs_delete("SN=", cmdline);
-		bootargs_add("paxspsn=", tmpbuf, cmdline);
+		bootargs_add("xxxxxspsn=", tmpbuf, cmdline);
 	}else if(0 == GetSN(tmpbuf,MAX_OTHER_CFG_LENGTH)){
-        bootargs_add("paxspsn=", tmpbuf, cmdline);
+        bootargs_add("xxxxxspsn=", tmpbuf, cmdline);
     }
 
 	memset(tmpbuf, 0, sizeof(tmpbuf));
@@ -147,30 +147,30 @@ void update_bootargs(char *cmdline)
 		bootargs_delete("MAC=", cmdline);
 		AsciiSPrint(tmpbuf, MAX_PATH_SIZE, "%c%c:%c%c:%c%c:%c%c:%c%c:%c%c", mac[0],mac[1],mac[2],mac[3],mac[4],mac[5],
 				mac[6],mac[7],mac[8],mac[9],mac[10],mac[11]);
-		bootargs_add("paxspmac=", tmpbuf, cmdline);
+		bootargs_add("xxxxxspmac=", tmpbuf, cmdline);
 	}else if(0 == GetMAC(tmpbuf,MAC_NV_LENGTH*2+5)){
-        bootargs_add("paxspmac=", tmpbuf, cmdline);//ethmac
+        bootargs_add("xxxxxspmac=", tmpbuf, cmdline);//ethmac
     }
 
     memset(tmpbuf, 0, sizeof(tmpbuf));
 	if(0 == GetWifiMAC(tmpbuf,MAC_NV_LENGTH*2+5)){
-        bootargs_add("paxwifimac=", tmpbuf, cmdline);//wifimac
+        bootargs_add("xxxxxwifimac=", tmpbuf, cmdline);//wifimac
     }
 
     memset(tmpbuf, 0, sizeof(tmpbuf));
 	if(0 == GetBtMAC(tmpbuf,MAC_NV_LENGTH*2+5)){
-        bootargs_add("paxbtmac=", tmpbuf, cmdline);//btmac
+        bootargs_add("xxxxxbtmac=", tmpbuf, cmdline);//btmac
     }
 
-	//[FEATURE]-BEGIN by (wugangnan@paxsz.com), 2022/09/08 for Turn off power off charging mode when no-battery-startup
+	//[FEATURE]-BEGIN by (xxx@xxxxx.com), 2022/09/08 for Turn off power off charging mode when no-battery-startup
 	if (!is_battery_exist()) {
 		bootargs_add("start_without_battery=", "1", cmdline);//Start without battery
 	}
 	else {
 		bootargs_add("start_without_battery=", "0", cmdline);
 	}
-	//[FEATURE]-END by (wugangnan@paxsz.com), 2022/09/08 for Turn off power off charging mode when no-battery-startup
-//[FEATURE]-Add-END by xielianxiong@paxsz.com, 2021/12/13, for init other cmdline property
+	//[FEATURE]-END by (xxx@xxxxx.com), 2022/09/08 for Turn off power off charging mode when no-battery-startup
+//[FEATURE]-Add-END by xielianxiong@xxxxx.com, 2021/12/13, for init other cmdline property
 }
 
 int update_cfg_info(char *cfginfo)
@@ -187,7 +187,7 @@ int update_cfg_info(char *cfginfo)
 
 * kernel驱动api如下：
 ```C++
-/* Copyright (C) 2017-2021  PAX
+/* Copyright (C) 2017-2021  xxx
  * parse command line and provide cmdline_get_value() to get the value
  */
 
@@ -274,14 +274,14 @@ postcore_initcall(cmdops_init);
 module_exit(cmdops_exit);
 
 MODULE_LICENSE("GPL v2");
-MODULE_AUTHOR("fuzk@paxsz.com");
+MODULE_AUTHOR("fuzk@xxxxx.com");
 ```
 
 * 例如查看`start_without_battery`参数，验证方案：
 ```C++
 extern const char *cmdline_get_value(const char *key);
 
-int pax_bat_exist_from_cmdline(void)
+int xxxxx_bat_exist_from_cmdline(void)
 {
         int ret = !!strcmp(cmdline_get_value("start_without_battery"), "0");
         return ret;
@@ -294,5 +294,5 @@ int pax_bat_exist_from_cmdline(void)
 ```shell
 console:/ # cat /proc/cmdline
 cgroup_disable=pressure rcupdate.rcu_expedited=1 rcu_nocbs=0-7 kpti=off console=ttyMSM0,115200n8 earlycon=[   49.397771] Battery: [ status:Charging, health:Good, present:1, tech:Li-ion, capcity:5,cap_rm:211 mah, vol:3850 mv, temp:30, curr:3310 ma, ui_soc:5, notify_code: 0 ]
-msm_geni_serial,0x4a90000 androidboot.hardware=qcom androidboot.console=ttyMSM0 androidboot.memcg=1 lpm_levels.sleep_disabled=1 video=vfb:640x400,bpp=32,memsize=3072000 msm_rtb.filter=0x237 service_locator.enable=1 swiotlb=2048 loop.max_part=7 buildvariant=userdebug androidboot.verifiedbootstate=orange androidboot.keymaster=1 androidboot.vbmeta.device=PARTUUID=1bc4422a-31a7-12c2-a4b0-737a73250b0f androidboot.vbmeta.avb_version=1.0 androidboot.vbmeta.device_state=unlocked androidboot.vbmeta.hash_alg=sha256 androidboot.vbmeta.size=7360 androidboot.vbmeta.digest=a04754bbd280a596a2c4f1c5d8ec3b4bbf03a5b2790999a2a222bd3eaf9f4972 androidboot.vbmeta.invalidate_on_error=yes androidboot.veritymode=enforcing androidboot.bootdevice=4744000.sdhci androidboot.fstab_suffix=emmc androidboot.boot_devices=soc/4744000.sdhci androidboot.serialno=e4e19011 androidboot.baseband=msm msm_drm.dsi_display0=qcom,mdss_dsi_ili7807S_1080p_video_dpi_480: androidboot.slot_suffix=_a rootwait ro init=/init androidboot.dtbo_idx=0 androidboot.dtb_idx=0 TOUCH_SCREEN=257 LCD=257 FPM=11 WIFI=36 WIFI_PA=04 CAMERA_NUMBER=01 CAMERA_FRONT=80 MAIN_BOARD=V01 PORT_BOARD=V01 PN=A6650-AA200-260A-2N0-EA CONFIG_FILE_VER=2570000_V1.0 TERMINAL_NAME=A6650  SecMode=3  security_level=3  TamperClear=0  LastBblStatus=0  AppDebugStatus=1  FirmDebugStatus=1  SnDownLoadSum=0  UsPukLevel=3  Customer=255  console_debug=disable start_without_battery=0
+msm_geni_serial,0x4a90000 androidboot.hardware=qcom androidboot.console=ttyMSM0 androidboot.memcg=1 lpm_levels.sleep_disabled=1 video=vfb:640x400,bpp=32,memsize=3072000 msm_rtb.filter=0x237 service_locator.enable=1 swiotlb=2048 loop.max_part=7 buildvariant=userdebug androidboot.verifiedbootstate=orange androidboot.keymaster=1 androidboot.vbmeta.device=PARTUUID=1bc4422a-31a7-12c2-a4b0-737a73250b0f androidboot.vbmeta.avb_version=1.0 androidboot.vbmeta.device_state=unlocked androidboot.vbmeta.hash_alg=sha256 androidboot.vbmeta.size=7360 androidboot.vbmeta.digest=a04754bbd280a596a2c4f1c5d8ec3b4bbf03a5b2790999a2a222bd3eaf9f4972 androidboot.vbmeta.invalidate_on_error=yes androidboot.veritymode=enforcing androidboot.bootdevice=4744000.sdhci androidboot.fstab_suffix=emmc androidboot.boot_devices=soc/4744000.sdhci androidboot.serialno=e4e19011 androidboot.baseband=msm msm_drm.dsi_display0=qcom,mdss_dsi_ili7807S_1080p_video_dpi_480: androidboot.slot_suffix=_a rootwait ro init=/init androidboot.dtbo_idx=0 androidboot.dtb_idx=0 TOUCH_SCREEN=257 LCD=257 FPM=11 WIFI=36 WIFI_PA=04 CAMERA_NUMBER=01 CAMERA_FRONT=80 MAIN_BOARD=V01 PORT_BOARD=V01 PN=A665x-AA200-260A-2N0-EA CONFIG_FILE_VER=2570000_V1.0 TERMINAL_NAME=A665x  SecMode=3  security_level=3  TamperClear=0  LastBblStatus=0  AppDebugStatus=1  FirmDebugStatus=1  SnDownLoadSum=0  UsPukLevel=3  Customer=255  console_debug=disable start_without_battery=0
 ```

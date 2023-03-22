@@ -13,8 +13,8 @@
 ![0001_0003.png](images/0001_0003.png)
 
 ```diff
---- a/kernel-4.19/drivers/misc/mediatek/dws/mt6765/k62v1_64_pax.dws
-+++ b/kernel-4.19/drivers/misc/mediatek/dws/mt6765/k62v1_64_pax.dws
+--- a/kernel-4.19/drivers/misc/mediatek/dws/mt6765/k62v1_64_xxxxx.dws
++++ b/kernel-4.19/drivers/misc/mediatek/dws/mt6765/k62v1_64_xxxxx.dws
 @@ -1,5 +1,5 @@
  <?xml version="1.0" encoding="UTF-8"?>
 -<!--dct_version="2.5" buid_sn="161102" dws_modification_time="03.13.2021.15:59:06"-->
@@ -418,7 +418,7 @@ charger_routine_thread和timer关系流程如下：
   │                   └── ret = mt6370_enable_charging(chg_dev, true); //使能充电
   ├── check_battery_exist(info); //检测电池是否存在
   ├── check_dynamic_mivr(info); //设置动态mivr，主要是AICL功能
-  ├── #ifndef CONFIG_PAX_BMS charger_check_status(info);//这里本来是检测电池温度的，现在放到BMS里面做，mtk jeita也在里面，这样就没开
+  ├── #ifndef CONFIG_xxx_BMS charger_check_status(info);//这里本来是检测电池温度的，现在放到BMS里面做，mtk jeita也在里面，这样就没开
   ├── kpoc_power_off_check(info); //关机充电，拔出USB则关闭系统
   └── if (is_disable_charger(info) == false && is_charger_on == true && info->can_charging == true) //详情如上mtk_is_charger_on，如果检测到插入充电器了，且正在充电，则调用充电算法。
       ├── info->algo.do_algorithm(info); //调用mtk_basic_charger.c
@@ -716,12 +716,12 @@ static bool select_charging_current_limit(struct mtk_charger *info,
         }
     } else if (info->chr_type == POWER_SUPPLY_TYPE_USB_FLOAT) {
         /* NONSTANDARD_CHARGER */
-        //[BUGFIX]-BEGIN by wugangnan@paxsz.com 2021-12-11, float charger's current is limit as 2A for M50 leather case charging
+        //[BUGFIX]-BEGIN by xxx@xxxxx.com 2021-12-11, float charger's current is limit as 2A for M5x leather case charging
         pdata->input_current_limit = 2000000; //浮充适配器限流2a
             //info->data.usb_charger_current;
         pdata->charging_current_limit = 2000000;
             //info->data.usb_charger_current;
-        //[BUGFIX]-END by wugangnan@paxsz.com 2021-12-11, float charger's current is limit as 2A for M50 leather case charging
+        //[BUGFIX]-END by xxx@xxxxx.com 2021-12-11, float charger's current is limit as 2A for M5x leather case charging
         is_basic = true;
     }
 
@@ -749,12 +749,12 @@ static bool select_charging_current_limit(struct mtk_charger *info,
                 pdata->charging_current_limit = 2000000;
             } else {
                 chr_err("type-C: inquire rp error\n");
-                /* Add-BEGIN by (zhangwj@paxsz.com), 2021/04/29, for non-standard usb chg cable limit in 2.0A */
+                /* Add-BEGIN by (xxx@xxxxx.com), 2021/04/29, for non-standard usb chg cable limit in 2.0A */
                 //pdata->input_current_limit = 500000;
                 //pdata->charging_current_limit = 500000;
                 pdata->input_current_limit = 2000000;
                 pdata->charging_current_limit = 2000000;
-                /* Add-END by (zhangwj@paxsz.com), 2021/04/29, for non-standard usb chg cable limit in 2.0A */
+                /* Add-END by (xxx@xxxxx.com), 2021/04/29, for non-standard usb chg cable limit in 2.0A */
             }
 
             chr_err("type-C:%d current:%d\n",
@@ -1302,7 +1302,7 @@ mt6370_pd.dtsi:
                          * Variable 5-9V, 2A <0x8642d0c8>
                          * Variable 5-9V, 3A <0x8642d12c>
                          * PPS 3V~5.9V, 3A <0xC0761E3C>
-                         ***12v add by zhangwj@paxsz.com
+                         ***12v add by xxx@xxxxx.com
                          * Fixed 12V, 2A <0x0003c0c8>
                          * Fixed 12V, 1.5A <0x0003c096>
                          * Fixed 12V, 1A <0x0003c064>
@@ -1411,7 +1411,7 @@ mt6370_pd.dtsi:
         * Variable 5-9V, 2A <0x8642d0c8>
         * Variable 5-9V, 3A <0x8642d12c>
         * PPS 3V~5.9V, 3A <0xC0761E3C>
-        ***12v add by zhangwj@paxsz.com
+        ***12v add by xxx@xxxxx.com
         * Fixed 12V, 2A <0x0003c0c8>
         * Fixed 12V, 1.5A <0x0003c096>
         * Fixed 12V, 1A <0x0003c064>
@@ -1492,9 +1492,9 @@ int __mtk_pdc_get_setting(struct chg_alg_device *alg, int *newvbus, int *newcur,
     bool chg1_mivr = false;
     bool chg2_mivr = false;
     int chg_cnt, i, is_chip_enabled;
-    //FEATURE-BEGIN by shanliangliang@paxsz.com, 2021/07/22
+    //FEATURE-BEGIN by xxx@xxxxx.com, 2021/07/22
     int uisoc;
-    //FEATURE-END by shanliangliang@paxsz.com, 2021/07/22
+    //FEATURE-END by xxx@xxxxx.com, 2021/07/22
 
 
     __mtk_pdc_init_table(alg);
@@ -1607,11 +1607,11 @@ int __mtk_pdc_get_setting(struct chg_alg_device *alg, int *newvbus, int *newcur,
     if (pd_min_watt <= 5000000)
         pd_min_watt = 5000000;
 
-    //FEATURE-BEGIN by shanliangliang@paxsz.com, 2021/07/22
+    //FEATURE-BEGIN by xxx@xxxxx.com, 2021/07/22
     uisoc = pd_hal_get_uisoc(alg);
 
     if ((now_max_watt >= pd_max_watt) || chg1_mivr || chg2_mivr || (uisoc <= pd->pd_stop_battery_soc)) {
-    //FEATURE-END by shanliangliang@paxsz.com, 2021/07/22
+    //FEATURE-END by xxx@xxxxx.com, 2021/07/22
         *newidx = pd->pd_boost_idx;
         boost = true;
     } else if (now_max_watt <= pd_min_watt) {
@@ -2182,7 +2182,7 @@ enum TCP_DPM_EVT_ID {
 05-27 14:28:04.063069 <5>[10054.724155]  (6)[304:charger_thread]pd_hal_get_uisoc:16 //满足boost条件，那idx = boost_idx  ，但是第一次boost_idx = 0
 05-27 14:28:04.063089 <5>[10054.724175]  (6)[304:charger_thread][__mtk_pdc_get_setting]watt:12400000,9250000,7900000 up:1,0 vbus:4598000 ibus:1850, mivr:0,0 // up:1,0表示选择boost
 05-27 14:28:04.063106 <5>[10054.724192]  (6)[304:charger_thread][__mtk_pdc_get_setting]vbus:9000:5000:5000 current:3000 idx:0 default_idx:0 //idx:0表示选择5v3a档位
-05-27 14:28:04.063621 <5>[10054.724707]  (6)[304:charger_thread]PAX_CHG: [mtk_chg_enable_vbus_ovp] en:1 ovp:6500000 //打开ovp功能
+05-27 14:28:04.063621 <5>[10054.724707]  (6)[304:charger_thread]xxx_CHG: [mtk_chg_enable_vbus_ovp] en:1 ovp:6500000 //打开ovp功能
 
 2.第一次设置5v3a档位：
 05-27 14:28:04.064504 <5>[10054.725590]  (6)[304:charger_thread][pd_set_cap] type:2 mV:5000 mA:3000
@@ -2218,7 +2218,7 @@ enum TCP_DPM_EVT_ID {
 05-27 14:28:09.111745 <5>[10059.772831]  (6)[304:charger_thread]pd_hal_get_uisoc:16
 05-27 14:28:09.111779 <5>[10059.772865]  (6)[304:charger_thread][__mtk_pdc_get_setting]watt:12400000,10250000,7900000 up:1,0 vbus:4560000 ibus:2050, mivr:1,0
 05-27 14:28:09.111808 <5>[10059.772894]  (6)[304:charger_thread][__mtk_pdc_get_setting]vbus:9000:5000:9000 current:2000 idx:1 default_idx:0
-05-27 14:28:09.112341 <5>[10059.773427]  (6)[304:charger_thread]PAX_CHG: [mtk_chg_enable_vbus_ovp] en:0 ovp:15000000 //关闭ovp
+05-27 14:28:09.112341 <5>[10059.773427]  (6)[304:charger_thread]xxx_CHG: [mtk_chg_enable_vbus_ovp] en:0 ovp:15000000 //关闭ovp
 
 05-27 14:28:09.113642 <5>[10059.774728]  (6)[304:charger_thread]pd_hal_set_adapter_cap 9000 2000
 05-27 14:28:09.113683 <5>[10059.774769]  (6)[304:charger_thread][pd_set_cap] type:2 mV:9000 mA:2000
@@ -2386,12 +2386,12 @@ M8.dts:
                                         pd->pd_cap_max_watt = cap->maxwatt[i];
                                         idx = i;
                                 }
-+                               /* [FEATURE] Add-BEGIN by (zhangwj@paxsz.com), 2021/05/06, if maxwatt same, chose the low volt idx */
++                               /* [FEATURE] Add-BEGIN by (xxx@xxxxx.com), 2021/05/06, if maxwatt same, chose the low volt idx */
 +                               if (cap->maxwatt[i] == pd->pd_cap_max_watt) {
 +                                       if (cap->max_mv[i] > cap->max_mv[idx])
 +                                                       idx = i; //这里可有可无，因为idx是局部变量，都没传出去。
 +                               }
-+                               /* [FEATURE] Add-END by (zhangwj@paxsz.com), 2021/05/06, if maxwatt same, chose the low volt idx */
++                               /* [FEATURE] Add-END by (xxx@xxxxx.com), 2021/05/06, if maxwatt same, chose the low volt idx */
 +
                                 pd_err("%d %d %d %d %d %d\n",
                                         cap->min_mv[i],
@@ -2400,12 +2400,12 @@ M8.dts:
                 if (idx == selected_idx) {
                         if (cap->maxwatt[i] > cap->maxwatt[idx])
                                 idx = i;
-+                       /* [FEATURE] Add-BEGIN by (zhangwj@paxsz.com), 2021/05/06, if maxwatt same, chose the high volt idx */
++                       /* [FEATURE] Add-BEGIN by (xxx@xxxxx.com), 2021/05/06, if maxwatt same, chose the high volt idx */
 +                               if (cap->maxwatt[i] == pd->pd_cap_max_watt) {
 +                                       if (cap->max_mv[i] > cap->max_mv[idx])
 +                                                       idx = i;
 +                               }
-+                               /* [FEATURE] Add-END by (zhangwj@paxsz.com), 2021/05/06, if maxwatt same, chose the low volt idx */
++                               /* [FEATURE] Add-END by (xxx@xxxxx.com), 2021/05/06, if maxwatt same, chose the low volt idx */
 +
                                 pd_err("%d %d %d %d %d %d\n",
                                         cap->min_mv[i],
@@ -2414,18 +2414,18 @@ M8.dts:
                 if (idx == selected_idx) {
                         if (cap->maxwatt[i] > cap->maxwatt[idx])
                                 idx = i;
-+                       /* [FEATURE] Add-BEGIN by (zhangwj@paxsz.com), 2021/05/06, if maxwatt same, chose the high volt idx */
++                       /* [FEATURE] Add-BEGIN by (xxx@xxxxx.com), 2021/05/06, if maxwatt same, chose the high volt idx */
 +                       else if (cap->maxwatt[i] == cap->maxwatt[idx]) {
 +                               if (cap->max_mv[i] > cap->max_mv[idx]) {
 +                                               idx = i;
 +                               }
 +                       }
-+                       /* [FEATURE] Add-END by (zhangwj@paxsz.com), 2021/05/06, if maxwatt same, chose the high volt idx */
++                       /* [FEATURE] Add-END by (xxx@xxxxx.com), 2021/05/06, if maxwatt same, chose the high volt idx */
                 } else {
                         if (cap->maxwatt[i] < cap->maxwatt[idx] &&
                                 cap->maxwatt[i] > cap->maxwatt[selected_idx])
                                 idx = i;
-+                       /* [FEATURE] Add-BEGIN by (zhangwj@paxsz.com), 2021/05/06, if maxwatt same, chose the high volt idx */
++                       /* [FEATURE] Add-BEGIN by (xxx@xxxxx.com), 2021/05/06, if maxwatt same, chose the high volt idx */
 +                       else {
 +                               if (cap->maxwatt[i] == cap->maxwatt[idx] && cap->maxwatt[i] > cap->maxwatt[selected_idx]) {
 +                                       if (cap->max_mv[i] > cap->max_mv[idx]) {
@@ -2433,7 +2433,7 @@ M8.dts:
 +                                       }
 +                               }
 +                       }
-+                       /* [FEATURE] Add-END by (zhangwj@paxsz.com), 2021/05/06, if maxwatt same, chose the high volt idx */
++                       /* [FEATURE] Add-END by (xxx@xxxxx.com), 2021/05/06, if maxwatt same, chose the high volt idx */
                 }
         }
         *boost_idx = idx;
@@ -2449,7 +2449,7 @@ M8.dts:
 设置档位5v/3a:
 <5>[   20.093990] .(7)[304:charger_thread][__mtk_pdc_get_setting]watt:14280000,12000000,7900000 up:1,0 vbus:11798000 ibus:1000, mivr:0,0 pd_stop_battery_soc:[100]
 <5>[   20.093999] .(7)[304:charger_thread][__mtk_pdc_get_setting]vbus:12000:5000:5000 current:3000 idx:0 default_idx:2
-<5>[   20.094202] .(7)[304:charger_thread]PAX_CHG: [mtk_chg_enable_vbus_ovp] en:1 ovp:6500000
+<5>[   20.094202] .(7)[304:charger_thread]xxx_CHG: [mtk_chg_enable_vbus_ovp] en:1 ovp:6500000
 <5>[   20.094307] .(7)[304:charger_thread]pd_hal_set_mivr: 0 4600000
 <6>[   20.094321] .(7)[304:charger_thread]mt6370_pmu_charger mt6370_pmu_charger: __mt6370_set_mivr: mivr = 4600000 (0x07)
 <5>[   20.094487] .(7)[304:charger_thread]pd_hal_set_adapter_cap 5000 3000
@@ -2458,7 +2458,7 @@ M8.dts:
 设置档位12v/1.5a:
 <5>[   25.195526] .(2)[304:charger_thread][__mtk_pdc_get_setting]watt:12400000,13000000,7900000 up:1,0 vbus:4569000 ibus:2600, mivr:0,0 pd_stop_battery_soc:[100]
 <5>[   25.195533] .(2)[304:charger_thread][__mtk_pdc_get_setting]vbus:12000:5000:12000 current:1500 idx:2 default_idx:0
-<5>[   25.195737] .(2)[304:charger_thread]PAX_CHG: [mtk_chg_enable_vbus_ovp] en:0 ovp:15000000
+<5>[   25.195737] .(2)[304:charger_thread]xxx_CHG: [mtk_chg_enable_vbus_ovp] en:0 ovp:15000000
 <5>[   25.195914] .(2)[304:charger_thread]pd_hal_set_mivr: 0 4600000
 <6>[   25.195932] .(2)[304:charger_thread]mt6370_pmu_charger mt6370_pmu_charger: __mt6370_set_mivr: mivr = 4600000 (0x07)
 <5>[   25.196337] .(2)[304:charger_thread]pd_hal_set_adapter_cap 12000 1500

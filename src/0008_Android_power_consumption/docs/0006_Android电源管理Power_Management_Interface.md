@@ -93,8 +93,6 @@ power是一个struct dev_pm_info类型的变量，也在“include/linux/pm.h”
 
 power变量主要保存PM相关的状态，如当前的power_state、是否可以被唤醒、是否已经prepare完成、是否已经suspend完成等等。由于涉及的内容非常多，我们在具体使用的时候，顺便说明。
 
- 
-
 ## pm_domain指针
 
 在当前的内核中，struct dev_pm_domain结构只包含了一个struct dev_pm_ops ops。猜测这是从可扩展性方面考虑的，后续随着内核的进化，可能会在该结构中添加其他内容。

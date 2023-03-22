@@ -39,9 +39,9 @@ scuba-qupv3.dtsi:
 
 * 一是对照gpio，二是对照core_offset，三是明确i2c_device_config_0X, 如果对应，则打开相应的宏，修改如下：
 ```C++
-//[FEATURE]-BEGIN by (wugangnan@paxsz.com), 2022/09/08 for Detect battery presence during ABL phase
+//[FEATURE]-BEGIN by (xxx@xxxxx.com), 2022/09/08 for Detect battery presence during ABL phase
 #define ENABLE_QUP_00 //battery
-//[FEATURE]-END by (wugangnan@paxsz.com), 2022/09/08 for Detect battery presence during ABL phase
+//[FEATURE]-END by (xxx@xxxxx.com), 2022/09/08 for Detect battery presence during ABL phase
 ```
 
 * 二需要打开`i2c_devcfg.xml`文件中的`i2c_device_config_01`配置：
@@ -93,7 +93,7 @@ index a1d84c16cf0..1d4cfff546f 100755
 +++ b/UM.9.15/bootable/bootloader/edk2/QcomModulePkg/Application/LinuxLoader/LinuxLoader.inf
 @@ -63,6 +63,7 @@
         UbsanLib
-        paxLib
+        xxxxxLib
         UartCoreLib
 +       I2cLib
 ```
@@ -115,8 +115,8 @@ wugn@jcrj-tf-compile:I2cLib$ tree
 ├── i2c.c
 ├── i2c.h
 ├── I2cLib.inf
-├── pax_battery.c
-├── pax_battery.h
+├── xxxxx_battery.c
+├── xxxxx_battery.h
 └── QcomLib.h
 ```
 
@@ -126,7 +126,7 @@ wugn@jcrj-tf-compile:I2cLib$ tree
 *
 *    DESCRIPTION:Copyright(c) 2007-2010 Xiamen Yealink Network Technology Co,.Ltd
 *
-*    AUTHOR:wugangnan
+*    AUTHOR:xxx
 *
 *    HISTORY:
 *

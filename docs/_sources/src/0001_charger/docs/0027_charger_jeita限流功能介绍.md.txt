@@ -18,7 +18,7 @@ JEITA（Japan Electronics and Information Technology Industries Association）
 * 而在稍高低温环境-Cool/Warm区间中，需要适当降低充电电流，以保证充电安全和降低电池损耗。
 * 而一旦到达Cold/Hot的区间，此时说明电池环境已经非常极端，所以需要断开充电。
 
-# A6650项目电池规格
+# A665x项目电池规格
 
 * 最大充电电流：
   * 0 ~ 10℃ 0.2C FC=4.4V 1080ma
@@ -50,7 +50,7 @@ JEITA（Japan Electronics and Information Technology Industries Association）
 
 ```C++
 /* sw jeita */
-void do_sw_jeita_state_machine(struct pax_charger *info)
+void do_sw_jeita_state_machine(struct xxx_charger *info)
 {
 	struct sw_jeita_data *sw_jeita;
 
@@ -158,7 +158,7 @@ void do_sw_jeita_state_machine(struct pax_charger *info)
 		sw_jeita->cv);
 }
 
-static void charger_check_jeita_status(struct pax_charger *info)
+static void charger_check_jeita_status(struct xxx_charger *info)
 {
 	bool charging = true;
 	int temperature;
@@ -247,30 +247,30 @@ stop_charging:
 
 * 50读不允许充电：
 ```
-[ 2245.907524] PAX_CHG: _wake_up_charger:
-[ 2245.911798] PAX_CHG: pax_is_charger_on chr_type = [DCP] last_chr_type = [DCP]
-[ 2245.920155] PAX_CHG: [SW_JEITA] Battery Over high Temperature(50) !!
-[ 2245.926636] PAX_CHG: [SW_JEITA]preState:5 newState:5 tmp:50 cv:4375
-[ 2245.933121] PAX_CHG: tmp:50 (jeita:1 sm:5 cv:4375 en:0) (sm:1) en:0 c:0 s:0 ov:0 0 0
+[ 2245.907524] xxx_CHG: _wake_up_charger:
+[ 2245.911798] xxx_CHG: xxx_is_charger_on chr_type = [DCP] last_chr_type = [DCP]
+[ 2245.920155] xxx_CHG: [SW_JEITA] Battery Over high Temperature(50) !!
+[ 2245.926636] xxx_CHG: [SW_JEITA]preState:5 newState:5 tmp:50 cv:4375
+[ 2245.933121] xxx_CHG: tmp:50 (jeita:1 sm:5 cv:4375 en:0) (sm:1) en:0 c:0 s:0 ov:0 0 0
 ```
 
 * 降低到46度后，允许充电：
 ```
-[ 2115.538575] PAX_CHG: _wake_up_charger:
-[ 2115.542823] PAX_CHG: pax_is_charger_on chr_type = [DCP] last_chr_type = [DCP]
-[ 2115.550148] PAX_CHG: [SW_JEITA] Battery Temperature between 47 and 50,not allow charging yet!!
-[ 2115.558922] PAX_CHG: [SW_JEITA]preState:5 newState:5 tmp:47 cv:4375
-[ 2115.565323] PAX_CHG: tmp:47 (jeita:1 sm:5 cv:4375 en:0) (sm:1) en:0 c:0 s:0 ov:0 0 0
-[ 2120.329237] PAX_CHG: charger_log_level_store: log_level=46 battery_temp = 46
-console:/sys/devices/platform/soc/soc:charger # [ 2120.552165] PAX_CHG: _wake_up_charger:
-[ 2120.556452] PAX_CHG: pax_is_charger_on chr_type = [DCP] last_chr_type = [DCP]
-[ 2120.563736] PAX_CHG: [SW_JEITA] Battery Temperature between 45 and 50 !!
-[ 2120.570571] PAX_CHG: [SW_JEITA]preState:5 newState:4 tmp:46 cv:4375
-[ 2120.576955] PAX_CHG: tmp:46 (jeita:1 sm:4 cv:4375 en:1) (sm:1) en:1 c:0 s:0 ov:0 0 1
-[ 2120.587263] PAX_CHG: support_fast_charging = 0
-[ 2120.592164] PAX_CHG: is_typec_adapter rp = 500 pd_type = 0
-[ 2120.597712] PAX_CHG: is_basic TEMP_T3_TO_T4!
-[ 2120.602082] PAX_CHG: chg:-1,-1,1000,1000 type:5:0 usb_unlimited:0 usbif:0 usbsm:0 aicl:-1 atm:0 bm:0 b:1
-[ 2120.611805] PAX_CHG: do_algorithm input_current_limit:1000 charging_current_limit:1000
+[ 2115.538575] xxx_CHG: _wake_up_charger:
+[ 2115.542823] xxx_CHG: xxx_is_charger_on chr_type = [DCP] last_chr_type = [DCP]
+[ 2115.550148] xxx_CHG: [SW_JEITA] Battery Temperature between 47 and 50,not allow charging yet!!
+[ 2115.558922] xxx_CHG: [SW_JEITA]preState:5 newState:5 tmp:47 cv:4375
+[ 2115.565323] xxx_CHG: tmp:47 (jeita:1 sm:5 cv:4375 en:0) (sm:1) en:0 c:0 s:0 ov:0 0 0
+[ 2120.329237] xxx_CHG: charger_log_level_store: log_level=46 battery_temp = 46
+console:/sys/devices/platform/soc/soc:charger # [ 2120.552165] xxx_CHG: _wake_up_charger:
+[ 2120.556452] xxx_CHG: xxx_is_charger_on chr_type = [DCP] last_chr_type = [DCP]
+[ 2120.563736] xxx_CHG: [SW_JEITA] Battery Temperature between 45 and 50 !!
+[ 2120.570571] xxx_CHG: [SW_JEITA]preState:5 newState:4 tmp:46 cv:4375
+[ 2120.576955] xxx_CHG: tmp:46 (jeita:1 sm:4 cv:4375 en:1) (sm:1) en:1 c:0 s:0 ov:0 0 1
+[ 2120.587263] xxx_CHG: support_fast_charging = 0
+[ 2120.592164] xxx_CHG: is_typec_adapter rp = 500 pd_type = 0
+[ 2120.597712] xxx_CHG: is_basic TEMP_T3_TO_T4!
+[ 2120.602082] xxx_CHG: chg:-1,-1,1000,1000 type:5:0 usb_unlimited:0 usbif:0 usbsm:0 aicl:-1 atm:0 bm:0 b:1
+[ 2120.611805] xxx_CHG: do_algorithm input_current_limit:1000 charging_current_limit:1000
 [ 2120.624729] chg_dump: CHG [online: 1, type: DCP, status: Charging, fault: 0x0, ICHG = 960mA, AICR = 1000mA, MIVR = 4360mV, IEOC = 240mA, CV = 4350mV]
 ```

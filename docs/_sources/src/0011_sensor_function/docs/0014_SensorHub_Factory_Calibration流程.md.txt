@@ -79,7 +79,7 @@ SensorHub工厂模式下校准流程分析。
 
 * 校准数据读取节点：
 ```log
-130|PAYPHONEM50:/ # cat /mnt/vendor/nvcfg/sensor/gyro_temp.json
+130|PAYPHONEM5x:/ # cat /mnt/vendor/nvcfg/sensor/gyro_temp.json
 {
   "gyro_temp": [
       0,
@@ -434,7 +434,7 @@ static int qmi8658gy_factory_set_cali(int32_t data[3])
 	qmi8658gy_t *obj = qmi8658gy;
 	int err = 0;
 	int cali[QMI8658_AXIS_NUM] = { 0 };
-	//[BUGFIX]-Modify-BEGIN by (huling@paxsz.com), 2022/1/20, number:0039353
+	//[BUGFIX]-Modify-BEGIN by (huling@xxxxx.com), 2022/1/20, number:0039353
 	int32_t DEFAULT_CALI_DATA[3] = {3616, -5120, 488}; /*get 40 groups sensor data, take the average*/
 
 	err = qmi8658gy_config_gyr(qmi8658gy->range, qmi8658gy->odr, Qmi8658Lpf_Disable, Qmi8658St_Disable);
@@ -449,7 +449,7 @@ static int qmi8658gy_factory_set_cali(int32_t data[3])
 		data[2] = DEFAULT_CALI_DATA[2];
 	}
 	//QMI8658GY_LOG("data[] = [%d,%d,%d]",data[0], data[1], data[2]);
-	//[BUGFIX]-Modify-END by (huling@paxsz.com), 2022/1/20, number:0039353
+	//[BUGFIX]-Modify-END by (huling@xxxxx.com), 2022/1/20, number:0039353
 	cali[QMI8658_AXIS_X] = data[0]*obj->resolution/DEFREE_SCALE;
 	cali[QMI8658_AXIS_Y] = data[1]*obj->resolution/DEFREE_SCALE;
 	cali[QMI8658_AXIS_Z] = data[2]*obj->resolution/DEFREE_SCALE;
@@ -529,7 +529,7 @@ static void Qmi8658SensorCoreRegistration(void)
 -       mQmi8658.accSwCali[AXIS_X] = cali[AXIS_X];
 -       mQmi8658.accSwCali[AXIS_Y] = cali[AXIS_Y];
 -       mQmi8658.accSwCali[AXIS_Z] = cali[AXIS_Z];
-+       //[BUGFIX]-Modify-BEGIN by (huling@paxsz.com), 2022/3/22, number:0039353,0040255
++       //[BUGFIX]-Modify-BEGIN by (huling@xxxxx.com), 2022/3/22, number:0039353,0040255
 +       int32_t DEFAULT_ACC_CALI_DATA[3] = {-70, -9, 525}; /*get 20 groups sensor data, take the average*/
 +
 +       if((cali[AXIS_X] == 0) && (cali[AXIS_Y] == 0) && (cali[AXIS_Z] == 0)) {
@@ -541,7 +541,7 @@ static void Qmi8658SensorCoreRegistration(void)
 +               mQmi8658.accSwCali[AXIS_Y] = cali[AXIS_Y];
 +               mQmi8658.accSwCali[AXIS_Z] = cali[AXIS_Z];
 +       }
-+       //[BUGFIX]-Modify-END by (huling@paxsz.com), 2022/3/22, number:0039353,0040255
++       //[BUGFIX]-Modify-END by (huling@xxxxx.com), 2022/3/22, number:0039353,0040255
         QMI8658_LOG( "accSetCalibration cali x:%d, y:%d, z:%d\n", cali[AXIS_X], cali[AXIS_Y], cali[AXIS_Z]);
  }
 
@@ -552,7 +552,7 @@ static void Qmi8658SensorCoreRegistration(void)
 -       mQmi8658.gyroSwCali[AXIS_X] = cali[AXIS_X];
 -       mQmi8658.gyroSwCali[AXIS_Y] = cali[AXIS_Y];
 -       mQmi8658.gyroSwCali[AXIS_Z] = cali[AXIS_Z];
-+       //[BUGFIX]-Modify-BEGIN by (huling@paxsz.com), 2022/3/22, number:0039353,0040255
++       //[BUGFIX]-Modify-BEGIN by (huling@xxxxx.com), 2022/3/22, number:0039353,0040255
 +       int32_t DEFAULT_GYRO_CALI_DATA[3] = {-141, 24, -8};/*get 20 groups sensor data, take the average*/
 +
 +       if((cali[AXIS_X] == 0) && (cali[AXIS_Y] == 0) && (cali[AXIS_Z] == 0)) {
@@ -564,7 +564,7 @@ static void Qmi8658SensorCoreRegistration(void)
 +               mQmi8658.gyroSwCali[AXIS_Y] = cali[AXIS_Y];
 +               mQmi8658.gyroSwCali[AXIS_Z] = cali[AXIS_Z];
 +       }
-+       //[BUGFIX]-Modify-END by (huling@paxsz.com), 2022/3/22, number:0039353,0040255
++       //[BUGFIX]-Modify-END by (huling@xxxxx.com), 2022/3/22, number:0039353,0040255
         QMI8658_LOG( "gyroSetCalibration cali x:%d, y:%d, z:%d\n", cali[AXIS_X], cali[AXIS_Y], cali[AXIS_Z]);
  }
 
@@ -597,9 +597,9 @@ static void Qmi8658SensorCoreRegistration(void)
 
     [Module]:sensor
 
-    [Model]:M50
+    [Model]:M5x
 
-    [author]:huling@paxsz.com
+    [author]:huling@xxxxx.com
 
     [date]:2022-4-12
 
@@ -835,7 +835,7 @@ fore sc7a20ResetWrite
      cali_sw[AXIS_Y] = mCoreInfo->cvt.sign[AXIS_Y] * cali[mCoreInfo->cvt.map[AXIS_Y]];
      cali_sw[AXIS_Z] = mCoreInfo->cvt.sign[AXIS_Z] * cali[mCoreInfo->cvt.map[AXIS_Z]];
 
-+       // [NEW FEATURE]-BEGIN by wugangnan@paxsz.com 2023-01-06, add g-sensor calibration data fault-tolerant processing mechanism
++       // [NEW FEATURE]-BEGIN by xxx@xxxxx.com 2023-01-06, add g-sensor calibration data fault-tolerant processing mechanism
 +       if (abs(cali_sw[AXIS_X]) > AXIS_TOLERANCE) {
 +           osLog(LOG_INFO, "AXIS_X = %ld ,calibration data over tolerance range \n",cali_sw[AXIS_X]);
 +               cali_sw[AXIS_X] = 0;
@@ -848,7 +848,7 @@ fore sc7a20ResetWrite
 +           osLog(LOG_INFO, "AXIS_Z = %ld ,calibration data over tolerance range \n",cali_sw[AXIS_Z]);
 +               cali_sw[AXIS_Z] = 0;
 +       }
-+       // [NEW FEATURE]-END by wugangnan@paxsz.com 2023-01-06, add g-sensor calibration data fault-tolerant processing mechanism
++       // [NEW FEATURE]-END by xxx@xxxxx.com 2023-01-06, add g-sensor calibration data fault-tolerant processing mechanism
 +
      osLog(LOG_INFO, "write calibration (%ld, %ld, %ld)\n",
            cali_sw[AXIS_X], cali_sw[AXIS_Y], cali_sw[AXIS_Z]);

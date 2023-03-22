@@ -1,5 +1,5 @@
-#ifndef _PAX_BATTERY_H_
-#define _PAX_BATTERY_H_
+#ifndef _xxx_BATTERY_H_
+#define _xxx_BATTERY_H_
 
 //BQ27Z746_reg_DeviceType
 #define BQ27Z746_DeviceType  0x1746

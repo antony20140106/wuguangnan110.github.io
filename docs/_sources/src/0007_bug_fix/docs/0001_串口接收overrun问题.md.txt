@@ -1,5 +1,5 @@
 # 概述
-pax串口程序overrun问题解析
+xxxxx串口程序overrun问题解析
 
 ## 1.错误描述
 
@@ -39,11 +39,11 @@ index 85e3415a3f8..30da13cca9f
 
 -       if (up->dma && !up->dma->tx_dma(up))
 -               return;
-+       //[FEATURE]-MOD-BEGIN by zengjianfeng@paxsz.com 2021-1-8, tx don't use dma for port 1
++       //[FEATURE]-MOD-BEGIN by zengjianfeng@xxxxx.com 2021-1-8, tx don't use dma for port 1
 +       if (port->line != 1)
 +               if (up->dma && !up->dma->tx_dma(up))
 +                       return;
-+       //[FEATURE]-MOD-END by zengjianfeng@paxsz.com 2021-1-8, tx don't use dma for port 1
++       //[FEATURE]-MOD-END by zengjianfeng@xxxxx.com 2021-1-8, tx don't use dma for port 1
 
         if (!(up->ier & UART_IER_THRI)) {
                 up->ier |= UART_IER_THRI;
@@ -54,7 +54,7 @@ index 85e3415a3f8..30da13cca9f
 -       if ((!up->dma || up->dma->tx_err) && (status & UART_LSR_THRE) &&
 -               (up->ier & UART_IER_THRI))
 -               serial8250_tx_chars(up);
-+       //[FEATURE]-MOD-BEGIN by zengjianfeng@paxsz.com 2021-1-8, tx don't use dma for port 1
++       //[FEATURE]-MOD-BEGIN by zengjianfeng@xxxxx.com 2021-1-8, tx don't use dma for port 1
 +       if (port->line != 1) {
 +               if ((!up->dma || up->dma->tx_err) && (status & UART_LSR_THRE) &&
 +                       (up->ier & UART_IER_THRI))
@@ -64,7 +64,7 @@ index 85e3415a3f8..30da13cca9f
 +                       (up->ier & UART_IER_THRI))
 +                       serial8250_tx_chars(up);
 +       }
-+       //[FEATURE]-MOD-BEGIN by zengjianfeng@paxsz.com 2021-1-8, tx don't use dma for port 1
++       //[FEATURE]-MOD-BEGIN by zengjianfeng@xxxxx.com 2021-1-8, tx don't use dma for port 1
 +
 
         spin_unlock_irqrestore(&port->lock, flags);

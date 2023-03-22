@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="zh-CN" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>wugn</title>
+
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script src="../../../_static/translations.js"></script>
+        <script src="../../../_static/js/baidutongji.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="索引" href="../../../genindex.html" />
+    <link rel="search" title="搜索" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../index.html" class="icon icon-home"> wugn_note
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="在文档中搜索" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">开机插入U盘不识别问题分析</a></li>
+<li><a class="reference internal" href="#log">log分析</a></li>
+<li><a class="reference internal" href="#vbus">vbus状态查看</a></li>
+<li><a class="reference internal" href="#otg">为什么没有调用到OTG接口</a></li>
+<li><a class="reference internal" href="#attached-norp-src">继续分析为什么识别成ATTACHED_NORP_SRC</a></li>
+<li><a class="reference internal" href="#typec">解决方案1 延迟typec检测时间</a></li>
+<li><a class="reference internal" href="#id1">解决方案2 otg函数去耦合</a></li>
+</ul>
+</div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">wugn_note</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs"> 
+<li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+<li>开机插入U盘不识别问题分析</li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.forward()">Forward</a></li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.back()">Go Back</a> | </li>
+<li style="float: right;margin-left: 10px;"><a href="/index.html">Home</a> | </li>
+
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="u">
+<h1>开机插入U盘不识别问题分析<a class="headerlink" href="#u" title="此标题的永久链接"></a></h1>
+<p>目前发现开机插入U盘不识别问题分析，MTK平台没问题。</p>
+</section>
+<section id="log">
+<h1>log分析<a class="headerlink" href="#log" title="此标题的永久链接"></a></h1>
+<ul class="simple">
+<li><p>正常MTKlog如下：</p></li>
+</ul>
+<div class="highlight-log notranslate"><div class="highlight"><pre><span></span>&lt;6&gt;[    1.740146]  (5)[106:pd_dbg_info]///PD dbg info 77d
+&lt;5&gt;[    1.740163]  (5)[106:pd_dbg_info]&lt;    1.740&gt;TCPC-TYPEC:[CC_Change] 0/0
+&lt;5&gt;[    1.740163] &lt;    1.740&gt;TCPC-TYPEC:** TryWait.SRC
+
+&lt;6&gt;[    1.766925]  (5)[106:pd_dbg_info]///PD dbg info 313d
+&lt;5&gt;[    1.766944]  (5)[106:pd_dbg_info]&lt;    1.740&gt;TCPC-TYPEC:[CC_Alert] 0/2
+&lt;5&gt;[    1.766944] &lt;    1.751&gt;TCPC-TYPEC:[CC_Change] 0/2
+&lt;5&gt;[    1.766944] &lt;    1.751&gt;TCPC-TYPEC:** Attached.SRC
+&lt;5&gt;[    1.766944] &lt;    1.751&gt;TCPC-TYPEC:wait_ps=SRC_VSafe5V
+&lt;5&gt;[    1.766950] &lt;    1.755&gt;TCPC-TCPC:ps_change=2
+&lt;5&gt;[    1.766950] &lt;    1.755&gt;TCPC-TYPEC:wait_ps=Disable
+&lt;5&gt;[    1.766950] &lt;    1.755&gt;TCPC-TYPEC:Attached-&gt; SOURCE
+&lt;5&gt;[    1.766967] &lt;    1.755&gt;TCPC-TCPC:usb_port_attached
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>A665x，看上去是没检测到5v输出，一直在等，按照上面mtk log来看，接下来会打印<code class="docutils literal notranslate"><span class="pre">ps_change=2</span></code>表示检测到5v输出。</p></li>
+</ul>
+<div class="highlight-log notranslate"><div class="highlight"><pre><span></span>[    7.250563] __tcpc_class_complete_work = type_c_port0
+[    7.261486] ///PD dbg info 41d
+[    7.264654] &lt;    7.261&gt;TCPC-TYPEC:typec_init: TrySRC
+[    7.271269] pd_tcp_notifier_call event = SINK_VBUS
+[    7.276091] charger soc:charger: pd_tcp_notifier_call sink vbus 0mV 0mA type(0x00)
+[    7.280149] tcpc_device_irq_enable : tcpc irq enable OK!
+[    7.283689] pd_tcp_notifier_call event = SOURCE_VBUS
+[    7.289759] xxx_BMS:start.
+[    7.293971] pd_tcp_notifier_call source vbus 0mV
+[    7.293974] pd_tcp_notifier_call - source vbus 0v output
+[    7.293977] xxx_CHG: vbus_off
+[    7.293981] xxx_CHG: issue work, ops&lt;0&gt;, delay&lt;0&gt;
+[    7.294008] ///PD dbg info 40d
+[    7.294013] pd_tcp_notifier_call event = EXT_DISCHARGE
+[    7.294019] charger soc:charger: pd_tcp_notifier_call ext discharge = 1
+[    7.294024] charger soc:charger: pd_tcp_notifier_call - EXT_DISCHARGE, true
+[    7.296936] bms_notify_register_client
+[    7.301393] &lt;    7.270&gt;TCPC-TYPEC:** Unattached.SNK
+[    7.345307] xxx_BMS: CHG [online: 0, type: 0, vol: 0, cur: 1000, time: 0], BAT [present: 1, status: 0, vol: 4100000, cur: 0, resistance: 0, temp: 250, soc: 50], OTHER [skin_temp: 0, chg_vote: 0x0, notify_code: 0x0],
+[    7.345468] xxx_BMS:success.
+[    7.345884] ///PD dbg info 49d
+[    7.345889] &lt;    7.345&gt;TCPC-TCPC:Alert:0x0001, Mask:0x21067f
+[    7.348107] husb311_set_low_power_mode - write HUSB311_REG_BMC_CTRL=0x7
+[    7.348497] pd_tcp_notifier_call event = EXT_DISCHARGE
+[    7.348504] charger soc:charger: pd_tcp_notifier_call ext discharge = 0
+[    7.348509] charger soc:charger: pd_tcp_notifier_call - EXT_DISCHARGE, false
+[    7.368051] ///PD dbg info 124d
+[    7.371249] ALSA device list:
+[    7.376282] &lt;    7.346&gt;TCPC-TCPC:tcpci_alert_cc_changed ++
+[    7.376282] &lt;    7.346&gt;TCPC-TYPEC:[CC_Alert] 0/2
+[    7.376282] &lt;    7.348&gt;TCPC-TYPEC:** AttachWait.SRC
+[    7.382852]   No soundcards found.
+[    7.428879] Freeing unused kernel memory: 5056K
+[    7.433490] Run /init as init process
+[    7.453055] init: init first stage started!
+[    7.457458] init: Unable to open /lib/modules, skipping module loading.
+[    7.464907] init: [libfs_mgr]dt_fstab: Skip disabled entry for partition vendor
+[    7.468535] ///PD dbg info 118d
+[    7.469503] pd_tcp_notifier_call event = SOURCE_VBUS
+[    7.469507] pd_tcp_notifier_call source vbus 5000mV
+[    7.469510] pd_tcp_notifier_call - source vbus 5v output
+[    7.469513] xxx_CHG: vbus_on
+[    7.469517] xxx_CHG: issue work, ops&lt;1&gt;, delay&lt;0&gt;
+[    7.472295] init: [libfs_mgr]ReadFstabFromDt(): failed to read fstab from dt
+[    7.475410] &lt;    7.468&gt;TCPC-TYPEC:[CC_Change] 0/2
+[    7.475410] &lt;    7.468&gt;TCPC-TYPEC:** Attached.SRC
+[    7.475410] &lt;    7.468&gt;TCPC-TYPEC:wait_ps=SRC_VSafe5V
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>正常不接U盘：</p></li>
+</ul>
+<div class="highlight-log notranslate"><div class="highlight"><pre><span></span>01-09 06:39:11.888 I/&lt;    0.959&gt;TCPC-TYPEC(    0): typec_init: TrySRC
+01-09 06:39:11.890 I/tcpc_device_irq_enable(    0): tcpc irq enable OK!
+01-09 06:39:11.890 E/        (    0): pd_tcp_notifier_call event = SINK_VBUS
+01-09 06:39:11.890 E/charger soc(    0): charger: pd_tcp_notifier_call sink vbus 0mV 0mA type(0x00)
+01-09 06:39:11.890 E/        (    0): pd_tcp_notifier_call event = SOURCE_VBUS
+01-09 06:39:11.890 E/        (    0): pd_tcp_notifier_call source vbus 0mV
+01-09 06:39:11.890 E/        (    0): pd_tcp_notifier_call - source vbus 0v output
+01-09 06:39:11.890 E/xxx_CHG (    0): vbus_off
+01-09 06:39:11.890 E/xxx_CHG (    0): issue work, ops&lt;0&gt;, delay&lt;0&gt;
+01-09 06:39:11.890 E/        (    0): pd_tcp_notifier_call event = EXT_DISCHARGE
+01-09 06:39:11.890 I/charger soc(    0): charger: pd_tcp_notifier_call ext discharge = 1
+01-09 06:39:11.890 I/charger soc(    0): charger: pd_tcp_notifier_call - EXT_DISCHARGE, true
+01-09 06:39:11.890 I/xxx_BMS (    0): start.
+01-09 06:39:11.890 E/        (    0): bms_notify_register_client
+01-09 06:39:11.890 E/xxx_BMS (    0): CHG [online: 0, type: 0, vol: 0, cur: 1000, time: 0], BAT [present: 1, status: 0, vol: 4100000, cur: 0, resistance: 0, temp: 250, soc: 50], OTHER [skin_temp: 0, chg_vote: 0x0, notify_code: 0x0],
+01-09 06:39:11.890 I/xxx_BMS (    0): success.
+01-09 06:39:11.891 I/        (    0): ALSA device list:
+01-09 06:39:11.891 I/        (    0): No soundcards found.
+01-09 06:39:11.891 E/        (    0): Warning: unable to open an initial console.
+01-09 06:39:11.891 I/        (    0): Freeing unused kernel memory: 3200K
+01-09 06:39:11.892 I/        (    0): Run /init as init process
+01-09 06:39:11.894 I/init    (    0): init first stage started!
+01-09 06:39:11.895 I/init    (    0): Unable to open /lib/modules, skipping module loading.
+01-09 06:39:11.895 I/init    (    0): [libfs_mgr]dt_fstab: Skip disabled entry for partition vendor
+01-09 06:39:11.895 I/init    (    0): [libfs_mgr]ReadFstabFromDt(): failed to read fstab from dt
+01-09 06:39:11.895 I/init    (    0): [libfs_mgr]dt_fstab: Skip disabled entry for partition vendor
+01-09 06:39:11.896 I/init    (    0): Using Android DT directory /proc/device-tree/firmware/android/
+01-09 06:39:11.909 I/        (    0): ///PD dbg info 40d
+01-09 06:39:11.909 I/&lt;    0.959&gt;TCPC-TYPEC(    0): ** Unattached.SNK
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>杰放U盘：</p></li>
+</ul>
+<div class="highlight-log notranslate"><div class="highlight"><pre><span></span>1-09 06:30:32.887 I/&lt;    0.958&gt;TCPC-TYPEC(    0): typec_init: TrySRC
+01-09 06:30:32.891 I/tcpc_device_irq_enable(    0): tcpc irq enable OK!
+01-09 06:30:32.891 I/xxx_BMS (    0): start.
+01-09 06:30:32.891 E/        (    0): bms_notify_register_client
+01-09 06:30:32.891 E/xxx_BMS (    0): CHG [online: 0, type: 0, vol: 0, cur: 1000, time: 0], BAT [present: 1, status: 0, vol: 4100000, cur: 0, resistance: 0, temp: 250, soc: 50], OTHER [skin_temp: 0, chg_vote: 0x0, notify_code: 0x0],
+01-09 06:30:32.891 I/xxx_BMS (    0): success.
+01-09 06:30:32.892 I/        (    0): ALSA device list:
+01-09 06:30:32.892 I/        (    0): No soundcards found.
+01-09 06:30:32.892 E/        (    0): Warning: unable to open an initial console.
+01-09 06:30:32.893 I/        (    0): Freeing unused kernel memory: 3200K
+01-09 06:30:32.893 I/        (    0): Run /init as init process
+01-09 06:30:32.896 I/init    (    0): init first stage started!
+01-09 06:30:32.896 I/init    (    0): Unable to open /lib/modules, skipping module loading.
+01-09 06:30:32.896 I/init    (    0): [libfs_mgr]dt_fstab: Skip disabled entry for partition vendor
+01-09 06:30:32.896 I/init    (    0): [libfs_mgr]ReadFstabFromDt(): failed to read fstab from dt
+01-09 06:30:32.896 I/init    (    0): [libfs_mgr]dt_fstab: Skip disabled entry for partition vendor
+01-09 06:30:32.898 I/init    (    0): Using Android DT directory /proc/device-tree/firmware/android/
+01-09 06:30:32.901 E/        (    0): pd_tcp_notifier_call event = SINK_VBUS
+01-09 06:30:32.901 E/charger soc(    0): charger: pd_tcp_notifier_call sink vbus 5000mV 500mA type(0x01)
+01-09 06:30:32.901 E/        (    0): pd_tcp_notifier_call - sink vbus
+01-09 06:30:32.901 E/        (    0): pd_tcp_notifier_call event = TYPEC_STATE
+01-09 06:30:32.901 E/        (    0): tcpc_notifier_call, old_state = UNATTACHED, new_state = ATTACHED_NORP_SRC
+01-09 06:30:32.901 E/        (    0): pd_tcp_notifier_call Charger plug in, polarity = 0
+01-09 06:30:32.901 E/xxx_CHG (    0): handle_typec_attach_dettach: ++ en:1
+01-09 06:30:32.909 I/        (    0): ///PD dbg info 192d
+01-09 06:30:32.909 I/&lt;    0.959&gt;TCPC-TYPEC(    0): PowerOffCharge
+01-09 06:30:32.909 I/&lt;    0.959&gt;TCPC-TYPEC(    0): ** Unattached.SNK
+01-09 06:30:32.909 I/&lt;    0.972&gt;TCPC-TYPEC(    0): ** NoRp.SRC
+01-09 06:30:32.909 I/        (    0): &lt;    0.972&gt;TCPC-TYPEC    (    0): Attached-&gt; NORP_SRC
+01-09 06:30:32.909 I/&lt;    0.972&gt;TCPC-TCPC(    0): usb_port_attached
+01-09 06:30:32.913 I/charger soc(    0): charger: usb_dwork_handler Device
+01-09 06:30:32.932 E/psy_charger_get_property psp(    0): 4
+01-09 06:30:32.932 E/psy_charger_get_property psp(    0): 3
+01-09 06:30:32.948 I/        (    0): ///PD dbg info 49d
+01-09 06:30:32.948 I/&lt;    1.019&gt;TCPC-TCPC(    0): Alert:0x0001, Mask:0x21067f
+01-09 06:30:32.950 E/        (    0): pd_tcp_notifier_call event = SINK_VBUS
+01-09 06:30:32.950 E/charger soc(    0): charger: pd_tcp_notifier_call sink vbus 0mV 0mA type(0x00)
+01-09 06:30:32.950 E/        (    0): pd_tcp_notifier_call event = SOURCE_VBUS
+01-09 06:30:32.950 E/        (    0): pd_tcp_notifier_call source vbus 0mV
+01-09 06:30:32.950 E/        (    0): pd_tcp_notifier_call - source vbus 0v output
+01-09 06:30:32.950 E/xxx_CHG (    0): vbus_off
+01-09 06:30:32.950 E/xxx_CHG (    0): issue work, ops&lt;0&gt;, delay&lt;0&gt;
+01-09 06:30:32.950 E/        (    0): pd_tcp_notifier_call event = EXT_DISCHARGE
+01-09 06:30:32.950 I/charger soc(    0): charger: pd_tcp_notifier_call ext discharge = 1
+01-09 06:30:32.950 I/charger soc(    0): charger: pd_tcp_notifier_call - EXT_DISCHARGE, true
+01-09 06:30:32.950 E/        (    0): pd_tcp_notifier_call event = TYPEC_STATE
+01-09 06:30:32.950 E/        (    0): tcpc_notifier_call, old_state = ATTACHED_NORP_SRC, new_state = UNATTACHED
+01-09 06:30:32.950 E/        (    0): pd_tcp_notifier_call Charger plug out
+01-09 06:30:32.950 E/xxx_CHG (    0): handle_typec_attach_dettach: ++ en:0
+01-09 06:30:32.950 E/xxx_CHG (    0): pd_status:0
+01-09 06:30:32.950 E/xxx_CHG (    0): Found primary charger
+01-09 06:30:32.950 E/xxx_CHG (    0): xxx_is_charger_on chr_type = [Unknown] last_chr_type = [Unknown]
+01-09 06:30:32.950 I/charger soc(    0): charger: usb_dwork_handler Idle
+</pre></div>
+</div>
+</section>
+<section id="vbus">
+<h1>vbus状态查看<a class="headerlink" href="#vbus" title="此标题的永久链接"></a></h1>
+<ul class="simple">
+<li><p>查看charger ic的vbus状态，如下：</p></li>
+</ul>
+<div class="highlight-log notranslate"><div class="highlight"><pre><span></span>Charger IC:
+Reg[0x00] = 0x0b
+Reg[0x01] = 0x13
+Reg[0x02] = 0xc6
+Reg[0x03] = 0xa7
+Reg[0x04] = 0xf6
+Reg[0x05] = 0x1e
+Reg[0x06] = 0xa4
+Reg[0x07] = 0x0b
+Reg[0x08] = 0x27
+Reg[0x09] = 0x52
+Reg[0x0a] = 0x23
+Reg[0x0b] = 0x10
+Reg[0x0c] = 0x11
+Reg[0x0d] = 0x60
+Reg[0x0e] = 0x99
+Reg[0x0f] = 0x00
+Reg[0x10] = 0x44
+Reg[0x11] = 0x00
+Reg[0x12] = 0x04
+Reg[0x13] = 0x00
+Reg[0x14] = 0x00
+Reg[0x15] = 0x00
+Reg[0x16] = 0x20
+</pre></div>
+</div>
+<p>根据<code class="docutils literal notranslate"><span class="pre">Reg[0x09]</span> <span class="pre">=</span> <span class="pre">0x52</span></code>得知OTG的电没有打开，那就是没有调用到接口咯？</p>
+</section>
+<section id="otg">
+<h1>为什么没有调用到OTG接口<a class="headerlink" href="#otg" title="此标题的永久链接"></a></h1>
+<p>我注意到xxx_charger_probe打印如下：</p>
+<div class="highlight-log notranslate"><div class="highlight"><pre><span></span>[    6.668493] xxx_CHG: xxx_charger_probe: starts
+[    6.672967] charger soc:charger: xxx_charger_probe (0.0.1) probe_cnt = 2
+[    6.679967] xxx_CHG: found Basic
+[    6.683467] bms_notify_register_client
+[    6.687238] charger soc:charger: xxx_charger_probe OK!!
+[   11.683410] xxx_CHG: Found primary charger
+[   11.687582] xxx_CHG: xxx_is_charger_on chr_type = [Unknown] last_chr_type = [Unknown]
+</pre></div>
+</div>
+<p>可以看到以上<code class="docutils literal notranslate"><span class="pre">Found</span> <span class="pre">primary</span> <span class="pre">charger</span></code>和<code class="docutils literal notranslate"><span class="pre">charger</span> <span class="pre">soc:charger:</span> <span class="pre">xxx_charger_probe</span> <span class="pre">OK!!</span></code>刚好间隔了5s，前者表示找到了mp2721这颗IC并且充电线程开始运行，后者表示probe函数跑完了。目前vbus打开的前提是xxx_charger驱动找到了mp2721这颗IC，而vbus打开发送在启动后7s左右，IC在11s后才找到，当然调用<code class="docutils literal notranslate"><span class="pre">otg_enable</span></code>接口是无效的。那能不能提前找到IC呢？当然可以，查看以下充电线程代码：</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">charger_routine_thread</span><span class="p">(</span><span class="kt">void</span><span class="w"> </span><span class="o">*</span><span class="n">arg</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="k">struct</span><span class="w"> </span><span class="nc">xxx_charger</span><span class="w"> </span><span class="o">*</span><span class="n">info</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">arg</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">long</span><span class="w"> </span><span class="n">flags</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="k">static</span><span class="w"> </span><span class="kt">bool</span><span class="w"> </span><span class="n">is_module_init_done</span><span class="p">;</span><span class="w"></span>
+<span class="w">	</span><span class="kt">bool</span><span class="w"> </span><span class="n">is_charger_on</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">	</span><span class="k">while</span><span class="w"> </span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">		</span><span class="n">wait_event</span><span class="p">(</span><span class="n">info</span><span class="o">-&gt;</span><span class="n">wait_que</span><span class="p">,</span><span class="w"></span>
+<span class="w">			</span><span class="p">(</span><span class="n">info</span><span class="o">-&gt;</span><span class="n">charger_thread_timeout</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="nb">true</span><span class="p">));</span><span class="w"></span>
+
+<span class="w">		</span><span class="k">while</span><span class="w"> </span><span class="p">(</span><span class="n">is_module_init_done</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="nb">false</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">			</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">charger_init_algo</span><span class="p">(</span><span class="n">info</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="nb">true</span><span class="p">)</span><span class="w"></span>
+<span class="w">				</span><span class="n">is_module_init_done</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">true</span><span class="p">;</span><span class="w"></span>
+<span class="w">			</span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">				</span><span class="n">chr_err</span><span class="p">(</span><span class="s">&quot;charger_init fail</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">				</span><span class="n">msleep</span><span class="p">(</span><span class="mi">5000</span><span class="p">);</span><span class="w"></span>
+<span class="w">			</span><span class="p">}</span><span class="w"></span>
+<span class="w">		</span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<p>我们发现<code class="docutils literal notranslate"><span class="pre">info-&gt;charger_thread_timeout</span></code>这个值初始化值为false，线程一直在等设置为true，然后是在定时器里面设置的，定时器时长为5s，那干脆初始值设置为true好了，修改如下:</p>
+<div class="highlight-diff notranslate"><div class="highlight"><pre><span></span><span class="gd">--- a/UM.9.15/kernel/msm-4.19/drivers/misc/xxx/power/xxxpd-charger-manager.c</span><span class="w"></span>
+<span class="gi">+++ b/UM.9.15/kernel/msm-4.19/drivers/misc/xxx/power/xxxpd-charger-manager.c</span><span class="w"></span>
+<span class="gu">@@ -2139,6 +2139,7 @@ static int xxx_charger_probe(struct platform_device *pdev)</span><span class="w"></span>
+<span class="w"> </span>       }<span class="w"></span>
+<span class="w"> </span>       info-&gt;enable_hv_charging = true;<span class="w"></span>
+
+<span class="gi">+       charger_init_algo(info);</span><span class="w"></span>
+<span class="w"> </span>       kthread_run(charger_routine_thread, info, &quot;charger_thread&quot;);<span class="w"></span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">Found</span> <span class="pre">primary</span> <span class="pre">charger</span></code>提前了，<code class="docutils literal notranslate"><span class="pre">sgm41528_set_otg_enable</span></code>函数有效，设置otg功能正常：</p>
+<div class="highlight-log notranslate"><div class="highlight"><pre><span></span>01-06 05:07:24.761 E/xxx_CHG (    0): sgm41528_info Reg[0x25] = 0x00
+
+01-06 05:07:27.154 E/xxx_CHG (    0): set charge_type: Unknown info-&gt;attach = 0
+01-06 05:07:27.160 E/xxx_CHG (    0): Found primary charger
+01-06 05:07:27.160 E/PM2250_charger(    0): smblite_typec_attach_detach_irq_handler: unattached sink_src_mode = 3
+
+01-06 05:07:27.414 E/PM2250_charger(    0): typec_sink_insertion: typec_sink_insertion
+01-06 05:07:27.424 E/        (    0): bms_notify_call_chain
+01-06 05:07:27.433 E/xxx_CHG (    0): bms_notify_event evt = SET_OTG_EN en:1
+01-06 05:07:27.439 E/xxx_CHG (    0): sgm41528_set_otg_enable en: 1
+01-06 05:07:27.439 E/PM2250_charger(    0): smblite_typec_attach_detach_irq_handler: attached sink_src_mode = 1
+</pre></div>
+</div>
+</section>
+<section id="attached-norp-src">
+<h1>继续分析为什么识别成ATTACHED_NORP_SRC<a class="headerlink" href="#attached-norp-src" title="此标题的永久链接"></a></h1>
+<p>修改后目前发现2台机器表现不一样，有一台不能识别，而识别成<code class="docutils literal notranslate"><span class="pre">ATTACHED_NORP_SRC</span></code>类型，打印如下：</p>
+<div class="highlight-log notranslate"><div class="highlight"><pre><span></span>01-01 10:51:04.040 I/        (    0): __tcpc_class_complete_work = type_c_port0
+01-01 10:51:04.045 I/        (    0): ///PD dbg info 41d
+01-01 10:51:04.045 I/&lt;    1.469&gt;TCPC-TYPEC(    0): typec_init: TrySRC
+01-01 10:51:04.048 I/tcpc_device_irq_enable(    0): tcpc irq enable OK!
+01-01 10:51:04.049 I/xxx_BMS (    0): start.
+01-01 10:51:04.049 E/        (    0): bms_notify_register_client
+01-01 10:51:04.049 I/xxx_BMS (    0): success.
+01-01 10:51:04.050 E/xxx_BMS (    0): CHG [online: 0, type: 0, vol: 0, cur: 2000000, time: 0], BAT [present: 1, status: 0, vol: 4100000, cur: 0, resistance: 0, temp: 250, soc: 50], OTHER [skin_temp: 0, chg_vote: 0x0, notify_code: 0x0],
+01-01 10:51:04.050 I/        (    0): ALSA device list:
+01-01 10:51:04.050 I/        (    0): No soundcards found.
+01-01 10:51:04.050 E/        (    0): Warning: unable to open an initial console.
+01-01 10:51:04.053 I/        (    0): Freeing unused kernel memory: 4992K
+01-01 10:51:04.053 I/        (    0): Run /init as init process
+01-01 10:51:04.058 E/        (    0): pd_tcp_notifier_call event = SINK_VBUS
+01-01 10:51:04.058 E/charger soc(    0): charger: pd_tcp_notifier_call sink vbus 5000mV 500mA type(0x01) //这里识别到电了
+01-01 10:51:04.058 E/        (    0): pd_tcp_notifier_call - sink vbus
+01-01 10:51:04.058 E/        (    0): pd_tcp_notifier_call event = TYPEC_STATE
+01-01 10:51:04.058 E/        (    0): tcpc_notifier_call, old_state = UNATTACHED, new_state = ATTACHED_NORP_SRC
+01-01 10:51:04.058 E/        (    0): pd_tcp_notifier_call Charger plug in, polarity = 0
+01-01 10:51:04.058 E/xxx_CHG (    0): handle_typec_attach_dettach: ++ en:1
+01-01 10:51:04.068 I/charger soc(    0): charger: usb_dwork_handler Device
+01-01 10:51:04.068 I/        (    0): ///PD dbg info 192d
+01-01 10:51:04.068 I/&lt;    1.469&gt;TCPC-TYPEC(    0): PowerOffCharge
+01-01 10:51:04.068 I/&lt;    1.469&gt;TCPC-TYPEC(    0): ** Unattached.SNK
+01-01 10:51:04.068 I/&lt;    1.482&gt;TCPC-TYPEC(    0): ** NoRp.SRC
+01-01 10:51:04.068 I/        (    0): &lt;    1.482&gt;TCPC-TYPEC    (    0): Attached-&gt; NORP_SRC
+01-01 10:51:04.068 I/&lt;    1.482&gt;TCPC-TCPC(    0): usb_port_attached
+01-01 10:51:04.069 I/init    (    0): init first stage started!
+01-01 10:51:04.070 I/init    (    0): Unable to open /lib/modules, skipping module loading.
+01-01 10:51:04.070 I/init    (    0): [libfs_mgr]dt_fstab: Skip disabled entry for partition vendor
+01-01 10:51:04.070 I/init    (    0): [libfs_mgr]ReadFstabFromDt(): failed to read fstab from dt
+01-01 10:51:04.071 I/init    (    0): [libfs_mgr]dt_fstab: Skip disabled entry for partition vendor
+01-01 10:51:04.072 I/init    (    0): Using Android DT directory /proc/device-tree/firmware/android/
+01-01 10:51:04.103 I/        (    0): ///PD dbg info 49d
+01-01 10:51:04.103 I/&lt;    1.527&gt;TCPC-TCPC(    0): Alert:0x0001, Mask:0x21067f
+01-01 10:51:04.105 E/        (    0): pd_tcp_notifier_call event = SINK_VBUS
+01-01 10:51:04.105 E/charger soc(    0): charger: pd_tcp_notifier_call sink vbus 0mV 0mA type(0x00)
+01-01 10:51:04.105 E/        (    0): pd_tcp_notifier_call event = SOURCE_VBUS
+01-01 10:51:04.105 E/        (    0): pd_tcp_notifier_call source vbus 0mV
+01-01 10:51:04.105 E/        (    0): pd_tcp_notifier_call - source vbus 0v output //重要看这里将vbus关闭没成功,因为Found primary charger在后面
+01-01 10:51:04.105 E/xxx_CHG (    0): vbus_off
+01-01 10:51:04.105 E/xxx_CHG (    0): issue work, ops&lt;0&gt;, delay&lt;0&gt;
+01-01 10:51:04.105 E/        (    0): pd_tcp_notifier_call event = EXT_DISCHARGE
+01-01 10:51:04.105 I/charger soc(    0): charger: pd_tcp_notifier_call ext discharge = 1
+01-01 10:51:04.105 I/charger soc(    0): charger: pd_tcp_notifier_call - EXT_DISCHARGE, true
+01-01 10:51:04.105 E/        (    0): pd_tcp_notifier_call event = TYPEC_STATE
+01-01 10:51:04.105 E/        (    0): tcpc_notifier_call, old_state = ATTACHED_NORP_SRC, new_state = UNATTACHED
+01-01 10:51:04.106 E/        (    0): pd_tcp_notifier_call Charger plug out
+01-01 10:51:04.106 E/xxx_CHG (    0): handle_typec_attach_dettach: ++ en:0
+01-01 10:51:04.106 E/xxx_CHG (    0): pd_status:0
+01-01 10:51:04.106 E/xxx_CHG (    0): Found primary charger
+01-01 10:51:04.106 E/xxx_CHG (    0): xxx_is_charger_on chr_type = [Unknown] last_chr_type = [Unknown]
+01-01 10:51:04.106 I/charger soc(    0): charger: usb_dwork_handler Idle
+01-01 10:51:04.108 E/xxx_CHG (    0): _set_otg_enable now_status:0 set_status:0
+01-01 10:51:04.124 I/        (    0): ///PD dbg info 402d
+01-01 10:51:04.124 I/&lt;    1.527&gt;TCPC-TCPC(    0): tcpci_alert_cc_changed ++
+01-01 10:51:04.124 I/&lt;    1.528&gt;TCPC-TYPEC(    0): [CC_Alert] 2/0
+01-01 10:51:04.124 I/&lt;    1.528&gt;TCPC-TYPEC(    0): norp_src=0
+01-01 10:51:04.124 I/        (    0): &lt;    1.528&gt;
+01-01 10:51:04.124 I/TCPC-TYPEC(    0): ** Unattached.SNK
+01-01 10:51:04.124 I/&lt;    1.529&gt;TCPC-TYPEC(    0): norp_src=1
+01-01 10:51:04.124 I/&lt;    1.529&gt;TCPC-TYPEC(    0): Attached-&gt; NULL
+01-01 10:51:04.124 I/&lt;    1.529&gt;TCPC-TCPC(    0): usb_port_detached
+01-01 10:51:04.124 I/&lt;    1.530&gt;TCPC-TCPC(    0): Alert:0x0001, Mask:0x21067f
+01-01 10:51:04.124 I/&lt;    1.531&gt;TCPC-TCPC(    0): tcpci_alert_cc_changed ++
+01-01 10:51:04.124 I/        (    0): &lt;    1.531&gt;TCPC-TYPEC
+01-01 10:51:04.124 I/        (    0): :[CC_Alert] 15/15
+01-01 10:51:04.155 E/        (    0): pd_tcp_notifier_call event = EXT_DISCHARGE
+01-01 10:51:04.155 I/charger soc(    0): charger: pd_tcp_notifier_call ext discharge = 0
+01-01 10:51:04.156 I/charger soc(    0): charger: pd_tcp_notifier_call - EXT_DISCHARGE, false
+01-01 10:51:04.162 I/        (    0): ///PD dbg info 49d
+01-01 10:51:04.162 I/&lt;    1.585&gt;TCPC-TCPC(    0): Alert:0x0001, Mask:0x21067f
+01-01 10:51:04.164 I/        (    0): husb311_set_low_power_mode - write HUSB311_REG_BMC_CTRL=0x7
+01-01 10:51:04.164 E/psy_charger_get_property psp(    0): 4
+01-01 10:51:04.164 E/psy_charger_get_property psp(    0): 3
+01-01 10:51:04.188 I/        (    0): ///PD dbg info 124d
+01-01 10:51:04.188 I/&lt;    1.586&gt;TCPC-TCPC(    0): tcpci_alert_cc_changed ++
+01-01 10:51:04.188 I/&lt;    1.586&gt;TCPC-TYPEC(    0): [CC_Alert] 2/0
+01-01 10:51:04.188 I/&lt;    1.588&gt;TCPC-TYPEC(    0): ** AttachWait.SRC
+01-01 10:51:04.284 I/        (    0): ///PD dbg info 80d
+01-01 10:51:04.284 I/&lt;    1.708&gt;TCPC-TYPEC(    0): [CC_Change] 2/0
+01-01 10:51:04.284 I/&lt;    1.708&gt;TCPC-TYPEC(    0): wait_ps=SRC_VSafe0V
+01-01 10:51:04.934 I/&lt;    2.358&gt;TCPC-TCPC(    0): VSafe0V TOUT (2)
+</pre></div>
+</div>
+<p>以上log得知：</p>
+<ul class="simple">
+<li><ol class="arabic simple">
+<li><p>首先检测到vbus上面有500ma的电输入，识别成<code class="docutils literal notranslate"><span class="pre">ATTACHED_NORP_SRC</span></code>状态，表示手机没有检测到source端的Rp电阻。</p></li>
+</ol>
+</li>
+<li><ol class="arabic simple" start="2">
+<li><p><code class="docutils literal notranslate"><span class="pre">pd_tcp_notifier_call</span> <span class="pre">-</span> <span class="pre">source</span> <span class="pre">vbus</span> <span class="pre">0v</span> <span class="pre">output</span></code> ，重要看这里将vbus关闭</p></li>
+</ol>
+</li>
+<li><ol class="arabic simple" start="3">
+<li><p><code class="docutils literal notranslate"><span class="pre">Found</span> <span class="pre">primary</span> <span class="pre">charger</span></code>还是太晚了，导致vbus没法控制。</p></li>
+</ol>
+</li>
+<li><ol class="arabic simple" start="4">
+<li><p><code class="docutils literal notranslate"><span class="pre">tcpc_notifier_call,</span> <span class="pre">old_state</span> <span class="pre">=</span> <span class="pre">ATTACHED_NORP_SRC,</span> <span class="pre">new_state</span> <span class="pre">=</span> <span class="pre">UNATTACHED</span></code>直接识别成<code class="docutils literal notranslate"><span class="pre">ATTACHED_NORP_SRC</span></code>掉了。</p></li>
+</ol>
+</li>
+<li><ol class="arabic simple" start="5">
+<li><p><code class="docutils literal notranslate"><span class="pre">[CC_Alert]</span> <span class="pre">15/15</span></code>表示识别到DRP切换了，<code class="docutils literal notranslate"><span class="pre">[CC_Alert]</span> <span class="pre">2/0</span></code>表示检测到SNK端Rd，然后<code class="docutils literal notranslate"><span class="pre">wait_ps=SRC_VSafe0V</span></code>等待0v超时，对应步骤2,。因为Found primary charger在后面，调用vbus关闭函数没成功。</p></li>
+</ol>
+</li>
+</ul>
+</section>
+<section id="typec">
+<h1>解决方案1 延迟typec检测时间<a class="headerlink" href="#typec" title="此标题的永久链接"></a></h1>
+<p>有一个重要函数<code class="docutils literal notranslate"><span class="pre">tcpc_device_irq_enable</span></code>，初始化typec各种状态，如默认配置role_def，当配置成Try.SRC，则执行Try.SRC逻辑，将该驱动延迟10s执行：</p>
+<div class="highlight-diff notranslate"><div class="highlight"><pre><span></span><span class="gd">--- a/UM.9.15/kernel/msm-4.19/drivers/misc/xxx/tcpc/tcpci_core.c</span><span class="w"></span>
+<span class="gi">+++ b/UM.9.15/kernel/msm-4.19/drivers/misc/xxx/tcpc/tcpci_core.c</span><span class="w"></span>
+<span class="gu">@@ -906,7 +906,9 @@ static int __tcpc_class_complete_work(struct device *dev, void *data)</span><span class="w"></span>
+<span class="w"> </span>       if (tcpc != NULL) {<span class="w"></span>
+<span class="w"> </span>               pr_info(&quot;%s = %s\n&quot;, __func__, dev_name(dev));<span class="w"></span>
+<span class="w"> </span>#if 1<span class="w"></span>
+<span class="gd">-               tcpc_device_irq_enable(tcpc);</span><span class="w"></span>
+<span class="gi">+               //tcpc_device_irq_enable(tcpc);</span><span class="w"></span>
+<span class="gi">+               schedule_delayed_work(</span><span class="w"></span>
+<span class="gi">+                               &amp;tcpc-&gt;init_work, msecs_to_jiffies(10*1000));</span><span class="w"></span>
+<span class="w"> </span>#else<span class="w"></span>
+<span class="w"> </span>               schedule_delayed_work(&amp;tcpc-&gt;init_work,<span class="w"></span>
+<span class="w"> </span>                       msecs_to_jiffies(1000));<span class="w"></span>
+</pre></div>
+</div>
+<p>结果如下<code class="docutils literal notranslate"><span class="pre">__tcpc_class_complete_work</span></code>后10s才进行<code class="docutils literal notranslate"><span class="pre">TrySRC</span></code>：</p>
+<div class="highlight-log notranslate"><div class="highlight"><pre><span></span>[    4.494368] husb311_init_alert name = type_c_port0, gpio = 1265
+[    4.500370] husb311_init_alert : IRQ number = 197
+[    4.505270] IRQF_NO_THREAD Test
+[    4.508557] husb311_i2c_probe probe OK!
+
+[    7.304272] __tcpc_class_complete_work = type_c_port0
+
+[   17.632185] tcpc_init_work force start
+[   17.641297] ///PD dbg info 41d
+[   17.643071] tcpc_device_irq_enable : tcpc irq enable OK!
+[   17.643073] pd_tcp_notifier_call event = SINK_VBUS
+[   17.643083] charger soc:charger: pd_tcp_notifier_call sink vbus 0mV 0mA type(0x00)
+[   17.643089] pd_tcp_notifier_call event = SOURCE_VBUS
+[   17.643092] pd_tcp_notifier_call source vbus 0mV
+[   17.643096] pd_tcp_notifier_call - source vbus 0v output
+[   17.643099] xxx_CHG: vbus_off
+[   17.643102] xxx_CHG: issue work, ops&lt;0&gt;, delay&lt;0&gt;
+[   17.643120] pd_tcp_notifier_call event = EXT_DISCHARGE
+[   17.643125] charger soc:charger: pd_tcp_notifier_call ext discharge = 1
+[   17.643130] charger soc:charger: pd_tcp_notifier_call - EXT_DISCHARGE, true
+[   17.644417] &lt;   17.641&gt;TCPC-TYPEC:typec_init: TrySRC
+[   17.654661] xxx_CHG: _set_otg_enable now_status:0 set_status:0
+[   17.676105] ///PD dbg info 40d
+[   17.693167] pd_tcp_notifier_call event = EXT_DISCHARGE
+[   17.697217] &lt;   17.641&gt;TCPC-TYPEC:** Unattached.SNK
+[   17.703969] husb311_set_low_power_mode - write HUSB311_REG_BMC_CTRL=0x7
+[   17.704317] charger soc:charger: pd_tcp_notifier_call ext discharge = 0
+[   17.725375] init: Top-level directory needs encryption action, eg mkdir /data/vendor &lt;mode&gt; &lt;uid&gt; &lt;gid&gt; encryption=Require
+[   17.728358] charger soc:charger: pd_tcp_notifier_call - EXT_DISCHARGE, false
+[   17.735511] init: Verified that /data/vendor has the encryption policy 27359c63832987cac976552376935bfe v2 modes 1/4 flags 0x12
+[   17.736092] ///PD dbg info 173d
+[   17.736098] &lt;   17.702&gt;TCPC-TCPC:Alert:0x0001, Mask:0x21067f
+[   17.736098] &lt;   17.702&gt;TCPC-TCPC:tcpci_alert_cc_changed ++
+[   17.736098] &lt;   17.702&gt;TCPC-TYPEC:[CC_Alert]
+[   17.736100]  1/2
+[   17.736100] &lt;   17.704&gt;TCPC-TYPEC:** AttachWait.SRC
+[   17.824363] ///PD dbg info 118d
+[   17.827694] &lt;   17.824&gt;TCPC-TYPEC:[CC_Change] 1/2
+[   17.827694] &lt;   17.824&gt;TCPC-TYPEC:** Attached.SRC
+[   17.827694] &lt;   17.824&gt;TCPC-TYPEC:wait_ps=SRC_VSafe5V
+[   17.844301] pd_tcp_notifier_call event = SOURCE_VBUS
+[   17.849493] pd_tcp_notifier_call source vbus 5000mV
+[   17.854459] pd_tcp_notifier_call - source vbus 5v output
+[   17.859821] xxx_CHG: vbus_on
+[   17.862782] xxx_CHG: issue work, ops&lt;1&gt;, delay&lt;0&gt;
+[   17.867570] ///PD dbg info 184d
+[   17.867807] xxx_CHG: _set_otg_enable now_status:0 set_status:1
+[   17.870844] &lt;   17.844&gt;TCPC-TCPC:Alert:0x0001, Mask:0x23067f
+[   17.870844] &lt;   17.845&gt;TCPC-TCPC:tcpci_alert_cc_changed ++
+[   17.870844] &lt;   17.850&gt;TCPC-TYPEC:[CC_Alert]
+[   17.870848]  0/6
+[   17.870848] &lt;   17.854&gt;TCPC-TCPC:Alert:0x200000, Mask:0x23067f
+[   17.876829] xxx_CHG: _set_otg_enable en:1
+[   17.888803] xxx_BMS: CHG [online: 0, type: 0, vol: 0, cur: 2000000, time: 0], BAT [present: 1, status: 0, vol: 3839000, cur: -425000, resistance: 0, temp: 300, soc: 59], OTHER [skin_temp: 0, chg_vote: 0x0, notify_code: 0x0],
+[   17.928364] ///PD dbg info 49d
+[   17.929133] logd: logd reinit
+[   17.931432] &lt;   17.928&gt;TCPC-TCPC:Alert:0x0002, Mask:0x23067f
+[   17.940274] logd: FrameworkListener: read() failed (Connection reset by peer)
+[   17.959222] ipa ipa3_ioctl:1724 IPA not ready, waiting for init completion
+[   17.968244] ///PD dbg info 132d
+[   17.971683] &lt;   17.928&gt;TCPC-TCPC:tcpci_alert_power_status_changed_v10 ++
+[   17.971683] &lt;   17.929&gt;TCPC-TCPC:ps_change=2
+[   17.971683] &lt;   17.929&gt;TCPC-TYPEC:wait_ps=Disa
+[   17.971686] ble
+[   17.979965] pd_tcp_notifier_call event = TYPEC_STATE
+[   17.993953] tcpc_notifier_call, old_state = UNATTACHED, new_state = ATTACHED_SRC
+[   18.001469] pd_tcp_notifier_call OTG plug in, polarity = 1
+[   18.007100] charger soc:charger: usb_dwork_handler Host
+[   18.008148] ///PD dbg info 79d
+[   18.016141] &lt;   17.979&gt;TCPC-TYPEC:Attached-&gt; SOURCE
+[   18.016141] &lt;   17.979&gt;TCPC-TCPC:usb_port_attached
+[   18.019263] msm-usb-ssphy-qmp 1615000.ssphy: USB QMP PHY: Update TYPEC CTRL(3)
+</pre></div>
+</div>
+</section>
+<section id="id1">
+<h1>解决方案2 otg函数去耦合<a class="headerlink" href="#id1" title="此标题的永久链接"></a></h1>
+<p>otg目前需要调用到charger的寄存器操作，步骤上首先要charger ic先注册，然后xxx-charger架构去寻找，这个花时间比较长。那干脆去掉寻找步骤，在charger ic驱动加载时注册regulator就行，方案就是将vbus操作注册为regulator。</p>
+<p>成功打印如下：</p>
+<div class="highlight-log notranslate"><div class="highlight"><pre><span></span>[    7.311506] __tcpc_class_complete_work = type_c_port0
+[    7.321666] ///PD dbg info 41d
+[    7.323385] tcpc_device_irq_enable : tcpc irq enable OK!
+[    7.323387] pd_tcp_notifier_call event = SINK_VBUS
+[    7.323396] charger soc:charger: pd_tcp_notifier_call sink vbus 0mV 0mA type(0x00)
+[    7.323401] pd_tcp_notifier_call event = SOURCE_VBUS
+[    7.323405] pd_tcp_notifier_call source vbus 0mV
+[    7.323408] pd_tcp_notifier_call - source vbus 0v output
+[    7.323412] xxx_CHG: vbus_off
+[    7.323415] xxx_CHG: issue work, ops&lt;0&gt;, delay&lt;0&gt;
+[    7.323427] pd_tcp_notifier_call event = EXT_DISCHARGE
+[    7.323433] charger soc:charger: pd_tcp_notifier_call ext discharge = 1
+[    7.323438] charger soc:charger: pd_tcp_notifier_call - EXT_DISCHARGE, true
+[    7.324747] &lt;    7.321&gt;TCPC-TYPEC:typec_init: TrySRC
+[    7.330779] xxx_BMS:start.
+[    7.356066] ///PD dbg info 40d
+[    7.357524] bms_notify_register_client
+[    7.360427] &lt;    7.322&gt;TCPC-TYPEC:** Unattached.SNK
+[    7.377000] pd_tcp_notifier_call event = EXT_DISCHARGE
+[    7.384042] level: 1 base_chg_status: 0
+[    7.384305] xxx_BMS:success.
+[    7.385030] ALSA device list:
+[    7.385034]   No soundcards found.
+[    7.389087] charger soc:charger: pd_tcp_notifier_call ext discharge = 0
+[    7.391688] psy_charger_get_property psp:4
+[    7.391692] xxx_charger_external_power_changed event, name:xxx-charger base charger online: 0
+[    7.441247] ///PD dbg info 49d
+[    7.441252] charger soc:charger: pd_tcp_notifier_call - EXT_DISCHARGE, false
+[    7.444327] &lt;    7.441&gt;TCPC-TCPC:Alert:0x0001, Mask:0x21067f
+[    7.453745] Freeing unused kernel memory: 5056K
+[    7.458768] husb311_set_low_power_mode - write HUSB311_REG_BMC_CTRL=0x7
+[    7.461727] Run /init as init process
+[    7.468074] ///PD dbg info 84d
+[    7.468077] &lt;    7.444&gt;TCPC-TCPC:tcpci_alert_cc_changed ++
+[    7.468077] &lt;    7.457&gt;TCPC-TYPEC:[CC_Alert] 2/0
+[    7.492088] ///PD dbg info 40d
+[    7.492092] &lt;    7.485&gt;TCPC-TYPEC:** AttachWait.SRC
+[    7.511748] init: init first stage started!
+[    7.515473] psy_charger_get_property psp:4
+[    7.518711] init: Unable to open /lib/modules, skipping module loading.
+[    7.519505] init: [libfs_mgr]dt_fstab: Skip disabled entry for partition vendor
+[    7.519531] init: [libfs_mgr]ReadFstabFromDt(): failed to read fstab from dt
+[    7.519756] init: [libfs_mgr]dt_fstab: Skip disabled entry for partition vendor
+[    7.521214] init: Using Android DT directory /proc/device-tree/firmware/android/
+[    7.523456] psy_charger_get_property psp:3
+[    7.605591] ///PD dbg info 118d
+[    7.608820] pd_tcp_notifier_call event = SOURCE_VBUS
+[    7.613504] psy_charger_get_property psp:4
+[    7.613821] pd_tcp_notifier_call source vbus 5000mV
+[    7.617919] psy_charger_get_property psp:3
+[    7.622877] &lt;    7.605&gt;TCPC-TYPEC:[CC_Change] 2/0
+[    7.622877] &lt;    7.605&gt;TCPC-TYPEC:** Attached.SRC
+[    7.622877] &lt;    7.605&gt;TCPC-TYPEC:wait_ps=SRC_VSafe5V
+[    7.623091] pd_tcp_notifier_call - source vbus 5v output
+[    7.623094] xxx_CHG: vbus_on
+[    7.623098] xxx_CHG: issue work, ops&lt;1&gt;, delay&lt;0&gt;
+[    7.627621] xxx_CHG: enable otg
+[    7.640171] pd_tcp_notifier_call event = TYPEC_STATE
+[    7.640176] tcpc_notifier_call, old_state = UNATTACHED, new_state = ATTACHED_SRC
+[    7.640180] pd_tcp_notifier_call OTG plug in, polarity = 0
+[    7.640327] charger soc:charger: usb_dwork_handler Host
+[    7.646571] msm-usb-ssphy-qmp 1615000.ssphy: USB QMP PHY: Update TYPEC CTRL(2)
+[    7.664071] ///PD dbg info 260d
+[    7.671005] msm-dwc3 4e00000.ssusb: DWC3 exited from low power mode
+[    7.675427] &lt;    7.630&gt;TCPC-TCPC:Alert:0x0002, Mask:0x23067f
+[    7.675427] &lt;    7.630&gt;TCPC-TCPC:tcpci_alert_power_status_changed_v10 ++
+[    7.675427] &lt;    7.631&gt;TCPC-TC
+[    7.675429] PC:ps_change=2
+[    7.675429] &lt;    7.632&gt;TCPC-TYPEC:wait_ps=Disable
+[    7.675429] &lt;    7.632&gt;TCPC-TYPEC:Attached-&gt; SOURCE
+[    7.675429] &lt;    7.632&gt;TCPC-TCPC:usb_port_attached
+
+[   11.648465] xxx_CHG: Found primary charger
+</pre></div>
+</div>
+<p>可以看到<code class="docutils literal notranslate"><span class="pre">Found</span> <span class="pre">primary</span> <span class="pre">charger</span></code>出现在11s，这时候已经识别usb了。</p>
+</section>
+
+
+           </div>
+             <div class="articleComments">
+                <comments>
+  <script src="https://utteranc.es/client.js"
+    repo="iswbm/magic-python"
+    issue-term="pathname"
+    theme="github-light"
+    crossorigin="anonymous"
+    async>
+  </script>
+</comments>
+             </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; 版权所有 2022, wugn.</p>
+  </div>
+
+  利用 <a href="https://www.sphinx-doc.org/">Sphinx</a> 构建，使用了 
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">主题</a>
+    由 <a href="https://readthedocs.org">Read the Docs</a>开发.
+  
+
+<script charset="UTF-8" id="LA_COLLECT" src="//sdk.51.la/js-sdk-pro.min.js"></script>
+<script>LA.init({id: "JoV5csIHTGhHiGQ4",ck: "JoV5csIHTGhHiGQ4"})</script>
+
+<br/>
+<script id="LA-DATA-WIDGET" crossorigin="anonymous" charset="UTF-8" src="https://v6-widget.51.la/v6/JoV5csIHTGhHiGQ4/quote.js?theme=#4C8AC2,#BB2626,#040000,#333333,#AE3535,#1690FF,14&f=14"></script>
+
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

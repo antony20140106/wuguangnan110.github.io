@@ -64,6 +64,10 @@ The Type-C Port Controller Interface, TCPCI, is the interface between a Type-C P
 * TCPCI： Type-C Port Controller Interface  可以理解为TCPC和TCPM的通信接口，目前mt6370采用的是i2c通信(i2c slave)
 * TCPM： Type-C Port Manager   可以理解为mt6762 typec驱动控制策略(i2c master)
 
+TCPC英文全称是USB Type-C Port Controller，即USB Type-C 端口控制器，TCPC是一个功能控制模块，包括VBUS和VCONN电源控制、USB Type-C CC逻辑以及USB PD通信 BMC物理层和部分协议层等。
+
+TCPC重点在“控制”，是USB Type-C控制器，负责控制底层通信的实施，包括出错重发机制。TCPM重点在“管理”，是USB Type-C管理器，负责管理一个或多个USB Type-C端口的上层策略。TCPM和TCPC之间的连接的接口叫做TCPCI，是两者之间的桥梁，可采用I2C（或SMbus）方式进行沟通。
+
 ![0002_0012.png](images/0002_0012.png)
 
 ## TCPM
@@ -78,7 +82,7 @@ The Type-C Port Controller Interface, TCPCI, is the interface between a Type-C P
 
 接收讯息端：收到PHY Layer传来的讯息，解读该讯息并将信息向上呈报给Policy Engine，在做相对响应前，先建构GoodCRC讯息让PHY回送给对方，表示讯息已正确收到并解读。
 
-同时装置双方的Protocol Layer需各自计算对方是否在要求时间内有正确的响应 (Timer check)。 若以上确认内容有侦测到任何错误，任一方的Protocol Layer可发起Reset机制重整状态： 
+同时装置双方的Protocol Layer需各自计算对方是否在要求时间内有正确的响应 (Timer check)。 若以上确认内容有侦测到任何错误，任一方的Protocol Layer可发起Reset机制重整状态：
 
 ![0002_0013.png](images/0002_0013.png)
 
@@ -882,8 +886,8 @@ int tcpc_typec_handle_ps_change(struct tcpc_device *tcpc_dev, int vbus_level)
 检测到vbus电压5v:
 <5>[10102.869997]  (4)[4042:kworker/4:2]get_pmic_vbus vbus:4995
 使能充电:
-<5>[10102.870676]  (4)[4042:kworker/4:2]PAX_CHG: _mtk_enable_charging en:1
-<5>[10102.870730]  (4)[4042:kworker/4:2]PAX_CHG: enable_charging 1
+<5>[10102.870676]  (4)[4042:kworker/4:2]xxx_CHG: _mtk_enable_charging en:1
+<5>[10102.870730]  (4)[4042:kworker/4:2]xxx_CHG: enable_charging 1
 
 完成Attached.SNK：
 <6>[10102.883531]  (5)[112:pd_dbg_info]///PD dbg info 319d

@@ -4,7 +4,7 @@
 
 # APSP串口不通
 
-目前AP端的串口程序都是A6650项目可用的，但是在ABL阶段使用流控功能出现握手失败。
+目前AP端的串口程序都是A665x项目可用的，但是在ABL阶段使用流控功能出现握手失败。
 
 原因是SP端RTS功能未打开，当AP发送时RTS未拉低，SP端发送，AP不接收。
 
@@ -17,11 +17,11 @@
         CLANG35_GCC_TOOLCHAIN := $(ANDROID_TOP)/prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-$(TARGET_GCC_VERSION)
  endif
 
-+#[feature]-add-begin xielianxiong@paxsz.com,for M9200 abl
-+ifeq ($(M9200),true)
-+       M9200 := M9200=1
++#[feature]-add-begin xielianxiong@xxxxx.com,for M92xx abl
++ifeq ($(M92xx),true)
++       M92xx := M92xx=1
 +endif
-+#[feature]-add-end xielianxiong@paxsz.com,for M9200 abl
++#[feature]-add-end xielianxiong@xxxxx.com,for M92xx abl
 +
 
  # ABL ELF output
@@ -32,7 +32,7 @@
                 BOARD_BOOTLOADER_PRODUCT_NAME=$(BOARD_BOOTLOADER_PRODUCT_NAME) \
 -               USERDATAIMAGE_FILE_SYSTEM_TYPE=$(USERDATAIMAGE_FILE_SYSTEM_TYPE)
 +               USERDATAIMAGE_FILE_SYSTEM_TYPE=$(USERDATAIMAGE_FILE_SYSTEM_TYPE) \
-+               $(M9200)
++               $(M92xx)
 diff --git a/UM.9.15/bootable/bootloader/edk2/MdePkg/Library/UartQupv3Lib/UartXBL.c b/UM.9.15/bootable/bootloader/edk2/MdePkg/Library/UartQupv3Lib/UartXBL.c
 index bea319ce553..9cf597fcd2c 100755
 --- a/UM.9.15/bootable/bootloader/edk2/MdePkg/Library/UartQupv3Lib/UartXBL.c
@@ -49,7 +49,7 @@ index bea319ce553..9cf597fcd2c 100755
  {
     uart_open_config uart5_c;
 
-+#ifdef M9200
++#ifdef M92xx
 +   uart5_c.baud_rate = 750000;//3000000;
 +#else
     uart5_c.baud_rate = 3000000;
@@ -63,11 +63,11 @@ index bea319ce553..9cf597fcd2c 100755
    !if $(USERDATAIMAGE_FILE_SYSTEM_TYPE)
        GCC:*_*_*_CC_FLAGS = -DUSERDATA_FS_TYPE=\"$(USERDATAIMAGE_FILE_SYSTEM_TYPE)\"
    !endif
-+#[feature]-add-begin xielianxiong@paxsz.com,20221202,abl define M9200
-+  !if $(M9200) == 1
-+      GCC:*_*_*_CC_FLAGS = -DM9200
++#[feature]-add-begin xielianxiong@xxxxx.com,20221202,abl define M92xx
++  !if $(M92xx) == 1
++      GCC:*_*_*_CC_FLAGS = -DM92xx
 +  !endif
-+#[feature]-add-end xielianxiong@paxsz.com,20221202,abl define M9200
++#[feature]-add-end xielianxiong@xxxxx.com,20221202,abl define M92xx
 
  [PcdsFixedAtBuild.common]
 
@@ -79,11 +79,11 @@ index 580b3cc7b29..fbafb095449 100644
  export LLVM_SAFESTACK_USE_PTR := $(LLVM_SAFESTACK_USE_PTR)
  export LLVM_SAFESTACK_COLORING := $(LLVM_SAFESTACK_COLORING)
 
-+#[feature]-add-begin xielianxiong@paxsz.com,20221202,abl define M9200
++#[feature]-add-begin xielianxiong@xxxxx.com,20221202,abl define M92xx
 +ifeq "$(TARGET_PRODUCT)" "bengal_32go"
-+export M9200 := true
++export M92xx := true
 +endif
-+#[feature]-add-end xielianxiong@paxsz.com,20221202,abl define M9200
++#[feature]-add-end xielianxiong@xxxxx.com,20221202,abl define M92xx
 +
  .PHONY: all cleanall
 
@@ -92,7 +92,7 @@ index 580b3cc7b29..fbafb095449 100644
         -D ENABLE_SYSTEMD_BOOTSLOT=$(ENABLE_SYSTEMD_BOOTSLOT) \
         -D RW_ROOTFS=$(RW_ROOTFS) \
         -D USERDATAIMAGE_FILE_SYSTEM_TYPE=$(USERDATAIMAGE_FILE_SYSTEM_TYPE) \
-+       -D M9200=$(M9200) \
++       -D M92xx=$(M92xx) \
         -j build_modulepkg.log $*
 
         cp $(BUILD_ROOT)/FV/FVMAIN_COMPACT.Fv $(ABL_FV_IMG)
@@ -106,13 +106,13 @@ index 580b3cc7b29..fbafb095449 100644
 * CmdFlash
   └── if(is_sp_partition(PartitionName)) //判断下载名称是否为cfg、sp_boot、sp_reboot、sp_monitor、exsn、sp_mac、sp_time、sp_test
       ├── if(StrnCmp(PartitionName, L"exsn", StrLen(L"exsn")) == 0)
-      │   └── verify_pax_image(mFlashDataBuffer,mFlashNumDataBytes,0) //校验
+      │   └── verify_xxxxx_image(mFlashDataBuffer,mFlashNumDataBytes,0) //校验
       │       ├── memcpy(ucInfo, addr+len-16, 16); if (memcmp(ucInfo, "SIGNED_VER:00001", 16)) //校验最后16字节是不是SIGNED_VER:00001字符
       │       ├── compute_sha(addr,len-284,hash); //计算exsn hash
       │       └── RSARecover(&mf_puk[4], 256, &mf_puk[260], 4, (uchar *)pTEncry_Digest, (uchar *)pTDigset); //RSA加解密运算函数
-      ├── if ( (StrnCmp(PartitionName, LPAX_CFG_PARTITION_NAME, StrLen(LPAX_CFG_PARTITION_NAME)) == 0) //#define LPAX_CFG_PARTITION_NAME     L"pax_cfg" #define LCFG_PARTITION_NAME         L"cfg"
-      │   ├── verify_pax_image(mFlashDataBuffer,mFlashNumDataBytes,0) 
-      │   └── Status = HandleRawImgFlash (LPAX_CFG_PARTITION_NAME,ARRAY_SIZE (LPAX_CFG_PARTITION_NAME),mFlashDataBuffer, mFlashNumDataBytes);
+      ├── if ( (StrnCmp(PartitionName, Lxxx_CFG_PARTITION_NAME, StrLen(Lxxx_CFG_PARTITION_NAME)) == 0) //#define Lxxx_CFG_PARTITION_NAME     L"xxxxx_cfg" #define LCFG_PARTITION_NAME         L"cfg"
+      │   ├── verify_xxxxx_image(mFlashDataBuffer,mFlashNumDataBytes,0) 
+      │   └── Status = HandleRawImgFlash (Lxxx_CFG_PARTITION_NAME,ARRAY_SIZE (Lxxx_CFG_PARTITION_NAME),mFlashDataBuffer, mFlashNumDataBytes);
       └── if (sp_download_all(PartitionName, mFlashDataBuffer, mFlashNumDataBytes) < 0)
           ├── if(409600 > sz)return -1;//sp monitor almost 500KB
           ├── if(StrnCmp(DownloadName, L"sp_monitor", StrLen(L"sp_monitor")) ==0 )
@@ -129,7 +129,7 @@ index 580b3cc7b29..fbafb095449 100644
           │           │   ├── uchar cmd = CMD_TRANSE_FILE;
           │           │   ├── makePackage(g_tx_buf, cmd, tmp_buf, size);
           │           │   └── puts_sp(g_tx_buf, len);
-          │           │       └── pax_serial_putc(tx_buff, len);
+          │           │       └── xxxxx_serial_putc(tx_buff, len);
           │           │           ├── for (i = 0; i < count; i++) len = uart5_write((UINT8*)buf+i*TXFIFO_SIZE,TXFIFO_SIZE);  MicroSecondDelay(250);//3M,3000000// #define TXFIFO_SIZE 64  所有数据64个byte为一个包 ，for循环发送
           │           │           ├── len = uart5_write((UINT8*)buf+count*TXFIFO_SIZE,bytes_to_tx % TXFIFO_SIZE); //最后一个64byte包
           │           │           └── MicroSecondDelay(250);//3M,3000000 延迟0.25ms
@@ -139,10 +139,10 @@ index 580b3cc7b29..fbafb095449 100644
           │               └── uchar cmd = CMD_WRITE_FILE_TO_FLASH; // E4指令， sp将串口接收数据下载到flash
           ├── else if(StrnCmp(DownloadName, L"sp_boot", StrLen(L"sp_boot")) ==0 )
           │   └── downloadSpBoot(data, sz);
-          ├── pax_serial_flush(); //缓冲区清空
-          │   └── pax_serial_getc(buf, 512);
+          ├── xxxxx_serial_flush(); //缓冲区清空
+          │   └── xxxxx_serial_getc(buf, 512);
           │       └── uart5_read((UINT8 *)buf, bytes_to_rx);
-          └── pax_sp_reset(); //sp复位
+          └── xxxxx_sp_reset(); //sp复位
               ├── TLMMProtocol->GpioOut((UINT32)EFI_GPIO_CFG(32, 0, GPIO_OUTPUT, GPIO_NO_PULL, GPIO_8MA), GPIO_HIGH_VALUE);
               └── TLMMProtocol->GpioOut((UINT32)EFI_GPIO_CFG(32, 0, GPIO_OUTPUT, GPIO_NO_PULL, GPIO_8MA), GPIO_LOW_VALUE);
 ```
@@ -232,9 +232,9 @@ HAL_StatusTypeDef HAL_UART_Transmit(UART_HandleTypeDef *huart, uint8_t *pData, u
 
 暂时没有找到qcm2290平台fifo是否为空和是否传输完成标志，只能通过延时的方式。
 ```c
-uint32 pax_serial_putc(void* buf, uint32 bytes_to_tx)
+uint32 xxxxx_serial_putc(void* buf, uint32 bytes_to_tx)
 {
-//[feature]-add-begin xielianxiong@paxsz.com,20220910,for txfifo only 64byte
+//[feature]-add-begin xielianxiong@xxxxx.com,20220910,for txfifo only 64byte
     #define TXFIFO_SIZE 64
     uint32 i;
     uint32 len = 0;
@@ -245,7 +245,7 @@ uint32 pax_serial_putc(void* buf, uint32 bytes_to_tx)
     for (i = 0; i < count; i++) {
          len = uart5_write((UINT8*)buf+i*TXFIFO_SIZE,TXFIFO_SIZE);
          totalcount = totalcount + len;
-#ifdef M9200
+#ifdef M92xx
          MicroSecondDelay(1300);//750000
 #else
          MicroSecondDelay(250);//3M,3000000
@@ -254,13 +254,13 @@ uint32 pax_serial_putc(void* buf, uint32 bytes_to_tx)
     len = uart5_write((UINT8*)buf+count*TXFIFO_SIZE,bytes_to_tx % TXFIFO_SIZE);//size;
     totalcount = totalcount + len;
     //DEBUG((EFI_D_ERROR, "victor, totalcount = %d,len = %d,\n", totalcount,len));
-#ifdef M9200
+#ifdef M92xx
     MicroSecondDelay(2300);//750000
 #else
     MicroSecondDelay(250);//3M,3000000
 #endif
     return totalcount;
-//[feature]-add-begin xielianxiong@paxsz.com,20220910,for txfifo only 64byte
+//[feature]-add-begin xielianxiong@xxxxx.com,20220910,for txfifo only 64byte
 }
 ```
   
