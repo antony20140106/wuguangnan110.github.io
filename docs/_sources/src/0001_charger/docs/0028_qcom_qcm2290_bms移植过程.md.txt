@@ -745,3 +745,287 @@ th inline replies or bubbles.
 ```java
 PendingIntent pi = PendingIntent.getBroadcast(mContext,rc,intent,PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 ```
+
+# 移植暗码！56789！功能
+
+## 1.数据库打不开
+
+报错如下：
+```log
+04-12 01:56:14.626  3465  3465 E SQLiteLog: (14) cannot open file at line 39583 of [bcd014c473]
+04-12 01:56:14.626  3465  3465 E SQLiteLog: (14) os_unix.c:39583: (13) open(/cache/data/battery/batteryabnormal.db3) -
+04-12 01:56:14.633  3465  3465 E SQLiteDatabase: Failed to open database '/cache/data/battery/batteryabnormal.db3'.
+04-12 01:56:14.633  3465  3465 E SQLiteDatabase: android.database.sqlite.SQLiteCantOpenDatabaseException: Cannot open database '/cache/data/battery/batteryabnormal.db3': File /cache/data/battery/batteryabnormal.db3 is not readable
+04-12 01:56:14.633  3465  3465 E SQLiteDatabase:        at android.database.sqlite.SQLiteConnection.open(SQLiteConnection.java:254)
+04-12 01:56:14.633  3465  3465 E SQLiteDatabase:        at android.database.sqlite.SQLiteConnection.open(SQLiteConnection.java:205)
+04-12 01:56:14.633  3465  3465 E SQLiteDatabase:        at android.database.sqlite.SQLiteConnectionPool.openConnectionLocked(SQLiteConnectionPool.java:505)
+04-12 01:56:14.633  3465  3465 E SQLiteDatabase:        at android.database.sqlite.SQLiteConnectionPool.open(SQLiteConnectionPool.java:206)
+04-12 01:56:14.633  3465  3465 E SQLiteDatabase:        at android.database.sqlite.SQLiteConnectionPool.open(SQLiteConnectionPool.java:198)
+04-12 01:56:14.633  3465  3465 E SQLiteDatabase:        at android.database.sqlite.SQLiteDatabase.openInner(SQLiteDatabase.java:919)
+04-12 01:56:14.633  3465  3465 E SQLiteDatabase:        at android.database.sqlite.SQLiteDatabase.open(SQLiteDatabase.java:899)
+04-12 01:56:14.633  3465  3465 E SQLiteDatabase:        at android.database.sqlite.SQLiteDatabase.openDatabase(SQLiteDatabase.java:790)
+04-12 01:56:14.633  3465  3465 E SQLiteDatabase:        at android.database.sqlite.SQLiteDatabase.openOrCreateDatabase(SQLiteDatabase.java:807)
+04-12 01:56:14.633  3465  3465 E SQLiteDatabase:        at com.pax.batterywarning.db.BatteryAbnormalSQLiteDBHelper.openDatabase(BatteryAbnormalSQLiteDBHelper.java:55)
+04-12 01:56:14.633  3465  3465 E SQLiteDatabase:        at com.pax.batterywarning.db.BatteryAbnormalSQLiteDBHelper.<init>(BatteryAbnormalSQLiteDBHelper.java:48)
+04-12 01:56:14.633  3465  3465 E SQLiteDatabase:        at com.pax.batterywarning.activity.BatteryAbnormalActivity.onCreate(BatteryAbnormalActivity.java:46)
+04-12 01:56:14.633  3465  3465 E SQLiteDatabase:        at android.app.Activity.performCreate(Activity.java:8050)
+04-12 01:56:14.633  3465  3465 E SQLiteDatabase:        at android.app.Activity.performCreate(Activity.java:8030)
+04-12 01:56:14.633  3465  3465 E SQLiteDatabase:        at android.app.Instrumentation.callActivityOnCreate(Instrumentation.java:1330)
+04-12 01:56:14.633  3465  3465 E SQLiteDatabase:        at android.app.ActivityThread.performLaunchActivity(ActivityThread.java:3609)
+04-12 01:56:14.633  3465  3465 E SQLiteDatabase:        at android.app.ActivityThread.handleLaunchActivity(ActivityThread.java:3793)
+04-12 01:56:14.633  3465  3465 E SQLiteDatabase:        at android.app.servertransaction.LaunchActivityItem.execute(LaunchActivityItem.java:103)
+04-12 01:56:14.633  3465  3465 E SQLiteDatabase:        at android.app.servertransaction.TransactionExecutor.executeCallbacks(TransactionExecutor.java:135)
+04-12 01:56:14.633  3465  3465 E SQLiteDatabase:        at android.app.servertransaction.TransactionExecutor.execute(TransactionExecutor.java:95)
+04-12 01:56:14.633  3465  3465 E SQLiteDatabase:        at android.app.ActivityThread$H.handleMessage(ActivityThread.java:2211)
+04-12 01:56:14.633  3465  3465 E SQLiteDatabase:        at android.os.Handler.dispatchMessage(Handler.java:106)
+04-12 01:56:14.633  3465  3465 E SQLiteDatabase:        at android.os.Looper.loopOnce(Looper.java:201)
+04-12 01:56:14.633  3465  3465 E SQLiteDatabase:        at android.os.Looper.loop(Looper.java:288)
+04-12 01:56:14.633  3465  3465 E SQLiteDatabase:        at android.app.ActivityThread.main(ActivityThread.java:7880)
+04-12 01:56:14.633  3465  3465 E SQLiteDatabase:        at java.lang.reflect.Method.invoke(Native Method)
+04-12 01:56:14.633  3465  3465 E SQLiteDatabase:        at com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:548)
+04-12 01:56:14.633  3465  3465 E SQLiteDatabase:        at com.android.internal.os.ZygoteInit.main(ZygoteInit.java:1011)
+04-12 01:56:14.633  3465  3465 E SQLiteDatabase: Caused by: android.database.sqlite.SQLiteCantOpenDatabaseException: unknown error (code 14 SQLITE_CANTOPEN): Could not open database
+04-12 01:56:14.633  3465  3465 E SQLiteDatabase:        at android.database.sqlite.SQLiteConnection.nativeOpen(Native Method)
+04-12 01:56:14.633  3465  3465 E SQLiteDatabase:        at android.database.sqlite.SQLiteConnection.open(SQLiteConnection.java:224)
+04-12 01:56:14.633  3465  3465 E SQLiteDatabase:        ... 27 more
+04-12 01:56:14.634  3465  3465 W System.err: android.database.sqlite.SQLiteCantOpenDatabaseException: Cannot open database '/cache/data/battery/batteryabnormal.db3': File /cache/data/battery/batteryabnormal.db3 is not readable
+```
+
+查看数据库文件权限，发现没有任何权限：
+```shell
+9200:/ # ls -l /cache/data/battery
+total 12
+-rw------- 1 system system 12288 2023-04-12 01:52 batteryabnormal.db3
+```
+原因是权限问题，手动操作权限即可如下：
+```log
+M9200:/cache/data/battery # chmod 777 batteryabnormal.db3
+M9200:/cache/data/battery # ls -l
+total 24
+-rwxrwxrwx 1 system system 12288 2023-04-12 03:18 batteryabnormal.db3
+-rw------- 1 system system 12288 2023-04-12 03:18 test.db3
+```
+
+* 打印如下：
+```log
+04-12 03:20:00.500  4990  4990 D BatteryAbnormalSQLiteDBHelper: openDatabase
+04-12 03:20:00.502  4990  4990 D BatteryAbnormalActivity: sendEmptyMessage QUERY_BATTERY_ABNORMAL_HANDLER
+04-12 03:20:00.503  4990  5474 D BatteryAbnormalActivity: start QUERY_BATTERY_ABNORMAL_HANDLER
+04-12 03:20:00.504  4990  5474 D BatteryAbnormalActivity: end QUERY_BATTERY_ABNORMAL_HANDLER mCursor ccount:3
+04-12 03:20:00.523  4990  4990 D BatteryAbnormalActivity: change cursor
+04-12 03:20:00.534  2095  2107 D audio_hw_primary: out_set_parameters: enter: usecase(1: low-latency-playback) kvpairs: suspend_playback=true
+04-12 03:20:00.542  4990  4990 D BatteryAbnormalAdapter: newFirstView
+04-12 03:20:00.551  4990  4990 D BatteryAbnormalAdapter: bindView type1:8192
+04-12 03:20:00.551  4990  4990 D BatteryAbnormalAdapter: bindView type2:13
+04-12 03:20:00.555  4990  4990 D BatteryAbnormalAdapter: bindView type1:8192
+04-12 03:20:00.556  4990  4990 D BatteryAbnormalAdapter: bindView type2:13
+04-12 03:20:00.558  4990  4990 D BatteryAbnormalAdapter: bindView type1:8192
+04-12 03:20:00.558  4990  4990 D BatteryAbnormalAdapter: bindView type2:13
+04-12 03:20:00.584  2181  2254 D StartingSurfaceDrawer: Task start finish, remove starting surface for task 21
+04-12 03:20:00.584  2181  2254 V StartingSurfaceDrawer: Removing splash screen window for task: 21
+04-12 03:20:00.591  1183  1659 I ActivityTaskManager: Displayed com.pax.batterywarning/.activity.BatteryAbnormalActivity: +241ms
+04-12 03:20:00.607  3342  3342 I GoogleInputMethodService: GoogleInputMethodService.onFinishInput():3274
+04-12 03:20:00.612  3342  3342 I GoogleInputMethodService: GoogleInputMethodService.updateDeviceLockedStatus():2166 repeatCheckTimes = 0, unlocked = true
+04-12 03:20:00.618  3342  3342 I GoogleInputMethodService: GoogleInputMethodService.onStartInput():1957 onStartInput(EditorInfo{inputType=0x0(NULL) imeOptions=0x0 privateImeOptions=null act
+ionName=UNSPECIFIED actionLabel=null actionId=0 initialSelStart=-1 initialSelEnd=-1 initialCapsMode=0x0 hintText=null label=
+```
+
+最后发现app不是system app导致，xml配置多了个括号，修改如下：
+```diff
+--- a/QSSI.12/packages/apps/BatteryWarning/AndroidManifest.xml
++++ b/QSSI.12/packages/apps/BatteryWarning/AndroidManifest.xml
+@@ -1,5 +1,5 @@
+ <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+-        package="com.pax.batterywarning">
++        package="com.pax.batterywarning"
+         android:sharedUserId="android.uid.system">
+```
+
+修改后如下：
+```shell
+M9200:/ # ps -A | grep batt
+system        2910     1   14756   2808 ep_poll             0 S batterywarning
+```
+
+
+## 2.数据库pthread_mutex_lock报错
+
+* 参考
+* [修复金山云KSYStreamer 在Android P以上机型Native Crash](https://blog.csdn.net/yutao52shi/article/details/105279652)
+
+```
+04-11 01:15:21.682  4677  4677 F DEBUG   : *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** ***
+04-11 01:15:21.691     0     0 I logd    : logdr: UID=1000 GID=1000 PID=4677 n tail=0 logMask=8 pid=2769 start=0ns deadline=0ns
+04-11 01:15:21.693     0     0 I logd    : logdr: UID=1000 GID=1000 PID=4677 n tail=0 logMask=1 pid=2769 start=0ns deadline=0ns
+04-11 01:15:21.682  4677  4677 F DEBUG   : Build fingerprint: 'ZOLON/M9200_ZL/M9200:12/SKQ1.220119.001/androi.20220110.568435:user/release-keys'
+04-11 01:15:21.682  4677  4677 F DEBUG   : Revision: '0'
+04-11 01:15:21.682  4677  4677 F DEBUG   : ABI: 'arm'
+04-11 01:15:21.682  4677  4677 F DEBUG   : Timestamp: 2023-04-11 01:15:21.524062709+0800
+04-11 01:15:21.682  4677  4677 F DEBUG   : Process uptime: 0s
+04-11 01:15:21.682  4677  4677 F DEBUG   : Cmdline: /system/bin/batterywarning
+04-11 01:15:21.682  4677  4677 F DEBUG   : pid: 2769, tid: 2769, name: batterywarning  >>> /system/bin/batterywarning <<<
+04-11 01:15:21.682  4677  4677 F DEBUG   : uid: 1000
+04-11 01:15:21.682  4677  4677 F DEBUG   : signal 6 (SIGABRT), code -1 (SI_QUEUE), fault addr --------
+04-11 01:15:21.682  4677  4677 F DEBUG   : Abort message: 'FORTIFY: pthread_mutex_lock called on a destroyed mutex (0xb05f02c)'
+04-11 01:15:21.682  4677  4677 F DEBUG   :     r0  00000000  r1  00000ad1  r2  00000006  r3  beded688
+04-11 01:15:21.682  4677  4677 F DEBUG   :     r4  beded69c  r5  beded680  r6  00000ad1  r7  0000016b
+04-11 01:15:21.682  4677  4677 F DEBUG   :     r8  beded688  r9  beded698  r10 beded6b8  r11 beded6a8
+04-11 01:15:21.682  4677  4677 F DEBUG   :     ip  00000ad1  sp  beded658  lr  b3de30a9  pc  b3de30bc
+04-11 01:15:21.682  4677  4677 F DEBUG   : backtrace:
+04-11 01:15:21.682  4677  4677 F DEBUG   :       #00 pc 000610bc  /apex/com.android.runtime/lib/bionic/libc.so (abort+172) (BuildId: 316c4e23688da05a7757f6877d90407b)
+04-11 01:15:21.682  4677  4677 F DEBUG   :       #01 pc 0006238f  /apex/com.android.runtime/lib/bionic/libc.so (__fortify_fatal(char const*, ...)+30) (BuildId: 316c4e23688da05a7757f6877d90407b)
+04-11 01:15:21.682  4677  4677 F DEBUG   :       #02 pc 000a9b09  /apex/com.android.runtime/lib/bionic/libc.so (HandleUsingDestroyedMutex(pthread_mutex_t*, char const*)+24) (BuildId: 316c4e23688da05a7757f6877d90407b)
+04-11 01:15:21.683  4677  4677 F DEBUG   :       #03 pc 000a99e3  /apex/com.android.runtime/lib/bionic/libc.so (pthread_mutex_lock+138) (BuildId: 316c4e23688da05a7757f6877d90407b)
+04-11 01:15:21.683  4677  4677 F DEBUG   :       #04 pc 000028e1  /system/bin/batterywarning (insert_battery_abnormal_to_database(BATTERY_ABNORMAL_INFO_STRUCT*)+32) (BuildId: abf1d5b71427de3b8d896a132b794816)
+04-11 01:15:21.683  4677  4677 F DEBUG   :       #05 pc 00002fc3  /system/bin/batterywarning (insertBatteryAbnormal(int)+834) (BuildId: abf1d5b71427de3b8d896a132b794816)
+04-11 01:15:21.683  4677  4677 F DEBUG   :       #06 pc 0000360d  /system/bin/batterywarning (readType(char*)+148) (BuildId: abf1d5b71427de3b8d896a132b794816)
+04-11 01:15:21.683  4677  4677 F DEBUG   :       #07 pc 000038f7  /system/bin/batterywarning (uevent_event(unsigned int)+142) (BuildId: abf1d5b71427de3b8d896a132b794816)
+04-11 01:15:21.683  4677  4677 F DEBUG   :       #08 pc 000037c7  /system/bin/batterywarning (main+270) (BuildId: abf1d5b71427de3b8d896a132b794816)
+04-11 01:15:21.683  4677  4677 F DEBUG   :       #09 pc 0005a74b  /apex/com.android.runtime/lib/bionic/libc.so (__libc_init+54) (BuildId: 316c4e23688da05a7757f6877d90407b)
+04-11 01:15:21.708     0     0 W healthd : battery l=2 v=8610 t=30.0 h=2 st=4 c=0 fc=5600000 cc=1 chg=u
+```
+
+* `QSSI.12/bionic/libc/bionic/pthread_mutex.cpp`:代码跟进
+```c
+int pthread_mutex_lock(pthread_mutex_t* mutex_interface) {
+#if !defined(__LP64__)
+    // Some apps depend on being able to pass NULL as a mutex and get EINVAL
+    // back. Don't need to worry about it for LP64 since the ABI is brand new,
+    // but keep compatibility for LP32. http://b/19995172.
+    if (mutex_interface == nullptr) {
+        return EINVAL;
+    }
+#endif
+
+    pthread_mutex_internal_t* mutex = __get_internal_mutex(mutex_interface);
+    uint16_t old_state = atomic_load_explicit(&mutex->state, memory_order_relaxed);
+    uint16_t mtype = (old_state & MUTEX_TYPE_MASK);
+    // Avoid slowing down fast path of normal mutex lock operation.
+    if (__predict_true(mtype == MUTEX_TYPE_BITS_NORMAL)) {
+        uint16_t shared = (old_state & MUTEX_SHARED_MASK);
+        if (__predict_true(NonPI::NormalMutexTryLock(mutex, shared) == 0)) {
+            return 0;
+        }
+    }
+    if (old_state == PI_MUTEX_STATE) {
+        PIMutex& m = mutex->ToPIMutex();
+        // Handle common case first.
+        if (__predict_true(PIMutexTryLock(m) == 0)) {
+            return 0;
+        }
+        return PIMutexTimedLock(mutex->ToPIMutex(), false, nullptr);
+    }
+    if (__predict_false(IsMutexDestroyed(old_state))) {
+        return HandleUsingDestroyedMutex(mutex_interface, __FUNCTION__);
+    }
+    return NonPI::MutexLockWithTimeout(mutex, false, nullptr);
+}
+
+// Inlining this function in pthread_mutex_lock() adds the cost of stack frame instructions on
+// ARM64. So make it noinline.
+static int __attribute__((noinline)) HandleUsingDestroyedMutex(pthread_mutex_t* mutex,
+                                                               const char* function_name) {
+    if (android_get_application_target_sdk_version() >= 28) {
+        __fortify_fatal("%s called on a destroyed mutex (%p)", function_name, mutex);
+    }
+    return EBUSY;
+}
+
+static inline __always_inline bool IsMutexDestroyed(uint16_t mutex_state) {
+    return mutex_state == 0xffff;
+}
+```
+可以发现`IsMutexDestroyed`就是检测这个mutex是否有销毁的逻辑了。从上面可以看到，如果mutex的状态是0xffff就代表是已被销毁，而HandleUsingDestroyedMutex则会在AndroidP以上抛出错误，最终导致程序的异常退出。
+
+再来看一下mutex lock的初始化逻辑：
+```c
+int main()
+{
+    char *buffer = (char*) malloc(MAX_CHAR * sizeof(char));
+    if (buffer == NULL) {
+        ALOGD("malloc memory failed");
+        return 0;
+    }
+    if(init_database() != CRG_SUCCESS) return 1;
+  int ret;
+
+  /* Read the status to catch the event when batterywarning is not started */
+  readType(buffer);
+
+  ret= batterywarn_init();
+  if (ret) {
+      ALOGD("Initialization failed, exiting\n");
+      exit(1);
+  }
+  close_database();
+  batterywarn_mainloop();
+  free(buffer);
+  return 0;
+}
+
+uint32_t init_database()
+{   
+    int res = sqlite3_open(BATTERY_ABNORMAL_DB, &gp_db);
+    if (res != SQLITE_OK){  
+        printf("can't open battery abnormal database: %s\n",sqlite3_errmsg(gp_db));
+        sqlite3_close(gp_db); 
+        return CRG_FAIL;
+    } 
+    if (create_database() == CRG_SUCCESS)
+    {
+        pthread_mutex_init(&battery_abnormal_operater_database_mutex, NULL);
+        return CRG_SUCCESS;
+    }
+    else 
+    {
+        sqlite3_close(gp_db);
+        return CRG_FAIL;
+    }
+}
+
+void close_database()
+{
+    if(gp_db != NULL) sqlite3_close(gp_db);
+    pthread_mutex_destroy(&battery_abnormal_operater_database_mutex); //问题出在这
+}
+```
+
+* 解决方案是将mutex锁按照顺序执行：
+```c
+void readType(char* buffer) {
+    if (type > 0)
+    {
+        ALOGD("start activity by send intent to BatteryWarningReceiver, type = %d\n", type);
+        sendBroadcastMessage(String8(ACTION), type);
+        ALOGD("readType type:%d\n",type);
+		if(init_database() != CRG_SUCCESS) { //pthread_mutex_init
+			ALOGE("init_database fail\n");
+		}
+        insertBatteryAbnormal(type); //pthread_mutex_lock pthread_mutex_unlock
+		close_database();//pthread_mutex_destroy
+    }
+}
+```
+
+## 3.fopen报错error opening file
+
+* 参考
+* [fopen函数打开文件失败原因以及解决方法](https://blog.csdn.net/weixin_41528941/article/details/124467193)
+
+可能原因：
+检查程序中是否有句柄泄露的可能即频繁的调用fopen而没有fclose，这种情况的表象就是前面刚刚开始的时候可以open成功
+过一段时间后，怎么都open不成功了，检查路径和权限都没有问题， 那此时就要检查下是否句柄泄露了。一般linux最多支持1000来个
+句柄，打开太多不关，则其他的没法打开了
+
+常见的errno错误码有以下这些：
+```log
+#define EPERM 1 /* Operation not permitted /
+　　#define ENOENT 2 / No such file or directory /
+　　#define ESRCH 3 / No such process /
+　　#define EIO 5 / I/O error /
+　　#define ENXIO 6 / No such device or address /
+　　#define E2BIG 7 / Argument list too long /
+　　#define ENOEXEC 8 / Exec format error /
+　　#define EBADF 9 / Bad file number /
+　　#define ECHILD 10 / No child processes */
+```

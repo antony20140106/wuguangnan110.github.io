@@ -14,11 +14,15 @@
 # 宝藏博主
 
 * [蜗窝科技](http://www.wowotech.net/)
+* [JsonChao_Android系统优化](https://blog.csdn.net/qq_20798591?type=blog)
+* [Android 系统取经 CSDN博主IngresGe总结好](https://blog.csdn.net/yiranfeng?type=blog)
 
 # docs
 
 NO.|文件名称|摘要
 :--:|:--|:--
+0028| [secure_system](src/0028_secure_system/README.md) | Linux/Android系统安全相关总结。
+0027| [work_life_misc](src/0027_work_life_misc/README.md) | 总结一下linux平台各种设备驱动。
 0026| [kernel_device_dirver](src/0026_kernel_device_dirver/README.md) | 总结一下linux平台各种设备驱动。
 0025| [uart_function](src/0025_uart_function/README.md) | android uart驱动分析
 0024| [NFC_function](src/0024_NFC_function/README.md) | Android系统NFC系统学习
@@ -46,5 +50,3 @@ NO.|文件名称|摘要
 0002| [usb_switch](src/0002_usb_switch/README.md) | M8项目usb switch驱动分析。
 0001| [charger](src/0001_charger/README.md) | Android平台charger、BMS相关知识及调试整理。
 0000| [example](src/0000_example/README.md) | 这个是一个md的文档模板目录示例架构。
-
-* 联系方式:qq 569542647

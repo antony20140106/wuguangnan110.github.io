@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="zh-CN" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>wugn</title>
+
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script src="../../../_static/translations.js"></script>
+        <script src="../../../_static/js/baidutongji.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="索引" href="../../../genindex.html" />
+    <link rel="search" title="搜索" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../index.html" class="icon icon-home"> wugn_note
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="在文档中搜索" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">README</a></li>
+<li><a class="reference internal" href="#id1">参考</a></li>
+<li><a class="reference internal" href="#id2">先说结论</a></li>
+<li><a class="reference internal" href="#auditctl">auditctl应用分析</a></li>
+<li><a class="reference internal" href="#logd-auditctl">启动 logd-auditctl</a></li>
+<li><a class="reference internal" href="#kernel-audit">kernel audit消息接收</a></li>
+</ul>
+</div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">wugn_note</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs"> 
+<li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+<li>README</li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.forward()">Forward</a></li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.back()">Go Back</a> | </li>
+<li style="float: right;margin-left: 10px;"><a href="/index.html">Home</a> | </li>
+
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="readme">
+<h1>README<a class="headerlink" href="#readme" title="此标题的永久链接"></a></h1>
+<p>不少同事发现AVC每次都打印不出来，分析一下。</p>
+</section>
+<section id="id1">
+<h1>参考<a class="headerlink" href="#id1" title="此标题的永久链接"></a></h1>
+<ul class="simple">
+<li><p><a class="reference external" href="https://blog.csdn.net/lickylin/article/details/18013879">register_pernet_subsys相关学习</a></p></li>
+<li><p><a class="reference external" href="https://blog.csdn.net/yiranfeng/article/details/104244900">Android10.0 日志系统分析(二)-logd、logcat架构分析及日志系统初始化-[Android取经之路]</a></p></li>
+</ul>
+</section>
+<section id="id2">
+<h1>先说结论<a class="headerlink" href="#id2" title="此标题的永久链接"></a></h1>
+<ul class="simple">
+<li><p>发现如下打印，表示audit丢失了：</p></li>
+</ul>
+<div class="highlight-log notranslate"><div class="highlight"><pre><span></span>04-22 02:12:33.100 W/audit   (    0): audit_lost=228 audit_rate_limit=5 audit_backlog_limit=1024
+04-22 02:12:33.100 E/audit   (    0): rate limit exceeded
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>解决方案，<code class="docutils literal notranslate"><span class="pre">auditctl</span> <span class="pre">-r</span> <span class="pre">100</span></code>指令可以设置每秒消息发送率：</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="mi">1</span><span class="o">|</span><span class="n">A6650</span><span class="p">:</span><span class="o">/</span> <span class="c1"># auditctl</span>
+<span class="n">Nothing</span> <span class="n">to</span> <span class="n">do</span>
+<span class="n">Usage</span><span class="p">:</span> <span class="n">auditctl</span> <span class="p">[</span><span class="o">-</span><span class="n">r</span> <span class="n">rate</span><span class="p">]</span>
+
+<span class="n">auditctl</span> <span class="o">-</span><span class="n">r</span> <span class="mi">100</span>
+</pre></div>
+</div>
+</section>
+<section id="auditctl">
+<h1>auditctl应用分析<a class="headerlink" href="#auditctl" title="此标题的永久链接"></a></h1>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">QSSI.12/system/logging/logd/auditctl.cpp</span></code>:</p></li>
+</ul>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="k">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">do_update_rate</span><span class="p">(</span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">rate</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">fd</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">audit_open</span><span class="p">();</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">fd</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">-1</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="n">error</span><span class="p">(</span><span class="n">EXIT_FAILURE</span><span class="p">,</span><span class="w"> </span><span class="n">errno</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Unable to open audit socket&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">audit_rate_limit</span><span class="p">(</span><span class="n">fd</span><span class="p">,</span><span class="w"> </span><span class="n">rate</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="n">close</span><span class="p">(</span><span class="n">fd</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">result</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="n">fprintf</span><span class="p">(</span><span class="n">stderr</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Can&#39;t update audit rate limit: %d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">result</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="n">exit</span><span class="p">(</span><span class="n">EXIT_FAILURE</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="kt">int</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">argc</span><span class="p">,</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">argv</span><span class="p">[])</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">rate</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="kt">bool</span><span class="w"> </span><span class="n">update_rate</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">false</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">opt</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">    </span><span class="k">while</span><span class="w"> </span><span class="p">((</span><span class="n">opt</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">getopt</span><span class="p">(</span><span class="n">argc</span><span class="p">,</span><span class="w"> </span><span class="n">argv</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;r:&quot;</span><span class="p">))</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="mi">-1</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="k">switch</span><span class="w"> </span><span class="p">(</span><span class="n">opt</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">            </span><span class="k">case</span><span class="w"> </span><span class="sc">&#39;r&#39;</span><span class="p">:</span><span class="w"></span>
+<span class="w">                </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">android</span><span class="o">::</span><span class="n">base</span><span class="o">::</span><span class="n">ParseUint</span><span class="o">&lt;</span><span class="kt">uint32_t</span><span class="o">&gt;</span><span class="p">(</span><span class="n">optarg</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">rate</span><span class="p">))</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                    </span><span class="n">error</span><span class="p">(</span><span class="n">EXIT_FAILURE</span><span class="p">,</span><span class="w"> </span><span class="n">errno</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Invalid Rate&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">                </span><span class="p">}</span><span class="w"></span>
+<span class="w">                </span><span class="n">update_rate</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">true</span><span class="p">;</span><span class="w"></span>
+<span class="w">                </span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+<span class="w">            </span><span class="k">default</span><span class="o">:</span><span class="w"> </span><span class="cm">/* &#39;?&#39; */</span><span class="w"></span>
+<span class="w">                </span><span class="n">usage</span><span class="p">(</span><span class="n">argv</span><span class="p">[</span><span class="mi">0</span><span class="p">]);</span><span class="w"></span>
+<span class="w">                </span><span class="n">exit</span><span class="p">(</span><span class="n">EXIT_FAILURE</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">    </span><span class="c1">// In the future, we may add other options to auditctl</span>
+<span class="w">    </span><span class="c1">// so this if statement will expand.</span>
+<span class="w">    </span><span class="c1">// if (!update_rate &amp;&amp; !update_backlog &amp;&amp; !update_whatever) ...</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">update_rate</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="n">fprintf</span><span class="p">(</span><span class="n">stderr</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Nothing to do</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="n">usage</span><span class="p">(</span><span class="n">argv</span><span class="p">[</span><span class="mi">0</span><span class="p">]);</span><span class="w"></span>
+<span class="w">        </span><span class="n">exit</span><span class="p">(</span><span class="n">EXIT_FAILURE</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">update_rate</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="n">do_update_rate</span><span class="p">(</span><span class="n">rate</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">logd/libaudit.cpp</span></code>上面发送函数<code class="docutils literal notranslate"><span class="pre">audit_rate_limit</span></code>，创建一个netlink的socket，协议号为NETLINK_AUDIT，并通过audit_rate_limit发送selinux频率:</p></li>
+</ul>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="kt">int</span><span class="w"> </span><span class="nf">audit_rate_limit</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">fd</span><span class="p">,</span><span class="w"> </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">limit</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="k">struct</span><span class="w"> </span><span class="nc">audit_status</span><span class="w"> </span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">            </span><span class="p">.</span><span class="n">mask</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">AUDIT_STATUS_RATE_LIMIT</span><span class="p">,</span><span class="w"> </span><span class="p">.</span><span class="n">rate_limit</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">limit</span><span class="p">,</span><span class="w"> </span><span class="cm">/* audit entries per second */</span><span class="w"></span>
+<span class="w">    </span><span class="p">};</span><span class="w"></span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">audit_send</span><span class="p">(</span><span class="n">fd</span><span class="p">,</span><span class="w"> </span><span class="n">AUDIT_SET</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">status</span><span class="p">,</span><span class="w"> </span><span class="k">sizeof</span><span class="p">(</span><span class="n">status</span><span class="p">));</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="cm">/**</span>
+<span class="cm"> *</span>
+<span class="cm"> * @param fd</span>
+<span class="cm"> *  The netlink socket fd</span>
+<span class="cm"> * @param type</span>
+<span class="cm"> *  The type of netlink message</span>
+<span class="cm"> * @param data</span>
+<span class="cm"> *  The data to send</span>
+<span class="cm"> * @param size</span>
+<span class="cm"> *  The length of the data in bytes</span>
+<span class="cm"> * @return</span>
+<span class="cm"> *  This function returns a positive sequence number on success, else -errno.</span>
+<span class="cm"> */</span><span class="w"></span>
+<span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">audit_send</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">fd</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">type</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="kt">void</span><span class="o">*</span><span class="w"> </span><span class="n">data</span><span class="p">,</span><span class="w"> </span><span class="kt">size_t</span><span class="w"> </span><span class="n">size</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="k">struct</span><span class="w"> </span><span class="nc">sockaddr_nl</span><span class="w"> </span><span class="n">addr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{.</span><span class="n">nl_family</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">AF_NETLINK</span><span class="p">};</span><span class="w"></span>
+<span class="w">  </span><span class="cm">/* 省略 */</span><span class="w"></span>
+<span class="w">    </span><span class="cm">/* Set up the netlink headers */</span><span class="w"></span>
+<span class="w">    </span><span class="k">struct</span><span class="w"> </span><span class="nc">audit_message</span><span class="w"> </span><span class="n">req</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{};</span><span class="w"></span>
+<span class="w">    </span><span class="n">req</span><span class="p">.</span><span class="n">nlh</span><span class="p">.</span><span class="n">nlmsg_type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">static_cast</span><span class="o">&lt;</span><span class="kt">uint16_t</span><span class="o">&gt;</span><span class="p">(</span><span class="n">type</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="n">req</span><span class="p">.</span><span class="n">nlh</span><span class="p">.</span><span class="n">nlmsg_len</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">NLMSG_SPACE</span><span class="p">(</span><span class="n">size</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="n">req</span><span class="p">.</span><span class="n">nlh</span><span class="p">.</span><span class="n">nlmsg_flags</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">NLM_F_REQUEST</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">NLM_F_ACK</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="kt">ssize_t</span><span class="w"> </span><span class="n">rc</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">TEMP_FAILURE_RETRY</span><span class="p">(</span><span class="w"></span>
+<span class="w">            </span><span class="n">sendto</span><span class="p">(</span><span class="n">fd</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">req</span><span class="p">,</span><span class="w"> </span><span class="n">req</span><span class="p">.</span><span class="n">nlh</span><span class="p">.</span><span class="n">nlmsg_len</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">sockaddr</span><span class="o">*</span><span class="p">)</span><span class="o">&amp;</span><span class="n">addr</span><span class="p">,</span><span class="w"> </span><span class="k">sizeof</span><span class="p">(</span><span class="n">addr</span><span class="p">)));</span><span class="w"></span>
+
+<span class="w">    </span><span class="cm">/* Not all the bytes were sent */</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">rc</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="o">-</span><span class="n">errno</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">((</span><span class="kt">uint32_t</span><span class="p">)</span><span class="n">rc</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">req</span><span class="p">.</span><span class="n">nlh</span><span class="p">.</span><span class="n">nlmsg_len</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="o">-</span><span class="n">EPROTO</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">    </span><span class="cm">/* We sent all the bytes, get the ack */</span><span class="w"></span>
+<span class="w">    </span><span class="n">rc</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">get_ack</span><span class="p">(</span><span class="n">fd</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">    </span><span class="cm">/* If the ack failed, return the error, else return the sequence number */</span><span class="w"></span>
+<span class="w">    </span><span class="n">rc</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">rc</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="p">)</span><span class="n">sequence</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">rc</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">rc</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="kt">int</span><span class="w"> </span><span class="nf">audit_open</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">socket</span><span class="p">(</span><span class="n">PF_NETLINK</span><span class="p">,</span><span class="w"> </span><span class="n">SOCK_RAW</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">SOCK_CLOEXEC</span><span class="p">,</span><span class="w"> </span><span class="n">NETLINK_AUDIT</span><span class="p">);</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+</section>
+<section id="logd-auditctl">
+<h1>启动 logd-auditctl<a class="headerlink" href="#logd-auditctl" title="此标题的永久链接"></a></h1>
+<p>logd.rc中启动logd-auditctl</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="c1"># Limit SELinux denial generation to 5/second</span>
+service logd-auditctl /system/bin/auditctl -r <span class="m">5</span>
+    oneshot
+    disabled
+    user logd
+    group logd
+    capabilities AUDIT_CONTROL
+</pre></div>
+</div>
+<p>logd-auditctl 的主体是 /system/bin/auditctl，在logd的android.bp中，通过编译 auditctl.cpp得来，并加载了liblogd的库。
+logd-auditctl是Android 10.0中引入的新功能，目的是让selinux denia的日志打印限制为5次/秒。</p>
+</section>
+<section id="kernel-audit">
+<h1>kernel audit消息接收<a class="headerlink" href="#kernel-audit" title="此标题的永久链接"></a></h1>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">kernel/audit.c</span></code>:</p></li>
+</ul>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="o">*</span><span class="w"> </span><span class="n">postcore_initcall</span><span class="p">(</span><span class="n">audit_init</span><span class="p">);</span><span class="w"> </span><span class="c1">//audit驱动的注册</span>
+<span class="w">  </span><span class="o">*</span><span class="w"> </span><span class="n">register_pernet_subsys</span><span class="p">(</span><span class="o">&amp;</span><span class="n">audit_net_ops</span><span class="p">);</span><span class="w"> </span><span class="c1">//register a network namespace subsystem</span>
+<span class="w">  </span><span class="o">*</span><span class="w"> </span><span class="n">kauditd_task</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">kthread_run</span><span class="p">(</span><span class="n">kauditd_thread</span><span class="p">,</span><span class="w"> </span><span class="nb">NULL</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;kauditd&quot;</span><span class="p">);</span><span class="w"> </span><span class="c1">//感觉应该是轮询socket消息的</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">register_pernet_subsys</span></code>该函数的主要作用是将一个网络协议子系统添加到网络命令空间对应的全局链表pernet_list中，并针对每一个注册在net_namespace_list链表中的网络命令空间，均执行其ops-&gt;init(audit_net_init)程序进行初始化，一般其ops-&gt;init会在其对应的proc目录下，生成一个网络协议模块对应的proc文件或proc目录，并执行一些协议初始化相关的函数。</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="k">static</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">pernet_operations</span><span class="w"> </span><span class="n">audit_net_ops</span><span class="w"> </span><span class="n">__net_initdata</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="p">.</span><span class="n">init</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">audit_net_init</span><span class="p">,</span><span class="w"></span>
+<span class="w">    </span><span class="p">.</span><span class="n">exit</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">audit_net_exit</span><span class="p">,</span><span class="w"></span>
+<span class="w">    </span><span class="p">.</span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">&amp;</span><span class="n">audit_net_id</span><span class="p">,</span><span class="w"></span>
+<span class="w">    </span><span class="p">.</span><span class="n">size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">sizeof</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">audit_net</span><span class="p">),</span><span class="w"></span>
+<span class="p">};</span><span class="w"></span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">__net_init</span><span class="w"> </span><span class="nf">audit_net_init</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">net</span><span class="w"> </span><span class="o">*</span><span class="n">net</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="k">struct</span><span class="w"> </span><span class="nc">netlink_kernel_cfg</span><span class="w"> </span><span class="n">cfg</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="p">.</span><span class="n">input</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="n">audit_receive</span><span class="p">,</span><span class="w"></span>
+<span class="w">        </span><span class="p">.</span><span class="n">bind</span><span class="w">   </span><span class="o">=</span><span class="w"> </span><span class="n">audit_bind</span><span class="p">,</span><span class="w"></span>
+<span class="w">        </span><span class="p">.</span><span class="n">flags</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="n">NL_CFG_F_NONROOT_RECV</span><span class="p">,</span><span class="w"></span>
+<span class="w">        </span><span class="p">.</span><span class="n">groups</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">AUDIT_NLGRP_MAX</span><span class="p">,</span><span class="w"></span>
+<span class="w">    </span><span class="p">};</span><span class="w"></span>
+
+<span class="w">    </span><span class="k">struct</span><span class="w"> </span><span class="nc">audit_net</span><span class="w"> </span><span class="o">*</span><span class="n">aunet</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">net_generic</span><span class="p">(</span><span class="n">net</span><span class="p">,</span><span class="w"> </span><span class="n">audit_net_id</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">    </span><span class="n">aunet</span><span class="o">-&gt;</span><span class="n">sk</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">netlink_kernel_create</span><span class="p">(</span><span class="n">net</span><span class="p">,</span><span class="w"> </span><span class="n">NETLINK_AUDIT</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">cfg</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">aunet</span><span class="o">-&gt;</span><span class="n">sk</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="nb">NULL</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="n">audit_panic</span><span class="p">(</span><span class="s">&quot;cannot initialize netlink socket in namespace&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="o">-</span><span class="n">ENOMEM</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="n">aunet</span><span class="o">-&gt;</span><span class="n">sk</span><span class="o">-&gt;</span><span class="n">sk_sndtimeo</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">MAX_SCHEDULE_TIMEOUT</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>socket input及bind函数如下，通过<code class="docutils literal notranslate"><span class="pre">audit_receive_msg</span></code>轮询并处理消息：</p></li>
+</ul>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="cm">/**</span>
+<span class="cm"> * audit_receive - receive messages from a netlink control socket</span>
+<span class="cm"> * @skb: the message buffer</span>
+<span class="cm"> *</span>
+<span class="cm"> * Parse the provided skb and deal with any messages that may be present,</span>
+<span class="cm"> * malformed skbs are discarded.</span>
+<span class="cm"> */</span><span class="w"></span>
+<span class="k">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">audit_receive</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">sk_buff</span><span class="w">  </span><span class="o">*</span><span class="n">skb</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="k">struct</span><span class="w"> </span><span class="nc">nlmsghdr</span><span class="w"> </span><span class="o">*</span><span class="n">nlh</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="cm">/*</span>
+<span class="cm">     * len MUST be signed for nlmsg_next to be able to dec it below 0</span>
+<span class="cm">     * if the nlmsg_len was not aligned</span>
+<span class="cm">     */</span><span class="w"></span>
+<span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">len</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">err</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">    </span><span class="n">nlh</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">nlmsg_hdr</span><span class="p">(</span><span class="n">skb</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="n">len</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">skb</span><span class="o">-&gt;</span><span class="n">len</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">    </span><span class="n">audit_ctl_lock</span><span class="p">();</span><span class="w"></span>
+<span class="w">    </span><span class="k">while</span><span class="w"> </span><span class="p">(</span><span class="n">nlmsg_ok</span><span class="p">(</span><span class="n">nlh</span><span class="p">,</span><span class="w"> </span><span class="n">len</span><span class="p">))</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="n">err</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">audit_receive_msg</span><span class="p">(</span><span class="n">skb</span><span class="p">,</span><span class="w"> </span><span class="n">nlh</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="cm">/* if err or if this message says it wants a response */</span><span class="w"></span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">err</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="p">(</span><span class="n">nlh</span><span class="o">-&gt;</span><span class="n">nlmsg_flags</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="n">NLM_F_ACK</span><span class="p">))</span><span class="w"></span>
+<span class="w">            </span><span class="n">netlink_ack</span><span class="p">(</span><span class="n">skb</span><span class="p">,</span><span class="w"> </span><span class="n">nlh</span><span class="p">,</span><span class="w"> </span><span class="n">err</span><span class="p">,</span><span class="w"> </span><span class="nb">NULL</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">        </span><span class="n">nlh</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">nlmsg_next</span><span class="p">(</span><span class="n">nlh</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">len</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="n">audit_ctl_unlock</span><span class="p">();</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="cm">/* Run custom bind function on netlink socket group connect or bind requests. */</span><span class="w"></span>
+<span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">audit_bind</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">net</span><span class="w"> </span><span class="o">*</span><span class="n">net</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">group</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">capable</span><span class="p">(</span><span class="n">CAP_AUDIT_READ</span><span class="p">))</span><span class="w"></span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="o">-</span><span class="n">EPERM</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">audit_receive_msg</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">sk_buff</span><span class="w"> </span><span class="o">*</span><span class="n">skb</span><span class="p">,</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">nlmsghdr</span><span class="w"> </span><span class="o">*</span><span class="n">nlh</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">u32</span><span class="w">         </span><span class="n">seq</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="kt">void</span><span class="w">            </span><span class="o">*</span><span class="n">data</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="kt">int</span><span class="w">         </span><span class="n">data_len</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="kt">int</span><span class="w">         </span><span class="n">err</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="k">struct</span><span class="w"> </span><span class="nc">audit_buffer</span><span class="w"> </span><span class="o">*</span><span class="n">ab</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="n">u16</span><span class="w">         </span><span class="n">msg_type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">nlh</span><span class="o">-&gt;</span><span class="n">nlmsg_type</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="k">struct</span><span class="w"> </span><span class="nc">audit_sig_info</span><span class="w">   </span><span class="o">*</span><span class="n">sig_data</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="kt">char</span><span class="w">            </span><span class="o">*</span><span class="n">ctx</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">NULL</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="n">u32</span><span class="w">         </span><span class="n">len</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">    </span><span class="n">err</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">audit_netlink_ok</span><span class="p">(</span><span class="n">skb</span><span class="p">,</span><span class="w"> </span><span class="n">msg_type</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">err</span><span class="p">)</span><span class="w"></span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">err</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">    </span><span class="n">seq</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="n">nlh</span><span class="o">-&gt;</span><span class="n">nlmsg_seq</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">nlmsg_data</span><span class="p">(</span><span class="n">nlh</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="n">data_len</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">nlmsg_len</span><span class="p">(</span><span class="n">nlh</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">    </span><span class="k">switch</span><span class="w"> </span><span class="p">(</span><span class="n">msg_type</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="k">case</span><span class="w"> </span><span class="no">AUDIT_SET</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+
+<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">s</span><span class="p">.</span><span class="n">mask</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="n">AUDIT_STATUS_RATE_LIMIT</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="n">err</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">audit_set_rate_limit</span><span class="p">(</span><span class="n">s</span><span class="p">.</span><span class="n">rate_limit</span><span class="p">);</span><span class="w"> </span><span class="c1">//设置速率</span>
+<span class="w">                </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">err</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"></span>
+<span class="w">                    </span><span class="k">return</span><span class="w"> </span><span class="n">err</span><span class="p">;</span><span class="w"></span>
+<span class="w">            </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>设置打印速率，先不分析了：</p></li>
+</ul>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">audit_set_rate_limit</span><span class="p">(</span><span class="n">u32</span><span class="w"> </span><span class="n">limit</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">audit_do_config_change</span><span class="p">(</span><span class="s">&quot;audit_rate_limit&quot;</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">audit_rate_limit</span><span class="p">,</span><span class="w"> </span><span class="n">limit</span><span class="p">);</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+</pre></div>
+</div>
+</section>
+
+
+           </div>
+             <div class="articleComments">
+                <comments>
+  <script src="https://utteranc.es/client.js"
+    repo="iswbm/magic-python"
+    issue-term="pathname"
+    theme="github-light"
+    crossorigin="anonymous"
+    async>
+  </script>
+</comments>
+             </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; 版权所有 2022, wugn.</p>
+  </div>
+
+  利用 <a href="https://www.sphinx-doc.org/">Sphinx</a> 构建，使用了 
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">主题</a>
+    由 <a href="https://readthedocs.org">Read the Docs</a>开发.
+  
+
+<script charset="UTF-8" id="LA_COLLECT" src="//sdk.51.la/js-sdk-pro.min.js"></script>
+<script>LA.init({id: "JoV5csIHTGhHiGQ4",ck: "JoV5csIHTGhHiGQ4"})</script>
+
+<br/>
+<script id="LA-DATA-WIDGET" crossorigin="anonymous" charset="UTF-8" src="https://v6-widget.51.la/v6/JoV5csIHTGhHiGQ4/quote.js?theme=#4C8AC2,#BB2626,#040000,#333333,#AE3535,#1690FF,14&f=14"></script>
+
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
