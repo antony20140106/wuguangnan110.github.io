@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="zh-CN" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>wugn</title>
+
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script src="../../../_static/translations.js"></script>
+        <script src="../../../_static/js/baidutongji.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="索引" href="../../../genindex.html" />
+    <link rel="search" title="搜索" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../index.html" class="icon icon-home"> wugn_note
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="在文档中搜索" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">BatteryService服务分析</a></li>
+<li><a class="reference internal" href="#id1">前言</a></li>
+<li><a class="reference internal" href="#id2">参考文档</a></li>
+<li><a class="reference internal" href="#id3">BatteryService的启动流程</a><ul>
+<li><a class="reference internal" href="#batteryserviceconstructor">BatteryService中的构造方法Constructor()</a></li>
+<li><a class="reference internal" href="#onstart">onStart()</a><ul>
+<li><a class="reference internal" href="#registerhealthcallback">registerHealthCallback</a></li>
+<li><a class="reference internal" href="#healthhalcallback">HealthHalCallback</a></li>
+<li><a class="reference internal" href="#update">update</a></li>
+<li><a class="reference internal" href="#processvalueslocked">processValuesLocked</a></li>
+<li><a class="reference internal" href="#batterypropertiesregistrar">BatteryPropertiesRegistrar</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#onbootphase">onBootPhase()</a></li>
+</ul>
+</li>
+</ul>
+</div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">wugn_note</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs"> 
+<li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+<li>BatteryService服务分析</li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.forward()">Forward</a></li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.back()">Go Back</a> | </li>
+<li style="float: right;margin-left: 10px;"><a href="/index.html">Home</a> | </li>
+
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="batteryservice">
+<h1>BatteryService服务分析<a class="headerlink" href="#batteryservice" title="此标题的永久链接"></a></h1>
+<p>BatteryService是在systemServer启动核心服务的时候启动的。BatteryService用于获取电池信息、充电状态等，如果想对Android的功耗控制有更深入的了解，有必要分析一下。</p>
+</section>
+<section id="id1">
+<h1>前言<a class="headerlink" href="#id1" title="此标题的永久链接"></a></h1>
+<p>BatteryService负责监听充电状态和电量变化，当电量值或者充电类型改变时，会获取到底层healthd上报的电池状态信息，并更新到BatteryStatsService中进行统计，同时会将这些值存储到Intent中，以广播的形式发送到监听了ACTION_BATTERY_CHANGED的组件中，其他组建可以通过Intent.getExtra()的方式获取到电池信息。</p>
+<p>先上一幅图，对电量上报的流程有个整体的概念，后续对该图的各个部分进行讲解。</p>
+<p><img alt="0005_0001.png" src="../../../_images/0005_00013.png" /></p>
+</section>
+<section id="id2">
+<h1>参考文档<a class="headerlink" href="#id2" title="此标题的永久链接"></a></h1>
+<ul class="simple">
+<li><p><a class="reference external" href="https://blog.csdn.net/zhenjie_chang/article/details/52512990">Android 8.1 BatteryService服务分析</a></p></li>
+<li><p><a class="reference external" href="https://blog.csdn.net/renshuguo123723/article/details/87431240">BatteryService：电池电量管理</a></p></li>
+<li><p><a class="reference external" href="https://blog.csdn.net/qq_37858386/article/details/125205834">分析Android11 Settings里面电池信息获取流程，在里面添加显示电池温度的功能</a></p></li>
+<li><p><a class="reference external" href="http://aospxref.com/android-12.0.0_r3/xref/frameworks/base/services/core/java/com/android/server/BatteryService.java">BatteryService在线代码</a></p></li>
+<li><p><a class="reference external" href="https://blog.csdn.net/FightFightFight/article/details/82353373">Android 8.1 Battery系列(一) BatteryService分析</a></p></li>
+<li><p><a class="reference external" href="https://blog.csdn.net/u011636692/article/details/87874954">BatteryProperty上报流程</a></p></li>
+<li><p><a class="reference external" href="https://blog.csdn.net/qq759981398/article/details/73155782">Android中Battery电量上报流程分析01-整体架构拆解</a></p></li>
+</ul>
+</section>
+<section id="id3">
+<h1>BatteryService的启动流程<a class="headerlink" href="#id3" title="此标题的永久链接"></a></h1>
+<p>BatteryService继承于SyetemService,SyetemService是所有系统服务的基类，每个SyetemService的启动流程都具有相同的步骤，他们实现并重写其父类方法。因此，在分析BatteryService之前，先看看SystemServer的启动相关方法。SystemServer启动时调用方法如下，并且都是在SystemServer的main线程中运行：</p>
+<ol class="arabic simple">
+<li><p>Constructor()：构造方法，通过反射的方式调用；</p></li>
+<li><p>onStart()：开始运行服务；</p></li>
+<li><p>onBootPhase(int)：该方法表示启动阶段，会根据不同的参数（阶段）调用多次，直到PHASE_BOOT_COMPLETED阶段调用后不再调用，表示启动完成，对于每个阶段，可以完成特定的工作；</p></li>
+</ol>
+<p>了解了上述内容后，着手分析BatteryService就容易多了,首先，BatteryService会在SystemServer中进行启动：</p>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="cm">/**</span>
+<span class="cm"> * The main entry point from zygote.</span>
+<span class="cm"> */</span><span class="w"></span>
+<span class="kd">public</span><span class="w"> </span><span class="kd">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="n">String</span><span class="o">[]</span><span class="w"> </span><span class="n">args</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="k">new</span><span class="w"> </span><span class="n">SystemServer</span><span class="p">().</span><span class="na">run</span><span class="p">();</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<p>启动SystemServer后，在main()函数中调用了run()方法，在run()方法中，启动三种服务：</p>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="kd">private</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">run</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="p">......</span><span class="w"></span>
+<span class="c1">// Start services.</span><span class="w"></span>
+<span class="w">    </span><span class="k">try</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="c1">//启动引导服务</span><span class="w"></span>
+<span class="w">        </span><span class="n">startBootstrapServices</span><span class="p">();</span><span class="w"></span>
+<span class="w">    </span><span class="c1">//启动核心服务</span><span class="w"></span>
+<span class="w">        </span><span class="n">startCoreServices</span><span class="p">();</span><span class="w"></span>
+<span class="w">    </span><span class="c1">//启动其他服务</span><span class="w"></span>
+<span class="w">        </span><span class="n">startOtherServices</span><span class="p">();</span><span class="w"></span>
+<span class="w">    </span><span class="c1">//关闭启动线程池</span><span class="w"></span>
+<span class="w">        </span><span class="n">SystemServerInitThreadPool</span><span class="p">.</span><span class="na">shutdown</span><span class="p">();</span><span class="w"></span>
+<span class="w">    </span><span class="p">......</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="n">Throwable</span><span class="w"> </span><span class="n">ex</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="k">throw</span><span class="w"> </span><span class="n">ex</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"> </span><span class="k">finally</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="n">traceEnd</span><span class="p">();</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<ol class="arabic simple">
+<li><p>startBootstrapServices()中启动的是一些依赖性比较高的系统服务(所以方法名为”引导服务”)，如PMS就是在这里进行启动的。</p></li>
+<li><p>startCoreServices()中启动一些核心服务，从代码中看，启动的核心服务有四种，其中就包括要分析的BatteryService。</p></li>
+<li><p>startOtherServices()用来启动其他的一些服务。</p></li>
+</ol>
+<p>在startCoreServices()中，通过SystemServiceManager中的方法，传入类名作为参数，利用反射机制对BatteryService进行实例化（构造函数）：</p>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="kd">public</span><span class="w"> </span><span class="o">&lt;</span><span class="n">T</span><span class="w"> </span><span class="kd">extends</span><span class="w"> </span><span class="n">SystemService</span><span class="o">&gt;</span><span class="w"> </span><span class="n">T</span><span class="w"> </span><span class="nf">startService</span><span class="p">(</span><span class="n">Class</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="w"> </span><span class="n">serviceClass</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="k">try</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="kd">final</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">serviceClass</span><span class="p">.</span><span class="na">getName</span><span class="p">();</span><span class="w"></span>
+<span class="w">        </span><span class="p">......</span><span class="w"></span>
+<span class="w">        </span><span class="kd">final</span><span class="w"> </span><span class="n">T</span><span class="w"> </span><span class="n">service</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="k">try</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">            </span><span class="n">Constructor</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="w"> </span><span class="n">constructor</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">serviceClass</span><span class="p">.</span><span class="na">getConstructor</span><span class="p">(</span><span class="n">Context</span><span class="p">.</span><span class="na">class</span><span class="p">);</span><span class="w"></span>
+<span class="w">            </span><span class="n">service</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">constructor</span><span class="p">.</span><span class="na">newInstance</span><span class="p">(</span><span class="n">mContext</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="n">InstantiationException</span><span class="w"> </span><span class="n">ex</span><span class="p">)</span><span class="w"> </span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="n">startService</span><span class="p">(</span><span class="n">service</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">service</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"> </span><span class="k">finally</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+<span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">startService</span><span class="p">(</span><span class="nd">@NonNull</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">SystemService</span><span class="w"> </span><span class="n">service</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="c1">// Register it.</span><span class="w"></span>
+<span class="w">    </span><span class="n">mServices</span><span class="p">.</span><span class="na">add</span><span class="p">(</span><span class="n">service</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="kt">long</span><span class="w"> </span><span class="n">time</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">SystemClock</span><span class="p">.</span><span class="na">elapsedRealtime</span><span class="p">();</span><span class="w"></span>
+<span class="w">    </span><span class="k">try</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="c1">//调用onStart()方法开启服务</span><span class="w"></span>
+<span class="w">        </span><span class="n">service</span><span class="p">.</span><span class="na">onStart</span><span class="p">();</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="n">RuntimeException</span><span class="w"> </span><span class="n">ex</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<p>分析到这一步，SystemServive的生命周期方法就剩下onBootPhase()方法了，这个方法也说过了，是负责启动启动服务的过程中分阶段进行一些工作的，也运行在SystemServer的main线程中：</p>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="kd">private</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">startOtherServices</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="p">......</span><span class="w"></span>
+<span class="w">    </span><span class="n">mSystemServiceManager</span><span class="p">.</span><span class="na">startBootPhase</span><span class="p">(</span><span class="w"></span>
+<span class="w">          </span><span class="n">SystemService</span><span class="p">.</span><span class="na">PHASE_LOCK_SETTINGS_READY</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="n">mSystemServiceManager</span><span class="p">.</span><span class="na">startBootPhase</span><span class="p">(</span><span class="w"></span>
+<span class="w">          </span><span class="n">SystemService</span><span class="p">.</span><span class="na">PHASE_SYSTEM_SERVICES_READY</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="n">mSystemServiceManager</span><span class="p">.</span><span class="na">startBootPhase</span><span class="p">(</span><span class="w"></span>
+<span class="w">              </span><span class="n">SystemService</span><span class="p">.</span><span class="na">PHASE_ACTIVITY_MANAGER_READY</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="n">mSystemServiceManager</span><span class="p">.</span><span class="na">startBootPhase</span><span class="p">(</span><span class="w"></span>
+<span class="w">              </span><span class="n">SystemService</span><span class="p">.</span><span class="na">PHASE_THIRD_PARTY_APPS_CAN_START</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="n">mSystemServiceManager</span><span class="p">.</span><span class="na">startBootPhase</span><span class="p">(</span><span class="w"></span>
+<span class="w">              </span><span class="n">SystemService</span><span class="p">.</span><span class="na">PHASE_WAIT_FOR_DEFAULT_DISPLAY</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="p">......</span><span class="w"></span>
+<span class="w"> </span><span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<p>SystemServiceManager中：</p>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">startBootPhase</span><span class="p">(</span><span class="kd">final</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">phase</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="p">......</span><span class="w"></span>
+<span class="w">    </span><span class="n">mCurrentPhase</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">phase</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="k">try</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="kd">final</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">serviceLen</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mServices</span><span class="p">.</span><span class="na">size</span><span class="p">();</span><span class="w"></span>
+<span class="w">        </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">serviceLen</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">            </span><span class="kd">final</span><span class="w"> </span><span class="n">SystemService</span><span class="w"> </span><span class="n">service</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mServices</span><span class="p">.</span><span class="na">get</span><span class="p">(</span><span class="n">i</span><span class="p">);</span><span class="w"></span>
+<span class="w">            </span><span class="kt">long</span><span class="w"> </span><span class="n">time</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">SystemClock</span><span class="p">.</span><span class="na">elapsedRealtime</span><span class="p">();</span><span class="w"></span>
+<span class="w">            </span><span class="k">try</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="n">service</span><span class="p">.</span><span class="na">onBootPhase</span><span class="p">(</span><span class="n">mCurrentPhase</span><span class="p">);</span><span class="w"></span>
+<span class="w">            </span><span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="n">Exception</span><span class="w"> </span><span class="n">ex</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">            </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"> </span><span class="k">finally</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<p>到这里，SystemServer中启动BatteryService相关的内容就完毕了，现在依次看看在SystemServer中启动时，BatteryService中的构造方法、onStart()方法、onBootPhase()方法中都做了些什么。</p>
+<section id="batteryserviceconstructor">
+<h2>BatteryService中的构造方法Constructor()<a class="headerlink" href="#batteryserviceconstructor" title="此标题的永久链接"></a></h2>
+<p>首先看调用构造方法时的处理，在BatteryService中：</p>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="n">BatteryService</span><span class="p">.</span><span class="na">java</span><span class="w"></span>
+<span class="w"> </span>
+<span class="kd">public</span><span class="w"> </span><span class="nf">BatteryService</span><span class="p">(</span><span class="n">Context</span><span class="w"> </span><span class="n">context</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="kd">super</span><span class="p">(</span><span class="n">context</span><span class="p">);</span><span class="w"></span>
+<span class="w"> </span>
+<span class="w">    </span><span class="n">mContext</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">context</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="n">mHandler</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">Handler</span><span class="p">(</span><span class="kc">true</span><span class="w"> </span><span class="cm">/*async*/</span><span class="p">);</span><span class="w"></span>
+<span class="w"> </span>
+<span class="w">    </span><span class="c1">//Led封装了LightsManager,不同电量下led灯的颜色就由它来控制</span><span class="w"></span>
+<span class="w">    </span><span class="n">mLed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">Led</span><span class="p">(</span><span class="n">context</span><span class="p">,</span><span class="w"> </span><span class="n">getLocalService</span><span class="p">(</span><span class="n">LightsManager</span><span class="p">.</span><span class="na">class</span><span class="p">));</span><span class="w"></span>
+<span class="w"> </span>
+<span class="w">    </span><span class="c1">//电池属性改变的时候,会将全部信息写到mBatteryStats中,app端从mBatteryStats中获取当前电池的电量以及状态</span><span class="w"></span>
+<span class="w">    </span><span class="n">mBatteryStats</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">BatteryStatsService</span><span class="p">.</span><span class="na">getService</span><span class="p">();</span><span class="w"></span>
+<span class="w">    </span><span class="n">mActivityManagerInternal</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">LocalServices</span><span class="p">.</span><span class="na">getService</span><span class="p">(</span><span class="n">ActivityManagerInternal</span><span class="p">.</span><span class="na">class</span><span class="p">);</span><span class="w"></span>
+<span class="w"> </span>
+<span class="w">    </span><span class="c1">//以下是根据配置文件,定义不同电量对应的等级</span><span class="w"></span>
+<span class="w"> </span>
+<span class="w">    </span><span class="c1">//电池危急的电量；当电池电量低于此值时,将强制关机,这里是5</span><span class="w"></span>
+<span class="w">    </span><span class="n">mCriticalBatteryLevel</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mContext</span><span class="p">.</span><span class="na">getResources</span><span class="p">().</span><span class="na">getInteger</span><span class="p">(</span><span class="w"></span>
+<span class="w">            </span><span class="n">com</span><span class="p">.</span><span class="na">android</span><span class="p">.</span><span class="na">internal</span><span class="p">.</span><span class="na">R</span><span class="p">.</span><span class="na">integer</span><span class="p">.</span><span class="na">config_criticalBatteryWarningLevel</span><span class="p">);</span><span class="w"></span>
+<span class="w"> </span>
+<span class="w">    </span><span class="c1">//低电警告的电量；当电池电量低于此值时,系统报警,例如闪烁LED灯等,这里是15</span><span class="w"></span>
+<span class="w">    </span><span class="n">mLowBatteryWarningLevel</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mContext</span><span class="p">.</span><span class="na">getResources</span><span class="p">().</span><span class="na">getInteger</span><span class="p">(</span><span class="w"></span>
+<span class="w">            </span><span class="n">com</span><span class="p">.</span><span class="na">android</span><span class="p">.</span><span class="na">internal</span><span class="p">.</span><span class="na">R</span><span class="p">.</span><span class="na">integer</span><span class="p">.</span><span class="na">config_lowBatteryWarningLevel</span><span class="p">);</span><span class="w"></span>
+<span class="w"> </span>
+<span class="w">    </span><span class="c1">//关闭低电警告的电量；当电池电量高于此值时,结束低电状态,停止警示灯,这里是20</span><span class="w"></span>
+<span class="w">    </span><span class="n">mLowBatteryCloseWarningLevel</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mLowBatteryWarningLevel</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">mContext</span><span class="p">.</span><span class="na">getResources</span><span class="p">().</span><span class="na">getInteger</span><span class="p">(</span><span class="w"></span>
+<span class="w">            </span><span class="n">com</span><span class="p">.</span><span class="na">android</span><span class="p">.</span><span class="na">internal</span><span class="p">.</span><span class="na">R</span><span class="p">.</span><span class="na">integer</span><span class="p">.</span><span class="na">config_lowBatteryCloseWarningBump</span><span class="p">);</span><span class="w"></span>
+<span class="w"> </span>
+<span class="w">    </span><span class="c1">//关闭电池的温度（温度失控，就会出现三星S7爆炸啥的......）</span><span class="w"></span>
+<span class="w">    </span><span class="n">mShutdownBatteryTemperature</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mContext</span><span class="p">.</span><span class="na">getResources</span><span class="p">().</span><span class="na">getInteger</span><span class="p">(</span><span class="w"></span>
+<span class="w">            </span><span class="n">com</span><span class="p">.</span><span class="na">android</span><span class="p">.</span><span class="na">internal</span><span class="p">.</span><span class="na">R</span><span class="p">.</span><span class="na">integer</span><span class="p">.</span><span class="na">shutdownBatteryTemperature</span><span class="p">);</span><span class="w"></span>
+<span class="w"> </span>
+<span class="w">    </span><span class="c1">// 监控终端是否连接不匹配的充电器</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">File</span><span class="p">(</span><span class="s">&quot;/sys/devices/virtual/switch/invalid_charger/state&quot;</span><span class="p">).</span><span class="na">exists</span><span class="p">())</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="n">UEventObserver</span><span class="w"> </span><span class="n">invalidChargerObserver</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">UEventObserver</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">            </span><span class="nd">@Override</span><span class="w"></span>
+<span class="w">            </span><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">onUEvent</span><span class="p">(</span><span class="n">UEvent</span><span class="w"> </span><span class="n">event</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="kd">final</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">invalidCharger</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;1&quot;</span><span class="p">.</span><span class="na">equals</span><span class="p">(</span><span class="n">event</span><span class="p">.</span><span class="na">get</span><span class="p">(</span><span class="s">&quot;SWITCH_STATE&quot;</span><span class="p">))</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="w">                </span><span class="kd">synchronized</span><span class="w"> </span><span class="p">(</span><span class="n">mLock</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mInvalidCharger</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">invalidCharger</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                        </span><span class="n">mInvalidCharger</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">invalidCharger</span><span class="p">;</span><span class="w"></span>
+<span class="w">                    </span><span class="p">}</span><span class="w"></span>
+<span class="w">                </span><span class="p">}</span><span class="w"></span>
+<span class="w">            </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="p">};</span><span class="w"></span>
+<span class="w">        </span><span class="n">invalidChargerObserver</span><span class="p">.</span><span class="na">startObserving</span><span class="p">(</span><span class="w"></span>
+<span class="w">                </span><span class="s">&quot;DEVPATH=/devices/virtual/switch/invalid_charger&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<p>在构造方法中，详细信息都进行了注释，这里有两点需重点说明一下：</p>
+<ol class="arabic simple">
+<li><p>先看第一点：初始化了mBatteryStats，该对象类型为IBatteryStats，这里使用了Binder机制，在分析BatteryStatsService时将会知道，BatteryStatsService继承于IBatteryStats.Stub，因此，可以把BatteryStatsService作为Binder的服务端来使用。</p></li>
+<li><p>再分析第二点：UEvent机制。UEvent是kernel通知用户空间的一种机制，很多地方都用到了UEvent机制，如USB插拔/充电等，其本质是内核发送一个字符串(可通过Socket)，应用层接受并解释该字符串，获取相应信息，如果信息有变化，onUEevent()触发，做出改变。
+使用该机制时，需要一个UEventObserver对象，并重写onUEvent(UEvent e)方法，然后调用startObserving()进行监听,当一个uevent匹配startObserving(String)中指定的string时触发onUEvent();</p></li>
+</ol>
+</section>
+<section id="onstart">
+<h2>onStart()<a class="headerlink" href="#onstart" title="此标题的永久链接"></a></h2>
+<p>到这时，BatteryService的构造方法分析完毕了，根据启动流程，接下来执行的是第二步，onStart()方法，如下：</p>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="nd">@Override</span><span class="w"></span>
+<span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">onStart</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="c1">//注册Health并执行回调结果，Health是底层的一个对电池状态监听和获取电池信息的重要层级</span><span class="w"></span>
+<span class="w">    </span><span class="n">registerHealthCallback</span><span class="p">();</span><span class="w"></span>
+<span class="w">    </span><span class="c1">//实例化自身</span><span class="w"></span>
+<span class="w">    </span><span class="n">mBinderService</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">BinderService</span><span class="p">();</span><span class="w"></span>
+<span class="w">    </span><span class="c1">//注册本身的服务</span><span class="w"></span>
+<span class="w">    </span><span class="n">publishBinderService</span><span class="p">(</span><span class="s">&quot;battery&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">mBinderService</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="c1">//注册电池监听，当底层电池电量发生变化调用此监听，并调用update。</span><span class="w"></span>
+<span class="w">    </span><span class="n">mBatteryPropertiesRegistrar</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">BatteryPropertiesRegistrar</span><span class="p">();</span><span class="w"></span>
+<span class="w">    </span><span class="c1">//注册到Binder服务端</span><span class="w"></span>
+<span class="w">    </span><span class="n">publishBinderService</span><span class="p">(</span><span class="s">&quot;batteryproperties&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">mBatteryPropertiesRegistrar</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="c1">//注册到本地服务</span><span class="w"></span>
+<span class="w">    </span><span class="n">publishLocalService</span><span class="p">(</span><span class="n">BatteryManagerInternal</span><span class="p">.</span><span class="na">class</span><span class="p">,</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">LocalService</span><span class="p">());</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<p>在onStart()中，首先获取了一个“batterypropeties”的Binder，也即IBatteryPropertiesRegistrar，这个服务由healthd层进行注册，底层每间隔1分钟，会通过这个服务将电池状态信息更新给BatteryService.</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">hardware/interfaces/health/utils/libhealthloop/utils.cpp</span></code>:</p></li>
+</ul>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="c1">// Periodic chores fast interval in seconds</span>
+<span class="w">  </span><span class="cp">#define DEFAULT_PERIODIC_CHORES_INTERVAL_SLOW (60 * 10)</span>
+</pre></div>
+</div>
+<p>然后，实例化了内部类BinderService，该类继承自Binder,然后将这个Binder通过publishBinderService()发布到了系统服务中，就像之前分析PowerManagerService一样，目的是可以通过getSystemService(String)来获取其实例。
+publishLocalService()方法中将BatteryService的内部类LocalService注册到了本地服务中，LocalService中提供了一些getxxx()获取电池相关的方法，且仅限于SystemServer进程内使用。</p>
+<p>可以看到主要工作是做了一些服务的注册，最重要的就是registerHealthCallback()和BinderService()</p>
+<section id="registerhealthcallback">
+<h3>registerHealthCallback<a class="headerlink" href="#registerhealthcallback" title="此标题的永久链接"></a></h3>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="kd">private</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">registerHealthCallback</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="n">traceBegin</span><span class="p">(</span><span class="s">&quot;HealthInitWrapper&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="n">mHealthServiceWrapper</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">HealthServiceWrapper</span><span class="p">();</span><span class="c1">//第一步</span><span class="w"></span>
+<span class="w">        </span><span class="n">mHealthHalCallback</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">HealthHalCallback</span><span class="p">();</span><span class="c1">//第二步</span><span class="w"></span>
+<span class="w">        </span><span class="c1">// IHealth is lazily retrieved.</span><span class="w"></span>
+<span class="w">        </span><span class="k">try</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">            </span><span class="n">mHealthServiceWrapper</span><span class="p">.</span><span class="na">init</span><span class="p">(</span><span class="n">mHealthHalCallback</span><span class="p">,</span><span class="w"></span>
+<span class="w">                    </span><span class="k">new</span><span class="w"> </span><span class="n">HealthServiceWrapper</span><span class="p">.</span><span class="na">IServiceManagerSupplier</span><span class="p">()</span><span class="w"> </span><span class="p">{},</span><span class="w"></span>
+<span class="w">                    </span><span class="k">new</span><span class="w"> </span><span class="n">HealthServiceWrapper</span><span class="p">.</span><span class="na">IHealthSupplier</span><span class="p">()</span><span class="w"> </span><span class="p">{});</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="n">RemoteException</span><span class="w"> </span><span class="n">ex</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">            </span><span class="n">Slog</span><span class="p">.</span><span class="na">e</span><span class="p">(</span><span class="n">TAG</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;health: cannot register callback. (RemoteException)&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">            </span><span class="k">throw</span><span class="w"> </span><span class="n">ex</span><span class="p">.</span><span class="na">rethrowFromSystemServer</span><span class="p">();</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="n">NoSuchElementException</span><span class="w"> </span><span class="n">ex</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">            </span><span class="n">Slog</span><span class="p">.</span><span class="na">e</span><span class="p">(</span><span class="n">TAG</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;health: cannot register callback. (no supported health HAL service)&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">            </span><span class="k">throw</span><span class="w"> </span><span class="n">ex</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">finally</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">            </span><span class="n">traceEnd</span><span class="p">();</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">        </span><span class="n">traceBegin</span><span class="p">(</span><span class="s">&quot;HealthInitWaitUpdate&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w"> </span><span class="p">...</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<p>看到第一步 ：该方法是来确定要使用的Health服务实例(来自vender的“default”实例或来自healthd的“backup”实例)。然后通过IHealth.registerCallback监听取Health事件，做一些init操作，注册相应的关系。这里对这个暂不深究</p>
+<p>第二步：HealthHalCallback()是一个非常关键的回调，用于将Health层的数据回调到framework层，包含了电池的大部分信息（电池充电状态，等），接着进入该方法，看看主要逻辑</p>
+</section>
+<section id="healthhalcallback">
+<h3>HealthHalCallback<a class="headerlink" href="#healthhalcallback" title="此标题的永久链接"></a></h3>
+<p>该类继承了HealthInfoCallback.Stub，用AIDL跨进程方式去对电池信息做回调动作，所以在这里看不见JNI的东西，另外插个话 监听电池电量变化是用广播(ACTION_BATTERY_CHANGED BATTERY_CHANGED )形式发送给{&#64;link android.content.BroadcastReceiver IntentReceivers}这类的服务。</p>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="kd">private</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="kd">class</span> <span class="nc">HealthHalCallback</span><span class="w"> </span><span class="kd">extends</span><span class="w"> </span><span class="n">IHealthInfoCallback</span><span class="p">.</span><span class="na">Stub</span><span class="w"></span>
+<span class="w">            </span><span class="kd">implements</span><span class="w"> </span><span class="n">HealthServiceWrapper</span><span class="p">.</span><span class="na">Callback</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="nd">@Override</span><span class="w"> </span><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">healthInfoChanged</span><span class="p">(</span><span class="n">android</span><span class="p">.</span><span class="na">hardware</span><span class="p">.</span><span class="na">health</span><span class="p">.</span><span class="na">V2_0</span><span class="p">.</span><span class="na">HealthInfo</span><span class="w"> </span><span class="n">props</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">            </span><span class="n">BatteryService</span><span class="p">.</span><span class="na">this</span><span class="p">.</span><span class="na">update</span><span class="p">(</span><span class="n">props</span><span class="p">);</span><span class="c1">//Health层回调数据给上层，用广播形式通知到上层</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">     </span>
+<span class="w">        </span><span class="c1">// on new service registered</span><span class="w"></span>
+<span class="w">        </span><span class="nd">@Override</span><span class="w"> </span><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">onRegistration</span><span class="p">(</span><span class="n">IHealth</span><span class="w"> </span><span class="n">oldService</span><span class="p">,</span><span class="w"> </span><span class="n">IHealth</span><span class="w"> </span><span class="n">newService</span><span class="p">,</span><span class="w"></span>
+<span class="w">                </span><span class="n">String</span><span class="w"> </span><span class="n">instance</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">newService</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="kc">null</span><span class="p">)</span><span class="w"> </span><span class="k">return</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">            </span><span class="n">traceBegin</span><span class="p">(</span><span class="s">&quot;HealthUnregisterCallback&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">            </span><span class="k">try</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">oldService</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="kc">null</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                    </span><span class="kt">int</span><span class="w"> </span><span class="n">r</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">oldService</span><span class="p">.</span><span class="na">unregisterCallback</span><span class="p">(</span><span class="k">this</span><span class="p">);</span><span class="w"></span>
+<span class="w">                    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">r</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">Result</span><span class="p">.</span><span class="na">SUCCESS</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                        </span><span class="n">Slog</span><span class="p">.</span><span class="na">w</span><span class="p">(</span><span class="n">TAG</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;health: cannot unregister previous callback: &quot;</span><span class="w"> </span><span class="o">+</span><span class="w"></span>
+<span class="w">                                </span><span class="n">Result</span><span class="p">.</span><span class="na">toString</span><span class="p">(</span><span class="n">r</span><span class="p">));</span><span class="w"></span>
+<span class="w">                    </span><span class="p">}</span><span class="w"></span>
+<span class="w">                </span><span class="p">}</span><span class="w"></span>
+<span class="w">            </span><span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="n">RemoteException</span><span class="w"> </span><span class="n">ex</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="n">Slog</span><span class="p">.</span><span class="na">w</span><span class="p">(</span><span class="n">TAG</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;health: cannot unregister previous callback (transaction error): &quot;</span><span class="w"></span>
+<span class="w">                            </span><span class="o">+</span><span class="w"> </span><span class="n">ex</span><span class="p">.</span><span class="na">getMessage</span><span class="p">());</span><span class="w"></span>
+<span class="w">            </span><span class="p">}</span><span class="w"> </span><span class="k">finally</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="n">traceEnd</span><span class="p">();</span><span class="w"></span>
+<span class="w">            </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">            </span><span class="n">traceBegin</span><span class="p">(</span><span class="s">&quot;HealthRegisterCallback&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">            </span><span class="k">try</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="kt">int</span><span class="w"> </span><span class="n">r</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">newService</span><span class="p">.</span><span class="na">registerCallback</span><span class="p">(</span><span class="k">this</span><span class="p">);</span><span class="w"></span>
+<span class="w">                </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">r</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">Result</span><span class="p">.</span><span class="na">SUCCESS</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                    </span><span class="n">Slog</span><span class="p">.</span><span class="na">w</span><span class="p">(</span><span class="n">TAG</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;health: cannot register callback: &quot;</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">Result</span><span class="p">.</span><span class="na">toString</span><span class="p">(</span><span class="n">r</span><span class="p">));</span><span class="w"></span>
+<span class="w">                    </span><span class="k">return</span><span class="p">;</span><span class="w"></span>
+<span class="w">                </span><span class="p">}</span><span class="w"></span>
+<span class="w">                </span><span class="c1">// registerCallback does NOT guarantee that update is called</span><span class="w"></span>
+<span class="w">                </span><span class="c1">// immediately, so request a manual update here.</span><span class="w"></span>
+<span class="w">                </span><span class="n">newService</span><span class="p">.</span><span class="na">update</span><span class="p">();</span><span class="c1">//电池数据回调</span><span class="w"></span>
+<span class="w">            </span><span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="n">RemoteException</span><span class="w"> </span><span class="n">ex</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="n">Slog</span><span class="p">.</span><span class="na">e</span><span class="p">(</span><span class="n">TAG</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;health: cannot register callback (transaction error): &quot;</span><span class="w"></span>
+<span class="w">                        </span><span class="o">+</span><span class="w"> </span><span class="n">ex</span><span class="p">.</span><span class="na">getMessage</span><span class="p">());</span><span class="w"></span>
+<span class="w">            </span><span class="p">}</span><span class="w"> </span><span class="k">finally</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="n">traceEnd</span><span class="p">();</span><span class="w"></span>
+<span class="w">            </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<p>这里主要看的就是update()方法，接着往下看。</p>
+</section>
+<section id="update">
+<h3>update<a class="headerlink" href="#update" title="此标题的永久链接"></a></h3>
+<p>该方法就是Health层通过发起广播，执行跨进程事件，回调到上层来的数据，先看代码</p>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="kd">private</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">update</span><span class="p">(</span><span class="n">android</span><span class="p">.</span><span class="na">hardware</span><span class="p">.</span><span class="na">health</span><span class="p">.</span><span class="na">V2_0</span><span class="p">.</span><span class="na">HealthInfo</span><span class="w"> </span><span class="n">info</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="p">...</span><span class="w">  </span>
+<span class="w">        </span><span class="kd">synchronized</span><span class="w"> </span><span class="p">(</span><span class="n">mLock</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">mUpdatesStopped</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="c1">// 将数据拿到赋值给mHealthInfo</span><span class="w"></span>
+<span class="w">                </span><span class="n">mHealthInfo</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">info</span><span class="p">.</span><span class="na">legacy</span><span class="p">;</span><span class="w"></span>
+<span class="w">                </span><span class="c1">// Process the new values.</span><span class="w"></span>
+<span class="w">                </span><span class="c1">// 处理mHealthInfo的主要实现方法</span><span class="w"></span>
+<span class="w">                </span><span class="n">processValuesLocked</span><span class="p">(</span><span class="kc">false</span><span class="p">);</span><span class="w"></span>
+<span class="w">                </span><span class="n">mLock</span><span class="p">.</span><span class="na">notifyAll</span><span class="p">();</span><span class="w"> </span><span class="c1">// for any waiters on new info</span><span class="w"></span>
+<span class="w">            </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="n">copy</span><span class="p">(</span><span class="n">mLastHealthInfo</span><span class="p">,</span><span class="w"> </span><span class="n">info</span><span class="p">.</span><span class="na">legacy</span><span class="p">);</span><span class="w"></span>
+<span class="w">            </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">   </span><span class="p">...</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+</section>
+<section id="processvalueslocked">
+<h3>processValuesLocked<a class="headerlink" href="#processvalueslocked" title="此标题的永久链接"></a></h3>
+<p>在BatteryService中，有三个地方调用了processValuesLocked():</p>
+<ol class="arabic simple">
+<li><p>启动BatteryService时，在onBootPhase()方法中的updateBatteryWarningLock()方法中；</p></li>
+<li><p>在healthd层向BatteryService更新电池状态信息的update()方法中，这里会每分钟调用一次；</p></li>
+<li><p>通过adb shell命令dump时在processValuesFromShellLocked()中。</p></li>
+</ol>
+<p>该方法很长，包含了充电类型判断，电量低时的广播，插入充电/拔出充电的广播，LED灯闪烁等功能，所以直接上代码，在注释里看解释：</p>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="kd">private</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">processValuesLocked</span><span class="p">(</span><span class="kt">boolean</span><span class="w"> </span><span class="n">force</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="kt">boolean</span><span class="w"> </span><span class="n">logOutlier</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">false</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="kt">long</span><span class="w"> </span><span class="n">dischargeDuration</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="c1">//获取电池电量是否低于critical界限</span><span class="w"></span>
+<span class="w">    </span><span class="n">mBatteryLevelCritical</span><span class="w"> </span><span class="o">=</span><span class="w"></span>
+<span class="w">        </span><span class="n">mHealthInfo</span><span class="p">.</span><span class="na">batteryStatus</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">BatteryManager</span><span class="p">.</span><span class="na">BATTERY_STATUS_UNKNOWN</span><span class="w"></span>
+<span class="w">        </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">mHealthInfo</span><span class="p">.</span><span class="na">batteryLevel</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="n">mCriticalBatteryLevel</span><span class="p">;</span><span class="w"></span>
+<span class="c1">//判断是AC/USB/WLC中的哪一种充电方式</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mHealthInfo</span><span class="p">.</span><span class="na">chargerAcOnline</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="n">mPlugType</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">BatteryManager</span><span class="p">.</span><span class="na">BATTERY_PLUGGED_AC</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mHealthInfo</span><span class="p">.</span><span class="na">chargerUsbOnline</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="n">mPlugType</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">BatteryManager</span><span class="p">.</span><span class="na">BATTERY_PLUGGED_USB</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mHealthInfo</span><span class="p">.</span><span class="na">chargerWirelessOnline</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="n">mPlugType</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">BatteryManager</span><span class="p">.</span><span class="na">BATTERY_PLUGGED_WIRELESS</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="n">mPlugType</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">BATTERY_PLUGGED_NONE</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">DEBUG</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="n">Slog</span><span class="p">.</span><span class="na">d</span><span class="p">(</span><span class="n">TAG</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Processing new values: &quot;</span><span class="w"></span>
+<span class="w">                </span><span class="o">+</span><span class="w"> </span><span class="s">&quot;info=&quot;</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">mHealthInfo</span><span class="w"></span>
+<span class="w">                </span><span class="o">+</span><span class="w"> </span><span class="s">&quot;, mBatteryLevelCritical=&quot;</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">mBatteryLevelCritical</span><span class="w"></span>
+<span class="w">                </span><span class="o">+</span><span class="w"> </span><span class="s">&quot;, mPlugType=&quot;</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">mPlugType</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">    </span><span class="c1">// Let the battery stats keep track of the current level.</span><span class="w"></span>
+<span class="w">    </span><span class="k">try</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="n">mBatteryStats</span><span class="p">.</span><span class="na">setBatteryState</span><span class="p">(</span><span class="n">mHealthInfo</span><span class="p">.</span><span class="na">batteryStatus</span><span class="p">,</span><span class="w"> </span><span class="n">mHealthInfo</span><span class="p">.</span><span class="na">batteryHealth</span><span class="p">,</span><span class="w"></span>
+<span class="w">                </span><span class="n">mPlugType</span><span class="p">,</span><span class="w"> </span><span class="n">mHealthInfo</span><span class="p">.</span><span class="na">batteryLevel</span><span class="p">,</span><span class="w"> </span><span class="n">mHealthInfo</span><span class="p">.</span><span class="na">batteryTemperature</span><span class="p">,</span><span class="w"></span>
+<span class="w">                </span><span class="n">mHealthInfo</span><span class="p">.</span><span class="na">batteryVoltage</span><span class="p">,</span><span class="w"> </span><span class="n">mHealthInfo</span><span class="p">.</span><span class="na">batteryChargeCounter</span><span class="p">,</span><span class="w"></span>
+<span class="w">                </span><span class="n">mHealthInfo</span><span class="p">.</span><span class="na">batteryFullCharge</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="n">RemoteException</span><span class="w"> </span><span class="n">e</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="c1">// Should never happen.</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="c1">//低电量关机</span><span class="w"></span>
+<span class="w">    </span><span class="n">shutdownIfNoPowerLocked</span><span class="p">();</span><span class="w"></span>
+<span class="w">    </span><span class="c1">//电池温度过高关机</span><span class="w"></span>
+<span class="w">    </span><span class="n">shutdownIfOverTempLocked</span><span class="p">();</span><span class="w"></span>
+<span class="w">    </span><span class="c1">//force是第一次调用时标志，如果状态有更改依然会调用下面的代码</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">force</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="p">(</span><span class="n">mHealthInfo</span><span class="p">.</span><span class="na">batteryStatus</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">mLastBatteryStatus</span><span class="w"> </span><span class="o">||</span><span class="w"></span>
+<span class="w">            </span><span class="n">mHealthInfo</span><span class="p">.</span><span class="na">batteryHealth</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">mLastBatteryHealth</span><span class="w"> </span><span class="o">||</span><span class="w"></span>
+<span class="w">            </span><span class="n">mHealthInfo</span><span class="p">.</span><span class="na">batteryPresent</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">mLastBatteryPresent</span><span class="w"> </span><span class="o">||</span><span class="w"></span>
+<span class="w">            </span><span class="n">mHealthInfo</span><span class="p">.</span><span class="na">batteryLevel</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">mLastBatteryLevel</span><span class="w"> </span><span class="o">||</span><span class="w"></span>
+<span class="w">            </span><span class="n">mPlugType</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">mLastPlugType</span><span class="w"> </span><span class="o">||</span><span class="w"></span>
+<span class="w">            </span><span class="n">mHealthInfo</span><span class="p">.</span><span class="na">batteryVoltage</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">mLastBatteryVoltage</span><span class="w"> </span><span class="o">||</span><span class="w"></span>
+<span class="w">            </span><span class="n">mHealthInfo</span><span class="p">.</span><span class="na">batteryTemperature</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">mLastBatteryTemperature</span><span class="w"> </span><span class="o">||</span><span class="w"></span>
+<span class="w">            </span><span class="n">mHealthInfo</span><span class="p">.</span><span class="na">maxChargingCurrent</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">mLastMaxChargingCurrent</span><span class="w"> </span><span class="o">||</span><span class="w"></span>
+<span class="w">            </span><span class="n">mHealthInfo</span><span class="p">.</span><span class="na">maxChargingVoltage</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">mLastMaxChargingVoltage</span><span class="w"> </span><span class="o">||</span><span class="w"></span>
+<span class="w">            </span><span class="n">mHealthInfo</span><span class="p">.</span><span class="na">batteryChargeCounter</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">mLastChargeCounter</span><span class="w"> </span><span class="o">||</span><span class="w"></span>
+<span class="w">            </span><span class="n">mInvalidCharger</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">mLastInvalidCharger</span><span class="p">))</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="c1">//插入状态有更改，mLastPlugType是记录上一次充电方式，mPlugType是当前充电方式</span><span class="w"></span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mPlugType</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">mLastPlugType</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mLastPlugType</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">BATTERY_PLUGGED_NONE</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="c1">//没充电状态到充电状态</span><span class="w"></span>
+<span class="w">                </span><span class="c1">// discharging -&gt; charging</span><span class="w"></span>
+<span class="w">                </span><span class="n">mChargeStartLevel</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mHealthInfo</span><span class="p">.</span><span class="na">batteryLevel</span><span class="p">;</span><span class="w"></span>
+<span class="w">                </span><span class="n">mChargeStartTime</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">SystemClock</span><span class="p">.</span><span class="na">elapsedRealtime</span><span class="p">();</span><span class="w"></span>
+
+<span class="w">                </span><span class="kd">final</span><span class="w"> </span><span class="n">LogMaker</span><span class="w"> </span><span class="n">builder</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">LogMaker</span><span class="p">(</span><span class="n">MetricsEvent</span><span class="p">.</span><span class="na">ACTION_CHARGE</span><span class="p">);</span><span class="w"></span>
+<span class="w">                </span><span class="n">builder</span><span class="p">.</span><span class="na">setType</span><span class="p">(</span><span class="n">MetricsEvent</span><span class="p">.</span><span class="na">TYPE_ACTION</span><span class="p">);</span><span class="w"></span>
+<span class="w">                </span><span class="n">builder</span><span class="p">.</span><span class="na">addTaggedData</span><span class="p">(</span><span class="n">MetricsEvent</span><span class="p">.</span><span class="na">FIELD_PLUG_TYPE</span><span class="p">,</span><span class="w"> </span><span class="n">mPlugType</span><span class="p">);</span><span class="w"></span>
+<span class="w">                </span><span class="n">builder</span><span class="p">.</span><span class="na">addTaggedData</span><span class="p">(</span><span class="n">MetricsEvent</span><span class="p">.</span><span class="na">FIELD_BATTERY_LEVEL_START</span><span class="p">,</span><span class="w"></span>
+<span class="w">                        </span><span class="n">mHealthInfo</span><span class="p">.</span><span class="na">batteryLevel</span><span class="p">);</span><span class="w"></span>
+<span class="w">                </span><span class="n">mMetricsLogger</span><span class="p">.</span><span class="na">write</span><span class="p">(</span><span class="n">builder</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">                </span><span class="c1">// There&#39;s no value in this data unless we&#39;ve discharged at least once and the</span><span class="w"></span>
+<span class="w">                </span><span class="c1">// battery level has changed; so don&#39;t log until it does.</span><span class="w"></span>
+<span class="w">                </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mDischargeStartTime</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">mDischargeStartLevel</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">mHealthInfo</span><span class="p">.</span><span class="na">batteryLevel</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                    </span><span class="n">dischargeDuration</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">SystemClock</span><span class="p">.</span><span class="na">elapsedRealtime</span><span class="p">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">mDischargeStartTime</span><span class="p">;</span><span class="w"></span>
+<span class="w">                    </span><span class="n">logOutlier</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span><span class="p">;</span><span class="w"></span>
+<span class="w">                    </span><span class="n">EventLog</span><span class="p">.</span><span class="na">writeEvent</span><span class="p">(</span><span class="n">EventLogTags</span><span class="p">.</span><span class="na">BATTERY_DISCHARGE</span><span class="p">,</span><span class="w"> </span><span class="n">dischargeDuration</span><span class="p">,</span><span class="w"></span>
+<span class="w">                            </span><span class="n">mDischargeStartLevel</span><span class="p">,</span><span class="w"> </span><span class="n">mHealthInfo</span><span class="p">.</span><span class="na">batteryLevel</span><span class="p">);</span><span class="w"></span>
+<span class="w">                    </span><span class="c1">// make sure we see a discharge event before logging again</span><span class="w"></span>
+<span class="w">                    </span><span class="n">mDischargeStartTime</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="w">                </span><span class="p">}</span><span class="w"></span>
+<span class="w">            </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mPlugType</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">BATTERY_PLUGGED_NONE</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="c1">//充电状态到未充电状态 或者开机上电</span><span class="w"></span>
+<span class="w">                </span><span class="c1">// charging -&gt; discharging or we just powered up</span><span class="w"></span>
+<span class="w">                </span><span class="n">mDischargeStartTime</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">SystemClock</span><span class="p">.</span><span class="na">elapsedRealtime</span><span class="p">();</span><span class="w"></span>
+<span class="w">                </span><span class="n">mDischargeStartLevel</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mHealthInfo</span><span class="p">.</span><span class="na">batteryLevel</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">                </span><span class="kt">long</span><span class="w"> </span><span class="n">chargeDuration</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">SystemClock</span><span class="p">.</span><span class="na">elapsedRealtime</span><span class="p">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">mChargeStartTime</span><span class="p">;</span><span class="w"></span>
+<span class="w">                </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mChargeStartTime</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">chargeDuration</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                    </span><span class="kd">final</span><span class="w"> </span><span class="n">LogMaker</span><span class="w"> </span><span class="n">builder</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">LogMaker</span><span class="p">(</span><span class="n">MetricsEvent</span><span class="p">.</span><span class="na">ACTION_CHARGE</span><span class="p">);</span><span class="w"></span>
+<span class="w">                    </span><span class="n">builder</span><span class="p">.</span><span class="na">setType</span><span class="p">(</span><span class="n">MetricsEvent</span><span class="p">.</span><span class="na">TYPE_DISMISS</span><span class="p">);</span><span class="w"></span>
+<span class="w">                    </span><span class="n">builder</span><span class="p">.</span><span class="na">addTaggedData</span><span class="p">(</span><span class="n">MetricsEvent</span><span class="p">.</span><span class="na">FIELD_PLUG_TYPE</span><span class="p">,</span><span class="w"> </span><span class="n">mLastPlugType</span><span class="p">);</span><span class="w"></span>
+<span class="w">                    </span><span class="n">builder</span><span class="p">.</span><span class="na">addTaggedData</span><span class="p">(</span><span class="n">MetricsEvent</span><span class="p">.</span><span class="na">FIELD_CHARGING_DURATION_MILLIS</span><span class="p">,</span><span class="w"></span>
+<span class="w">                            </span><span class="n">chargeDuration</span><span class="p">);</span><span class="w"></span>
+<span class="w">                    </span><span class="n">builder</span><span class="p">.</span><span class="na">addTaggedData</span><span class="p">(</span><span class="n">MetricsEvent</span><span class="p">.</span><span class="na">FIELD_BATTERY_LEVEL_START</span><span class="p">,</span><span class="w"></span>
+<span class="w">                            </span><span class="n">mChargeStartLevel</span><span class="p">);</span><span class="w"></span>
+<span class="w">                    </span><span class="n">builder</span><span class="p">.</span><span class="na">addTaggedData</span><span class="p">(</span><span class="n">MetricsEvent</span><span class="p">.</span><span class="na">FIELD_BATTERY_LEVEL_END</span><span class="p">,</span><span class="w"></span>
+<span class="w">                            </span><span class="n">mHealthInfo</span><span class="p">.</span><span class="na">batteryLevel</span><span class="p">);</span><span class="w"></span>
+<span class="w">                    </span><span class="n">mMetricsLogger</span><span class="p">.</span><span class="na">write</span><span class="p">(</span><span class="n">builder</span><span class="p">);</span><span class="w"></span>
+<span class="w">                </span><span class="p">}</span><span class="w"></span>
+<span class="w">                </span><span class="n">mChargeStartTime</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="w">            </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="c1">// 电池状态更新</span><span class="w"></span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mHealthInfo</span><span class="p">.</span><span class="na">batteryStatus</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">mLastBatteryStatus</span><span class="w"> </span><span class="o">||</span><span class="w"></span>
+<span class="w">                </span><span class="n">mHealthInfo</span><span class="p">.</span><span class="na">batteryHealth</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">mLastBatteryHealth</span><span class="w"> </span><span class="o">||</span><span class="w"></span>
+<span class="w">                </span><span class="n">mHealthInfo</span><span class="p">.</span><span class="na">batteryPresent</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">mLastBatteryPresent</span><span class="w"> </span><span class="o">||</span><span class="w"></span>
+<span class="w">                </span><span class="n">mPlugType</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">mLastPlugType</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">            </span><span class="n">EventLog</span><span class="p">.</span><span class="na">writeEvent</span><span class="p">(</span><span class="n">EventLogTags</span><span class="p">.</span><span class="na">BATTERY_STATUS</span><span class="p">,</span><span class="w"></span>
+<span class="w">                    </span><span class="n">mHealthInfo</span><span class="p">.</span><span class="na">batteryStatus</span><span class="p">,</span><span class="w"> </span><span class="n">mHealthInfo</span><span class="p">.</span><span class="na">batteryHealth</span><span class="p">,</span><span class="w"> </span><span class="n">mHealthInfo</span><span class="p">.</span><span class="na">batteryPresent</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"></span>
+<span class="w">                    </span><span class="n">mPlugType</span><span class="p">,</span><span class="w"> </span><span class="n">mHealthInfo</span><span class="p">.</span><span class="na">batteryTechnology</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="c1">// 电池电量更新</span><span class="w"></span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mHealthInfo</span><span class="p">.</span><span class="na">batteryLevel</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">mLastBatteryLevel</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">            </span><span class="c1">// Don&#39;t do this just from voltage or temperature changes, that is</span><span class="w"></span>
+<span class="w">            </span><span class="c1">// too noisy.</span><span class="w"></span>
+<span class="w">            </span><span class="n">EventLog</span><span class="p">.</span><span class="na">writeEvent</span><span class="p">(</span><span class="n">EventLogTags</span><span class="p">.</span><span class="na">BATTERY_LEVEL</span><span class="p">,</span><span class="w"></span>
+<span class="w">                    </span><span class="n">mHealthInfo</span><span class="p">.</span><span class="na">batteryLevel</span><span class="p">,</span><span class="w"> </span><span class="n">mHealthInfo</span><span class="p">.</span><span class="na">batteryVoltage</span><span class="p">,</span><span class="w"> </span><span class="n">mHealthInfo</span><span class="p">.</span><span class="na">batteryTemperature</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span>
+<span class="w">        </span><span class="c1">// 记录电池快没电状态</span><span class="w"></span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mBatteryLevelCritical</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="o">!</span><span class="n">mLastBatteryLevelCritical</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"></span>
+<span class="w">                </span><span class="n">mPlugType</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">BATTERY_PLUGGED_NONE</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">            </span><span class="c1">// We want to make sure we log discharge cycle outliers</span><span class="w"></span>
+<span class="w">            </span><span class="c1">// if the battery is about to die.</span><span class="w"></span>
+<span class="w">            </span><span class="n">dischargeDuration</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">SystemClock</span><span class="p">.</span><span class="na">elapsedRealtime</span><span class="p">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">mDischargeStartTime</span><span class="p">;</span><span class="w"></span>
+<span class="w">            </span><span class="n">logOutlier</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">        </span><span class="c1">//电量低时是否切换到低电量模式</span><span class="w"></span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">mBatteryLevelLow</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">            </span><span class="c1">// Should we now switch in to low battery mode?</span><span class="w"></span>
+<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mPlugType</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">BATTERY_PLUGGED_NONE</span><span class="w"></span>
+<span class="w">                    </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">mHealthInfo</span><span class="p">.</span><span class="na">batteryStatus</span><span class="w"> </span><span class="o">!=</span><span class="w"></span>
+<span class="w">                        </span><span class="n">BatteryManager</span><span class="p">.</span><span class="na">BATTERY_STATUS_UNKNOWN</span><span class="w"></span>
+<span class="w">                    </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">mHealthInfo</span><span class="p">.</span><span class="na">batteryLevel</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="n">mLowBatteryWarningLevel</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="n">mBatteryLevelLow</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span><span class="p">;</span><span class="w"></span>
+<span class="w">            </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">            </span><span class="c1">// Should we now switch out of low battery mode?</span><span class="w"></span>
+<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mPlugType</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">BATTERY_PLUGGED_NONE</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="n">mBatteryLevelLow</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">false</span><span class="p">;</span><span class="w"></span>
+<span class="w">            </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mHealthInfo</span><span class="p">.</span><span class="na">batteryLevel</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="n">mLowBatteryCloseWarningLevel</span><span class="p">)</span><span class="w">  </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="n">mBatteryLevelLow</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">false</span><span class="p">;</span><span class="w"></span>
+<span class="w">            </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">force</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">mHealthInfo</span><span class="p">.</span><span class="na">batteryLevel</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="n">mLowBatteryWarningLevel</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="c1">// If being forced, the previous state doesn&#39;t matter, we will just</span><span class="w"></span>
+<span class="w">                </span><span class="c1">// absolutely check to see if we are now above the warning level.</span><span class="w"></span>
+<span class="w">                </span><span class="n">mBatteryLevelLow</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">false</span><span class="p">;</span><span class="w"></span>
+<span class="w">            </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">        </span><span class="n">mSequence</span><span class="o">++</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">        </span><span class="c1">// Separate broadcast is sent for power connected / not connected</span><span class="w"></span>
+<span class="w">        </span><span class="c1">// since the standard intent will not wake any applications and some</span><span class="w"></span>
+<span class="w">        </span><span class="c1">// applications may want to have smart behavior based on this.</span><span class="w"></span>
+<span class="w">        </span><span class="c1">//插入充电时，发送广播，播放提示音和更新充电UI</span><span class="w"></span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mPlugType</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">mLastPlugType</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">            </span><span class="kd">final</span><span class="w"> </span><span class="n">Intent</span><span class="w"> </span><span class="n">statusIntent</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">Intent</span><span class="p">(</span><span class="n">Intent</span><span class="p">.</span><span class="na">ACTION_POWER_CONNECTED</span><span class="p">);</span><span class="w"></span>
+<span class="w">            </span><span class="n">statusIntent</span><span class="p">.</span><span class="na">setFlags</span><span class="p">(</span><span class="n">Intent</span><span class="p">.</span><span class="na">FLAG_RECEIVER_REGISTERED_ONLY_BEFORE_BOOT</span><span class="p">);</span><span class="w"></span>
+<span class="w">            </span><span class="n">statusIntent</span><span class="p">.</span><span class="na">putExtra</span><span class="p">(</span><span class="n">BatteryManager</span><span class="p">.</span><span class="na">EXTRA_SEQUENCE</span><span class="p">,</span><span class="w"> </span><span class="n">mSequence</span><span class="p">);</span><span class="w"></span>
+<span class="w">            </span><span class="n">mHandler</span><span class="p">.</span><span class="na">post</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">Runnable</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="nd">@Override</span><span class="w"></span>
+<span class="w">                </span><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">run</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                    </span><span class="n">mContext</span><span class="p">.</span><span class="na">sendBroadcastAsUser</span><span class="p">(</span><span class="n">statusIntent</span><span class="p">,</span><span class="w"> </span><span class="n">UserHandle</span><span class="p">.</span><span class="na">ALL</span><span class="p">);</span><span class="w"></span>
+<span class="w">                </span><span class="p">}</span><span class="w"></span>
+<span class="w">            </span><span class="p">});</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="c1">//断开充电时，发送广播，播放提示音和更新充电UI</span><span class="w"></span>
+<span class="w">        </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mPlugType</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">mLastPlugType</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">            </span><span class="kd">final</span><span class="w"> </span><span class="n">Intent</span><span class="w"> </span><span class="n">statusIntent</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">Intent</span><span class="p">(</span><span class="n">Intent</span><span class="p">.</span><span class="na">ACTION_POWER_DISCONNECTED</span><span class="p">);</span><span class="w"></span>
+<span class="w">            </span><span class="n">statusIntent</span><span class="p">.</span><span class="na">setFlags</span><span class="p">(</span><span class="n">Intent</span><span class="p">.</span><span class="na">FLAG_RECEIVER_REGISTERED_ONLY_BEFORE_BOOT</span><span class="p">);</span><span class="w"></span>
+<span class="w">            </span><span class="n">statusIntent</span><span class="p">.</span><span class="na">putExtra</span><span class="p">(</span><span class="n">BatteryManager</span><span class="p">.</span><span class="na">EXTRA_SEQUENCE</span><span class="p">,</span><span class="w"> </span><span class="n">mSequence</span><span class="p">);</span><span class="w"></span>
+<span class="w">            </span><span class="n">mHandler</span><span class="p">.</span><span class="na">post</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">Runnable</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="nd">@Override</span><span class="w"></span>
+<span class="w">                </span><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">run</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                    </span><span class="n">mContext</span><span class="p">.</span><span class="na">sendBroadcastAsUser</span><span class="p">(</span><span class="n">statusIntent</span><span class="p">,</span><span class="w"> </span><span class="n">UserHandle</span><span class="p">.</span><span class="na">ALL</span><span class="p">);</span><span class="w"></span>
+<span class="w">                </span><span class="p">}</span><span class="w"></span>
+<span class="w">            </span><span class="p">});</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="c1">// 低电量电池事件通知</span><span class="w"></span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">shouldSendBatteryLowLocked</span><span class="p">())</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">            </span><span class="n">mSentLowBatteryBroadcast</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span><span class="p">;</span><span class="w"></span>
+<span class="w">            </span><span class="kd">final</span><span class="w"> </span><span class="n">Intent</span><span class="w"> </span><span class="n">statusIntent</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">Intent</span><span class="p">(</span><span class="n">Intent</span><span class="p">.</span><span class="na">ACTION_BATTERY_LOW</span><span class="p">);</span><span class="w"></span>
+<span class="w">            </span><span class="n">statusIntent</span><span class="p">.</span><span class="na">setFlags</span><span class="p">(</span><span class="n">Intent</span><span class="p">.</span><span class="na">FLAG_RECEIVER_REGISTERED_ONLY_BEFORE_BOOT</span><span class="p">);</span><span class="w"></span>
+<span class="w">            </span><span class="n">statusIntent</span><span class="p">.</span><span class="na">putExtra</span><span class="p">(</span><span class="n">BatteryManager</span><span class="p">.</span><span class="na">EXTRA_SEQUENCE</span><span class="p">,</span><span class="w"> </span><span class="n">mSequence</span><span class="p">);</span><span class="w"></span>
+<span class="w">            </span><span class="n">mHandler</span><span class="p">.</span><span class="na">post</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">Runnable</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="nd">@Override</span><span class="w"></span>
+<span class="w">                </span><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">run</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                    </span><span class="n">mContext</span><span class="p">.</span><span class="na">sendBroadcastAsUser</span><span class="p">(</span><span class="n">statusIntent</span><span class="p">,</span><span class="w"> </span><span class="n">UserHandle</span><span class="p">.</span><span class="na">ALL</span><span class="p">);</span><span class="w"></span>
+<span class="w">                </span><span class="p">}</span><span class="w"></span>
+<span class="w">            </span><span class="p">});</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mSentLowBatteryBroadcast</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"></span>
+<span class="w">                </span><span class="n">mHealthInfo</span><span class="p">.</span><span class="na">batteryLevel</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="n">mLowBatteryCloseWarningLevel</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">            </span><span class="n">mSentLowBatteryBroadcast</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">false</span><span class="p">;</span><span class="w"></span>
+<span class="w">            </span><span class="kd">final</span><span class="w"> </span><span class="n">Intent</span><span class="w"> </span><span class="n">statusIntent</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">Intent</span><span class="p">(</span><span class="n">Intent</span><span class="p">.</span><span class="na">ACTION_BATTERY_OKAY</span><span class="p">);</span><span class="w"></span>
+<span class="w">            </span><span class="n">statusIntent</span><span class="p">.</span><span class="na">setFlags</span><span class="p">(</span><span class="n">Intent</span><span class="p">.</span><span class="na">FLAG_RECEIVER_REGISTERED_ONLY_BEFORE_BOOT</span><span class="p">);</span><span class="w"></span>
+<span class="w">            </span><span class="n">statusIntent</span><span class="p">.</span><span class="na">putExtra</span><span class="p">(</span><span class="n">BatteryManager</span><span class="p">.</span><span class="na">EXTRA_SEQUENCE</span><span class="p">,</span><span class="w"> </span><span class="n">mSequence</span><span class="p">);</span><span class="w"></span>
+<span class="w">            </span><span class="n">mHandler</span><span class="p">.</span><span class="na">post</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">Runnable</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="nd">@Override</span><span class="w"></span>
+<span class="w">                </span><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">run</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                    </span><span class="n">mContext</span><span class="p">.</span><span class="na">sendBroadcastAsUser</span><span class="p">(</span><span class="n">statusIntent</span><span class="p">,</span><span class="w"> </span><span class="n">UserHandle</span><span class="p">.</span><span class="na">ALL</span><span class="p">);</span><span class="w"></span>
+<span class="w">                </span><span class="p">}</span><span class="w"></span>
+<span class="w">            </span><span class="p">});</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+
+
+<span class="w">        </span><span class="c1">//当以上的广播完成后，该方法主要用于记录mHealthInfo的状态信息，就是电池的一些状态+电池是否充电的信息+电量等信息</span><span class="w"></span>
+<span class="w">        </span><span class="c1">//发送粘性广播给everyone</span><span class="w"></span>
+<span class="w">        </span><span class="n">sendBatteryChangedIntentLocked</span><span class="p">();</span><span class="w"></span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mLastBatteryLevel</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">mHealthInfo</span><span class="p">.</span><span class="na">batteryLevel</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="n">mLastPlugType</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">mPlugType</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">            </span><span class="n">sendBatteryLevelChangedIntentLocked</span><span class="p">();</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="c1">//更新Led灯信息</span><span class="w"></span>
+<span class="w">        </span><span class="n">mLed</span><span class="p">.</span><span class="na">updateLightsLocked</span><span class="p">();</span><span class="w"></span>
+
+<span class="w">        </span><span class="c1">// This needs to be done after sendIntent() so that we get the lastest battery stats.</span><span class="w"></span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">logOutlier</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">dischargeDuration</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">            </span><span class="n">logOutlierLocked</span><span class="p">(</span><span class="n">dischargeDuration</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="c1">//记录上一次mHealthInfo的状态</span><span class="w"></span>
+<span class="w">        </span><span class="n">mLastBatteryStatus</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mHealthInfo</span><span class="p">.</span><span class="na">batteryStatus</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="n">mLastBatteryHealth</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mHealthInfo</span><span class="p">.</span><span class="na">batteryHealth</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="n">mLastBatteryPresent</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mHealthInfo</span><span class="p">.</span><span class="na">batteryPresent</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="n">mLastBatteryLevel</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mHealthInfo</span><span class="p">.</span><span class="na">batteryLevel</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="n">mLastPlugType</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mPlugType</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="n">mLastBatteryVoltage</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mHealthInfo</span><span class="p">.</span><span class="na">batteryVoltage</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="n">mLastBatteryTemperature</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mHealthInfo</span><span class="p">.</span><span class="na">batteryTemperature</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="n">mLastMaxChargingCurrent</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mHealthInfo</span><span class="p">.</span><span class="na">maxChargingCurrent</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="n">mLastMaxChargingVoltage</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mHealthInfo</span><span class="p">.</span><span class="na">maxChargingVoltage</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="n">mLastChargeCounter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mHealthInfo</span><span class="p">.</span><span class="na">batteryChargeCounter</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="n">mLastBatteryLevelCritical</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mBatteryLevelCritical</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="n">mLastInvalidCharger</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mInvalidCharger</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<p>以上可以概括为：</p>
+<ol class="arabic simple">
+<li><p>获取充电类型。</p></li>
+<li><p>更新统计电池状态信息。</p></li>
+<li><p>进行低电量时和高温时的关机。</p></li>
+<li><p>充电类型改变时获取放电时长和放电量。</p></li>
+<li><p>更新低电量临界值。</p></li>
+<li><p>发送充电/放电广播和到达低电量/退出低电量广播。</p></li>
+<li><p>调用sendBatteryChangedIntentLocked()方法发送粘性广播。</p></li>
+<li><p>更新LED灯状态。</p></li>
+<li><p>更新电池信息。</p></li>
+</ol>
+<ul class="simple">
+<li><p>流程图如下：</p></li>
+</ul>
+<p><img alt="0005_0000.png" src="../../../_images/0005_00004.png" /></p>
+</section>
+<section id="batterypropertiesregistrar">
+<h3>BatteryPropertiesRegistrar<a class="headerlink" href="#batterypropertiesregistrar" title="此标题的永久链接"></a></h3>
+<p>首先，会在系统服务中获取“batteryproperties”注册的服务，获取到的对象为Binder，那么这个名为“batteryproperties”的系统服务，它是在何处进行注册的呢？
+我在Java代码中搜索后，没有发现对应的注册代码，难不成它没有进行注册？这是不可能的。经过全局搜索发现了其注册位置，在c++代码中,路径为：</p>
+<p>该接口给上层直接获取系统电量的方法:</p>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="n">BatteryManager</span><span class="w"> </span><span class="n">batteryManager</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">BatteryManager</span><span class="p">)</span><span class="w"> </span><span class="n">getSystemService</span><span class="p">(</span><span class="n">BATTERY_SERVICE</span><span class="p">);</span><span class="w"></span>
+<span class="n">batteryManager</span><span class="p">.</span><span class="na">getIntProperty</span><span class="p">(</span><span class="n">BatteryManager</span><span class="p">.</span><span class="na">BATTERY_PROPERTY_CAPACITY</span><span class="p">);</span><span class="w"></span>
+</pre></div>
+</div>
+<p>程序流程：</p>
+<div class="highlight-log notranslate"><div class="highlight"><pre><span></span>* batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY);
+  * getIntProperty(int id) //frameworks/base/core/java/android/os/BatteryManager.java
+    * long value = queryProperty(id); //
+      * mBatteryPropertiesRegistrar.getProperty(id, prop) == 0
+      * ret = prop.getLong();//当前电量返回结果
+        * public int getProperty(int id, final BatteryProperty prop) throws RemoteException //BatteryServices.java
+        * if (result == Result.SUCCESS) prop.setLong(value);
+          * case BatteryManager.BATTERY_PROPERTY_CAPACITY
+            * service.getCapacity((int result, int value) //这里的service其实就是HIDL了
+              * Return&lt;void&gt; Health::getCapacity(getCapacity_cb _hidl_cb)  //hardware/interfaces/health/utils/libhealth2impl/Health.cpp
+                * GetProperty&lt;int32_t&gt;(&amp;battery_monitor_, BATTERY_PROP_CAPACITY, 0, _hidl_cb);
+                  * monitor-&gt;getProperty(static_cast&lt;int&gt;(id), &amp;prop);
+                    * BatteryMonitor::getProperty(int id, struct BatteryProperty *val) //system/core/healthd/BatteryMonitor.cpp
+                      * case BATTERY_PROP_CAPACITY:
+                        * getIntField(mHealthdConfig-&gt;batteryCapacityPath); //读取sys/class/power_supply/battery/capacity
+                          *  if (readFromFile(path, &amp;buf) &gt; 0)
+                  * callback(result, static_cast&lt;T&gt;(ret)); //调用batteryservice传下来的回调函数，参数为Result::SUCCESS，ret
+</pre></div>
+</div>
+<p>这个回调函数就做了一个动作,prop.setLong(value);//这个value即是 BatteryProperty中的valueInt64的值；</p>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="w">     </span><span class="c1">// Reduced IBatteryPropertiesRegistrar that only implements getProperty for usage</span><span class="w"></span>
+<span class="w">      </span><span class="c1">// in BatteryManager.</span><span class="w"></span>
+<span class="w">      </span><span class="kd">private</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="kd">class</span> <span class="nc">BatteryPropertiesRegistrar</span><span class="w"> </span><span class="kd">extends</span><span class="w"> </span><span class="n">IBatteryPropertiesRegistrar</span><span class="p">.</span><span class="na">Stub</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">         </span><span class="nd">@Override</span><span class="w"></span>
+<span class="w">          </span><span class="kd">public</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">getProperty</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">BatteryProperty</span><span class="w"> </span><span class="n">prop</span><span class="p">)</span><span class="w"> </span><span class="kd">throws</span><span class="w"> </span><span class="n">RemoteException</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">              </span><span class="n">traceBegin</span><span class="p">(</span><span class="s">&quot;HealthGetProperty&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">          </span><span class="k">try</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                  </span><span class="n">IHealth</span><span class="w"> </span><span class="n">service</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mHealthServiceWrapper</span><span class="p">.</span><span class="na">getLastService</span><span class="p">();</span><span class="w"></span>
+<span class="w">                 </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">service</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="kc">null</span><span class="p">)</span><span class="w"> </span><span class="k">throw</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">RemoteException</span><span class="p">(</span><span class="s">&quot;no health service&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">                  </span><span class="kd">final</span><span class="w"> </span><span class="n">MutableInt</span><span class="w"> </span><span class="n">outResult</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">MutableInt</span><span class="p">(</span><span class="n">Result</span><span class="p">.</span><span class="na">NOT_SUPPORTED</span><span class="p">);</span><span class="w"></span>
+<span class="w">                 </span><span class="k">switch</span><span class="p">(</span><span class="n">id</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                      </span><span class="k">case</span><span class="w"> </span><span class="n">BatteryManager</span><span class="p">.</span><span class="na">BATTERY_PROPERTY_CAPACITY</span><span class="p">:</span><span class="c1">//here we are</span><span class="w"></span>
+<span class="w">                          </span><span class="n">service</span><span class="p">.</span><span class="na">getCapacity</span><span class="p">((</span><span class="kt">int</span><span class="w"> </span><span class="n">result</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">value</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                              </span><span class="n">outResult</span><span class="p">.</span><span class="na">value</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">result</span><span class="p">;</span><span class="w"></span>
+<span class="w">                              </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">result</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">Result</span><span class="p">.</span><span class="na">SUCCESS</span><span class="p">)</span><span class="w"> </span><span class="n">prop</span><span class="p">.</span><span class="na">setLong</span><span class="p">(</span><span class="n">value</span><span class="p">);</span><span class="w"></span>
+<span class="w">                          </span><span class="p">});</span><span class="w"></span>
+<span class="w">                          </span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+<span class="w">                 </span><span class="p">}</span><span class="w"></span>
+<span class="w">          </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p><a class="reference external" href="https://blog.csdn.net/potato_man/article/details/90906543">android 9.0 getIntProperty获取系统当前电量流程分析(一)</a></p></li>
+</ul>
+</section>
+</section>
+<section id="onbootphase">
+<h2>onBootPhase()<a class="headerlink" href="#onbootphase" title="此标题的永久链接"></a></h2>
+<p>onStart()方法调用之后，当ActivityManager启动完成的时候，回调onBootPhase方法：</p>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="nd">@Override</span><span class="w"></span>
+<span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">onBootPhase</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">phase</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">phase</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">PHASE_ACTIVITY_MANAGER_READY</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="c1">// check our power situation now that it is safe to display the shutdown dialog.</span><span class="w"></span>
+<span class="w">        </span><span class="kd">synchronized</span><span class="w"> </span><span class="p">(</span><span class="n">mLock</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">            </span><span class="c1">//注册一个低电量监听</span><span class="w"></span>
+<span class="w">            </span><span class="n">ContentObserver</span><span class="w"> </span><span class="n">obs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">ContentObserver</span><span class="p">(</span><span class="n">mHandler</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="nd">@Override</span><span class="w"></span>
+<span class="w">                </span><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">onChange</span><span class="p">(</span><span class="kt">boolean</span><span class="w"> </span><span class="n">selfChange</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                    </span><span class="kd">synchronized</span><span class="w"> </span><span class="p">(</span><span class="n">mLock</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                        </span><span class="n">updateBatteryWarningLevelLocked</span><span class="p">();</span><span class="w"></span>
+<span class="w">                    </span><span class="p">}</span><span class="w"></span>
+<span class="w">                </span><span class="p">}</span><span class="w"></span>
+<span class="w">            </span><span class="p">};</span><span class="w"></span>
+<span class="w">            </span><span class="kd">final</span><span class="w"> </span><span class="n">ContentResolver</span><span class="w"> </span><span class="n">resolver</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mContext</span><span class="p">.</span><span class="na">getContentResolver</span><span class="p">();</span><span class="w"></span>
+<span class="w">            </span><span class="n">resolver</span><span class="p">.</span><span class="na">registerContentObserver</span><span class="p">(</span><span class="n">Settings</span><span class="p">.</span><span class="na">Global</span><span class="p">.</span><span class="na">getUriFor</span><span class="p">(</span><span class="w"></span>
+<span class="w">                    </span><span class="n">Settings</span><span class="p">.</span><span class="na">Global</span><span class="p">.</span><span class="na">LOW_POWER_MODE_TRIGGER_LEVEL</span><span class="p">),</span><span class="w"></span>
+<span class="w">                    </span><span class="kc">false</span><span class="p">,</span><span class="w"> </span><span class="n">obs</span><span class="p">,</span><span class="w"> </span><span class="n">UserHandle</span><span class="p">.</span><span class="na">USER_ALL</span><span class="p">);</span><span class="w"></span>
+<span class="w">            </span><span class="n">updateBatteryWarningLevelLocked</span><span class="p">();</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<p>onBootPhase方法很简单，就是注册了一个关于ContentObserver来监测设置中关于低电量警告的电量值是否改变,
+如果该电量值发生变化，回调updateBatteryWarningLevelLocked()方法。</p>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="kd">private</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">updateBatteryWarningLevelLocked</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="kd">final</span><span class="w"> </span><span class="n">ContentResolver</span><span class="w"> </span><span class="n">resolver</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mContext</span><span class="p">.</span><span class="na">getContentResolver</span><span class="p">();</span><span class="w"></span>
+<span class="w">    </span><span class="c1">//获取配置文件中存储的低电量触发默认值,15</span><span class="w"></span>
+<span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">defWarnLevel</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mContext</span><span class="p">.</span><span class="na">getResources</span><span class="p">().</span><span class="na">getInteger</span><span class="p">(</span><span class="w"></span>
+<span class="w">            </span><span class="n">com</span><span class="p">.</span><span class="na">android</span><span class="p">.</span><span class="na">internal</span><span class="p">.</span><span class="na">R</span><span class="p">.</span><span class="na">integer</span><span class="p">.</span><span class="na">config_lowBatteryWarningLevel</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="c1">//获取Settings.Global中存储的低电量触发值</span><span class="w"></span>
+<span class="w">    </span><span class="n">mLowBatteryWarningLevel</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Settings</span><span class="p">.</span><span class="na">Global</span><span class="p">.</span><span class="na">getInt</span><span class="p">(</span><span class="n">resolver</span><span class="p">,</span><span class="w"></span>
+<span class="w">            </span><span class="n">Settings</span><span class="p">.</span><span class="na">Global</span><span class="p">.</span><span class="na">LOW_POWER_MODE_TRIGGER_LEVEL</span><span class="p">,</span><span class="w"> </span><span class="n">defWarnLevel</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mLowBatteryWarningLevel</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="n">mLowBatteryWarningLevel</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">defWarnLevel</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mLowBatteryWarningLevel</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">mCriticalBatteryLevel</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="n">mLowBatteryWarningLevel</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mCriticalBatteryLevel</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="n">mLowBatteryCloseWarningLevel</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mLowBatteryWarningLevel</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">mContext</span><span class="p">.</span><span class="na">getResources</span><span class="p">().</span><span class="na">getInteger</span><span class="p">(</span><span class="w"></span>
+<span class="w">            </span><span class="n">com</span><span class="p">.</span><span class="na">android</span><span class="p">.</span><span class="na">internal</span><span class="p">.</span><span class="na">R</span><span class="p">.</span><span class="na">integer</span><span class="p">.</span><span class="na">config_lowBatteryCloseWarningBump</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="c1">//更新电池状态信息的核心方法</span><span class="w"></span>
+<span class="w">    </span><span class="n">processValuesLocked</span><span class="p">(</span><span class="kc">true</span><span class="p">);</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<p>这个方法中更新了低电量警告值和关闭低电量警告的值，在资源文件中定义的值如下：</p>
+<div class="highlight-xml notranslate"><div class="highlight"><pre><span></span><span class="cm">&lt;!-- Display low battery warning when battery level dips to this value --&gt;</span>
+<span class="nt">&lt;integer</span> <span class="na">name=</span><span class="s">&quot;config_lowBatteryWarningLevel&quot;</span><span class="nt">&gt;</span>15<span class="nt">&lt;/integer&gt;</span>
+<span class="cm">&lt;!-- Close low battery warning when battery level reaches the lowBatteryWarningLevel plus this --&gt;</span>
+<span class="nt">&lt;integer</span> <span class="na">name=</span><span class="s">&quot;config_lowBatteryCloseWarningBump&quot;</span><span class="nt">&gt;</span>5<span class="nt">&lt;/integer&gt;</span>
+</pre></div>
+</div>
+<p>从以上内容可知，默认情况下，当电量达到15%时会弹出低电量提示。</p>
+<p>在上述方法的最后，调用了processValuesLocked()方法，它是BatteryService中最核心的方法,请参考上面。</p>
+</section>
+</section>
+
+
+           </div>
+         <div class="articleComments">
+               <comments>
+  <script src="https://utteranc.es/client.js"
+    repo="iswbm/magic-python"
+    issue-term="pathname"
+    theme="github-light"
+    crossorigin="anonymous"
+    async>
+  </script>
+</comments>
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; 版权所有 2022, wugn.</p>
+  </div>
+
+  利用 <a href="https://www.sphinx-doc.org/">Sphinx</a> 构建，使用了 
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">主题</a>
+    由 <a href="https://readthedocs.org">Read the Docs</a>开发.
+  
+
+<script charset="UTF-8" id="LA_COLLECT" src="//sdk.51.la/js-sdk-pro.min.js"></script>
+<script>LA.init({id: "JoV5csIHTGhHiGQ4",ck: "JoV5csIHTGhHiGQ4"})</script>
+
+<br/>
+<script id="LA-DATA-WIDGET" crossorigin="anonymous" charset="UTF-8" src="https://v6-widget.51.la/v6/JoV5csIHTGhHiGQ4/quote.js?theme=#4C8AC2,#BB2626,#040000,#333333,#AE3535,#1690FF,14&f=14"></script>
+
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
