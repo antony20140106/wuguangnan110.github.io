@@ -212,9 +212,9 @@ public void onStart() {
     publishBinderService("battery", mBinderService);
     //注册电池监听，当底层电池电量发生变化调用此监听，并调用update。
     mBatteryPropertiesRegistrar = new BatteryPropertiesRegistrar();
-    //注册到Binder服务端
+    //调用 publishBinderService(…) 发布 battery、batteryproperties 服务；
     publishBinderService("batteryproperties", mBatteryPropertiesRegistrar);
-    //注册到本地服务
+    //调用 publishLocalService(…) 发布本地服务 BatteryManagerInternal（电池管理器本地系统服务接口）。
     publishLocalService(BatteryManagerInternal.class, new LocalService());
 }
 ```
@@ -596,20 +596,41 @@ private void processValuesLocked(boolean force) {
 ### BatteryPropertiesRegistrar
 
 首先，会在系统服务中获取“batteryproperties”注册的服务，获取到的对象为Binder，那么这个名为“batteryproperties”的系统服务，它是在何处进行注册的呢？
-我在Java代码中搜索后，没有发现对应的注册代码，难不成它没有进行注册？这是不可能的。经过全局搜索发现了其注册位置，在c++代码中,路径为：
 
-该接口给上层直接获取系统电量的方法:
+在onStart()方法里面，如下：
+```java
+@Override
+public void onStart() {
+    mBatteryPropertiesRegistrar = new BatteryPropertiesRegistrar();
+    //调用 publishBinderService(…) 发布 battery、batteryproperties 服务；
+}
+```
+
+BatteryManager的构造函数获取`batteryproperties`服务：
+```java
+    public BatteryManager() {
+          mContext = null;
+          mBatteryStats = IBatteryStats.Stub.asInterface(
+                  ServiceManager.getService(BatteryStats.SERVICE_NAME));
+          mBatteryPropertiesRegistrar = IBatteryPropertiesRegistrar.Stub.asInterface(
+                  ServiceManager.getService("batteryproperties"));
+      }
+```
+
+以下接口给上层直接获取系统电量的方法:
 ```java
 BatteryManager batteryManager = (BatteryManager) getSystemService(BATTERY_SERVICE);
 batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY);
 ```
 
-程序流程：
+
+
+通过BatteryManager主动获取电池容量，程序流程：
 ```log
 * batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY);
   * getIntProperty(int id) //frameworks/base/core/java/android/os/BatteryManager.java
     * long value = queryProperty(id); //
-      * mBatteryPropertiesRegistrar.getProperty(id, prop) == 0
+      * mBatteryPropertiesRegistrar.getProperty(id, prop) == 0 //调用batteryproperties服务
       * ret = prop.getLong();//当前电量返回结果
         * public int getProperty(int id, final BatteryProperty prop) throws RemoteException //BatteryServices.java
         * if (result == Result.SUCCESS) prop.setLong(value);
@@ -625,7 +646,7 @@ batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY);
                   * callback(result, static_cast<T>(ret)); //调用batteryservice传下来的回调函数，参数为Result::SUCCESS，ret
 ```
 
-这个回调函数就做了一个动作,prop.setLong(value);//这个value即是 BatteryProperty中的valueInt64的值；
+callback这个回调函数就做了一个动作,prop.setLong(value);//这个value即是 BatteryProperty中的valueInt64的值；
 ```java
      // Reduced IBatteryPropertiesRegistrar that only implements getProperty for usage
       // in BatteryManager.

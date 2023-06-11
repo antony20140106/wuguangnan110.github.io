@@ -6,6 +6,8 @@ Android平台charger、BMS相关知识及调试整理。
 
 NO.|文件名称|摘要
 :--:|:--|:--
+0032| [Android增加health_hidl接口注意事项](docs/0032_Android增加health_hidl接口注意事项.md) | 尝试增加healthd HIDL相关接口，发现还需要修改lsdump部分，研究一下。
+0031| [qcom_charger充电状态上报时间优化](docs/0031_qcom_charger充电状态上报时间优化.md) | 发现有的charger ic插入充电后，充电状态变化很慢，看一下原理
 0030| [charger_ic中的一些特性说明](docs/0030_charger_ic中的一些特性说明.md) | 记录一下充电IC一些硬件特性。
 0029| [qcom_qcm2290_charger_SGM41528调试记录](docs/0029_qcom_qcm2290_charger_SGM41528调试记录.md) | 记录一下M92xx项目双节升压充电charger驱动调试。
 0028| [qcom_qcm2290_bms移植过程](docs/0028_qcom_qcm2290_bms移植过程.md) | 记录一下移植过程。

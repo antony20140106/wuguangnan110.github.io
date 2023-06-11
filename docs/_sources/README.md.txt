@@ -21,6 +21,7 @@
 
 NO.|文件名称|摘要
 :--:|:--|:--
+0029| [android_system_optimization](src/0029_android_system_optimization/README.md) | 收集一些Android系统优化相关知识，比如系统裁剪、开机时间优化、内存优化等
 0028| [secure_system](src/0028_secure_system/README.md) | Linux/Android系统安全相关总结。
 0027| [work_life_misc](src/0027_work_life_misc/README.md) | 总结一下linux平台各种设备驱动。
 0026| [kernel_device_dirver](src/0026_kernel_device_dirver/README.md) | 总结一下linux平台各种设备驱动。

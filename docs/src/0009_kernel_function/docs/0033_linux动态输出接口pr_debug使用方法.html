@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="zh-CN" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>wugn</title>
+
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script src="../../../_static/translations.js"></script>
+        <script src="../../../_static/js/baidutongji.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="索引" href="../../../genindex.html" />
+    <link rel="search" title="搜索" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../index.html" class="icon icon-home"> wugn_note
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="在文档中搜索" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">概述</a></li>
+<li><a class="reference internal" href="#id2">参考</a></li>
+<li><a class="reference internal" href="#id3">使用方法</a></li>
+<li><a class="reference internal" href="#id4">首先修改系统打印等级</a></li>
+<li><a class="reference internal" href="#makefiledebug">方案一 Makefile中定义DEBUG</a></li>
+<li><a class="reference internal" href="#config-dynamic-debug">方案二 CONFIG_DYNAMIC_DEBUG</a></li>
+</ul>
+</div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">wugn_note</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs"> 
+<li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+<li>概述</li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.forward()">Forward</a></li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.back()">Go Back</a> | </li>
+<li style="float: right;margin-left: 10px;"><a href="/index.html">Home</a> | </li>
+
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="id1">
+<h1>概述<a class="headerlink" href="#id1" title="此标题的永久链接"></a></h1>
+<p>在系统运行过程中，维护者可以通过控制 pr_debug 的开关来动态的配置某个模块中的调试信息是否输出，相对于 printk 来说，它显然是更加灵活。</p>
+</section>
+<section id="id2">
+<h1>参考<a class="headerlink" href="#id2" title="此标题的永久链接"></a></h1>
+<ul class="simple">
+<li><p><a class="reference external" href="https://www.cnblogs.com/zackary/p/13951642.html">【内核】动态输出接口 pr_debug 使用方法</a></p></li>
+<li><p><span class="xref myst">uid-9672747-id-4535573.html Linux内核动态调试信息的打开pr_debug（基于按键驱动，全过程记录）</span></p></li>
+<li><p><a class="reference external" href="http://www.taodudu.cc/news/show-3058139.html?action=onClick%20%E5%A6%82%E4%BD%95%E6%89%93%E5%BC%80pr_debug%E8%B0%83%E8%AF%95%E4%BF%A1%E6%81%AF">show-3058139.html?action=onClick 如何打开pr_debug调试信息</a></p></li>
+</ul>
+</section>
+<section id="id3">
+<h1>使用方法<a class="headerlink" href="#id3" title="此标题的永久链接"></a></h1>
+<p>如内核<code class="docutils literal notranslate"><span class="pre">include/linux/printk.h</span></code>文件中定义：</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="cm">/* If you are writing a driver, please use dev_dbg instead */</span><span class="w"></span>
+<span class="cp">#if defined(CONFIG_DYNAMIC_DEBUG) || \</span>
+<span class="cp">   (defined(CONFIG_DYNAMIC_DEBUG_CORE) &amp;&amp; defined(DYNAMIC_DEBUG_MODULE))</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;linux/dynamic_debug.h&gt;</span><span class="cp"></span>
+
+<span class="cm">/**</span>
+<span class="cm">* pr_debug - Print a debug-level message conditionally</span>
+<span class="cm">* @fmt: format string</span>
+<span class="cm">* @...: arguments for the format string</span>
+<span class="cm">*</span>
+<span class="cm">* This macro expands to dynamic_pr_debug() if CONFIG_DYNAMIC_DEBUG is</span>
+<span class="cm">* set. Otherwise, if DEBUG is defined, it&#39;s equivalent to a printk with</span>
+<span class="cm">* KERN_DEBUG loglevel. If DEBUG is not defined it does nothing.</span>
+<span class="cm">*</span>
+<span class="cm">* It uses pr_fmt() to generate the format string (dynamic_pr_debug() uses</span>
+<span class="cm">* pr_fmt() internally).</span>
+<span class="cm">*/</span><span class="w"></span>
+<span class="cp">#define pr_debug(fmt, ...)            \</span>
+<span class="cp">   dynamic_pr_debug(fmt, ##__VA_ARGS__)</span>
+<span class="cp">#elif defined(DEBUG)</span>
+<span class="cp">#define pr_debug(fmt, ...) \</span>
+<span class="cp">   printk(KERN_DEBUG pr_fmt(fmt), ##__VA_ARGS__)</span>
+<span class="cp">#else</span>
+<span class="cp">#define pr_debug(fmt, ...) \</span>
+<span class="cp">   no_printk(KERN_DEBUG pr_fmt(fmt), ##__VA_ARGS__)</span>
+<span class="cp">#endif</span>
+</pre></div>
+</div>
+<p>可以看到通过配置可以分别实现有三种功能：</p>
+<ol class="arabic simple">
+<li><p>只有当<code class="docutils literal notranslate"><span class="pre">CONFIG_DYNAMIC_DEBUG</span></code>等宏已定义时，动态输出功能才会真正的启用，其核心是靠 dynamic_pr_debug 来实现，大概是通过将描述信息插入到 section(“__dyndbg”) 段内来进一步实现；</p></li>
+<li><p>在引用到 pr_debug 接口的某个文件或某个模块中，通过自定义一个<code class="docutils literal notranslate"><span class="pre">DEBUG</span></code>来配置它的第二种实现，这时候大家可以发现它就等同于<code class="docutils literal notranslate"><span class="pre">printk</span></code>，很直观；</p></li>
+<li><p>如果前两种配置都不成立，那么好了，<code class="docutils literal notranslate"><span class="pre">pr_debug</span></code>将不会有任何的输出。</p></li>
+</ol>
+</section>
+<section id="id4">
+<h1>首先修改系统打印等级<a class="headerlink" href="#id4" title="此标题的永久链接"></a></h1>
+<p>默认的console级别是7（在kernel/printk/printk.c中定义了7）</p>
+<ul class="simple">
+<li><p>include/linux/printk.h:</p></li>
+</ul>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span>61:#define CONSOLE_LOGLEVEL_DEFAULT CONFIG_CONSOLE_LOGLEVEL_DEFAULT
+
+wugn@jcrj-tf-compile:bengal_32go$ ack CONFIG_CONSOLE_LOGLEVEL_DEFAULT obj/KERNEL_OBJ/.config
+CONFIG_CONSOLE_LOGLEVEL_DEFAULT=7
+</pre></div>
+</div>
+<p>只有那些级别“小于7”的调试信息才能打印出来，而printk(KERN_DEBUG…)的级别是7，那就还需要提高console打印级别
+如果要查看debug信息，那就直接改代码或者用命令<code class="docutils literal notranslate"><span class="pre">dmesg</span> <span class="pre">-n</span> <span class="pre">8</span></code></p>
+</section>
+<section id="makefiledebug">
+<h1>方案一 Makefile中定义DEBUG<a class="headerlink" href="#makefiledebug" title="此标题的永久链接"></a></h1>
+<p>测试源码：</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">pr_dbg.c</span></code>:</p></li>
+</ul>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;linux/kernel.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;linux/module.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;linux/init.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;linux/timer.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;linux/printk.h&gt;</span><span class="cp"></span>
+
+<span class="k">static</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">timer_list</span><span class="w"> </span><span class="n">timer</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="mi">0</span><span class="p">};</span><span class="w"></span>
+
+<span class="kt">void</span><span class="w"> </span><span class="nf">timer_handler</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">timer_list</span><span class="w"> </span><span class="o">*</span><span class="n">t</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">pr_debug</span><span class="p">(</span><span class="s">&quot;pr_dbg: This is pr_init func.</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="n">mod_timer</span><span class="p">(</span><span class="o">&amp;</span><span class="n">timer</span><span class="p">,</span><span class="w"> </span><span class="n">jiffies</span><span class="o">+</span><span class="n">msecs_to_jiffies</span><span class="p">(</span><span class="mi">5000</span><span class="p">));</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">pr_test_init</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">timer_setup</span><span class="p">(</span><span class="o">&amp;</span><span class="n">timer</span><span class="p">,</span><span class="w"> </span><span class="n">timer_handler</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="n">timer</span><span class="p">.</span><span class="n">expires</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">jiffies</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">5</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">HZ</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="n">add_timer</span><span class="p">(</span><span class="o">&amp;</span><span class="n">timer</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">pr_init</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">pr_test_init</span><span class="p">();</span><span class="w"></span>
+<span class="w">    </span><span class="n">printk</span><span class="p">(</span><span class="s">&quot;pr_init exec finished.</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">pr_exit</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">del_timer</span><span class="p">(</span><span class="o">&amp;</span><span class="n">timer</span><span class="p">);</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="n">module_init</span><span class="p">(</span><span class="n">pr_init</span><span class="p">);</span><span class="w"></span>
+<span class="n">module_exit</span><span class="p">(</span><span class="n">pr_exit</span><span class="p">);</span><span class="w"></span>
+<span class="n">MODULE_LICENSE</span><span class="p">(</span><span class="s">&quot;GPL&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="n">MODULE_AUTHOR</span><span class="p">(</span><span class="s">&quot;Zackary.Liu&quot;</span><span class="p">);</span><span class="w"></span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>makefile:</p></li>
+</ul>
+<div class="highlight-makefile notranslate"><div class="highlight"><pre><span></span><span class="nv">kernel_path</span> <span class="o">:=</span> /root/github/linux
+
+<span class="nf">all</span><span class="o">:</span>
+        make -C <span class="si">${</span><span class="nv">kernel_path</span><span class="si">}</span> <span class="nv">M</span><span class="o">=</span><span class="sb">`</span><span class="nb">pwd</span><span class="sb">`</span> modules
+<span class="c">#KCFLAGS=-DDEBUG</span>
+
+<span class="nf">clean</span><span class="o">:</span>
+        make -C <span class="si">${</span><span class="nv">kernel_path</span><span class="si">}</span> <span class="nv">M</span><span class="o">=</span><span class="sb">`</span><span class="nb">pwd</span><span class="sb">`</span> clean
+
+<span class="nv">obj-m</span> <span class="o">+=</span> pr_dbg.o
+</pre></div>
+</div>
+<p>1）先测试第二种配置吧，比较简单一些，如上面说过的只要定义一个 DEBUG 即可以实现，那么我们直接就在 Makefile 中加入好，</p>
+<p>将编译指令改为<code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">-C</span> <span class="pre">${kernel_path}</span> <span class="pre">M=</span></code>pwd<code class="docutils literal notranslate"> <span class="pre">modules</span> <span class="pre">KCFLAGS+=-DDEBUG</span></code>即可。</p>
+<p>将模块编译好并安装，可以看到有 pr_dbg: This is pr_init func. 信息输出。</p>
+</section>
+<section id="config-dynamic-debug">
+<h1>方案二 CONFIG_DYNAMIC_DEBUG<a class="headerlink" href="#config-dynamic-debug" title="此标题的永久链接"></a></h1>
+<p>如果定义了CONFIG_DYNAMIC_DEBUG，就使用动态debug机制dynamic_pr_debug();</p>
+<p>kernel动态调试提供一个debugfs接口: <code class="docutils literal notranslate"><span class="pre">/sys/kernel/debug/dynamic_debug/control</span></code>这个文件可以用来获取已完成的调试信息列表:</p>
+<div class="highlight-log notranslate"><div class="highlight"><pre><span></span>A6650:/ # cat /sys/kernel/debug/dynamic_debug/control | grep rouleur_dlkm
+../../vendor/qcom/opensource/audio-kernel/asoc/codecs/rouleur/rouleur.c:343 [rouleur_dlkm]rouleur_global_mbias_disable =p &quot;%s:mbias already disabled\012&quot;
+</pre></div>
+</div>
+<p>从源码上看cat出来的格式如下<code class="docutils literal notranslate"><span class="pre">filename:lineno</span> <span class="pre">[module]function</span> <span class="pre">flags</span> <span class="pre">format</span></code>：</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">lib/dynamic_debug.c</span></code>:</p></li>
+</ul>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="cm">/*</span>
+<span class="cm"> * Seq_ops show method.  Called several times within a read()</span>
+<span class="cm"> * call from userspace, with ddebug_lock held.  Formats the</span>
+<span class="cm"> * current _ddebug as a single human-readable line, with a</span>
+<span class="cm"> * special case for the header line.</span>
+<span class="cm"> */</span><span class="w"></span>
+<span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">ddebug_proc_show</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">seq_file</span><span class="w"> </span><span class="o">*</span><span class="n">m</span><span class="p">,</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="o">*</span><span class="n">p</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="k">struct</span><span class="w"> </span><span class="nc">ddebug_iter</span><span class="w"> </span><span class="o">*</span><span class="n">iter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">m</span><span class="o">-&gt;</span><span class="n">private</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="k">struct</span><span class="w"> </span><span class="nc">_ddebug</span><span class="w"> </span><span class="o">*</span><span class="n">dp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="k">struct</span><span class="w"> </span><span class="nc">flagsbuf</span><span class="w"> </span><span class="n">flags</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">    </span><span class="n">vpr_info</span><span class="p">(</span><span class="s">&quot;called m=%p p=%p</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">m</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">p</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">SEQ_START_TOKEN</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="n">seq_puts</span><span class="p">(</span><span class="n">m</span><span class="p">,</span><span class="w"></span>
+<span class="w">             </span><span class="s">&quot;# filename:lineno [module]function flags format</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span><span class="w"> </span><span class="c1">//格式</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">    </span><span class="n">seq_printf</span><span class="p">(</span><span class="n">m</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;%s:%u [%s]%s =%s </span><span class="se">\&quot;</span><span class="s">&quot;</span><span class="p">,</span><span class="w"></span>
+<span class="w">           </span><span class="n">trim_prefix</span><span class="p">(</span><span class="n">dp</span><span class="o">-&gt;</span><span class="n">filename</span><span class="p">),</span><span class="w"> </span><span class="n">dp</span><span class="o">-&gt;</span><span class="n">lineno</span><span class="p">,</span><span class="w"></span>
+<span class="w">           </span><span class="n">iter</span><span class="o">-&gt;</span><span class="n">table</span><span class="o">-&gt;</span><span class="n">mod_name</span><span class="p">,</span><span class="w"> </span><span class="n">dp</span><span class="o">-&gt;</span><span class="n">function</span><span class="p">,</span><span class="w"></span>
+<span class="w">           </span><span class="n">ddebug_describe_flags</span><span class="p">(</span><span class="n">dp</span><span class="o">-&gt;</span><span class="n">flags</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">flags</span><span class="p">));</span><span class="w"></span>
+<span class="w">    </span><span class="n">seq_escape</span><span class="p">(</span><span class="n">m</span><span class="p">,</span><span class="w"> </span><span class="n">dp</span><span class="o">-&gt;</span><span class="n">format</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;</span><span class="se">\t\r\n\&quot;</span><span class="s">&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="n">seq_puts</span><span class="p">(</span><span class="n">m</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;</span><span class="se">\&quot;\n</span><span class="s">&quot;</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<p>其中<code class="docutils literal notranslate"><span class="pre">flags=p</span></code>表示打开调试信息，<code class="docutils literal notranslate"><span class="pre">flags=_</span></code>表示关闭。</p>
+<ul class="simple">
+<li><p>打开文件rouleur.c所有调试信息:</p></li>
+</ul>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>nullarbor:~ <span class="c1"># echo -n &#39;file rouleur.c +p&#39; &gt; /sys/kernel/debug/dynamic_debug/control</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>打开文件rouleur.c 746行调试信息，如果你想执行多个命令，你需要为每个加入<code class="docutils literal notranslate"><span class="pre">echo</span></code>分割，像这样：</p></li>
+</ul>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>nullarbor:~ <span class="c1"># echo &#39;file rouleur.c line 746 +p&#39; &gt; /sys/kernel/debug/dynamic_debug/control \</span>
+&gt; <span class="nb">echo</span> <span class="s1">&#39;file rouleur.c line 662 +p&#39;</span> &gt; /sys/kernel/debug/dynamic_debug/control
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>打开文件<code class="docutils literal notranslate"><span class="pre">wcd-mbhc*</span></code>所有调试信息:</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">echo</span> <span class="s2">&quot;file wcd-mbhc* +p&quot;</span> <span class="o">&gt;</span> <span class="o">/</span><span class="n">sys</span><span class="o">/</span><span class="n">kernel</span><span class="o">/</span><span class="n">debug</span><span class="o">/</span><span class="n">dynamic_debug</span><span class="o">/</span><span class="n">control</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>打开<code class="docutils literal notranslate"><span class="pre">module</span> <span class="pre">rouleur_dlkm</span></code>所有调试信息：</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">echo</span> <span class="s2">&quot;module rouleur_dlkm +p&quot;</span> <span class="o">&gt;</span> <span class="o">/</span><span class="n">sys</span><span class="o">/</span><span class="n">kernel</span><span class="o">/</span><span class="n">debug</span><span class="o">/</span><span class="n">dynamic_debug</span><span class="o">/</span><span class="n">control</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>打开多个module可以使用bat脚本：</p></li>
+</ul>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>@echo off
+adb wait-for-device
+adb shell <span class="s2">&quot;echo &quot;</span>module swr_ctrl_dlkm +p<span class="s2">&quot; &gt; /sys/kernel/debug/dynamic_debug/control&quot;</span>
+adb shell <span class="s2">&quot;echo &quot;</span>module machine_dlkm +p<span class="s2">&quot; &gt; /sys/kernel/debug/dynamic_debug/control&quot;</span>
+adb shell <span class="s2">&quot;echo &quot;</span>module rouleur_dlkm +p<span class="s2">&quot; &gt; /sys/kernel/debug/dynamic_debug/control&quot;</span>
+adb shell <span class="s2">&quot;echo &quot;</span>module  aw87xxx_dlkm +p<span class="s2">&quot; &gt; /sys/kernel/debug/dynamic_debug/control&quot;</span>
+adb shell <span class="s2">&quot;echo &quot;</span>module mbhc_dlkm +p<span class="s2">&quot; &gt; /sys/kernel/debug/dynamic_debug/control&quot;</span>
+pause
+</pre></div>
+</div>
+<p>file可以替换成module,format等匹配方式，具体用法请参考<code class="docutils literal notranslate"><span class="pre">Documentation/admin-guide/dynamic-debug-howto.rst</span></code>:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="nv">Examples</span>
+<span class="o">========</span>
+
+::
+
+  // <span class="nb">enable</span> the message at line <span class="m">1603</span> of file svcsock.c
+  nullarbor:~ <span class="c1"># echo -n &#39;file svcsock.c line 1603 +p&#39; &gt;</span>
+                &lt;debugfs&gt;/dynamic_debug/control
+
+  // <span class="nb">enable</span> all the messages <span class="k">in</span> file svcsock.c
+  nullarbor:~ <span class="c1"># echo -n &#39;file svcsock.c +p&#39; &gt;</span>
+                &lt;debugfs&gt;/dynamic_debug/control
+
+  // <span class="nb">enable</span> all the messages <span class="k">in</span> the NFS server module
+  nullarbor:~ <span class="c1"># echo -n &#39;module nfsd +p&#39; &gt;</span>
+                &lt;debugfs&gt;/dynamic_debug/control
+
+  // <span class="nb">enable</span> all <span class="m">12</span> messages <span class="k">in</span> the <span class="k">function</span> svc_process<span class="o">()</span>
+  nullarbor:~ <span class="c1"># echo -n &#39;func svc_process +p&#39; &gt;</span>
+                &lt;debugfs&gt;/dynamic_debug/control
+
+  // disable all <span class="m">12</span> messages <span class="k">in</span> the <span class="k">function</span> svc_process<span class="o">()</span>
+  nullarbor:~ <span class="c1"># echo -n &#39;func svc_process -p&#39; &gt;</span>
+                &lt;debugfs&gt;/dynamic_debug/control
+
+  // <span class="nb">enable</span> messages <span class="k">for</span> NFS calls READ, READLINK, READDIR and READDIR+.
+  nullarbor:~ <span class="c1"># echo -n &#39;format &quot;nfsd: READ&quot; +p&#39; &gt;</span>
+                &lt;debugfs&gt;/dynamic_debug/control
+
+  // <span class="nb">enable</span> messages <span class="k">in</span> files of which the paths include string <span class="s2">&quot;usb&quot;</span>
+  nullarbor:~ <span class="c1"># echo -n &#39;*usb* +p&#39; &gt; &lt;debugfs&gt;/dynamic_debug/control</span>
+
+  // <span class="nb">enable</span> all messages
+  nullarbor:~ <span class="c1"># echo -n &#39;+p&#39; &gt; &lt;debugfs&gt;/dynamic_debug/control</span>
+
+  // add module, <span class="k">function</span> to all enabled messages
+  nullarbor:~ <span class="c1"># echo -n &#39;+mf&#39; &gt; &lt;debugfs&gt;/dynamic_debug/control</span>
+
+  // boot-args example, with newlines and comments <span class="k">for</span> readability
+  Kernel <span class="nb">command</span> line: ...
+    // see whats going on <span class="k">in</span> <span class="nv">dyndbg</span><span class="o">=</span>value processing
+    dynamic_debug.verbose<span class="o">=</span><span class="m">1</span>
+    // <span class="nb">enable</span> pr_debugs <span class="k">in</span> <span class="m">2</span> builtins, <span class="c1">#cmt is stripped</span>
+    <span class="nv">dyndbg</span><span class="o">=</span><span class="s2">&quot;module params +p #cmt ; module sys +p&quot;</span>
+    // <span class="nb">enable</span> pr_debugs <span class="k">in</span> <span class="m">2</span> functions <span class="k">in</span> a module loaded later
+    pc87360.dyndbg<span class="o">=</span><span class="s2">&quot;func pc87360_init_device +p; func pc87360_find +p&quot;</span>                     
+</pre></div>
+</div>
+</section>
+
+
+           </div>
+             <div class="articleComments">
+                <comments>
+  <script src="https://utteranc.es/client.js"
+    repo="iswbm/magic-python"
+    issue-term="pathname"
+    theme="github-light"
+    crossorigin="anonymous"
+    async>
+  </script>
+</comments>
+             </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; 版权所有 2022, wugn.</p>
+  </div>
+
+  利用 <a href="https://www.sphinx-doc.org/">Sphinx</a> 构建，使用了 
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">主题</a>
+    由 <a href="https://readthedocs.org">Read the Docs</a>开发.
+  
+
+<script charset="UTF-8" id="LA_COLLECT" src="//sdk.51.la/js-sdk-pro.min.js"></script>
+<script>LA.init({id: "JoV5csIHTGhHiGQ4",ck: "JoV5csIHTGhHiGQ4"})</script>
+
+<br/>
+<script id="LA-DATA-WIDGET" crossorigin="anonymous" charset="UTF-8" src="https://v6-widget.51.la/v6/JoV5csIHTGhHiGQ4/quote.js?theme=#4C8AC2,#BB2626,#040000,#333333,#AE3535,#1690FF,14&f=14"></script>
+
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

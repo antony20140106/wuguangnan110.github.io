@@ -285,7 +285,7 @@ static void fsa4480_usbc_update_settings(struct fsa4480_priv *fsa_priv,
     * MIC will be high−Z for positive input
     * AGND will be high−Z for positive input
 
-# # SW5480驱动分析
+# SW5480驱动分析
 
 V03增加了mic/AGND/Sense引脚，主要是增加了mic录音功能，功能和寄存器基本上和fsa4480一样，唯一不同的是多了一步耳机检测使能：
 
@@ -296,15 +296,22 @@ V03增加了mic/AGND/Sense引脚，主要是增加了mic录音功能，功能和
 
 首先typec检测到耳机插入，然后通知audio驱动进行上报，具体如何上报，我们先看一下流程：
 
-* `UM.9.15/vendor/qcom/opensource/audio-kernel/asoc/codecs/bolero/bolero-cdc.c`:
+* `UM.9.15/vendor/qcom/opensource/audio-kernel/asoc/bengal.c`:
 ```c
-* bolero_ssr_enable
-  └── bolero_cdc_notifier_call(priv, BOLERO_WCD_EVT_SSR_UP);
-      └── rouleur_event_notify //asoc/codecs/rouleur/rouleur.c 收获到通知
-          └── rouleur_mbhc_hs_detect(component, mbhc->mbhc_cfg);//asoc/codecs/rouleur/rouleur-mbhc.c
-              └── wcd_mbhc_start(&rouleur_mbhc->wcd_mbhc, mbhc_cfg); //asoc/codecs/wcd-mbhc-v2.c
+* msm_asoc_machine_probe
+  └── populate_snd_card_dailinks(&pdev->dev);
+      └── card->late_probe = msm_snd_card_bengal_late_probe;
+          ├── mbhc_calibration = def_rouleur_mbhc_cal();
+          │   └── btn_high[0] = 75; btn_high[1] = 150; btn_high[2] = 237; btn_high[3] = 500; btn_high[4] = 500;
+          └── rouleur_mbhc_hs_detect(component, &wcd_mbhc_cfg);
+              └── wcd_mbhc_start(&rouleur_mbhc->wcd_mbhc, mbhc_cfg);
+                  ├── const char *usb_c_dt = "qcom,msm-mbhc-usbc-audio-supported";//读取dts 是否支持usb switch芯片，
+                  ├── rc = of_property_read_u32(card->dev->of_node, usb_c_dt,&mbhc_cfg->enable_usbc_analog);
+                  ├── if (mbhc_cfg->enable_usbc_analog)
+                  ├── mbhc->fsa_np = of_parse_phandle(card->dev->of_node,"fsa4480-i2c-handle", 0);
+                  ├── if (mbhc_cfg->enable_usbc_analog && mbhc->fsa_np) 
                   ├── mbhc->fsa_nb.notifier_call = wcd_mbhc_usbc_ana_event_handler; //这个是9200 fsa4480的通知回调
-                  │   └──  wcd_mbhc_usbc_ana_event_handler(struct notifier_block *nb
+                  │   └──  wcd_mbhc_usbc_ana_event_handler(struct notifier_block *nb, unsigned long mode, void *ptr)
                   │       └── if (mode == POWER_SUPPLY_TYPEC_SINK_AUDIO_ADAPTER)
                   │           ├── mbhc->mbhc_cb->clk_setup(mbhc->component, true);
                   │           └──  WCD_MBHC_REG_UPDATE_BITS(WCD_MBHC_L_DET_EN, 1); /* insertion detected, enable L_DET_EN */
@@ -320,9 +327,42 @@ V03增加了mic/AGND/Sense引脚，主要是增加了mic录音功能，功能和
                   │               └── wcd_mbhc_jack_report(mbhc, &mbhc->headset_jack,(mbhc->hph_status | SND_JACK_MECHANICAL),
                   │                   └── snd_soc_jack_report(jack, status, mask);
                   └── rc = wcd_mbhc_initialise(mbhc); //耳机检测相关 0:NC(normally-closed) 1:NO(normally-open)
+                      ├── if (mbhc->mbhc_cfg->enable_usbc_analog || mbhc_cfg->hs_det_disable)
+                      │   └── WCD_MBHC_REG_UPDATE_BITS(WCD_MBHC_L_DET_EN, 0); //关闭HS_DET中断
                       ├── WCD_MBHC_REG_UPDATE_BITS(WCD_MBHC_HPHL_PLUG_TYPE, mbhc->hphl_swh);
                       └── WCD_MBHC_REG_UPDATE_BITS(WCD_MBHC_GND_PLUG_TYPE, mbhc->gnd_swh);
 ```
+
+# 中断硬件原理
+
+## typec耳机中断原理
+
+typec中断相关引脚如下，以fsa4480 switch芯片为例，CC_IN是接到typec cc引脚，DET接高通内部的pmu里面集成了wcd音频芯片的HS_DET，属于pmu里面的引脚。
+
+ NO.  | col 2
+------|------
+ CC_IN   | Audio Accessory Attachment Detection Input     
+ DET    | Push-Pull Output. When CC_IN > 1.5V, DET is Low and CC_IN < 1.2V, DET is High     
+
+codec通过检测硬件监控MBHC hsdet引脚上的电压，并在耳机插入或拔出插头时向中断控制器生成中断。
+
+![0006_0016.png](images/0006_0016.png)
+![0006_0017.png](images/0006_0017.png)
+
+## 3.5mm耳机中断原理
+
+* 参考
+* [Audio 耳机 （四）MBHC耳机插拔检测流程](http://www.manongjc.com/detail/27-pnriikehmuooerg.html)
+
+codec通过检测硬件监控MBHC hsdet引脚上的电压，并在耳机插入或拔出插头时向中断控制器生成中断（更新寄存器）。
+
+对于NC型插孔，未插入插头时，连接器的HS-DET和HPH-L引脚短接在一起，从而在MBHC_HSDET引脚上产生逻辑低电压。
+将插头完全插入插孔后，断开连接器的HS-DET和HPH-L引脚，内部电流源将MBHC hsdet引脚上的电压拉高至1.8 V，并翻转比较器输出以触发中断信号。
+拔出插头后，MBHC_HSDET引脚上的电压下降，导致比较器的输出逻辑改变，并向中断控制器生成中断信号。
+对于NO型插孔，MBHC hsdet引脚上的电压与NC型插孔壳体相反。
+
+![0006_0015.png](images/0006_0015.png)
+
 
 # 中断上报流程
 
@@ -343,32 +383,34 @@ V03增加了mic/AGND/Sense引脚，主要是增加了mic录音功能，功能和
 * `asoc/codecs/rouleur/rouleur.c`中断注册如下：
 ```c
 * rouleur_soc_codec_probe //{ .compatible = "qcom,rouleur-codec" , .data = "rouleur" },
-  * rouleur_mbhc_init(&rouleur->mbhc, component, rouleur->fw_data); //asoc/codecs/rouleur/rouleur-mbhc.c
-    *  wcd_mbhc_init(wcd_mbhc, component, &mbhc_cb,&intr_ids, wcd_mbhc_registers, ROULEUR_ZDET_SUPPORTED); //asoc/codecs/wcd-mbhc-v2.c
-      * const char *hph_switch = "qcom,msm-mbhc-hphl-swh"; const char *gnd_switch = "qcom,msm-mbhc-gnd-swh"; //在wcd_mbhc_initialise进行配置
-      * of_property_read_u32(card->dev->of_node, hph_switch, &hph_swh);
-      * of_property_read_u32(card->dev->of_node, gnd_switch, &gnd_swh);
-      * ret = mbhc->mbhc_cb->request_irq(component,mbhc->intr_ids->mbhc_sw_intr,wcd_mbhc_mech_plug_detect_irq,"mbhc sw intr", mbhc);
-        * rouleur_mbhc_request_irq  //asoc/codecs/rouleur/rouleur-mbhc.c
-          * wcd_request_irq(&rouleur->irq_info, irq, name, handler, data); //asoc/codecs/wcd-irq.c
-            * wcd_map_irq(irq_info, irq);
-            * request_threaded_irq(irq, NULL, handler, IRQF_ONESHOT | IRQF_TRIGGER_RISING, name, data);
-      * ret = mbhc->mbhc_cb->request_irq(component, mbhc->intr_ids->mbhc_btn_press_intr, wcd_mbhc_btn_press_handler, "Button Press detect", mbhc);
-      * ret = mbhc->mbhc_cb->request_irq(component, mbhc->intr_ids->mbhc_btn_release_intr, wcd_mbhc_release_handler, "Button Release detect", mbhc);
-      * ret = mbhc->mbhc_cb->request_irq(component, mbhc->intr_ids->mbhc_hs_ins_intr, mbhc->mbhc_fn->wcd_mbhc_hs_ins_irq, "Elect Insert", mbhc);
+  └── rouleur_mbhc_init(&rouleur->mbhc, component, rouleur->fw_data); //asoc/codecs/rouleur/rouleur-mbhc.c
+      └──  wcd_mbhc_init(wcd_mbhc, component, &mbhc_cb,&intr_ids, wcd_mbhc_registers, ROULEUR_ZDET_SUPPORTED); //asoc/codecs/wcd-mbhc-v2.c
+          ├── const char *hph_switch = "qcom,msm-mbhc-hphl-swh"; const char *gnd_switch = "qcom,msm-mbhc-gnd-swh"; //在wcd_mbhc_initialise进行配置
+          ├── of_property_read_u32(card->dev->of_node, hph_switch, &hph_swh);
+          ├── of_property_read_u32(card->dev->of_node, gnd_switch, &gnd_swh);
+          ├── ret = mbhc->mbhc_cb->request_irq(component,mbhc->intr_ids->mbhc_sw_intr,wcd_mbhc_mech_plug_detect_irq,"mbhc sw intr", mbhc);
+          │   ├── rouleur_mbhc_request_irq  //asoc/codecs/rouleur/rouleur-mbhc.c
+          │   │   └── wcd_request_irq(&rouleur->irq_info, irq, name, handler, data); //asoc/codecs/wcd-irq.c
+          │   │       ├── wcd_map_irq(irq_info, irq);
+          │   │       └── request_threaded_irq(irq, NULL, handler, IRQF_ONESHOT | IRQF_TRIGGER_RISING, name, data);
+          │   └── wcd_mbhc_mech_plug_detect_irq(int irq, void *data) //中断处理函数 重要
+          │       ├── wcd_mbhc_swch_irq_handler(mbhc);
+          │       │   └── wcd_mbhc_report_plug(mbhc, 0, jack_type);
+          │       │       ├── wcd_mbhc_jack_report(mbhc, &mbhc->button_jack, 0,mbhc->buttons_pressed); //上报按键
+          │       │       └── wcd_mbhc_jack_report(mbhc, &mbhc->headset_jack,(mbhc->hph_status | SND_JACK_MECHANICAL),
+          │       │           └── snd_soc_jack_report(jack, status, mask);
+          │       └── if (mbhc->mbhc_cfg->enable_usbc_analog || mbhc_cfg->hs_det_disable)
+          │           └── WCD_MBHC_REG_UPDATE_BITS(WCD_MBHC_L_DET_EN, 0); //关闭HS_DET中断      
+          ├── ret = mbhc->mbhc_cb->request_irq(component, mbhc->intr_ids->mbhc_btn_press_intr, wcd_mbhc_btn_press_handler, "Button Press detect", mbhc);
+          ├── ret = mbhc->mbhc_cb->request_irq(component, mbhc->intr_ids->mbhc_btn_release_intr, wcd_mbhc_release_handler, "Button Release detect", mbhc);
+          └── ret = mbhc->mbhc_cb->request_irq(component, mbhc->intr_ids->mbhc_hs_ins_intr, mbhc->mbhc_fn->wcd_mbhc_hs_ins_irq, "Elect Insert", mbhc);
 ```
-
-* 参考
-* [Audio 耳机 （四）MBHC耳机插拔检测流程](http://www.manongjc.com/detail/27-pnriikehmuooerg.html)
-
-codec通过检测硬件监控MBHC hsdet引脚上的电压，并在耳机插入或拔出插头时向中断控制器生成中断（更新寄存器）。
-
-对于NC型插孔，未插入插头时，连接器的HS-DET和HPH-L引脚短接在一起，从而在MBHC_HSDET引脚上产生逻辑低电压。
-将插头完全插入插孔后，断开连接器的HS-DET和HPH-L引脚，内部电流源将MBHC hsdet引脚上的电压拉高至1.8 V，并翻转比较器输出以触发中断信号。
-拔出插头后，MBHC_HSDET引脚上的电压下降，导致比较器的输出逻辑改变，并向中断控制器生成中断信号。
-对于NO型插孔，MBHC hsdet引脚上的电压与NC型插孔壳体相反。
-
-![0006_0015.png](images/0006_0015.png)
+* 由此我们可以知道9200处理逻辑如下：
+  * 驱动初始化关闭HS_DET中断。
+  * typec切换芯片发送通知给audio，由`wcd_mbhc_usbc_ana_event_handler`通知处理打开相应的`clk`和`enable L_DET_EN`打开中断。
+  * 插入耳机后，HS-DET和HPH-L引脚产生电压变化触发中断，由`wcd_mbhc_swch_irq_handler`中断处理上报按键，上报完再关闭中断。
+* 6650处理逻辑是：
+  * typec切换芯片发送通知给audio，由`hp_det_nc`通知处理打开相应的`clk`和`enable L_DET_EN`，并调用`wcd_mbhc_swch_irq_handler`函数上报键值，这里并不需要中断。
 
 * 中断配置过程：
 ```c
@@ -489,7 +531,7 @@ static int rouleur_bind(struct device *dev)
 
 ```
 * `interrupts = <0 297 IRQ_TYPE_LEVEL_HIGH>;`表示用系统的297号中断。
-* `soc/swr-mstr-ctrl.c`其中中断标志`slave_irq_pending`是通过`rouleur`驱动`rouleur_handle_post_irq`设置的，再根据handle_nested_irq寻找`irq id`找到对应的中断处理函数:
+* `soc/swr-mstr-ctrl.c`其中中断标志`slave_irq_pending`是通过`rouleur`驱动`rouleur_handle_post_irq`设置的，再根据`handle_nested_irq`寻找`irq id`找到对应的中断处理函数:
 ```c
 static int swrm_probe(struct platform_device *pdev)
 {
@@ -579,12 +621,13 @@ handle_irq:
 
 
 
-# 耳机NC、NO类型确认
+# 3.5mm耳机NC、NO类型确认
 
 耳机检测相关 0:NC(normally-closed) 1:NO(normally-open)
 * 参考
 * [高通音频MBHC耳机系统软件相关配置归纳](https://blog.csdn.net/hb9312z/article/details/86063963)
 * [NC和NO、耳机美标和欧标的区别](https://www.cnblogs.com/linhaostudy/p/8260813.html)
+* [Android 耳机驱动知识](https://yunzhi.github.io/headset_knowledge)
 
 * 这里涉及dts中的耳机配置：
 ```shell
@@ -594,7 +637,7 @@ handle_irq:
     qcom,msm-mbhc-gnd-swh = <0>;
 };
 ```
-根据硬件原理图，确认HS-DET和HPG-L引脚的连接状态，未插入时断开的则时NO,未插入时连接的则是NC，目前6650配置是的0。
+根据硬件原理图，确认HS-DET和HPH-L引脚的连接状态，未插入时断开的则时NO,未插入时连接的则是NC，目前6650配置是的0。
 具体原理如下：
 
 ![0006_0010.png](images/0006_0010.png)
@@ -688,4 +731,61 @@ void snd_jack_report(struct snd_jack *jack, int status)
 #endif /* CONFIG_SND_JACK_INPUT_DEV */
 }
 
+```
+
+# 插着usb开机概率性出现开机图标
+
+目前发现开机插着usb容易出现耳机图标，switch驱动没有上报消息，但是还是进入了`wcd_mbhc_mech_plug_detect_irq`中断，目前已知typec耳机中断脚HS_DET硬件上是改为悬空的，开机容易误触发中断，qcom其实对这种情况有做处理，在dts中定义了属性`qcom,msm-mbhc-usbc-audio-supported = <1>;`，表示支持typec audio switch芯片，如果定义了，开机会关闭中断防止误触发，如下代码：
+```c
+static int wcd_mbhc_initialise(struct wcd_mbhc *mbhc)
+{
+	/*
+	 * Disable L_DET for USB-C analog audio to avoid spurious interrupts
+	 * when a non-audio accessory is inserted. L_DET_EN sets to 1 when FSA
+	 * I2C driver notifies that ANALOG_AUDIO_ADAPTER is inserted
+	 */
+     
+	if (mbhc->mbhc_cfg->enable_usbc_analog)
+		WCD_MBHC_REG_UPDATE_BITS(WCD_MBHC_L_DET_EN, 0);
+}
+```
+
+上面的中文释义：
+禁用 USB-C 模拟音频的 L_DET，以避免在插入非音频配件时出现虚假中断。 当 FSA I2C 驱动程序通知插入 ANALOG_AUDIO_ADAPTER 时，L_DET_EN 设置为 1
+
+看代码中断逻辑如下：
+
+![0006_0018.png](images/0006_0018.png)
+
+此问题是由于我们没定义`qcom,msm-mbhc-usbc-audio-supported = <1>;`属性导致开机没有关闭中断，所以会出现虚假中断。
+
+# psy main usb节点被替换后audio/闪光灯失效
+
+```log
+01-02 04:37:05.757 E/bengal-asoc-snd soc(    0): qcom,msm-audio-apr:qcom,q6core-audio:sound: ASoC: no sink widget found for SpkrMono WSA_IN
+01-02 04:37:05.769 E/bengal-asoc-snd soc(    0): qcom,msm-audio-apr:qcom,q6core-audio:sound: ASoC: Failed to add route LO -> direct -> SpkrMono WSA_IN
+01-02 04:37:05.782 W/bengal-asoc-snd soc(    0): qcom,msm-audio-apr:qcom,q6core-audio:sound: ASoC: no DMI vendor name!
+01-02 04:37:05.788 E/fsa4480-driver 0-0042(    0): fsa4480_usbc_analog_setup_switches: Unable to read USB TYPEC_MODE: -22
+01-02 04:37:05.800 I/subsys-pil-tz soc(    0): qcom,kgsl-hyp: a702_zap: loading from 0xbe500000 to 0xbe501000
+01-02 04:37:05.800 E/rouleur_codec rouleur-codec(    0): msm_snd_card_bengal_late_probe: mbhc hs detect failed, err:-22
+01-02 04:37:05.810 E/bengal-asoc-snd soc(    0): qcom,msm-audio-apr:qcom,q6core-audio:sound: ASoC: bengal-scubaidpFSA1SPK-snd-card late_probe() failed: -22
+01-02 04:37:05.842 I/subsys-pil-tz soc(    0): qcom,kgsl-hyp: a702_zap: Brought out of reset
+01-02 04:37:05.915 E/bengal-asoc-snd soc(    0): qcom,msm-audio-apr:qcom,q6core-audio:sound: msm_asoc_machine_probe: snd_soc_register_card failed (-22)
+01-02 04:37:05.927 W/bengal-asoc-snd(    0): probe of soc:qcom,msm-audio-apr:qcom,q6core-audio:sound failed with error -22
+```
+
+```c
+* msm_asoc_machine_probe
+  └── populate_snd_card_dailinks(&pdev->dev);
+      └── card->late_probe = msm_snd_card_bengal_late_probe;
+          ├── mbhc_calibration = def_rouleur_mbhc_cal();
+          │   └── btn_high[0] = 75; btn_high[1] = 150; btn_high[2] = 237; btn_high[3] = 500; btn_high[4] = 500;
+          └── rouleur_mbhc_hs_detect(component, &wcd_mbhc_cfg);
+              └── wcd_mbhc_start(&rouleur_mbhc->wcd_mbhc, mbhc_cfg);
+                  ├── const char *usb_c_dt = "qcom,msm-mbhc-usbc-audio-supported";
+                  ├── rc = of_property_read_u32(card->dev->of_node, usb_c_dt,&mbhc_cfg->enable_usbc_analog);
+                  ├── if (mbhc_cfg->enable_usbc_analog)
+                  │   └── mbhc->fsa_np = of_parse_phandle(card->dev->of_node,"fsa4480-i2c-handle", 0);
+                  └── if (mbhc_cfg->enable_usbc_analog && mbhc->fsa_np) 
+                      └── mbhc->fsa_nb.notifier_call = wcd_mbhc_usbc_ana_event_handler;
 ```

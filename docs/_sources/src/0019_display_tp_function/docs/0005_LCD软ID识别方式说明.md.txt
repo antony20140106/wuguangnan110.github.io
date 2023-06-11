@@ -14,7 +14,7 @@
 
 * 从百富info系统申请关键字，以下图为例：
 
-![34_百富lcd关键字](images/34_xxx_lcd_keyword.png)
+![34_百富lcd关键字](images/34_pax_lcd_keyword.png)
 
 上图的关键字中，包含了物料料号，lcd的分辨率，尺寸大小，对应项目，LCD玻璃信息，LCD-IC型号，TP-IC型号，供应商名称等等
 
@@ -22,15 +22,15 @@
 
 关键字申请成功后，需要将关键字转换成对应的软ID，以上图的254关键字为例，一般百富info系统上TP和LCD关键字是同一个，则表示TP、LCD的关键字都为254，如不同则按具体关键字烧录，首先需要将十进制的关键字转换成16进制，如`254`转换为16进制为`0xFE`(驱动中读取一般是按16进制读取)，则需要将LCD和TP的软ID`0xFE`写入lcd的IC中，以供lcd驱动读取，在上图的M8项目中，使用的显示芯片的型号为JD9365，通过JD9365的datasheet，可以知道读取ID的三个寄存器地址分别为`0xDA，0xDB，0xDC`，下图是datasheet上对这三个寄存器的说明：
 
-![34_js9365_寄存器1](images/34_xxx_lcd_register_address1.png)
+![34_js9365_寄存器1](images/34_pax_lcd_register_address1.png)
 
-![34_jd9365_寄存器2](images/34_xxx_lcd_register_address2.png)
+![34_jd9365_寄存器2](images/34_pax_lcd_register_address2.png)
 
-![34_js9365_寄存器3](images/34_xxx_lcd_register_address3.png)
+![34_js9365_寄存器3](images/34_pax_lcd_register_address3.png)
 
 每个寄存器占8bit，则三个寄存器占24bit，百富定义为以0xDA的bit0开始，前10bit用于烧录LCD关键字，第11-20bit用于烧录TP关键字，最后21-24bit预留以备不时之需，供应商需要将转换之后的软ID`0xFE`烧录到`0xDA,0xDB,0xDC`这三个寄存器中，默认从0xDA开始烧录，未使用到的则默认烧录0，最终烧录情况如下：
 
-![34_js9365_寄存器4](images/34_xxx_lcd_register_address4.png)
+![34_js9365_寄存器4](images/34_pax_lcd_register_address4.png)
 
 ## 软件驱动识别说明
 

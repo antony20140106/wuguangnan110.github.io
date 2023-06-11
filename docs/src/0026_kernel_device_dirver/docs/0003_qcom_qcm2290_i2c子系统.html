@@ -94,12 +94,12 @@
 <h1>I2C协议<a class="headerlink" href="#i2c" title="此标题的永久链接"></a></h1>
 <p>i2c是一种两线式串行总线，是半双工同步通信。</p>
 <p>I2C总线由两根信号线组成，一条是时钟信号线SCL，一条是数据信号线SDA。一条I2C总线可以接多个设备，每个设备都接入I2C总线的SCL和SDA。I2C总线是主从模式的总线架构，每个设备都可以作为主设备，其他设备作为从设备，但是同一时刻只能有一个主设备。其物理总线拓扑图如下：</p>
-<p><img alt="0003_0000.png" src="../../../_images/0003_00007.png" /></p>
+<p><img alt="0003_0000.png" src="../../../_images/0003_00006.png" /></p>
 <p>总线协议：</p>
 <p>（1）起始条件（边沿触发）：当SCL总线处于高电平时，SDA总线从高电平到低电平的跳变触发一次传输的开始条件。</p>
 <p>（2）结束条件（边沿触发）：当SCL总线处于高电平时，SDA总线从低电平到高电平的跳变触发一次传输的结束条件。</p>
 <p>起始和结束的时序图如下：</p>
-<p><img alt="0003_0001.png" src="../../../_images/0003_00015.png" /></p>
+<p><img alt="0003_0001.png" src="../../../_images/0003_00014.png" /></p>
 <p>（3）数据传输格式：</p>
 <p>起始条件触发之后，SCL处于高电平时，检测SDA总线的高低电平值1和0，SCL处于低电平时，SDA高低电平跳变切换数据1和0。</p>
 <p>SDA的数据传输以8bit（一个字节）为单位，每个字节传输之后都跟随一个bit的ACK位。起始条件之后的第一个字节应该是地址字段（包含7bit的地址+1bit的R/W位），随后是8bit为单位的数据，数据可以无限制的多次发送。注意，地址字节和每个数据字节之后都跟随一个bit的ACK位。</p>
@@ -107,7 +107,7 @@
 <p><img alt="0003_0002.png" src="../../../_images/0003_00026.png" /></p>
 <p>I2C的传输数据时序图如下：</p>
 <p><img alt="0003_0003.png" src="../../../_images/0003_00036.png" />
-<img alt="0003_0004.png" src="../../../_images/0003_00045.png" /></p>
+<img alt="0003_0004.png" src="../../../_images/0003_00044.png" /></p>
 </section>
 <section id="id1">
 <h1>I2C子系统框架<a class="headerlink" href="#id1" title="此标题的永久链接"></a></h1>
@@ -128,7 +128,7 @@ int i2c_master_recv(const struct i2c_client *client, char *buf, int count)；
 <p>（2）控制器驱动层(i2c-adapter)：由 i2c_adapter 结构描述了某个具体的I2C总线控制器特性，并通过 i2c_algorithm 结构提供了I2C总线周期的开始，停止，数据发送和接收等方法。同一个i2c_algorithm可以提供给多个 i2c_adapter 使用，i2c_adapter在注册的同时，会去（通过设备树配置或者老式的platform相关的硬编码）轮询该i2c总线下的所有i2c设备，并创建对应的 i2c_client 设备。换句话说，注册一个i2c_adapter，该总线下的所有从设备都会被注册到 i2c_bus_type下。</p>
 <p>（3）设备驱动层(i2c-driver)：由 i2c_driver 结构表示，用于表示各个具体从设备的驱动，跟 i2c_client 绑定，通过 i2c_client 关联的 adapter的algorithm实现具体从设备的通信协议。
 遵循kernel设备驱动框架，i2c_bus_type总线下挂 i2c_driver 和 i2c_client，注册 i2c_driver 的时候，会去轮询 i2c_bus_type 总线下的所有 i2c_client 设备，调用 bus 的 match（）方法，匹配后，调用 i2c_driver 的probe（）方法并关联该 i2c_client。在注册 i2c_adapter 同时，扫描注册该总线下所有的 i2c_client的时候，调用 bus 的match（）方法匹配 i2c_bus_type 总线下的 i2c_driver 驱动后，在调用 i2c_driver的probe（）方法并关联该 i2c_driver。</p>
-<p><img alt="0003_0005.png" src="../../../_images/0003_00055.png" /></p>
+<p><img alt="0003_0005.png" src="../../../_images/0003_00054.png" /></p>
 <ul class="simple">
 <li><p>简化版：</p></li>
 </ul>
@@ -617,8 +617,8 @@ scuba-pinctrl.dtsi:
 
 
            </div>
-         <div class="articleComments">
-               <comments>
+             <div class="articleComments">
+                <comments>
   <script src="https://utteranc.es/client.js"
     repo="iswbm/magic-python"
     issue-term="pathname"
@@ -627,7 +627,7 @@ scuba-pinctrl.dtsi:
     async>
   </script>
 </comments>
-           </div>
+             </div>
           </div>
           <footer>
 

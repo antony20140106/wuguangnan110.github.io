@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="zh-CN" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>wugn</title>
+
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script src="../../../_static/translations.js"></script>
+        <script src="../../../_static/js/baidutongji.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="索引" href="../../../genindex.html" />
+    <link rel="search" title="搜索" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../index.html" class="icon icon-home"> wugn_note
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="在文档中搜索" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">linux中断集合</a></li>
+<li><a class="reference internal" href="#id1">参考</a></li>
+<li><a class="reference internal" href="#id2">虚拟中断号和硬中断号</a><ul>
+<li><a class="reference internal" href="#id3">虚拟中断号</a></li>
+<li><a class="reference internal" href="#id4">硬中断号</a></li>
+</ul>
+</li>
+</ul>
+</div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">wugn_note</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs"> 
+<li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+<li>linux中断集合</li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.forward()">Forward</a></li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.back()">Go Back</a> | </li>
+<li style="float: right;margin-left: 10px;"><a href="/index.html">Home</a> | </li>
+
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="linux">
+<h1>linux中断集合<a class="headerlink" href="#linux" title="此标题的永久链接"></a></h1>
+<p>汇总一下linux中断知识。</p>
+</section>
+<section id="id1">
+<h1>参考<a class="headerlink" href="#id1" title="此标题的永久链接"></a></h1>
+<ul class="simple">
+<li><p><a class="reference external" href="https://zhuanlan.zhihu.com/p/487521301">中断管理基础学习笔记 - 概述</a></p></li>
+<li><p><a class="reference external" href="https://deepinout.com/android-system-analysis/android-interrupt-related/explanation-and-usage-of-interrupt-related-properties-in-linux-dts.html">Linux DTS中和中断相关属性的解释和用法</a></p></li>
+</ul>
+</section>
+<section id="id2">
+<h1>虚拟中断号和硬中断号<a class="headerlink" href="#id2" title="此标题的永久链接"></a></h1>
+<section id="id3">
+<h2>虚拟中断号<a class="headerlink" href="#id3" title="此标题的永久链接"></a></h2>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span>&lt;include/asm-generic/irq.h&gt;
+/*
+* NR_IRQS is the upper bound of how many interrupts can be handled
+* in the platform. It is used to size the static irq_map array,
+* so don&#39;t make it too big.
+*/
+#ifndef NR_IRQS
+#define NR_IRQS 64
+#endif
+NR_IRQS：表示系统支持的最大的虚拟中断号数量，它与平台相关
+
+&lt;kernel/irq/internals.h&gt;
+#ifdef CONFIG_SPARSE_IRQ
+# define IRQ_BITMAP_BITS        (NR_IRQS + 8196)
+#else
+# define IRQ_BITMAP_BITS        NR_IRQS
+#endif
+</pre></div>
+</div>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="o">&lt;</span><span class="n">kernel</span><span class="o">/</span><span class="n">irq</span><span class="o">/</span><span class="n">irqdesc</span><span class="p">.</span><span class="n">c</span><span class="o">&gt;</span><span class="w"></span>
+<span class="k">static</span><span class="w"> </span><span class="n">DECLARE_BITMAP</span><span class="p">(</span><span class="n">allocated_irqs</span><span class="p">,</span><span class="w"> </span><span class="n">IRQ_BITMAP_BITS</span><span class="p">);</span><span class="w"></span>
+</pre></div>
+</div>
+<p>linux定义了位图来管理这些虚拟中断号,allocated_irqs变量分配IRQ_BITMAP_BITS个bit位，每个bit位代表一个中断</p>
+</section>
+<section id="id4">
+<h2>硬中断号<a class="headerlink" href="#id4" title="此标题的永久链接"></a></h2>
+<ol class="arabic simple">
+<li><p>0~31中断号给了SGI和PPI</p></li>
+<li><p>其它外设中断号从32开始</p></li>
+<li><p>dts中会用interrupts = &lt;硬中断号n&gt;来指定硬件中断号，其中硬中断号n为板子上的硬件中断号，真正的硬件中断号32+n</p></li>
+</ol>
+<p>如下以Android自带的DTS为例说明：</p>
+<p><img alt="0034_0000.png" src="../../../_images/0034_0000.png" /></p>
+<p>如上从dts中可看出串口的interrupts值为297，代表它在板级的硬件中断号为297，但是要对应到GIC的硬件中断号需要转换（因为外设硬中断号从32开始）</p>
+<p>经转换后的硬件中断后为329，它对应GIC的硬件中断号</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>A6650:/ <span class="c1"># cat /proc/interrupts | grep swr_master_irq</span>
+<span class="m">214</span>:         <span class="m">33</span>         <span class="m">10</span>         <span class="m">16</span>          <span class="m">0</span>   mpm-gic <span class="m">329</span> Edge      swr_master_irq
+</pre></div>
+</div>
+<ol class="arabic simple" start="4">
+<li><p>每一款ARM SOC芯片设计阶段，各种中断和外设的分配情况要固定下来，通过查询芯片手册来确定外设的硬件中断号。</p></li>
+</ol>
+<p>注：
+dts中的interrupts域主要包含三个属性：</p>
+<ol class="arabic simple">
+<li><p>中断类型：GIC_SPI(共享外设中断，用0表示)；GIC_PPI(私有外设中断，用1表示)；</p></li>
+<li><p>中断ID；</p></li>
+<li><p>触发类型：IRQ_TYPE_EDGE_RISING:1，IRQ_TYPE_EDGE_FALLING:2，IRQ_TYPE_EDGE_BOTH:3，IRQ_TYPE_LEVEL_HIGH:4，IRQ_TYPE_LEVEL_LOW:8</p></li>
+</ol>
+</section>
+</section>
+
+
+           </div>
+             <div class="articleComments">
+                <comments>
+  <script src="https://utteranc.es/client.js"
+    repo="iswbm/magic-python"
+    issue-term="pathname"
+    theme="github-light"
+    crossorigin="anonymous"
+    async>
+  </script>
+</comments>
+             </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; 版权所有 2022, wugn.</p>
+  </div>
+
+  利用 <a href="https://www.sphinx-doc.org/">Sphinx</a> 构建，使用了 
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">主题</a>
+    由 <a href="https://readthedocs.org">Read the Docs</a>开发.
+  
+
+<script charset="UTF-8" id="LA_COLLECT" src="//sdk.51.la/js-sdk-pro.min.js"></script>
+<script>LA.init({id: "JoV5csIHTGhHiGQ4",ck: "JoV5csIHTGhHiGQ4"})</script>
+
+<br/>
+<script id="LA-DATA-WIDGET" crossorigin="anonymous" charset="UTF-8" src="https://v6-widget.51.la/v6/JoV5csIHTGhHiGQ4/quote.js?theme=#4C8AC2,#BB2626,#040000,#333333,#AE3535,#1690FF,14&f=14"></script>
+
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

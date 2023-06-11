@@ -70,6 +70,8 @@
 <li><a class="reference internal" href="#user">如何打开user调试串口</a></li>
 <li><a class="reference internal" href="#sp-monitor">sp monitor软件签名失败</a></li>
 <li><a class="reference internal" href="#qcom-camera">qcom camera参数编译</a></li>
+<li><a class="reference internal" href="#xbl-abl">xbl/abl 延迟函数</a></li>
+<li><a class="reference internal" href="#android-bp">Android.bp 增加条件编译</a></li>
 </ul>
 </div>
         </div>
@@ -663,6 +665,12 @@ FAILED: ninja: &#39;out/target/product/bengal_32go/obj/SHARED_LIBRARIES/android.
 <ul class="simple">
 <li><p><a class="reference external" href="https://blog.csdn.net/jackone12347/article/details/123500552">android audit2allow工具使用步骤</a></p></li>
 </ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">source</span> <span class="n">build</span><span class="o">/</span><span class="n">envsetup</span><span class="o">.</span><span class="n">sh</span>
+<span class="n">lunch</span> <span class="mi">51</span>
+<span class="n">cd</span> <span class="o">/</span><span class="n">home</span><span class="o">/</span><span class="n">wugn</span><span class="o">/</span><span class="n">A6650</span><span class="o">-</span><span class="n">project</span><span class="o">/</span><span class="n">QSSI</span><span class="mf">.12</span><span class="o">/</span><span class="n">external</span><span class="o">/</span><span class="n">selinux</span><span class="o">/</span><span class="n">prebuilts</span><span class="o">/</span><span class="nb">bin</span>
+<span class="o">./</span><span class="n">audit2allow</span> <span class="o">-</span><span class="n">i</span> <span class="n">acv</span><span class="o">.</span><span class="n">txt</span> <span class="o">&gt;</span> <span class="n">avc</span><span class="o">.</span><span class="n">te</span>
+</pre></div>
+</div>
 </section>
 <section id="android-mk">
 <h1>Android.mk中打印输出信息<a class="headerlink" href="#android-mk" title="此标题的永久链接"></a></h1>
@@ -810,11 +818,125 @@ Generating binaries.
 </pre></div>
 </div>
 </section>
+<section id="xbl-abl">
+<h1>xbl/abl 延迟函数<a class="headerlink" href="#xbl-abl" title="此标题的永久链接"></a></h1>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="n">gBS</span><span class="o">-&gt;</span><span class="n">Stall</span><span class="p">(</span><span class="mi">100000</span><span class="p">);</span><span class="w"> </span><span class="c1">//100ms</span>
+</pre></div>
+</div>
+</section>
+<section id="android-bp">
+<h1>Android.bp 增加条件编译<a class="headerlink" href="#android-bp" title="此标题的永久链接"></a></h1>
+<p>参考：</p>
+<ul class="simple">
+<li><p><a class="reference external" href="http://qiushao.net/2020/02/05/Android%E7%B3%BB%E7%BB%9F%E5%BC%80%E5%8F%91%E5%85%A5%E9%97%A8/15-Anroid.bp%E6%9D%A1%E4%BB%B6%E7%BC%96%E8%AF%91/">Android系统开发入门-15.Android.bp 条件编译</a></p></li>
+</ul>
+<div class="highlight-diff notranslate"><div class="highlight"><pre><span></span><span class="gh">diff --git a/QSSI.12/system/core/init/Android.bp b/QSSI.12/system/core/init/Android.bp</span><span class="w"></span>
+<span class="gh">index 82d8a10a271..36d49595fd7 100755</span><span class="w"></span>
+<span class="gd">--- a/QSSI.12/system/core/init/Android.bp</span><span class="w"></span>
+<span class="gi">+++ b/QSSI.12/system/core/init/Android.bp</span><span class="w"></span>
+<span class="gu">@@ -14,6 +14,23 @@</span><span class="w"></span>
+<span class="w"> </span>// limitations under the License.<span class="w"></span>
+<span class="w"> </span>//<span class="w"></span>
+<span class="w"> </span>
+<span class="gi">+bootstrap_go_package {</span><span class="w"></span>
+<span class="gi">+    name: &quot;soong-paxinit&quot;,</span><span class="w"></span>
+<span class="gi">+    pkgPath: &quot;android/soong/paxinit&quot;,</span><span class="w"></span>
+<span class="gi">+    deps: [</span><span class="w"></span>
+<span class="gi">+    &quot;soong-android&quot;,</span><span class="w"></span>
+<span class="gi">+    &quot;soong-cc&quot;,</span><span class="w"></span>
+<span class="gi">+    ],</span><span class="w"></span>
+<span class="gi">+    srcs: [</span><span class="w"></span>
+<span class="gi">+        &quot;paxinit.go&quot;,</span><span class="w"></span>
+<span class="gi">+    ],</span><span class="w"></span>
+<span class="gi">+    pluginFor: [&quot;soong_build&quot;],</span><span class="w"></span>
+<span class="gi">+}</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+paxinit {</span><span class="w"></span>
+<span class="gi">+    name: &quot;paxinit&quot;,</span><span class="w"></span>
+<span class="gi">+}</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="w"> </span>package {<span class="w"></span>
+<span class="w"> </span>    default_applicable_licenses: [&quot;system_core_init_license&quot;],<span class="w"></span>
+<span class="w"> </span>}<span class="w"></span>
+<span class="gu">@@ -182,6 +199,7 @@ cc_library_static {</span><span class="w"></span>
+<span class="w"> </span>    defaults: [<span class="w"></span>
+<span class="w"> </span>        &quot;init_defaults&quot;,<span class="w"></span>
+<span class="w"> </span>        &quot;selinux_policy_version&quot;,<span class="w"></span>
+<span class="gi">+		&quot;paxinit&quot;,</span><span class="w"></span>
+<span class="w"> </span>    ],<span class="w"></span>
+<span class="w"> </span>    cflags: [<span class="w"></span>
+<span class="w"> </span>        &quot;-DPAX_INIT&quot;,<span class="w"></span>
+<span class="gh">diff --git a/QSSI.12/system/core/init/pax_init.cpp b/QSSI.12/system/core/init/pax_init.cpp</span><span class="w"></span>
+<span class="gh">index 338948f89b0..a48c2642ca8 100755</span><span class="w"></span>
+<span class="gd">--- a/QSSI.12/system/core/init/pax_init.cpp</span><span class="w"></span>
+<span class="gi">+++ b/QSSI.12/system/core/init/pax_init.cpp</span><span class="w"></span>
+<span class="gu">@@ -62,6 +62,9 @@ void pax_import_kernel_nv(const std::string &amp;key, const std::string&amp; value)</span><span class="w"></span>
+<span class="w"> </span>	}	<span class="w"></span>
+<span class="w"> </span>	else if(!strcmp(name, &quot;PRINTER&quot;))<span class="w"></span>
+<span class="w"> </span>	{<span class="w"></span>
+<span class="gi">+#ifdef PAX_M9200</span><span class="w"></span>
+<span class="gi">+                InitPropertySet(&quot;ro.platform.series&quot;, &quot;ATM&quot;);</span><span class="w"></span>
+<span class="gi">+#endif</span><span class="w"></span>
+<span class="w"> </span>		InitPropertySet(&quot;ro.fac.cfg.PRINTER&quot;, value.c_str());<span class="w"></span>
+<span class="w"> </span>	}	<span class="w"></span>
+<span class="w"> </span>	else if(!strcmp(name, &quot;MAG_CARD&quot;))<span class="w"></span>
+<span class="gh">diff --git a/QSSI.12/system/core/init/paxinit.go b/QSSI.12/system/core/init/paxinit.go</span><span class="w"></span>
+<span class="w">new file mode 100755</span>
+<span class="gh">index 00000000000..42b7ee9ab2b</span><span class="w"></span>
+<span class="gd">--- /dev/null</span><span class="w"></span>
+<span class="gi">+++ b/QSSI.12/system/core/init/paxinit.go</span><span class="w"></span>
+<span class="gu">@@ -0,0 +1,43 @@</span><span class="w"></span>
+<span class="gi">+package paxinit</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+import (</span><span class="w"></span>
+<span class="gi">+        &quot;android/soong/android&quot;</span><span class="w"></span>
+<span class="gi">+        &quot;android/soong/cc&quot;</span><span class="w"></span>
+<span class="gi">+		&quot;fmt&quot;</span><span class="w"></span>
+<span class="gi">+)</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+func init() {</span><span class="w"></span>
+<span class="gi">+    // resister a module &quot;paxinit&quot;</span><span class="w"></span>
+<span class="gi">+    android.RegisterModuleType(&quot;paxinit&quot;, paxinitFactory)</span><span class="w"></span>
+<span class="gi">+}</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+func paxinitFactory() (android.Module) {</span><span class="w"></span>
+<span class="gi">+    module := cc.DefaultsFactory()</span><span class="w"></span>
+<span class="gi">+    android.AddLoadHook(module, paxinit)</span><span class="w"></span>
+<span class="gi">+    return module</span><span class="w"></span>
+<span class="gi">+}</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+func paxinit(ctx android.LoadHookContext) {</span><span class="w"></span>
+<span class="gi">+    type props struct {</span><span class="w"></span>
+<span class="gi">+        Cflags []string</span><span class="w"></span>
+<span class="gi">+		Whole_static_libs []string</span><span class="w"></span>
+<span class="gi">+    }</span><span class="w"></span>
+<span class="gi">+    p := &amp;props{}</span><span class="w"></span>
+<span class="gi">+    p.Cflags = getCflags(ctx)</span><span class="w"></span>
+<span class="gi">+    ctx.AppendProperties(p)</span><span class="w"></span>
+<span class="gi">+}</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+func getCflags(ctx android.BaseContext) ([]string) {</span><span class="w"></span>
+<span class="gi">+    var cppflags []string</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+	fmt.Println(&quot;PAX_SDK_PLATFORM_VERSION = &quot;, ctx.AConfig().Getenv(&quot;PAX_SDK_PLATFORM_VERSION&quot;))</span><span class="w"></span>
+<span class="gi">+    fmt.Println(&quot;PAX_INIT PAX_SDK_PLATFORM_VERSION:&quot;,</span><span class="w"></span>
+<span class="gi">+        ctx.AConfig().IsEnvTrue(&quot;PAX_SDK_PLATFORM_VERSION&quot;))</span><span class="w"></span>
+<span class="gi">+     if ctx.Config().Getenv(&quot;PAX_SDK_PLATFORM_VERSION&quot;) == &quot;Kapok&quot; {</span><span class="w"></span>
+<span class="gi">+		  fmt.Println(&quot;M9200 platform&quot;)</span><span class="w"></span>
+<span class="gi">+          cppflags = append(cppflags,</span><span class="w"></span>
+<span class="gi">+                         &quot;-DPAX_M9200&quot;)</span><span class="w"></span>
+<span class="gi">+    }</span><span class="w"></span>
+<span class="gi">+    //[FEATURE]-Add-END by (lib@paxsz.com) 2022-12-10</span><span class="w"></span>
+<span class="gi">+    return cppflags</span><span class="w"></span>
+<span class="gi">+}</span><span class="w"></span>
+</pre></div>
+</div>
+</section>
 
 
            </div>
-         <div class="articleComments">
-               <comments>
+             <div class="articleComments">
+                <comments>
   <script src="https://utteranc.es/client.js"
     repo="iswbm/magic-python"
     issue-term="pathname"
@@ -823,7 +945,7 @@ Generating binaries.
     async>
   </script>
 </comments>
-           </div>
+             </div>
           </div>
           <footer>
 

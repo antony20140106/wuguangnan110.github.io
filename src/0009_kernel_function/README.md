@@ -6,6 +6,8 @@
 
 NO.|文件名称|摘要
 :--:|:--|:--
+0034| [linux中断集合](docs/0034_linux中断集合.md) | 汇总一下linux中断知识。
+0033| [linux动态输出接口pr_debug使用方法](docs/0033_linux动态输出接口pr_debug使用方法.md) | 在系统运行过程中，维护者可以通过控制 pr_debug 的开关来动态的配置某个模块中的调试信息是否输出，相对于 printk 来说，它显然是更加灵活。
 0032| [linux_i2c偶发读取错误数据问题分析](docs/0032_linux_i2c偶发读取错误数据问题分析.md) | 发现charger i2c老是读取的数据由问题，分析一下
 0031| [qcom_qcm2290关机流程](docs/0031_qcom_qcm2290关机流程.md) | 梳理一下Android平台关机流程
 0030| [qcom_qcm2290_i2c_runtime_pm驱动流程](docs/0030_qcom_qcm2290_i2c_runtime_pm驱动流程.md) | 高通平台i2c总线初始化和其他平台不同，休眠时会将pinctrl配置为gpio并且禁止上下拉，也就是SDA/SCL拉低了，看一下流程。

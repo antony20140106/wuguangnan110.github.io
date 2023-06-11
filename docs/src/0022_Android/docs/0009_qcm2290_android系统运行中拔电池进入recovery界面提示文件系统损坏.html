@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="zh-CN" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>wugn</title>
+
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script src="../../../_static/translations.js"></script>
+        <script src="../../../_static/js/baidutongji.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="索引" href="../../../genindex.html" />
+    <link rel="search" title="搜索" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../index.html" class="icon icon-home"> wugn_note
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="在文档中搜索" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">qcm2290 android系统运行中拔电池进入recovery界面提示文件系统损坏</a></li>
+<li><a class="reference internal" href="#id1">参考</a></li>
+<li><a class="reference internal" href="#id2">现象</a></li>
+<li><a class="reference internal" href="#id3">解决方案</a></li>
+<li><a class="reference internal" href="#resize">方案一 利用文件系统自身resize功能</a></li>
+<li><a class="reference internal" href="#format-data">方案二 第一次开机format data分区</a></li>
+<li><a class="reference internal" href="#misc">方案三 烧录特定misc分区</a></li>
+<li><a class="reference internal" href="#f2fs">f2fs</a><ul>
+<li><a class="reference internal" href="#id4">F2FS的提升在哪里？</a></li>
+<li><a class="reference internal" href="#id5">F2FS的提升不在哪里？</a></li>
+<li><a class="reference internal" href="#id6">F2FS影响寿命？</a></li>
+<li><a class="reference internal" href="#id7">F2FS不稳定？</a></li>
+<li><a class="reference internal" href="#f2fsext4">F2FS里存文件比EXT4大？</a></li>
+<li><a class="reference internal" href="#id8">F2FS为跑分而生？</a></li>
+<li><a class="reference internal" href="#id9">总结</a></li>
+</ul>
+</li>
+</ul>
+</div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">wugn_note</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs"> 
+<li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+<li>qcm2290 android系统运行中拔电池进入recovery界面提示文件系统损坏</li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.forward()">Forward</a></li>
+<li style="float: right;margin-left: 10px;"><a href="javascript:history.back()">Go Back</a> | </li>
+<li style="float: right;margin-left: 10px;"><a href="/index.html">Home</a> | </li>
+
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="qcm2290-androidrecovery">
+<h1>qcm2290 android系统运行中拔电池进入recovery界面提示文件系统损坏<a class="headerlink" href="#qcm2290-androidrecovery" title="此标题的永久链接"></a></h1>
+<p>开机使用过程中拔电池，机器概率性进入recovery界面</p>
+</section>
+<section id="id1">
+<h1>参考<a class="headerlink" href="#id1" title="此标题的永久链接"></a></h1>
+<ul class="simple">
+<li><p><a class="reference external" href="https://blog.csdn.net/Fybon/article/details/44242549">碎碎念android eMMC</a></p></li>
+<li><p><a class="reference external" href="https://www.xjishu.com/zhuanli/55/202011407849.html">一种基于高通平台通过新增分区兼容不同大小EMMC的方法与流程</a></p></li>
+<li><p><a class="reference external" href="https://blog.csdn.net/u011006622/article/details/118999260">Userdata 分区 resize 功能</a></p></li>
+</ul>
+</section>
+<section id="id2">
+<h1>现象<a class="headerlink" href="#id2" title="此标题的永久链接"></a></h1>
+<p>在一个高负荷读写的f2fs文件系统下，如果突然发生掉电，就很有可能发生文件系统内部结构不一致，导致文件系统破坏。</p>
+<p><img alt="0009_0000.png" src="../../../_images/0009_00003.png" /></p>
+<p>log提示如下：</p>
+<div class="highlight-log notranslate"><div class="highlight"><pre><span></span>[   13.708743] init: processing action (ro.kernel.version=4.19 &amp;&amp; late-fs) from (/system/etc/init/hw/init.rc:622)
+[   13.719740] init: processing action (late-fs) from (/system/etc/init/hw/init.rc:626)
+[   13.728208] init: processing action (late-fs) from (/vendor/etc/init/hw/init.target.rc:66)
+[   13.736837] init: start_waiting_for_property(&quot;hwservicemanager.ready&quot;, &quot;true&quot;): already set
+[   13.791673] wait_for_keymaster: Waiting for Keymaster device
+[   13.797784] binder: 483:483 ioctl 40046210 be912af8 returned -22
+[   13.803944] binder: 476:476 ioctl 40046210 beb59a70 returned -22
+[   13.831088] binder: 476:476 ioctl 40046210 beb59360 returned -22
+[   14.811071] ServiceManager: Waited one second for android.system.keystore2.IKeystoreService/default (is service started? are binder threads started and available?)
+[   14.827243] wait_for_keymaster: Keymaster device ready
+[   14.844269] binder: undelivered transaction 213, process died.
+[   14.869262] binder: 491:491 ioctl 40046210 bed6da28 returned -22
+[   14.920571] binder: 492:492 ioctl 40046210 be8dba08 returned -22
+[   14.947435] vdc: Command: cryptfs mountFstab /dev/block/bootdevice/by-name/userdata /data Failed: Status(-8, EX_SERVICE_SPECIFIC): &#39;0: &#39;
+[   15.018090] PAX_CHG: sgm41528_charger_reboot_callback:enter
+[   15.028888] ==sp_pm_shutdown
+[   15.032362] reboot: Restarting system with command &#39;recovery&#39;
+[   15.038167] Going down for restart now
+</pre></div>
+</div>
+</section>
+<section id="id3">
+<h1>解决方案<a class="headerlink" href="#id3" title="此标题的永久链接"></a></h1>
+<ul class="simple">
+<li><p>由于修改为ext4格式后，在挂载userdata分区时出现如下的错误，导致userdata无法挂载，系统不能正常开机。</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span>   <span class="mf">18.090538</span><span class="p">]</span> <span class="n">EXT4</span><span class="o">-</span><span class="n">fs</span> <span class="p">(</span><span class="n">sda11</span><span class="p">):</span> <span class="n">bad</span> <span class="n">geometry</span><span class="p">:</span> <span class="n">block</span> <span class="n">count</span> <span class="mi">10664230</span> <span class="n">exceeds</span> <span class="n">size</span> <span class="n">of</span> <span class="n">device</span> <span class="p">(</span><span class="mi">10662182</span> <span class="n">blocks</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>因此需要修改userdata分区的大小。</p>
+<ul class="simple">
+<li><p>关于BOARD_USERDATAIMAGE_PARTITION_SIZE的取值建议：</p></li>
+<li><p>BOARD_USERDATAIMAGE_PARTITION_SIZE表示文件系统中的容量，这个值一定不能大于分给userdata分区的物理空间大小。</p>
+<ul>
+<li><p>步骤一：确定userdata分区的device名称，使用ls -l /dev/block/by-name | grep userdata 命令查看，userdata分区对应的设备是：/dev/block/mmcblk0p57</p></li>
+</ul>
+</li>
+</ul>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>M9200:/ <span class="c1"># ls -l /dev/block/by-name | grep userdata</span>
+lrwxrwxrwx <span class="m">1</span> root root <span class="m">21</span> <span class="m">1970</span>-01-01 <span class="m">08</span>:00 userdata -&gt; /dev/block/mmcblk0p57
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>步骤二：查看userdata分区的物理空间大小，使用cat /proc/partitions | grep mmcblk0p57 命令，这里过滤的mmcblk0p57就是上一步查询到的，</p></li>
+</ul>
+<div class="highlight-log notranslate"><div class="highlight"><pre><span></span>M9200:/ # cat /proc/partitions | grep mmcblk0p57
+ 259       25   25928687 mmcblk0p57
+</pre></div>
+</div>
+<p>我们看到留给userdata分区的物理空间大小是25928687KB = 26550975488 Bytes</p>
+<ul class="simple">
+<li><p>步骤三：确定BOARD_USERDATAIMAGE_PARTITION_SIZE的大小：</p></li>
+<li><p>BOARD_USERDATAIMAGE_PARTITION_SIZE的大小一定不能大于26550975488，由于不同厂家不同批次的ufs存储器实际空间可能存在差异，所以建议客户一般预留100M左右的空间，计算如下：</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>26550975488 – 100 * 1024 * 1024 = 26446117888
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>又因为ufs要做到4K对齐，所以要检查26446117888是否能被4096整除，这里26446114816是可以整除4096的，就不用再修改了，如果不能请客户自行调整，调整方法：不能整除4096时，就除以4096取整，再乘以4096即可。</p></li>
+</ul>
+<p>但是我们有多种size规格eMMC，如果设置成26G，1+8G的型号就不兼容，那如何兼容呢，网上搜了一下答案。</p>
+<ul class="simple">
+<li><p><a class="reference external" href="https://blog.csdn.net/Fybon/article/details/44242549">碎碎念android eMMC</a></p></li>
+</ul>
+</section>
+<section id="resize">
+<h1>方案一 利用文件系统自身resize功能<a class="headerlink" href="#resize" title="此标题的永久链接"></a></h1>
+<p>mountdata之前，比较super block的size与block deviceszie，不一样就去resize</p>
+<p><img alt="0009_0001.png" src="../../../_images/0009_0001.png" /></p>
+<p>高通平台f2fs有这个功能，<code class="docutils literal notranslate"><span class="pre">/system/bin/resize2fs</span></code>工具去实现的，ext4反而去掉了，不知道什么原因。</p>
+</section>
+<section id="format-data">
+<h1>方案二 第一次开机format data分区<a class="headerlink" href="#format-data" title="此标题的永久链接"></a></h1>
+<p>如果使用的filesystem没有resize功能，比如f2fs, fat32等。</p>
+<p>那只能采用此种办法啦：</p>
+<p>不下载userdata.img</p>
+<p>mountdata之前，fs_mgrservice判断是否会第一次开机，如果是，则启动format</p>
+<p>system/core/fs_mgr</p>
+<p>新增一个分区如 formatemmc.img（这个分区需要比userdata先mount），然后根据刷机后，根据这个分区标志位去格式化 userdata分区，之后进行mount操作，然后清空标志位，以后不需要再格式化</p>
+</section>
+<section id="misc">
+<h1>方案三 烧录特定misc分区<a class="headerlink" href="#misc" title="此标题的永久链接"></a></h1>
+<p><img alt="0009_0002.png" src="../../../_images/0009_00021.png" /></p>
+<p>misc分区结构如下：</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">boot</span><span class="o">-</span><span class="n">recovery</span>
+<span class="n">OKAY</span>
+<span class="n">recovery</span> <span class="o">--</span><span class="n">wipe_data</span>
+</pre></div>
+</div>
+<p>以上会让机器第一次开机进入recovery并格式化userdata分区，最后采用的是该方案。</p>
+</section>
+<section id="f2fs">
+<h1>f2fs<a class="headerlink" href="#f2fs" title="此标题的永久链接"></a></h1>
+<p>F2FS 全称为 Flash Friendly File System，是一种较为新型的支持 Linux 内核使用的文件系统。最早是由三星在2012年研发设计的，其目的就是为了更好的适应 NAND 一类的闪存设备（例如固态硬盘、eMMC和SD卡等），在F2FS中三星应用了日志结构档案系统的概念，使它更适合用于储存设备。
+简而言之，一个新的文件系统。</p>
+<section id="id4">
+<h2>F2FS的提升在哪里？<a class="headerlink" href="#id4" title="此标题的永久链接"></a></h2>
+<p>主要在随机读写性能中，随机写入性能性能较为明显。反映到现实使用中就是相同的存储介质和标准下，应用打开快一点缓存的图片打开快一点。</p>
+</section>
+<section id="id5">
+<h2>F2FS的提升不在哪里？<a class="headerlink" href="#id5" title="此标题的永久链接"></a></h2>
+<p>持续读写性能还是要靠硬件能力的进步，而不是一个文件系统就能解决的。反映到现实使用中就是EXT4的UFS3.0读写大文件（如安装应用，拷贝大型文件等）吊打F2FS的UFS2.1。
+参考1+7 Pro对比测评，尤其是软件安装速度测试部分。
+文件系统可以优化一些东西，但终究还是软件层面，无法替代硬件升级。
+就像emmc优化成ufs一样，笑笑就好别信，能用软件更新的还要提升硬件干嘛。</p>
+</section>
+<section id="id6">
+<h2>F2FS影响寿命？<a class="headerlink" href="#id6" title="此标题的永久链接"></a></h2>
+<p>因为文件系统格式的区别相同的文件会比在EXT4下大一些，这一定程度上会增加读写量。但可以忽略不计，基本不存在，不需要操无意义之心。</p>
+</section>
+<section id="id7">
+<h2>F2FS不稳定？<a class="headerlink" href="#id7" title="此标题的永久链接"></a></h2>
+<p>是也不是。F2FS面世初期确实有比较大的稳定性问题，但随着迭代已经基本不存在。</p>
+<p>但值得一提的是F2FS在高存储占用的情况下（75%-80%左右）会出现严重的随机读写性能下降的问题。</p>
+<p>这时随机读写性能可能会低于EXT4，但也仅在高存储占用的情况下。</p>
+</section>
+<section id="f2fsext4">
+<h2>F2FS里存文件比EXT4大？<a class="headerlink" href="#f2fsext4" title="此标题的永久链接"></a></h2>
+<p>是的，将相同文件存储到F2FS文件格式下相较于EXT4会占用1.1倍到1.5倍的空间。</p>
+</section>
+<section id="id8">
+<h2>F2FS为跑分而生？<a class="headerlink" href="#id8" title="此标题的永久链接"></a></h2>
+<p>跑分只是反映客观情况的一种手段，一切以实际体验为准。</p>
+<p>F2FS的跑分尤其是随机读写部分的成绩真的非常好，反映到实际使用中是有提升，但远没有达到跑分显示的几倍的差距。</p>
+<p>F2FS跑分高吗？高。</p>
+<p>实际体验有提升吗？有。</p>
+<p>真的有跑分差距的那么大吗？显然没有。</p>
+</section>
+<section id="id9">
+<h2>总结<a class="headerlink" href="#id9" title="此标题的永久链接"></a></h2>
+<p>F2FS是一个综合来看利大于弊的技术。利在实实在在的随机读写性能提升，弊在高存储占用情况下的性能损失和多占用存储空间。</p>
+<p>需要理性看待，这是一个软件技术，也不能苛求它带来太多的提升。</p>
+<p>但它确实带来了不错的提升。至于如何定义有多不错，让平常心人满足，又让苛求者看不上。</p>
+<p>点到为止。</p>
+</section>
+</section>
+
+
+           </div>
+             <div class="articleComments">
+                <comments>
+  <script src="https://utteranc.es/client.js"
+    repo="iswbm/magic-python"
+    issue-term="pathname"
+    theme="github-light"
+    crossorigin="anonymous"
+    async>
+  </script>
+</comments>
+             </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; 版权所有 2022, wugn.</p>
+  </div>
+
+  利用 <a href="https://www.sphinx-doc.org/">Sphinx</a> 构建，使用了 
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">主题</a>
+    由 <a href="https://readthedocs.org">Read the Docs</a>开发.
+  
+
+<script charset="UTF-8" id="LA_COLLECT" src="//sdk.51.la/js-sdk-pro.min.js"></script>
+<script>LA.init({id: "JoV5csIHTGhHiGQ4",ck: "JoV5csIHTGhHiGQ4"})</script>
+
+<br/>
+<script id="LA-DATA-WIDGET" crossorigin="anonymous" charset="UTF-8" src="https://v6-widget.51.la/v6/JoV5csIHTGhHiGQ4/quote.js?theme=#4C8AC2,#BB2626,#040000,#333333,#AE3535,#1690FF,14&f=14"></script>
+
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

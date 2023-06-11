@@ -95,7 +95,7 @@
 <h1>前言<a class="headerlink" href="#id1" title="此标题的永久链接"></a></h1>
 <p>BatteryService负责监听充电状态和电量变化，当电量值或者充电类型改变时，会获取到底层healthd上报的电池状态信息，并更新到BatteryStatsService中进行统计，同时会将这些值存储到Intent中，以广播的形式发送到监听了ACTION_BATTERY_CHANGED的组件中，其他组建可以通过Intent.getExtra()的方式获取到电池信息。</p>
 <p>先上一幅图，对电量上报的流程有个整体的概念，后续对该图的各个部分进行讲解。</p>
-<p><img alt="0005_0001.png" src="../../../_images/0005_00013.png" /></p>
+<p><img alt="0005_0001.png" src="../../../_images/0005_00015.png" /></p>
 </section>
 <section id="id2">
 <h1>参考文档<a class="headerlink" href="#id2" title="此标题的永久链接"></a></h1>
@@ -293,9 +293,9 @@
 <span class="w">    </span><span class="n">publishBinderService</span><span class="p">(</span><span class="s">&quot;battery&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">mBinderService</span><span class="p">);</span><span class="w"></span>
 <span class="w">    </span><span class="c1">//注册电池监听，当底层电池电量发生变化调用此监听，并调用update。</span><span class="w"></span>
 <span class="w">    </span><span class="n">mBatteryPropertiesRegistrar</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">BatteryPropertiesRegistrar</span><span class="p">();</span><span class="w"></span>
-<span class="w">    </span><span class="c1">//注册到Binder服务端</span><span class="w"></span>
+<span class="w">    </span><span class="c1">//调用 publishBinderService(…) 发布 battery、batteryproperties 服务；</span><span class="w"></span>
 <span class="w">    </span><span class="n">publishBinderService</span><span class="p">(</span><span class="s">&quot;batteryproperties&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">mBatteryPropertiesRegistrar</span><span class="p">);</span><span class="w"></span>
-<span class="w">    </span><span class="c1">//注册到本地服务</span><span class="w"></span>
+<span class="w">    </span><span class="c1">//调用 publishLocalService(…) 发布本地服务 BatteryManagerInternal（电池管理器本地系统服务接口）。</span><span class="w"></span>
 <span class="w">    </span><span class="n">publishLocalService</span><span class="p">(</span><span class="n">BatteryManagerInternal</span><span class="p">.</span><span class="na">class</span><span class="p">,</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">LocalService</span><span class="p">());</span><span class="w"></span>
 <span class="p">}</span><span class="w"></span>
 </pre></div>
@@ -669,22 +669,39 @@ publishLocalService()方法中将BatteryService的内部类LocalService注册到
 <ul class="simple">
 <li><p>流程图如下：</p></li>
 </ul>
-<p><img alt="0005_0000.png" src="../../../_images/0005_00004.png" /></p>
+<p><img alt="0005_0000.png" src="../../../_images/0005_00007.png" /></p>
 </section>
 <section id="batterypropertiesregistrar">
 <h3>BatteryPropertiesRegistrar<a class="headerlink" href="#batterypropertiesregistrar" title="此标题的永久链接"></a></h3>
-<p>首先，会在系统服务中获取“batteryproperties”注册的服务，获取到的对象为Binder，那么这个名为“batteryproperties”的系统服务，它是在何处进行注册的呢？
-我在Java代码中搜索后，没有发现对应的注册代码，难不成它没有进行注册？这是不可能的。经过全局搜索发现了其注册位置，在c++代码中,路径为：</p>
-<p>该接口给上层直接获取系统电量的方法:</p>
+<p>首先，会在系统服务中获取“batteryproperties”注册的服务，获取到的对象为Binder，那么这个名为“batteryproperties”的系统服务，它是在何处进行注册的呢？</p>
+<p>在onStart()方法里面，如下：</p>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="nd">@Override</span><span class="w"></span>
+<span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">onStart</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">mBatteryPropertiesRegistrar</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">BatteryPropertiesRegistrar</span><span class="p">();</span><span class="w"></span>
+<span class="w">    </span><span class="c1">//调用 publishBinderService(…) 发布 battery、batteryproperties 服务；</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<p>BatteryManager的构造函数获取<code class="docutils literal notranslate"><span class="pre">batteryproperties</span></code>服务：</p>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="nf">BatteryManager</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">          </span><span class="n">mContext</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">null</span><span class="p">;</span><span class="w"></span>
+<span class="w">          </span><span class="n">mBatteryStats</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">IBatteryStats</span><span class="p">.</span><span class="na">Stub</span><span class="p">.</span><span class="na">asInterface</span><span class="p">(</span><span class="w"></span>
+<span class="w">                  </span><span class="n">ServiceManager</span><span class="p">.</span><span class="na">getService</span><span class="p">(</span><span class="n">BatteryStats</span><span class="p">.</span><span class="na">SERVICE_NAME</span><span class="p">));</span><span class="w"></span>
+<span class="w">          </span><span class="n">mBatteryPropertiesRegistrar</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">IBatteryPropertiesRegistrar</span><span class="p">.</span><span class="na">Stub</span><span class="p">.</span><span class="na">asInterface</span><span class="p">(</span><span class="w"></span>
+<span class="w">                  </span><span class="n">ServiceManager</span><span class="p">.</span><span class="na">getService</span><span class="p">(</span><span class="s">&quot;batteryproperties&quot;</span><span class="p">));</span><span class="w"></span>
+<span class="w">      </span><span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<p>以下接口给上层直接获取系统电量的方法:</p>
 <div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="n">BatteryManager</span><span class="w"> </span><span class="n">batteryManager</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">BatteryManager</span><span class="p">)</span><span class="w"> </span><span class="n">getSystemService</span><span class="p">(</span><span class="n">BATTERY_SERVICE</span><span class="p">);</span><span class="w"></span>
 <span class="n">batteryManager</span><span class="p">.</span><span class="na">getIntProperty</span><span class="p">(</span><span class="n">BatteryManager</span><span class="p">.</span><span class="na">BATTERY_PROPERTY_CAPACITY</span><span class="p">);</span><span class="w"></span>
 </pre></div>
 </div>
-<p>程序流程：</p>
+<p>通过BatteryManager主动获取电池容量，程序流程：</p>
 <div class="highlight-log notranslate"><div class="highlight"><pre><span></span>* batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY);
   * getIntProperty(int id) //frameworks/base/core/java/android/os/BatteryManager.java
     * long value = queryProperty(id); //
-      * mBatteryPropertiesRegistrar.getProperty(id, prop) == 0
+      * mBatteryPropertiesRegistrar.getProperty(id, prop) == 0 //调用batteryproperties服务
       * ret = prop.getLong();//当前电量返回结果
         * public int getProperty(int id, final BatteryProperty prop) throws RemoteException //BatteryServices.java
         * if (result == Result.SUCCESS) prop.setLong(value);
@@ -700,7 +717,7 @@ publishLocalService()方法中将BatteryService的内部类LocalService注册到
                   * callback(result, static_cast&lt;T&gt;(ret)); //调用batteryservice传下来的回调函数，参数为Result::SUCCESS，ret
 </pre></div>
 </div>
-<p>这个回调函数就做了一个动作,prop.setLong(value);//这个value即是 BatteryProperty中的valueInt64的值；</p>
+<p>callback这个回调函数就做了一个动作,prop.setLong(value);//这个value即是 BatteryProperty中的valueInt64的值；</p>
 <div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="w">     </span><span class="c1">// Reduced IBatteryPropertiesRegistrar that only implements getProperty for usage</span><span class="w"></span>
 <span class="w">      </span><span class="c1">// in BatteryManager.</span><span class="w"></span>
 <span class="w">      </span><span class="kd">private</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="kd">class</span> <span class="nc">BatteryPropertiesRegistrar</span><span class="w"> </span><span class="kd">extends</span><span class="w"> </span><span class="n">IBatteryPropertiesRegistrar</span><span class="p">.</span><span class="na">Stub</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
@@ -793,8 +810,8 @@ publishLocalService()方法中将BatteryService的内部类LocalService注册到
 
 
            </div>
-         <div class="articleComments">
-               <comments>
+             <div class="articleComments">
+                <comments>
   <script src="https://utteranc.es/client.js"
     repo="iswbm/magic-python"
     issue-term="pathname"
@@ -803,7 +820,7 @@ publishLocalService()方法中将BatteryService的内部类LocalService注册到
     async>
   </script>
 </comments>
-           </div>
+             </div>
           </div>
           <footer>
 

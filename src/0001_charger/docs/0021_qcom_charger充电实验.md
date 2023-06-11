@@ -21,6 +21,7 @@
 * trickle charger：涓流阶段，Trickle Charge to Pre-charge Threshold目前设置的是2v
 
 ![0020_0004.png](images/0020_0004.png)
+
 * Pre-Charger：预充阶段，可以通过设置02寄存器VPRE位调节，目前是设置的3v。
 * CC-Fast-Charger：恒流阶段，此阶段电流达到最大ICC设定，vbat要小于cv值，这里vbat指的是charger IC端的vbat，实际电量计检测到的vbat可能没有charger端的大，因为存在线损。目前cv设置的是4.35v，为了提高速度，将95%前设置为4.375v。
 * Constant-Voltage-Charger：恒压阶段，当charger IC检测到vbat电压大于等于CV值时进入此阶段，此时充电电流会慢慢变小，直到截止电流。

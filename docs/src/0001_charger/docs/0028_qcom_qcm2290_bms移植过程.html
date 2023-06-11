@@ -57,12 +57,18 @@
 <li><a class="reference internal" href="#dev">增加dev节点权限</a></li>
 <li><a class="reference internal" href="#id4">问题点</a><ul>
 <li><a class="reference internal" href="#id5">1.开机后不断重启</a></li>
+<li><a class="reference internal" href="#id6">2. 字符串超出重启</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#id6">移植暗码！56789！功能</a><ul>
-<li><a class="reference internal" href="#id7">1.数据库打不开</a></li>
+<li><a class="reference internal" href="#id7">移植暗码！56789！功能</a><ul>
+<li><a class="reference internal" href="#id8">1.数据库打不开</a></li>
 <li><a class="reference internal" href="#pthread-mutex-lock">2.数据库pthread_mutex_lock报错</a></li>
 <li><a class="reference internal" href="#fopenerror-opening-file">3.fopen报错error opening file</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#jni">增加JNI接口调试</a><ul>
+<li><a class="reference internal" href="#id9">编译报错</a></li>
+<li><a class="reference internal" href="#id10">启动报错</a></li>
 </ul>
 </li>
 </ul>
@@ -862,11 +868,73 @@ th inline replies or bubbles.
 </pre></div>
 </div>
 </section>
-</section>
 <section id="id6">
-<h1>移植暗码！56789！功能<a class="headerlink" href="#id6" title="此标题的永久链接"></a></h1>
+<h2>2. 字符串超出重启<a class="headerlink" href="#id6" title="此标题的永久链接"></a></h2>
+<p>可以看到报错后system server直接重启了：</p>
+<div class="highlight-log notranslate"><div class="highlight"><pre><span></span>04-28 22:39:02.337 E/AndroidRuntime( 1300): *** FATAL EXCEPTION IN SYSTEM PROCESS: Thread-18
+04-28 22:39:02.337 E/AndroidRuntime( 1300): java.lang.NumberFormatException: For input string: &quot;&quot;
+04-28 22:39:02.337 E/AndroidRuntime( 1300): 	at java.lang.Integer.parseInt(Integer.java:627)
+04-28 22:39:02.337 E/AndroidRuntime( 1300): 	at java.lang.Integer.valueOf(Integer.java:801)
+04-28 22:39:02.337 E/AndroidRuntime( 1300): 	at com.pax.server.PaxBatteryManagerService.init(PaxBatteryManagerService.java:185)
+04-28 22:39:02.337 E/AndroidRuntime( 1300): 	at com.pax.server.PaxBatteryManagerService$PaxBatteryThread.run(PaxBatteryManagerService.java:204)
+04-28 22:39:02.340 I/DropBoxManagerService( 1300): add tag=system_server_crash isTagEnabled=true flags=0x2
+04-28 22:39:02.345 I/Process ( 1300): Sending signal. PID: 1300 SIG: 9
+
+04-28 22:39:02.438 I/init    (    0): starting service &#39;bootanim&#39;...
+</pre></div>
+</div>
+<p>代码如下：</p>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="n">initcurMode</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Integer</span><span class="p">.</span><span class="na">valueOf</span><span class="p">(</span><span class="n">SystemProperties</span><span class="p">.</span><span class="na">get</span><span class="p">(</span><span class="n">AUTO_BatteryType</span><span class="p">));</span><span class="w"></span>
+</pre></div>
+</div>
+<p>一旦我们字符串转成整数类型的大小超过这个值，就会报错！！！！</p>
+<p>修改方案，增加非空判断和try-catch：</p>
+<div class="highlight-diff notranslate"><div class="highlight"><pre><span></span><span class="gd">--- a/QSSI.12/frameworks/base/services/core/java/com/pax/server/PaxBatteryManagerService.java</span><span class="w"></span>
+<span class="gi">+++ b/QSSI.12/frameworks/base/services/core/java/com/pax/server/PaxBatteryManagerService.java</span><span class="w"></span>
+<span class="gu">@@ -54,6 +54,7 @@ import android.os.SystemProperties;</span><span class="w"></span>
+<span class="w"> </span>import android.app.PaxBmsManager;<span class="w"></span>
+<span class="w"> </span>import android.os.IPaxBms;<span class="w"></span>
+<span class="w"> </span>import android.os.RemoteException;<span class="w"></span>
+<span class="gi">+import android.text.TextUtils;</span><span class="w"></span>
+
+<span class="w"> </span>import static android.content.Context.ALARM_SERVICE;<span class="w"></span>
+
+<span class="gu">@@ -165,7 +166,12 @@ public final class PaxBatteryManagerService extends SystemService {</span><span class="w"></span>
+<span class="w"> </span>                       SystemProperties.set(BatteryType,&quot;0&quot;);<span class="w"></span>
+<span class="w"> </span>                       SystemProperties.set(AUTO_BatteryType,String.valueOf(AUTO_MOBILE_MODE));<span class="w"></span>
+<span class="w"> </span>               }else{<span class="w"></span>
+<span class="gd">-                       mode = Integer.valueOf(SystemProperties.get(BatteryType));</span><span class="w"></span>
+<span class="gi">+                       try {</span><span class="w"></span>
+<span class="gi">+                               mode = Integer.valueOf(SystemProperties.get(BatteryType));</span><span class="w"></span>
+<span class="gi">+                       }</span><span class="w"></span>
+<span class="gi">+                       catch (Exception e) {</span><span class="w"></span>
+<span class="gi">+                               e.printStackTrace();</span><span class="w"></span>
+<span class="gi">+                       }</span><span class="w"></span>
+<span class="w"> </span>               }<span class="w"></span>
+<span class="w"> </span>               if(DEBUG)Log.d(TAG,&quot;mode = &quot;+mode);<span class="w"></span>
+<span class="w"> </span>               return mode;<span class="w"></span>
+<span class="gu">@@ -181,8 +187,13 @@ public final class PaxBatteryManagerService extends SystemService {</span><span class="w"></span>
+<span class="w"> </span>               if(DEBUG)Log.d(TAG,&quot;PaxBatteryManagerService init&quot;);<span class="w"></span>
+<span class="w"> </span>               initBatterylogDB();<span class="w"></span>
+<span class="w"> </span>               initcurMode = getInitcurMode();<span class="w"></span>
+<span class="gd">-               if(initcurMode == 0){</span><span class="w"></span>
+<span class="gd">-                       initcurMode = Integer.valueOf(SystemProperties.get(AUTO_BatteryType));</span><span class="w"></span>
+<span class="gi">+               if(initcurMode == 0 &amp;&amp; !TextUtils.isEmpty(SystemProperties.get(AUTO_BatteryType))){</span><span class="w"></span>
+<span class="gi">+                       try {</span><span class="w"></span>
+<span class="gi">+                               initcurMode = Integer.valueOf(SystemProperties.get(AUTO_BatteryType));</span><span class="w"></span>
+<span class="gi">+                       }</span><span class="w"></span>
+<span class="gi">+                       catch (Exception e) {</span><span class="w"></span>
+<span class="gi">+                               e.printStackTrace();</span><span class="w"></span>
+<span class="gi">+                       }</span><span class="w"></span>
+</pre></div>
+</div>
+<p>在启动系统服务，务必加上 try-catch, 否则，一旦发生异常， 例如SEPolicy限制添加 该 service而抛出 SecurityException, 则会导致 system_server进程挂掉，设备无法开机!!!</p>
+</section>
+</section>
 <section id="id7">
-<h2>1.数据库打不开<a class="headerlink" href="#id7" title="此标题的永久链接"></a></h2>
+<h1>移植暗码！56789！功能<a class="headerlink" href="#id7" title="此标题的永久链接"></a></h1>
+<section id="id8">
+<h2>1.数据库打不开<a class="headerlink" href="#id8" title="此标题的永久链接"></a></h2>
 <p>报错如下：</p>
 <div class="highlight-log notranslate"><div class="highlight"><pre><span></span>04-12 01:56:14.626  3465  3465 E SQLiteLog: (14) cannot open file at line 39583 of [bcd014c473]
 04-12 01:56:14.626  3465  3465 E SQLiteLog: (14) os_unix.c:39583: (13) open(/cache/data/battery/batteryabnormal.db3) -
@@ -1145,13 +1213,136 @@ system        <span class="m">2910</span>     <span class="m">1</span>   <span c
 　　#define ECHILD 10 / No child processes */
 </pre></div>
 </div>
+<p>后面发现不是系统应用导致的,xml里面的格式写错了。</p>
+<div class="highlight-diff notranslate"><div class="highlight"><pre><span></span><span class="gd">--- a/QSSI.12/packages/apps/BatteryWarning/AndroidManifest.xml</span><span class="w"></span>
+<span class="gi">+++ b/QSSI.12/packages/apps/BatteryWarning/AndroidManifest.xml</span><span class="w"></span>
+<span class="gu">@@ -1,5 +1,5 @@</span><span class="w"></span>
+<span class="w"> </span>&lt;manifest xmlns:android=&quot;http://schemas.android.com/apk/res/android&quot;<span class="w"></span>
+<span class="gd">-        package=&quot;com.pax.batterywarning&quot;&gt;</span><span class="w"></span>
+<span class="gi">+        package=&quot;com.pax.batterywarning&quot;</span><span class="w"></span>
+<span class="w"> </span>        android:sharedUserId=&quot;android.uid.system&quot;&gt;<span class="w"></span>
+</pre></div>
+</div>
+<p>修改后变成系统应用：</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>M9200:/ <span class="c1"># ps -A | grep batterywarning</span>
+system        <span class="m">2796</span>     <span class="m">1</span>   <span class="m">13692</span>   <span class="m">2712</span> ep_poll             <span class="m">0</span> S batterywarning
+</pre></div>
+</div>
+</section>
+</section>
+<section id="jni">
+<h1>增加JNI接口调试<a class="headerlink" href="#jni" title="此标题的永久链接"></a></h1>
+<ul class="simple">
+<li><p>需要增加如下接口：</p></li>
+</ul>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span>--- a/QSSI.12/frameworks/base/core/java/android/os/IPaxBms.aidl
++++ b/QSSI.12/frameworks/base/core/java/android/os/IPaxBms.aidl
+@@ -13,5 +13,10 @@ interface IPaxBms {
+     void disableCharge();
+     void enablePowerPath();
+     void disablePowerPath();
+-       void setTemporaryFullCharge(int charge);
++    int readStatusOfHealth();
++    int readChargerVoltage();
++    int readChargerCurrent();
++    void readBatteryManufactuer(String bmf);
++    void readBatterySerialNumber(String sn);
++    void setTemporaryFullCharge(int charge);
+</pre></div>
+</div>
+<section id="id9">
+<h2>编译报错<a class="headerlink" href="#id9" title="此标题的永久链接"></a></h2>
+<div class="highlight-log notranslate"><div class="highlight"><pre><span></span>frameworks/base/core/java/android/app/PaxBmsManager.java:152: error: Missing nullability on parameter `bmf` in method `readBatteryManufactuer` [MissingNullability]
+frameworks/base/core/java/android/app/PaxBmsManager.java:162: error: Missing nullability on parameter `sn` in method `readBatterySerialNumber` [MissingNullability]
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>参考</p></li>
+<li><p><a class="reference external" href="https://blog.csdn.net/SHH_1064994894/article/details/118355833">Android Framework增加API 报错 Missing nullability on parameter</a></p></li>
+<li><p>解决方案，增加非空判断：</p></li>
+</ul>
+<div class="highlight-diff notranslate"><div class="highlight"><pre><span></span><span class="w">//需要导包：</span>
+<span class="w">//Framework：</span>
+<span class="w">import android.annotation.NonNull;</span>
+<span class="w">import android.annotation.Nullable;</span>
+
+<span class="w">//在函数增加注解NonNull：</span>
+<span class="gd">--- a/QSSI.12/frameworks/base/core/java/android/app/PaxBmsManager.java</span><span class="w"></span>
+<span class="gi">+++ b/QSSI.12/frameworks/base/core/java/android/app/PaxBmsManager.java</span><span class="w"></span>
+<span class="gu">@@ -111,7 +111,63 @@ public class PaxBmsManager {</span><span class="w"></span>
+<span class="w"> </span>                       e.printStackTrace();<span class="w"></span>
+<span class="w"> </span>               }<span class="w"></span>
+<span class="w"> </span>       }<span class="w"></span>
+<span class="gd">-</span><span class="w"></span>
+<span class="gi">+       //@SuppressLint(&quot;NewApi&quot;)</span><span class="w"></span>
+<span class="gi">+       public void readBatteryManufactuer(@NonNull String bmf){</span><span class="w"></span>
+<span class="gi">+               Log.d(TAG,&quot;readBatteryManufactuer&quot;);</span><span class="w"></span>
+<span class="gi">+               try {</span><span class="w"></span>
+<span class="gi">+                       mBMS.readBatteryManufactuer(bmf);</span><span class="w"></span>
+<span class="gi">+               } catch (RemoteException e){</span><span class="w"></span>
+<span class="gi">+                       e.printStackTrace();</span><span class="w"></span>
+<span class="gi">+               }</span><span class="w"></span>
+<span class="gi">+       }</span><span class="w"></span>
+<span class="gi">+</span><span class="w"></span>
+<span class="gi">+       //@SuppressLint(&quot;NewApi&quot;)</span><span class="w"></span>
+<span class="gi">+       public void readBatterySerialNumber(@NonNull String sn){</span><span class="w"></span>
+<span class="gi">+               Log.d(TAG,&quot;readBatterySerialNumber&quot;);</span><span class="w"></span>
+<span class="gi">+               try {</span><span class="w"></span>
+<span class="gi">+                        mBMS.readBatterySerialNumber(sn);</span><span class="w"></span>
+<span class="gi">+               } catch (RemoteException e){</span><span class="w"></span>
+<span class="gi">+                       e.printStackTrace();</span><span class="w"></span>
+<span class="gi">+               }</span><span class="w"></span>
+<span class="gi">+       }</span><span class="w"></span>
+</pre></div>
+</div>
+</section>
+<section id="id10">
+<h2>启动报错<a class="headerlink" href="#id10" title="此标题的永久链接"></a></h2>
+<div class="highlight-log notranslate"><div class="highlight"><pre><span></span>01-03 16:18:04.567  2022  2022 E system_server:      0: android.content.Context com.android.server.paxbms.PaxBmsService.mContext
+01-03 16:18:04.567  2022  2022 E system_server: Failed to register native method com.android.server.paxbms.PaxBmsService.readStatusOfHealth_native()V in /system/framework/services.jar
+01-03 16:18:04.571  2022  2022 F system_server: thread.cc:2365] No pending exception expected: java.lang.NoSuchMethodError: no static or non-static method &quot;Lcom/android/server/paxbms/PaxBmsService;.readStatusOfHealth_native()V&quot;
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>参考</p></li>
+<li><p><a class="reference external" href="https://blog.csdn.net/conowen/article/details/7524744">Android的NDK开发(4)————JNI数据结构之JNINativeMethod</a></p></li>
+</ul>
+<p>java调用native方法参数个数或类型不对、返回参数不对；</p>
+<ul class="simple">
+<li><p>第二个参数之基本数据类型</p></li>
+</ul>
+<p><img alt="0028_0001.png" src="../../../_images/0028_0001.png" />
+<img alt="0028_0002.png" src="../../../_images/0028_0002.png" /></p>
+<p>参考上面的文章，java新增5个函数如下：</p>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="kd">public</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">readStatusOfHealth</span><span class="p">()</span><span class="w"></span>
+<span class="kd">public</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">readChargerVoltage</span><span class="p">()</span><span class="w"></span>
+<span class="kd">public</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">readChargerCurrent</span><span class="p">()</span><span class="w"></span>
+<span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">readBatteryManufactuer</span><span class="p">(</span><span class="nd">@NonNull</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="n">bmf</span><span class="p">)</span><span class="w"></span>
+<span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">readBatterySerialNumber</span><span class="p">(</span><span class="nd">@NonNull</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="n">sn</span><span class="p">)</span><span class="w"></span>
+</pre></div>
+</div>
+<p>JNINativeMethod对应的参数如下，主要是第二个搞错了：</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="k">static</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">JNINativeMethod</span><span class="w"> </span><span class="n">method_table</span><span class="p">[]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="p">{</span><span class="w"> </span><span class="s">&quot;enableCharge_native&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;()V&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="kt">void</span><span class="o">*</span><span class="p">)</span><span class="n">enableCharge_native</span><span class="w"> </span><span class="p">},</span><span class="w"></span>
+<span class="w">    </span><span class="p">{</span><span class="w"> </span><span class="s">&quot;disableCharge_native&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;()V&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="kt">void</span><span class="o">*</span><span class="p">)</span><span class="n">disableCharge_native</span><span class="w"> </span><span class="p">},</span><span class="w"></span>
+<span class="w">    </span><span class="p">{</span><span class="w"> </span><span class="s">&quot;enablePowerPath_native&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;()V&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="kt">void</span><span class="o">*</span><span class="p">)</span><span class="n">enablePowerPath_native</span><span class="w"> </span><span class="p">},</span><span class="w"></span>
+<span class="w">    </span><span class="p">{</span><span class="w"> </span><span class="s">&quot;disablePowerPath_native&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;()V&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="kt">void</span><span class="o">*</span><span class="p">)</span><span class="n">disablePowerPath_native</span><span class="w"> </span><span class="p">},</span><span class="w"></span>
+<span class="w">    </span><span class="p">{</span><span class="w"> </span><span class="s">&quot;readStatusOfHealth_native&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;()I&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="kt">void</span><span class="o">*</span><span class="p">)</span><span class="n">readStatusOfHealth_native</span><span class="w"> </span><span class="p">},</span><span class="w"></span>
+<span class="w">	</span><span class="p">{</span><span class="w"> </span><span class="s">&quot;readChargerVoltage_native&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;()I&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="kt">void</span><span class="o">*</span><span class="p">)</span><span class="n">readChargerVoltage_native</span><span class="w"> </span><span class="p">},</span><span class="w"></span>
+<span class="w">	</span><span class="p">{</span><span class="w"> </span><span class="s">&quot;readChargerCurrent_native&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;()I&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="kt">void</span><span class="o">*</span><span class="p">)</span><span class="n">readChargerCurrent_native</span><span class="w"> </span><span class="p">},</span><span class="w"></span>
+<span class="w">	</span><span class="p">{</span><span class="w"> </span><span class="s">&quot;readBatteryManufactuer_native&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;(Ljava/lang/String;)V&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="kt">void</span><span class="o">*</span><span class="p">)</span><span class="n">readBatteryManufactuer_native</span><span class="w"> </span><span class="p">},</span><span class="w"></span>
+<span class="w">	</span><span class="p">{</span><span class="w"> </span><span class="s">&quot;readBatterySerialNumber_native&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;(Ljava/lang/String;)V&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="kt">void</span><span class="o">*</span><span class="p">)</span><span class="n">readBatterySerialNumber_native</span><span class="w"> </span><span class="p">},</span><span class="w"></span>
+
+<span class="p">};</span><span class="w"></span>
+</pre></div>
+</div>
 </section>
 </section>
 
 
            </div>
-         <div class="articleComments">
-               <comments>
+             <div class="articleComments">
+                <comments>
   <script src="https://utteranc.es/client.js"
     repo="iswbm/magic-python"
     issue-term="pathname"
@@ -1160,7 +1351,7 @@ system        <span class="m">2910</span>     <span class="m">1</span>   <span c
     async>
   </script>
 </comments>
-           </div>
+             </div>
           </div>
           <footer>
 

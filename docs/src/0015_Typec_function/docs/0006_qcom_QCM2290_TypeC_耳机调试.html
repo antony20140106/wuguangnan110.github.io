@@ -52,11 +52,18 @@
 <li><a class="reference internal" href="#id5">参考代码</a></li>
 <li><a class="reference internal" href="#id6">打印</a></li>
 <li><a class="reference internal" href="#fsa4480">高通自带fsa4480分析</a></li>
-<li><a class="reference internal" href="#id7"># SW5480驱动分析</a></li>
+<li><a class="reference internal" href="#id7">SW5480驱动分析</a></li>
 <li><a class="reference internal" href="#audio-jack">驱动如何上报audio jack</a></li>
-<li><a class="reference internal" href="#id8">中断上报流程</a></li>
-<li><a class="reference internal" href="#ncno">耳机NC、NO类型确认</a></li>
-<li><a class="reference internal" href="#id9">驱动上报键值</a></li>
+<li><a class="reference internal" href="#id8">中断硬件原理</a><ul>
+<li><a class="reference internal" href="#id9">typec耳机中断原理</a></li>
+<li><a class="reference internal" href="#mm">3.5mm耳机中断原理</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id10">中断上报流程</a></li>
+<li><a class="reference internal" href="#mmncno">3.5mm耳机NC、NO类型确认</a></li>
+<li><a class="reference internal" href="#id11">驱动上报键值</a></li>
+<li><a class="reference internal" href="#usb">插着usb开机概率性出现开机图标</a></li>
+<li><a class="reference internal" href="#psy-main-usbaudio">psy main usb节点被替换后audio/闪光灯失效</a></li>
 </ul>
 </div>
         </div>
@@ -379,7 +386,7 @@ AMP:放大器
 </ul>
 </section>
 <section id="id7">
-<h1># SW5480驱动分析<a class="headerlink" href="#id7" title="此标题的永久链接"></a></h1>
+<h1>SW5480驱动分析<a class="headerlink" href="#id7" title="此标题的永久链接"></a></h1>
 <p>V03增加了mic/AGND/Sense引脚，主要是增加了mic录音功能，功能和寄存器基本上和fsa4480一样，唯一不同的是多了一步耳机检测使能：</p>
 <p><img alt="0006_0011.png" src="../../../_images/0006_0011.png" />
 <img alt="0006_0014.png" src="../../../_images/0006_0014.png" /></p>
@@ -388,15 +395,22 @@ AMP:放大器
 <h1>驱动如何上报audio jack<a class="headerlink" href="#audio-jack" title="此标题的永久链接"></a></h1>
 <p>首先typec检测到耳机插入，然后通知audio驱动进行上报，具体如何上报，我们先看一下流程：</p>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">UM.9.15/vendor/qcom/opensource/audio-kernel/asoc/codecs/bolero/bolero-cdc.c</span></code>:</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">UM.9.15/vendor/qcom/opensource/audio-kernel/asoc/bengal.c</span></code>:</p></li>
 </ul>
-<div class="highlight-c notranslate"><div class="highlight"><pre><span></span>* bolero_ssr_enable
-  └── bolero_cdc_notifier_call(priv, BOLERO_WCD_EVT_SSR_UP);
-      └── rouleur_event_notify //asoc/codecs/rouleur/rouleur.c 收获到通知
-          └── rouleur_mbhc_hs_detect(component, mbhc-&gt;mbhc_cfg);//asoc/codecs/rouleur/rouleur-mbhc.c
-              └── wcd_mbhc_start(&amp;rouleur_mbhc-&gt;wcd_mbhc, mbhc_cfg); //asoc/codecs/wcd-mbhc-v2.c
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span>* msm_asoc_machine_probe
+  └── populate_snd_card_dailinks(&amp;pdev-&gt;dev);
+      └── card-&gt;late_probe = msm_snd_card_bengal_late_probe;
+          ├── mbhc_calibration = def_rouleur_mbhc_cal();
+          │   └── btn_high[0] = 75; btn_high[1] = 150; btn_high[2] = 237; btn_high[3] = 500; btn_high[4] = 500;
+          └── rouleur_mbhc_hs_detect(component, &amp;wcd_mbhc_cfg);
+              └── wcd_mbhc_start(&amp;rouleur_mbhc-&gt;wcd_mbhc, mbhc_cfg);
+                  ├── const char *usb_c_dt = &quot;qcom,msm-mbhc-usbc-audio-supported&quot;;//读取dts 是否支持usb switch芯片，
+                  ├── rc = of_property_read_u32(card-&gt;dev-&gt;of_node, usb_c_dt,&amp;mbhc_cfg-&gt;enable_usbc_analog);
+                  ├── if (mbhc_cfg-&gt;enable_usbc_analog)
+                  ├── mbhc-&gt;fsa_np = of_parse_phandle(card-&gt;dev-&gt;of_node,&quot;fsa4480-i2c-handle&quot;, 0);
+                  ├── if (mbhc_cfg-&gt;enable_usbc_analog &amp;&amp; mbhc-&gt;fsa_np) 
                   ├── mbhc-&gt;fsa_nb.notifier_call = wcd_mbhc_usbc_ana_event_handler; //这个是9200 fsa4480的通知回调
-                  │   └──  wcd_mbhc_usbc_ana_event_handler(struct notifier_block *nb
+                  │   └──  wcd_mbhc_usbc_ana_event_handler(struct notifier_block *nb, unsigned long mode, void *ptr)
                   │       └── if (mode == POWER_SUPPLY_TYPEC_SINK_AUDIO_ADAPTER)
                   │           ├── mbhc-&gt;mbhc_cb-&gt;clk_setup(mbhc-&gt;component, true);
                   │           └──  WCD_MBHC_REG_UPDATE_BITS(WCD_MBHC_L_DET_EN, 1); /* insertion detected, enable L_DET_EN */
@@ -412,13 +426,53 @@ AMP:放大器
                   │               └── wcd_mbhc_jack_report(mbhc, &amp;mbhc-&gt;headset_jack,(mbhc-&gt;hph_status | SND_JACK_MECHANICAL),
                   │                   └── snd_soc_jack_report(jack, status, mask);
                   └── rc = wcd_mbhc_initialise(mbhc); //耳机检测相关 0:NC(normally-closed) 1:NO(normally-open)
+                      ├── if (mbhc-&gt;mbhc_cfg-&gt;enable_usbc_analog || mbhc_cfg-&gt;hs_det_disable)
+                      │   └── WCD_MBHC_REG_UPDATE_BITS(WCD_MBHC_L_DET_EN, 0); //关闭HS_DET中断
                       ├── WCD_MBHC_REG_UPDATE_BITS(WCD_MBHC_HPHL_PLUG_TYPE, mbhc-&gt;hphl_swh);
                       └── WCD_MBHC_REG_UPDATE_BITS(WCD_MBHC_GND_PLUG_TYPE, mbhc-&gt;gnd_swh);
 </pre></div>
 </div>
 </section>
 <section id="id8">
-<h1>中断上报流程<a class="headerlink" href="#id8" title="此标题的永久链接"></a></h1>
+<h1>中断硬件原理<a class="headerlink" href="#id8" title="此标题的永久链接"></a></h1>
+<section id="id9">
+<h2>typec耳机中断原理<a class="headerlink" href="#id9" title="此标题的永久链接"></a></h2>
+<p>typec中断相关引脚如下，以fsa4480 switch芯片为例，CC_IN是接到typec cc引脚，DET接高通内部的pmu里面集成了wcd音频芯片的HS_DET，属于pmu里面的引脚。</p>
+<table class="colwidths-auto docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>NO.</p></th>
+<th class="head"><p>col 2</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>CC_IN</p></td>
+<td><p>Audio Accessory Attachment Detection Input</p></td>
+</tr>
+<tr class="row-odd"><td><p>DET</p></td>
+<td><p>Push-Pull Output. When CC_IN &gt; 1.5V, DET is Low and CC_IN &lt; 1.2V, DET is High</p></td>
+</tr>
+</tbody>
+</table>
+<p>codec通过检测硬件监控MBHC hsdet引脚上的电压，并在耳机插入或拔出插头时向中断控制器生成中断。</p>
+<p><img alt="0006_0016.png" src="../../../_images/0006_0016.png" />
+<img alt="0006_0017.png" src="../../../_images/0006_0017.png" /></p>
+</section>
+<section id="mm">
+<h2>3.5mm耳机中断原理<a class="headerlink" href="#mm" title="此标题的永久链接"></a></h2>
+<ul class="simple">
+<li><p>参考</p></li>
+<li><p><a class="reference external" href="http://www.manongjc.com/detail/27-pnriikehmuooerg.html">Audio 耳机 （四）MBHC耳机插拔检测流程</a></p></li>
+</ul>
+<p>codec通过检测硬件监控MBHC hsdet引脚上的电压，并在耳机插入或拔出插头时向中断控制器生成中断（更新寄存器）。</p>
+<p>对于NC型插孔，未插入插头时，连接器的HS-DET和HPH-L引脚短接在一起，从而在MBHC_HSDET引脚上产生逻辑低电压。
+将插头完全插入插孔后，断开连接器的HS-DET和HPH-L引脚，内部电流源将MBHC hsdet引脚上的电压拉高至1.8 V，并翻转比较器输出以触发中断信号。
+拔出插头后，MBHC_HSDET引脚上的电压下降，导致比较器的输出逻辑改变，并向中断控制器生成中断信号。
+对于NO型插孔，MBHC hsdet引脚上的电压与NC型插孔壳体相反。</p>
+<p><img alt="0006_0015.png" src="../../../_images/0006_0015.png" /></p>
+</section>
+</section>
+<section id="id10">
+<h1>中断上报流程<a class="headerlink" href="#id10" title="此标题的永久链接"></a></h1>
 <p>有个疑问，为什么<code class="docutils literal notranslate"><span class="pre">wcd_mbhc_usbc_ana_event_handler</span></code>回调中没有去上报键值，原因是由中断处理了，具体看一下是哪些中断，通过<code class="docutils literal notranslate"><span class="pre">cat</span> <span class="pre">/proc/interrupts</span></code>：</p>
 <div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="mi">261</span><span class="o">:</span><span class="w">          </span><span class="mi">0</span><span class="w">          </span><span class="mi">0</span><span class="w">          </span><span class="mi">0</span><span class="w">          </span><span class="mi">0</span><span class="w">   </span><span class="n">rouleur</span><span class="w">   </span><span class="mi">0</span><span class="w"> </span><span class="n">Edge</span><span class="w">      </span><span class="n">rouleur</span><span class="w"></span>
 <span class="mi">262</span><span class="o">:</span><span class="w">          </span><span class="mi">0</span><span class="w">          </span><span class="mi">0</span><span class="w">          </span><span class="mi">0</span><span class="w">          </span><span class="mi">0</span><span class="w">   </span><span class="n">rouleur</span><span class="w">  </span><span class="mi">14</span><span class="w"> </span><span class="n">Edge</span><span class="w">      </span><span class="n">HPHR</span><span class="w"> </span><span class="n">PDM</span><span class="w"> </span><span class="n">WD</span><span class="w"> </span><span class="n">INT</span><span class="w"></span>
@@ -435,33 +489,43 @@ AMP:放大器
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">asoc/codecs/rouleur/rouleur.c</span></code>中断注册如下：</p></li>
 </ul>
-<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="o">*</span><span class="w"> </span><span class="n">rouleur_soc_codec_probe</span><span class="w"> </span><span class="c1">//{ .compatible = &quot;qcom,rouleur-codec&quot; , .data = &quot;rouleur&quot; },</span>
-<span class="w">  </span><span class="o">*</span><span class="w"> </span><span class="n">rouleur_mbhc_init</span><span class="p">(</span><span class="o">&amp;</span><span class="n">rouleur</span><span class="o">-&gt;</span><span class="n">mbhc</span><span class="p">,</span><span class="w"> </span><span class="n">component</span><span class="p">,</span><span class="w"> </span><span class="n">rouleur</span><span class="o">-&gt;</span><span class="n">fw_data</span><span class="p">);</span><span class="w"> </span><span class="c1">//asoc/codecs/rouleur/rouleur-mbhc.c</span>
-<span class="w">    </span><span class="o">*</span><span class="w">  </span><span class="n">wcd_mbhc_init</span><span class="p">(</span><span class="n">wcd_mbhc</span><span class="p">,</span><span class="w"> </span><span class="n">component</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">mbhc_cb</span><span class="p">,</span><span class="o">&amp;</span><span class="n">intr_ids</span><span class="p">,</span><span class="w"> </span><span class="n">wcd_mbhc_registers</span><span class="p">,</span><span class="w"> </span><span class="n">ROULEUR_ZDET_SUPPORTED</span><span class="p">);</span><span class="w"> </span><span class="c1">//asoc/codecs/wcd-mbhc-v2.c</span>
-<span class="w">      </span><span class="o">*</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">hph_switch</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;qcom,msm-mbhc-hphl-swh&quot;</span><span class="p">;</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">gnd_switch</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;qcom,msm-mbhc-gnd-swh&quot;</span><span class="p">;</span><span class="w"> </span><span class="c1">//在wcd_mbhc_initialise进行配置</span>
-<span class="w">      </span><span class="o">*</span><span class="w"> </span><span class="n">of_property_read_u32</span><span class="p">(</span><span class="n">card</span><span class="o">-&gt;</span><span class="n">dev</span><span class="o">-&gt;</span><span class="n">of_node</span><span class="p">,</span><span class="w"> </span><span class="n">hph_switch</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">hph_swh</span><span class="p">);</span><span class="w"></span>
-<span class="w">      </span><span class="o">*</span><span class="w"> </span><span class="n">of_property_read_u32</span><span class="p">(</span><span class="n">card</span><span class="o">-&gt;</span><span class="n">dev</span><span class="o">-&gt;</span><span class="n">of_node</span><span class="p">,</span><span class="w"> </span><span class="n">gnd_switch</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">gnd_swh</span><span class="p">);</span><span class="w"></span>
-<span class="w">      </span><span class="o">*</span><span class="w"> </span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mbhc</span><span class="o">-&gt;</span><span class="n">mbhc_cb</span><span class="o">-&gt;</span><span class="n">request_irq</span><span class="p">(</span><span class="n">component</span><span class="p">,</span><span class="n">mbhc</span><span class="o">-&gt;</span><span class="n">intr_ids</span><span class="o">-&gt;</span><span class="n">mbhc_sw_intr</span><span class="p">,</span><span class="n">wcd_mbhc_mech_plug_detect_irq</span><span class="p">,</span><span class="s">&quot;mbhc sw intr&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">mbhc</span><span class="p">);</span><span class="w"></span>
-<span class="w">        </span><span class="o">*</span><span class="w"> </span><span class="n">rouleur_mbhc_request_irq</span><span class="w">  </span><span class="c1">//asoc/codecs/rouleur/rouleur-mbhc.c</span>
-<span class="w">          </span><span class="o">*</span><span class="w"> </span><span class="n">wcd_request_irq</span><span class="p">(</span><span class="o">&amp;</span><span class="n">rouleur</span><span class="o">-&gt;</span><span class="n">irq_info</span><span class="p">,</span><span class="w"> </span><span class="n">irq</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="n">handler</span><span class="p">,</span><span class="w"> </span><span class="n">data</span><span class="p">);</span><span class="w"> </span><span class="c1">//asoc/codecs/wcd-irq.c</span>
-<span class="w">            </span><span class="o">*</span><span class="w"> </span><span class="n">wcd_map_irq</span><span class="p">(</span><span class="n">irq_info</span><span class="p">,</span><span class="w"> </span><span class="n">irq</span><span class="p">);</span><span class="w"></span>
-<span class="w">            </span><span class="o">*</span><span class="w"> </span><span class="n">request_threaded_irq</span><span class="p">(</span><span class="n">irq</span><span class="p">,</span><span class="w"> </span><span class="nb">NULL</span><span class="p">,</span><span class="w"> </span><span class="n">handler</span><span class="p">,</span><span class="w"> </span><span class="n">IRQF_ONESHOT</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">IRQF_TRIGGER_RISING</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="n">data</span><span class="p">);</span><span class="w"></span>
-<span class="w">      </span><span class="o">*</span><span class="w"> </span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mbhc</span><span class="o">-&gt;</span><span class="n">mbhc_cb</span><span class="o">-&gt;</span><span class="n">request_irq</span><span class="p">(</span><span class="n">component</span><span class="p">,</span><span class="w"> </span><span class="n">mbhc</span><span class="o">-&gt;</span><span class="n">intr_ids</span><span class="o">-&gt;</span><span class="n">mbhc_btn_press_intr</span><span class="p">,</span><span class="w"> </span><span class="n">wcd_mbhc_btn_press_handler</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Button Press detect&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">mbhc</span><span class="p">);</span><span class="w"></span>
-<span class="w">      </span><span class="o">*</span><span class="w"> </span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mbhc</span><span class="o">-&gt;</span><span class="n">mbhc_cb</span><span class="o">-&gt;</span><span class="n">request_irq</span><span class="p">(</span><span class="n">component</span><span class="p">,</span><span class="w"> </span><span class="n">mbhc</span><span class="o">-&gt;</span><span class="n">intr_ids</span><span class="o">-&gt;</span><span class="n">mbhc_btn_release_intr</span><span class="p">,</span><span class="w"> </span><span class="n">wcd_mbhc_release_handler</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Button Release detect&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">mbhc</span><span class="p">);</span><span class="w"></span>
-<span class="w">      </span><span class="o">*</span><span class="w"> </span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mbhc</span><span class="o">-&gt;</span><span class="n">mbhc_cb</span><span class="o">-&gt;</span><span class="n">request_irq</span><span class="p">(</span><span class="n">component</span><span class="p">,</span><span class="w"> </span><span class="n">mbhc</span><span class="o">-&gt;</span><span class="n">intr_ids</span><span class="o">-&gt;</span><span class="n">mbhc_hs_ins_intr</span><span class="p">,</span><span class="w"> </span><span class="n">mbhc</span><span class="o">-&gt;</span><span class="n">mbhc_fn</span><span class="o">-&gt;</span><span class="n">wcd_mbhc_hs_ins_irq</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Elect Insert&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">mbhc</span><span class="p">);</span><span class="w"></span>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span>* rouleur_soc_codec_probe //{ .compatible = &quot;qcom,rouleur-codec&quot; , .data = &quot;rouleur&quot; },
+  └── rouleur_mbhc_init(&amp;rouleur-&gt;mbhc, component, rouleur-&gt;fw_data); //asoc/codecs/rouleur/rouleur-mbhc.c
+      └──  wcd_mbhc_init(wcd_mbhc, component, &amp;mbhc_cb,&amp;intr_ids, wcd_mbhc_registers, ROULEUR_ZDET_SUPPORTED); //asoc/codecs/wcd-mbhc-v2.c
+          ├── const char *hph_switch = &quot;qcom,msm-mbhc-hphl-swh&quot;; const char *gnd_switch = &quot;qcom,msm-mbhc-gnd-swh&quot;; //在wcd_mbhc_initialise进行配置
+          ├── of_property_read_u32(card-&gt;dev-&gt;of_node, hph_switch, &amp;hph_swh);
+          ├── of_property_read_u32(card-&gt;dev-&gt;of_node, gnd_switch, &amp;gnd_swh);
+          ├── ret = mbhc-&gt;mbhc_cb-&gt;request_irq(component,mbhc-&gt;intr_ids-&gt;mbhc_sw_intr,wcd_mbhc_mech_plug_detect_irq,&quot;mbhc sw intr&quot;, mbhc);
+          │   ├── rouleur_mbhc_request_irq  //asoc/codecs/rouleur/rouleur-mbhc.c
+          │   │   └── wcd_request_irq(&amp;rouleur-&gt;irq_info, irq, name, handler, data); //asoc/codecs/wcd-irq.c
+          │   │       ├── wcd_map_irq(irq_info, irq);
+          │   │       └── request_threaded_irq(irq, NULL, handler, IRQF_ONESHOT | IRQF_TRIGGER_RISING, name, data);
+          │   └── wcd_mbhc_mech_plug_detect_irq(int irq, void *data) //中断处理函数 重要
+          │       ├── wcd_mbhc_swch_irq_handler(mbhc);
+          │       │   └── wcd_mbhc_report_plug(mbhc, 0, jack_type);
+          │       │       ├── wcd_mbhc_jack_report(mbhc, &amp;mbhc-&gt;button_jack, 0,mbhc-&gt;buttons_pressed); //上报按键
+          │       │       └── wcd_mbhc_jack_report(mbhc, &amp;mbhc-&gt;headset_jack,(mbhc-&gt;hph_status | SND_JACK_MECHANICAL),
+          │       │           └── snd_soc_jack_report(jack, status, mask);
+          │       └── if (mbhc-&gt;mbhc_cfg-&gt;enable_usbc_analog || mbhc_cfg-&gt;hs_det_disable)
+          │           └── WCD_MBHC_REG_UPDATE_BITS(WCD_MBHC_L_DET_EN, 0); //关闭HS_DET中断      
+          ├── ret = mbhc-&gt;mbhc_cb-&gt;request_irq(component, mbhc-&gt;intr_ids-&gt;mbhc_btn_press_intr, wcd_mbhc_btn_press_handler, &quot;Button Press detect&quot;, mbhc);
+          ├── ret = mbhc-&gt;mbhc_cb-&gt;request_irq(component, mbhc-&gt;intr_ids-&gt;mbhc_btn_release_intr, wcd_mbhc_release_handler, &quot;Button Release detect&quot;, mbhc);
+          └── ret = mbhc-&gt;mbhc_cb-&gt;request_irq(component, mbhc-&gt;intr_ids-&gt;mbhc_hs_ins_intr, mbhc-&gt;mbhc_fn-&gt;wcd_mbhc_hs_ins_irq, &quot;Elect Insert&quot;, mbhc);
 </pre></div>
 </div>
 <ul class="simple">
-<li><p>参考</p></li>
-<li><p><a class="reference external" href="http://www.manongjc.com/detail/27-pnriikehmuooerg.html">Audio 耳机 （四）MBHC耳机插拔检测流程</a></p></li>
+<li><p>由此我们可以知道9200处理逻辑如下：</p>
+<ul>
+<li><p>驱动初始化关闭HS_DET中断。</p></li>
+<li><p>typec切换芯片发送通知给audio，由<code class="docutils literal notranslate"><span class="pre">wcd_mbhc_usbc_ana_event_handler</span></code>通知处理打开相应的<code class="docutils literal notranslate"><span class="pre">clk</span></code>和<code class="docutils literal notranslate"><span class="pre">enable</span> <span class="pre">L_DET_EN</span></code>打开中断。</p></li>
+<li><p>插入耳机后，HS-DET和HPH-L引脚产生电压变化触发中断，由<code class="docutils literal notranslate"><span class="pre">wcd_mbhc_swch_irq_handler</span></code>中断处理上报按键，上报完再关闭中断。</p></li>
 </ul>
-<p>codec通过检测硬件监控MBHC hsdet引脚上的电压，并在耳机插入或拔出插头时向中断控制器生成中断（更新寄存器）。</p>
-<p>对于NC型插孔，未插入插头时，连接器的HS-DET和HPH-L引脚短接在一起，从而在MBHC_HSDET引脚上产生逻辑低电压。
-将插头完全插入插孔后，断开连接器的HS-DET和HPH-L引脚，内部电流源将MBHC hsdet引脚上的电压拉高至1.8 V，并翻转比较器输出以触发中断信号。
-拔出插头后，MBHC_HSDET引脚上的电压下降，导致比较器的输出逻辑改变，并向中断控制器生成中断信号。
-对于NO型插孔，MBHC hsdet引脚上的电压与NC型插孔壳体相反。</p>
-<p><img alt="0006_0015.png" src="../../../_images/0006_0015.png" /></p>
-<ul class="simple">
+</li>
+<li><p>6650处理逻辑是：</p>
+<ul>
+<li><p>typec切换芯片发送通知给audio，由<code class="docutils literal notranslate"><span class="pre">hp_det_nc</span></code>通知处理打开相应的<code class="docutils literal notranslate"><span class="pre">clk</span></code>和<code class="docutils literal notranslate"><span class="pre">enable</span> <span class="pre">L_DET_EN</span></code>，并调用<code class="docutils literal notranslate"><span class="pre">wcd_mbhc_swch_irq_handler</span></code>函数上报键值，这里并不需要中断。</p></li>
+</ul>
+</li>
 <li><p>中断配置过程：</p></li>
 </ul>
 <div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="cm">/**</span>
@@ -584,7 +648,7 @@ AMP:放大器
 </div>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">interrupts</span> <span class="pre">=</span> <span class="pre">&lt;0</span> <span class="pre">297</span> <span class="pre">IRQ_TYPE_LEVEL_HIGH&gt;;</span></code>表示用系统的297号中断。</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">soc/swr-mstr-ctrl.c</span></code>其中中断标志<code class="docutils literal notranslate"><span class="pre">slave_irq_pending</span></code>是通过<code class="docutils literal notranslate"><span class="pre">rouleur</span></code>驱动<code class="docutils literal notranslate"><span class="pre">rouleur_handle_post_irq</span></code>设置的，再根据handle_nested_irq寻找<code class="docutils literal notranslate"><span class="pre">irq</span> <span class="pre">id</span></code>找到对应的中断处理函数:</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">soc/swr-mstr-ctrl.c</span></code>其中中断标志<code class="docutils literal notranslate"><span class="pre">slave_irq_pending</span></code>是通过<code class="docutils literal notranslate"><span class="pre">rouleur</span></code>驱动<code class="docutils literal notranslate"><span class="pre">rouleur_handle_post_irq</span></code>设置的，再根据<code class="docutils literal notranslate"><span class="pre">handle_nested_irq</span></code>寻找<code class="docutils literal notranslate"><span class="pre">irq</span> <span class="pre">id</span></code>找到对应的中断处理函数:</p></li>
 </ul>
 <div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">swrm_probe</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">platform_device</span><span class="w"> </span><span class="o">*</span><span class="n">pdev</span><span class="p">)</span><span class="w"></span>
 <span class="p">{</span><span class="w"></span>
@@ -673,13 +737,14 @@ AMP:放大器
 </pre></div>
 </div>
 </section>
-<section id="ncno">
-<h1>耳机NC、NO类型确认<a class="headerlink" href="#ncno" title="此标题的永久链接"></a></h1>
+<section id="mmncno">
+<h1>3.5mm耳机NC、NO类型确认<a class="headerlink" href="#mmncno" title="此标题的永久链接"></a></h1>
 <p>耳机检测相关 0:NC(normally-closed) 1:NO(normally-open)</p>
 <ul class="simple">
 <li><p>参考</p></li>
 <li><p><a class="reference external" href="https://blog.csdn.net/hb9312z/article/details/86063963">高通音频MBHC耳机系统软件相关配置归纳</a></p></li>
 <li><p><a class="reference external" href="https://www.cnblogs.com/linhaostudy/p/8260813.html">NC和NO、耳机美标和欧标的区别</a></p></li>
+<li><p><a class="reference external" href="https://yunzhi.github.io/headset_knowledge">Android 耳机驱动知识</a></p></li>
 <li><p>这里涉及dts中的耳机配置：</p></li>
 </ul>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="p">&amp;</span>scuba_snd <span class="o">{</span>
@@ -689,12 +754,12 @@ AMP:放大器
 <span class="o">}</span><span class="p">;</span>
 </pre></div>
 </div>
-<p>根据硬件原理图，确认HS-DET和HPG-L引脚的连接状态，未插入时断开的则时NO,未插入时连接的则是NC，目前6650配置是的0。
+<p>根据硬件原理图，确认HS-DET和HPH-L引脚的连接状态，未插入时断开的则时NO,未插入时连接的则是NC，目前6650配置是的0。
 具体原理如下：</p>
 <p><img alt="0006_0010.png" src="../../../_images/0006_0010.png" /></p>
 </section>
-<section id="id9">
-<h1>驱动上报键值<a class="headerlink" href="#id9" title="此标题的永久链接"></a></h1>
+<section id="id11">
+<h1>驱动上报键值<a class="headerlink" href="#id11" title="此标题的永久链接"></a></h1>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">sound/soc/soc-jack.c</span></code>kernel中重点看一下<code class="docutils literal notranslate"><span class="pre">snd_soc_jack_report</span></code>函数:</p></li>
 </ul>
@@ -786,11 +851,63 @@ AMP:放大器
 </pre></div>
 </div>
 </section>
+<section id="usb">
+<h1>插着usb开机概率性出现开机图标<a class="headerlink" href="#usb" title="此标题的永久链接"></a></h1>
+<p>目前发现开机插着usb容易出现耳机图标，switch驱动没有上报消息，但是还是进入了<code class="docutils literal notranslate"><span class="pre">wcd_mbhc_mech_plug_detect_irq</span></code>中断，目前已知typec耳机中断脚HS_DET硬件上是改为悬空的，开机容易误触发中断，qcom其实对这种情况有做处理，在dts中定义了属性<code class="docutils literal notranslate"><span class="pre">qcom,msm-mbhc-usbc-audio-supported</span> <span class="pre">=</span> <span class="pre">&lt;1&gt;;</span></code>，表示支持typec audio switch芯片，如果定义了，开机会关闭中断防止误触发，如下代码：</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">wcd_mbhc_initialise</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">wcd_mbhc</span><span class="w"> </span><span class="o">*</span><span class="n">mbhc</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">	</span><span class="cm">/*</span>
+<span class="cm">	 * Disable L_DET for USB-C analog audio to avoid spurious interrupts</span>
+<span class="cm">	 * when a non-audio accessory is inserted. L_DET_EN sets to 1 when FSA</span>
+<span class="cm">	 * I2C driver notifies that ANALOG_AUDIO_ADAPTER is inserted</span>
+<span class="cm">	 */</span><span class="w"></span>
+<span class="w">     </span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mbhc</span><span class="o">-&gt;</span><span class="n">mbhc_cfg</span><span class="o">-&gt;</span><span class="n">enable_usbc_analog</span><span class="p">)</span><span class="w"></span>
+<span class="w">		</span><span class="n">WCD_MBHC_REG_UPDATE_BITS</span><span class="p">(</span><span class="n">WCD_MBHC_L_DET_EN</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<p>上面的中文释义：
+禁用 USB-C 模拟音频的 L_DET，以避免在插入非音频配件时出现虚假中断。 当 FSA I2C 驱动程序通知插入 ANALOG_AUDIO_ADAPTER 时，L_DET_EN 设置为 1</p>
+<p>看代码中断逻辑如下：</p>
+<p><img alt="0006_0018.png" src="../../../_images/0006_0018.png" /></p>
+<p>此问题是由于我们没定义<code class="docutils literal notranslate"><span class="pre">qcom,msm-mbhc-usbc-audio-supported</span> <span class="pre">=</span> <span class="pre">&lt;1&gt;;</span></code>属性导致开机没有关闭中断，所以会出现虚假中断。</p>
+</section>
+<section id="psy-main-usbaudio">
+<h1>psy main usb节点被替换后audio/闪光灯失效<a class="headerlink" href="#psy-main-usbaudio" title="此标题的永久链接"></a></h1>
+<div class="highlight-log notranslate"><div class="highlight"><pre><span></span>01-02 04:37:05.757 E/bengal-asoc-snd soc(    0): qcom,msm-audio-apr:qcom,q6core-audio:sound: ASoC: no sink widget found for SpkrMono WSA_IN
+01-02 04:37:05.769 E/bengal-asoc-snd soc(    0): qcom,msm-audio-apr:qcom,q6core-audio:sound: ASoC: Failed to add route LO -&gt; direct -&gt; SpkrMono WSA_IN
+01-02 04:37:05.782 W/bengal-asoc-snd soc(    0): qcom,msm-audio-apr:qcom,q6core-audio:sound: ASoC: no DMI vendor name!
+01-02 04:37:05.788 E/fsa4480-driver 0-0042(    0): fsa4480_usbc_analog_setup_switches: Unable to read USB TYPEC_MODE: -22
+01-02 04:37:05.800 I/subsys-pil-tz soc(    0): qcom,kgsl-hyp: a702_zap: loading from 0xbe500000 to 0xbe501000
+01-02 04:37:05.800 E/rouleur_codec rouleur-codec(    0): msm_snd_card_bengal_late_probe: mbhc hs detect failed, err:-22
+01-02 04:37:05.810 E/bengal-asoc-snd soc(    0): qcom,msm-audio-apr:qcom,q6core-audio:sound: ASoC: bengal-scubaidpFSA1SPK-snd-card late_probe() failed: -22
+01-02 04:37:05.842 I/subsys-pil-tz soc(    0): qcom,kgsl-hyp: a702_zap: Brought out of reset
+01-02 04:37:05.915 E/bengal-asoc-snd soc(    0): qcom,msm-audio-apr:qcom,q6core-audio:sound: msm_asoc_machine_probe: snd_soc_register_card failed (-22)
+01-02 04:37:05.927 W/bengal-asoc-snd(    0): probe of soc:qcom,msm-audio-apr:qcom,q6core-audio:sound failed with error -22
+</pre></div>
+</div>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span>* msm_asoc_machine_probe
+  └── populate_snd_card_dailinks(&amp;pdev-&gt;dev);
+      └── card-&gt;late_probe = msm_snd_card_bengal_late_probe;
+          ├── mbhc_calibration = def_rouleur_mbhc_cal();
+          │   └── btn_high[0] = 75; btn_high[1] = 150; btn_high[2] = 237; btn_high[3] = 500; btn_high[4] = 500;
+          └── rouleur_mbhc_hs_detect(component, &amp;wcd_mbhc_cfg);
+              └── wcd_mbhc_start(&amp;rouleur_mbhc-&gt;wcd_mbhc, mbhc_cfg);
+                  ├── const char *usb_c_dt = &quot;qcom,msm-mbhc-usbc-audio-supported&quot;;
+                  ├── rc = of_property_read_u32(card-&gt;dev-&gt;of_node, usb_c_dt,&amp;mbhc_cfg-&gt;enable_usbc_analog);
+                  ├── if (mbhc_cfg-&gt;enable_usbc_analog)
+                  │   └── mbhc-&gt;fsa_np = of_parse_phandle(card-&gt;dev-&gt;of_node,&quot;fsa4480-i2c-handle&quot;, 0);
+                  └── if (mbhc_cfg-&gt;enable_usbc_analog &amp;&amp; mbhc-&gt;fsa_np) 
+                      └── mbhc-&gt;fsa_nb.notifier_call = wcd_mbhc_usbc_ana_event_handler;
+</pre></div>
+</div>
+</section>
 
 
            </div>
-         <div class="articleComments">
-               <comments>
+             <div class="articleComments">
+                <comments>
   <script src="https://utteranc.es/client.js"
     repo="iswbm/magic-python"
     issue-term="pathname"
@@ -799,7 +916,7 @@ AMP:放大器
     async>
   </script>
 </comments>
-           </div>
+             </div>
           </div>
           <footer>
 

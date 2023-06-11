@@ -57,19 +57,20 @@ sp_init通过串口操作sp是在ABL阶段，主要有以下几个功能：
               ├── xxxxx_serial_flush();
               ├── sp_get_info();//重要，串口读取sp cfg信息
               │   ├── shakeHandSP(); //AP/SP握手
-              │   └── ret = processGetCfgInfo()
-              │       └── processCmd(CMD_GET_COMMON_INFO, buf, sizeof(buf)); //向sp发送0xE9命令
-              │           ├── makePackage(g_tx_buf, cmd, param, param_len); //做包
-              │           ├── puts_sp(g_tx_buf, len); //发送指令
-              │           │   └── xxxxx_serial_putc(tx_buff, len); //写一个byte函数
-              │           │       └── uart5_write((UINT8*)buf+count*TXFIFO_SIZE,bytes_to_tx % TXFIFO_SIZE);
-              │           └── ret = receivePackage(cmd, g_rx_buf, &g_rx_index, &g_rx_size);
-              │               └── receiveMsg(cmd_ref, recvmsg, pos, size, true);
-              │                   └── gets_sp(tmp_buf, 1, 8000); //接收string
-              │                       └── ret = getc_sp(&ch); /
-              │                           ├── while ((len > 0) && (timeout > 0))
-              │                           └── xxxxx_serial_getc(&buf, 1); //接收byte
-              │                               └── uart5_read((UINT8 *)buf, bytes_to_rx);
+              │   ├── processGetCfgInfo() //从sp获取配置文件
+              │   │   └── processCmd(CMD_GET_COMMON_INFO, buf, sizeof(buf)); //向sp发送0xE9命令
+              │   │       ├── makePackage(g_tx_buf, cmd, param, param_len); //做包
+              │   │       ├── puts_sp(g_tx_buf, len); //发送指令
+              │   │       │   └── xxxxx_serial_putc(tx_buff, len); //写一个byte函数
+              │   │       │       └── uart5_write((UINT8*)buf+count*TXFIFO_SIZE,bytes_to_tx % TXFIFO_SIZE);
+              │   │       └── ret = receivePackage(cmd, g_rx_buf, &g_rx_index, &g_rx_size);
+              │   │           └── receiveMsg(cmd_ref, recvmsg, pos, size, true);
+              │   │               └── gets_sp(tmp_buf, 1, 8000); //接收string
+              │   │                   └── ret = getc_sp(&ch); /
+              │   │                       ├── while ((len > 0) && (timeout > 0))
+              │   │                       └── xxxxx_serial_getc(&buf, 1); //接收byte
+              │   │                           └── uart5_read((UINT8 *)buf, bytes_to_rx);
+              │   └── processgetAuthInfo();
               ├── debugAuthInfo(); //输出打印
               └── ShowCfginfo();
 ```

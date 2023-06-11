@@ -746,6 +746,71 @@ th inline replies or bubbles.
 PendingIntent pi = PendingIntent.getBroadcast(mContext,rc,intent,PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 ```
 
+## 2. 字符串超出重启
+
+可以看到报错后system server直接重启了：
+```log
+04-28 22:39:02.337 E/AndroidRuntime( 1300): *** FATAL EXCEPTION IN SYSTEM PROCESS: Thread-18
+04-28 22:39:02.337 E/AndroidRuntime( 1300): java.lang.NumberFormatException: For input string: ""
+04-28 22:39:02.337 E/AndroidRuntime( 1300): 	at java.lang.Integer.parseInt(Integer.java:627)
+04-28 22:39:02.337 E/AndroidRuntime( 1300): 	at java.lang.Integer.valueOf(Integer.java:801)
+04-28 22:39:02.337 E/AndroidRuntime( 1300): 	at com.pax.server.PaxBatteryManagerService.init(PaxBatteryManagerService.java:185)
+04-28 22:39:02.337 E/AndroidRuntime( 1300): 	at com.pax.server.PaxBatteryManagerService$PaxBatteryThread.run(PaxBatteryManagerService.java:204)
+04-28 22:39:02.340 I/DropBoxManagerService( 1300): add tag=system_server_crash isTagEnabled=true flags=0x2
+04-28 22:39:02.345 I/Process ( 1300): Sending signal. PID: 1300 SIG: 9
+
+04-28 22:39:02.438 I/init    (    0): starting service 'bootanim'...
+```
+
+代码如下：
+```java
+initcurMode = Integer.valueOf(SystemProperties.get(AUTO_BatteryType));
+```
+
+一旦我们字符串转成整数类型的大小超过这个值，就会报错！！！！
+
+修改方案，增加非空判断和try-catch：
+```diff
+--- a/QSSI.12/frameworks/base/services/core/java/com/pax/server/PaxBatteryManagerService.java
++++ b/QSSI.12/frameworks/base/services/core/java/com/pax/server/PaxBatteryManagerService.java
+@@ -54,6 +54,7 @@ import android.os.SystemProperties;
+ import android.app.PaxBmsManager;
+ import android.os.IPaxBms;
+ import android.os.RemoteException;
++import android.text.TextUtils;
+
+ import static android.content.Context.ALARM_SERVICE;
+
+@@ -165,7 +166,12 @@ public final class PaxBatteryManagerService extends SystemService {
+                        SystemProperties.set(BatteryType,"0");
+                        SystemProperties.set(AUTO_BatteryType,String.valueOf(AUTO_MOBILE_MODE));
+                }else{
+-                       mode = Integer.valueOf(SystemProperties.get(BatteryType));
++                       try {
++                               mode = Integer.valueOf(SystemProperties.get(BatteryType));
++                       }
++                       catch (Exception e) {
++                               e.printStackTrace();
++                       }
+                }
+                if(DEBUG)Log.d(TAG,"mode = "+mode);
+                return mode;
+@@ -181,8 +187,13 @@ public final class PaxBatteryManagerService extends SystemService {
+                if(DEBUG)Log.d(TAG,"PaxBatteryManagerService init");
+                initBatterylogDB();
+                initcurMode = getInitcurMode();
+-               if(initcurMode == 0){
+-                       initcurMode = Integer.valueOf(SystemProperties.get(AUTO_BatteryType));
++               if(initcurMode == 0 && !TextUtils.isEmpty(SystemProperties.get(AUTO_BatteryType))){
++                       try {
++                               initcurMode = Integer.valueOf(SystemProperties.get(AUTO_BatteryType));
++                       }
++                       catch (Exception e) {
++                               e.printStackTrace();
++                       }
+```
+在启动系统服务，务必加上 try-catch, 否则，一旦发生异常， 例如SEPolicy限制添加 该 service而抛出 SecurityException, 则会导致 system_server进程挂掉，设备无法开机!!!
+
 # 移植暗码！56789！功能
 
 ## 1.数据库打不开
@@ -1028,4 +1093,129 @@ void readType(char* buffer) {
 　　#define ENOEXEC 8 / Exec format error /
 　　#define EBADF 9 / Bad file number /
 　　#define ECHILD 10 / No child processes */
+```
+
+后面发现不是系统应用导致的,xml里面的格式写错了。
+```diff
+--- a/QSSI.12/packages/apps/BatteryWarning/AndroidManifest.xml
++++ b/QSSI.12/packages/apps/BatteryWarning/AndroidManifest.xml
+@@ -1,5 +1,5 @@
+ <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+-        package="com.pax.batterywarning">
++        package="com.pax.batterywarning"
+         android:sharedUserId="android.uid.system">
+```
+
+修改后变成系统应用：
+```shell
+M9200:/ # ps -A | grep batterywarning
+system        2796     1   13692   2712 ep_poll             0 S batterywarning
+```
+
+# 增加JNI接口调试
+
+* 需要增加如下接口：
+```java
+--- a/QSSI.12/frameworks/base/core/java/android/os/IPaxBms.aidl
++++ b/QSSI.12/frameworks/base/core/java/android/os/IPaxBms.aidl
+@@ -13,5 +13,10 @@ interface IPaxBms {
+     void disableCharge();
+     void enablePowerPath();
+     void disablePowerPath();
+-       void setTemporaryFullCharge(int charge);
++    int readStatusOfHealth();
++    int readChargerVoltage();
++    int readChargerCurrent();
++    void readBatteryManufactuer(String bmf);
++    void readBatterySerialNumber(String sn);
++    void setTemporaryFullCharge(int charge);
+```
+
+## 编译报错
+
+```log
+frameworks/base/core/java/android/app/PaxBmsManager.java:152: error: Missing nullability on parameter `bmf` in method `readBatteryManufactuer` [MissingNullability]
+frameworks/base/core/java/android/app/PaxBmsManager.java:162: error: Missing nullability on parameter `sn` in method `readBatterySerialNumber` [MissingNullability]
+```
+
+* 参考
+* [Android Framework增加API 报错 Missing nullability on parameter](https://blog.csdn.net/SHH_1064994894/article/details/118355833)
+
+* 解决方案，增加非空判断：
+```diff
+//需要导包：
+//Framework：
+import android.annotation.NonNull;
+import android.annotation.Nullable;
+
+//在函数增加注解NonNull：
+--- a/QSSI.12/frameworks/base/core/java/android/app/PaxBmsManager.java
++++ b/QSSI.12/frameworks/base/core/java/android/app/PaxBmsManager.java
+@@ -111,7 +111,63 @@ public class PaxBmsManager {
+                        e.printStackTrace();
+                }
+        }
+-
++       //@SuppressLint("NewApi")
++       public void readBatteryManufactuer(@NonNull String bmf){
++               Log.d(TAG,"readBatteryManufactuer");
++               try {
++                       mBMS.readBatteryManufactuer(bmf);
++               } catch (RemoteException e){
++                       e.printStackTrace();
++               }
++       }
++
++       //@SuppressLint("NewApi")
++       public void readBatterySerialNumber(@NonNull String sn){
++               Log.d(TAG,"readBatterySerialNumber");
++               try {
++                        mBMS.readBatterySerialNumber(sn);
++               } catch (RemoteException e){
++                       e.printStackTrace();
++               }
++       }
+```
+
+## 启动报错
+
+```log
+01-03 16:18:04.567  2022  2022 E system_server:      0: android.content.Context com.android.server.paxbms.PaxBmsService.mContext
+01-03 16:18:04.567  2022  2022 E system_server: Failed to register native method com.android.server.paxbms.PaxBmsService.readStatusOfHealth_native()V in /system/framework/services.jar
+01-03 16:18:04.571  2022  2022 F system_server: thread.cc:2365] No pending exception expected: java.lang.NoSuchMethodError: no static or non-static method "Lcom/android/server/paxbms/PaxBmsService;.readStatusOfHealth_native()V"
+```
+
+* 参考
+* [Android的NDK开发(4)————JNI数据结构之JNINativeMethod](https://blog.csdn.net/conowen/article/details/7524744)
+
+java调用native方法参数个数或类型不对、返回参数不对；
+
+* 第二个参数之基本数据类型
+
+![0028_0001.png](images/0028_0001.png)
+![0028_0002.png](images/0028_0002.png)
+
+参考上面的文章，java新增5个函数如下：
+```java
+public int readStatusOfHealth()
+public int readChargerVoltage()
+public int readChargerCurrent()
+public void readBatteryManufactuer(@NonNull String bmf)
+public void readBatterySerialNumber(@NonNull String sn)
+```
+
+JNINativeMethod对应的参数如下，主要是第二个搞错了：
+```c
+static const JNINativeMethod method_table[] = {
+    { "enableCharge_native", "()V", (void*)enableCharge_native },
+    { "disableCharge_native", "()V", (void*)disableCharge_native },
+    { "enablePowerPath_native", "()V", (void*)enablePowerPath_native },
+    { "disablePowerPath_native", "()V", (void*)disablePowerPath_native },
+    { "readStatusOfHealth_native", "()I", (void*)readStatusOfHealth_native },
+	{ "readChargerVoltage_native", "()I", (void*)readChargerVoltage_native },
+	{ "readChargerCurrent_native", "()I", (void*)readChargerCurrent_native },
+	{ "readBatteryManufactuer_native", "(Ljava/lang/String;)V", (void*)readBatteryManufactuer_native },
+	{ "readBatterySerialNumber_native", "(Ljava/lang/String;)V", (void*)readBatterySerialNumber_native },
+
+};
 ```

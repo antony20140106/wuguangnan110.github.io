@@ -6,6 +6,7 @@
 
 NO.|文件名称|摘要
 :--:|:--|:--
+0009| [qcm2290_android系统运行中拔电池进入recovery界面提示文件系统损坏](docs/0009_qcm2290_android系统运行中拔电池进入recovery界面提示文件系统损坏.md) | 开机使用过程中拔电池，机器概率性进入recovery界面
 0008| [Mark](docs/0008_Mark.md) | 记录一些零碎的知识
 0007| [Android常用开发指令](docs/0007_Android常用开发指令.md) | 记录一下开发Android时常用的开发指令
 0006| [Android12之toybox](docs/0006_Android12之toybox.md) | 在Android版本中，许多Linux命令以及Android自带的命令，有一部分命令已经是二进制实体直接放在/system/bin/目录下了，比较新的android版本，还有一部分命令是集成在toybox这个二进制文件中了，然后是通过软连接到toybox来执行对应命令的。

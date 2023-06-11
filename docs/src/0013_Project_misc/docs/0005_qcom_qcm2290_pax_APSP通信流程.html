@@ -157,19 +157,20 @@
               ├── xxxxx_serial_flush();
               ├── sp_get_info();//重要，串口读取sp cfg信息
               │   ├── shakeHandSP(); //AP/SP握手
-              │   └── ret = processGetCfgInfo()
-              │       └── processCmd(CMD_GET_COMMON_INFO, buf, sizeof(buf)); //向sp发送0xE9命令
-              │           ├── makePackage(g_tx_buf, cmd, param, param_len); //做包
-              │           ├── puts_sp(g_tx_buf, len); //发送指令
-              │           │   └── xxxxx_serial_putc(tx_buff, len); //写一个byte函数
-              │           │       └── uart5_write((UINT8*)buf+count*TXFIFO_SIZE,bytes_to_tx % TXFIFO_SIZE);
-              │           └── ret = receivePackage(cmd, g_rx_buf, &amp;g_rx_index, &amp;g_rx_size);
-              │               └── receiveMsg(cmd_ref, recvmsg, pos, size, true);
-              │                   └── gets_sp(tmp_buf, 1, 8000); //接收string
-              │                       └── ret = getc_sp(&amp;ch); /
-              │                           ├── while ((len &gt; 0) &amp;&amp; (timeout &gt; 0))
-              │                           └── xxxxx_serial_getc(&amp;buf, 1); //接收byte
-              │                               └── uart5_read((UINT8 *)buf, bytes_to_rx);
+              │   ├── processGetCfgInfo() //从sp获取配置文件
+              │   │   └── processCmd(CMD_GET_COMMON_INFO, buf, sizeof(buf)); //向sp发送0xE9命令
+              │   │       ├── makePackage(g_tx_buf, cmd, param, param_len); //做包
+              │   │       ├── puts_sp(g_tx_buf, len); //发送指令
+              │   │       │   └── xxxxx_serial_putc(tx_buff, len); //写一个byte函数
+              │   │       │       └── uart5_write((UINT8*)buf+count*TXFIFO_SIZE,bytes_to_tx % TXFIFO_SIZE);
+              │   │       └── ret = receivePackage(cmd, g_rx_buf, &amp;g_rx_index, &amp;g_rx_size);
+              │   │           └── receiveMsg(cmd_ref, recvmsg, pos, size, true);
+              │   │               └── gets_sp(tmp_buf, 1, 8000); //接收string
+              │   │                   └── ret = getc_sp(&amp;ch); /
+              │   │                       ├── while ((len &gt; 0) &amp;&amp; (timeout &gt; 0))
+              │   │                       └── xxxxx_serial_getc(&amp;buf, 1); //接收byte
+              │   │                           └── uart5_read((UINT8 *)buf, bytes_to_rx);
+              │   └── processgetAuthInfo();
               ├── debugAuthInfo(); //输出打印
               └── ShowCfginfo();
 </pre></div>
@@ -764,7 +765,7 @@ g_cfg_info.cfgContent :TOUCH_SCREEN=257 LCD=257 FPM=11 WIFI=36 WIFI_PA=04 CAMERA
 <section id="gmsabldtb">
 <h2>gms分支abl找不打dtb起不来<a class="headerlink" href="#gmsabldtb" title="此标题的永久链接"></a></h2>
 <p>打印如下：</p>
-<p><img alt="0005_0000.png" src="../../../_images/0005_00006.png" /></p>
+<p><img alt="0005_0000.png" src="../../../_images/0005_00005.png" /></p>
 <p>我们dtb是从sp中读取三个变量，去匹配相应的dtb：</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">m92xx-scuba-iot.dts</span></code>:</p></li>
@@ -822,8 +823,8 @@ gms分支里面匹配dts都是写死的，改成9200的就行了：</p></li>
 
 
            </div>
-         <div class="articleComments">
-               <comments>
+             <div class="articleComments">
+                <comments>
   <script src="https://utteranc.es/client.js"
     repo="iswbm/magic-python"
     issue-term="pathname"
@@ -832,7 +833,7 @@ gms分支里面匹配dts都是写死的，改成9200的就行了：</p></li>
     async>
   </script>
 </comments>
-           </div>
+             </div>
           </div>
           <footer>
 

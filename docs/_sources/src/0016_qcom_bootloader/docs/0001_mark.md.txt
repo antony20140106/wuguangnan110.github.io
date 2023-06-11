@@ -547,6 +547,13 @@ FAILED: ninja: 'out/target/product/bengal_32go/obj/SHARED_LIBRARIES/android.hard
 
 * [android audit2allow工具使用步骤](https://blog.csdn.net/jackone12347/article/details/123500552)
 
+```
+source build/envsetup.sh
+lunch 51
+cd /home/wugn/A6650-project/QSSI.12/external/selinux/prebuilts/bin
+./audit2allow -i acv.txt > avc.te
+```
+
 # Android.mk中打印输出信息
 
 * 在Android.mk中打印输出信息的方法是：$(warning string)或者$(error string) $(info string):
@@ -688,4 +695,118 @@ UM.9.15\vendor\qcom\proprietary\chi-cdk\oem\qcom\bin
 push目录后重启：
 ```
 adb push com.qti.sensormodule.sunny_gc02m1b.bin vendor/lib/camera
+```
+
+# xbl/abl 延迟函数
+
+```c
+gBS->Stall(100000); //100ms
+```
+
+# Android.bp 增加条件编译
+
+参考：
+
+* [Android系统开发入门-15.Android.bp 条件编译](http://qiushao.net/2020/02/05/Android%E7%B3%BB%E7%BB%9F%E5%BC%80%E5%8F%91%E5%85%A5%E9%97%A8/15-Anroid.bp%E6%9D%A1%E4%BB%B6%E7%BC%96%E8%AF%91/)
+
+```diff
+diff --git a/QSSI.12/system/core/init/Android.bp b/QSSI.12/system/core/init/Android.bp
+index 82d8a10a271..36d49595fd7 100755
+--- a/QSSI.12/system/core/init/Android.bp
++++ b/QSSI.12/system/core/init/Android.bp
+@@ -14,6 +14,23 @@
+ // limitations under the License.
+ //
+ 
++bootstrap_go_package {
++    name: "soong-paxinit",
++    pkgPath: "android/soong/paxinit",
++    deps: [
++    "soong-android",
++    "soong-cc",
++    ],
++    srcs: [
++        "paxinit.go",
++    ],
++    pluginFor: ["soong_build"],
++}
++
++paxinit {
++    name: "paxinit",
++}
++
+ package {
+     default_applicable_licenses: ["system_core_init_license"],
+ }
+@@ -182,6 +199,7 @@ cc_library_static {
+     defaults: [
+         "init_defaults",
+         "selinux_policy_version",
++		"paxinit",
+     ],
+     cflags: [
+         "-DPAX_INIT",
+diff --git a/QSSI.12/system/core/init/pax_init.cpp b/QSSI.12/system/core/init/pax_init.cpp
+index 338948f89b0..a48c2642ca8 100755
+--- a/QSSI.12/system/core/init/pax_init.cpp
++++ b/QSSI.12/system/core/init/pax_init.cpp
+@@ -62,6 +62,9 @@ void pax_import_kernel_nv(const std::string &key, const std::string& value)
+ 	}	
+ 	else if(!strcmp(name, "PRINTER"))
+ 	{
++#ifdef PAX_M9200
++                InitPropertySet("ro.platform.series", "ATM");
++#endif
+ 		InitPropertySet("ro.fac.cfg.PRINTER", value.c_str());
+ 	}	
+ 	else if(!strcmp(name, "MAG_CARD"))
+diff --git a/QSSI.12/system/core/init/paxinit.go b/QSSI.12/system/core/init/paxinit.go
+new file mode 100755
+index 00000000000..42b7ee9ab2b
+--- /dev/null
++++ b/QSSI.12/system/core/init/paxinit.go
+@@ -0,0 +1,43 @@
++package paxinit
++
++import (
++        "android/soong/android"
++        "android/soong/cc"
++		"fmt"
++)
++
++func init() {
++    // resister a module "paxinit"
++    android.RegisterModuleType("paxinit", paxinitFactory)
++}
++
++func paxinitFactory() (android.Module) {
++    module := cc.DefaultsFactory()
++    android.AddLoadHook(module, paxinit)
++    return module
++}
++
++func paxinit(ctx android.LoadHookContext) {
++    type props struct {
++        Cflags []string
++		Whole_static_libs []string
++    }
++    p := &props{}
++    p.Cflags = getCflags(ctx)
++    ctx.AppendProperties(p)
++}
++
++func getCflags(ctx android.BaseContext) ([]string) {
++    var cppflags []string
++
++	fmt.Println("PAX_SDK_PLATFORM_VERSION = ", ctx.AConfig().Getenv("PAX_SDK_PLATFORM_VERSION"))
++    fmt.Println("PAX_INIT PAX_SDK_PLATFORM_VERSION:",
++        ctx.AConfig().IsEnvTrue("PAX_SDK_PLATFORM_VERSION"))
++     if ctx.Config().Getenv("PAX_SDK_PLATFORM_VERSION") == "Kapok" {
++		  fmt.Println("M9200 platform")
++          cppflags = append(cppflags,
++                         "-DPAX_M9200")
++    }
++    //[FEATURE]-Add-END by (lib@paxsz.com) 2022-12-10
++    return cppflags
++}
 ```
