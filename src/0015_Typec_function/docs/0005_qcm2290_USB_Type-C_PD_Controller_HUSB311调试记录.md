@@ -2531,3 +2531,115 @@ Log Type: B - Since Boot(Power On Reset),  D - Delta,  S - Statistic
 [   18.584521] <   18.523>TCPC-TCPC:sink_vbus: 9000 mV, 2000 mA
 [   18.584521] <   18.523>TCPC-PE:PD -> SNK_READY (CUN)
 ```
+
+# USB打开调试态后不识别
+
+* 问题描述：
+  1. 关闭固件调试态和应用调试态之后，连接PC后，无法弹出USB偏好设置选项。
+  2. 另外关闭固件调试态和应用调试态前usb都是正常，仅复现一台机器，后重启无法复现。
+
+```log
+06-05 11:39:07.276 I/< 3899.223>TCPC-TYPEC(    0): [CC_Change] 5/0
+06-05 11:39:07.276 I/< 3899.223>TCPC-TYPEC(    0): ** Attached.SNK
+06-05 11:39:07.278 E/        (    0): pd_tcp_notifier_call event = SINK_VBUS
+06-05 11:39:07.278 E/charger soc(    0): charger: pd_tcp_notifier_call sink vbus 5000mV 100mA type(0x01)
+06-05 11:39:07.278 E/        (    0): pd_tcp_notifier_call - sink vbus
+06-05 11:39:07.279 D/[PAX_AUDIO_SWITCH](    0): aws5480_get_byte_interface reg:0x5  read data:0x3
+06-05 11:39:07.279 E/        (    0): pd_tcp_notifier_call event = TYPEC_STATE
+06-05 11:39:07.279 E/        (    0): tcpc_notifier_call, old_state = UNATTACHED, new_state = ATTACHED_SNK
+06-05 11:39:07.279 E/        (    0): pd_tcp_notifier_call Charger plug in, polarity = 0
+06-05 11:39:07.279 I/PAX_CHG (    0): handle_typec_attach_dettach: ++ en:1
+06-05 11:39:07.292 I/charger soc(    0): charger: usb_dwork_handler Device
+06-05 11:39:07.296 I/        (    0): ///PD dbg info 77d
+06-05 11:39:07.296 I/< 3899.224>TCPC-TYPEC(    0): Attached-> SINK
+06-05 11:39:07.296 I/< 3899.224>TCPC-TCPC(    0): usb_port_attached
+06-05 11:39:07.327 I/        (    0): ///PD dbg info 56d
+06-05 11:39:07.327 I/< 3899.274>TCPC-TYPEC(    0): type=1, ret,chg_type=0,0, count=1
+06-05 11:39:07.377 I/        (    0): ///PD dbg info 56d
+06-05 11:39:07.377 I/< 3899.325>TCPC-TYPEC(    0): type=1, ret,chg_type=0,0, count=2
+06-05 11:39:07.428 I/        (    0): ///PD dbg info 56d
+06-05 11:39:07.428 I/< 3899.376>TCPC-TYPEC(    0): type=1, ret,chg_type=0,0, count=3
+06-05 11:39:07.448 I/PAX_CHG (    0): set charge_type: SDP info->attach = 1
+06-05 11:39:07.448 E/msm-dwc3 4e00000.ssusb(    0): Could not get usb psy
+06-05 11:39:07.449 I/PAX_CHG (    0): pax_is_charger_on chr_type = [SDP] last_chr_type = [Unknown]
+06-05 11:39:07.449 I/PAX_CHG (    0): pax_charger_plug_in
+06-05 11:39:07.449 I/PAX_CHG (    0): pax_bat_exist_from_cmdline = 1
+06-05 11:39:07.449 E/msm-dwc3 4e00000.ssusb(    0): Could not get usb psy
+06-05 11:39:07.450 I/PAX_CHG (    0): _set_otg_enable now_status:0 set_status:0
+06-05 11:39:07.450 I/PAX_CHG (    0): mp2721_enable_charger last: 0 en: 1
+06-05 11:39:07.451 I/PAX_CHG (    0): enable_charging en: 1 last_en: 0
+06-05 11:39:07.451 I/PAX_CHG (    0): pax_charger_update, delay<40>
+06-05 11:39:07.453 I/PAX_CHG (    0): [SW_JEITA] Battery Normal Temperature between 15 and 45 !!
+06-05 11:39:07.453 I/PAX_CHG (    0): [SW_JEITA]preState:3 newState:3 tmp:31 cv:0
+06-05 11:39:07.453 I/PAX_CHG (    0): tmp:31 (jeita:1 sm:3 cv:0 en:1) thm_sm:1 en:1 can_en:1
+06-05 11:39:07.453 I/PAX_CHG (    0): pax_bat_exist_from_cmdline = 1
+06-05 11:39:07.456 I/PAX_CHG (    0): chg:-1,-1,500,500 type:4:0 aicl:-1 bootmode:0 pd:0
+06-05 11:39:07.456 I/PAX_CHG (    0): do_algorithm input_current_limit:500 charging_current_limit:500
+06-05 11:39:07.460 E/msm-usb-ssphy-qmp 1615000.ssphy(    0): USB QMP PHY: Update TYPEC CTRL(2)
+06-05 11:39:07.462 I/msm-dwc3 4e00000.ssusb(    0): DWC3 exited from low power mode
+06-05 11:39:07.471 I/PAX_CHG (    0): CHG [online: 1, type: SDP, status: Charging, fault: 0x0, ICHG = 480mA, AICR = 500mA, MIVR = 4200mV, IEOC = 240mA, CV = 4375mV]
+06-05 11:39:07.479 I/        (    0): ///PD dbg info 56d
+06-05 11:39:07.479 I/< 3899.426>TCPC-TYPEC(    0): type=1, ret,chg_type=0,4, count=4
+06-05 11:39:07.491 I/icnss   (    0): Battery Percentage: 18
+06-05 11:39:07.500 I/        (    0): ///PD dbg info 207d
+06-05 11:39:07.500 I/        (    0): < 3899.426>TCPC-DC> dc_dfp_none
+06-05 11:39:07.500 I/< 3899.426>TCPC-PE(    0): PD-> SNK_START
+06-05 11:39:07.500 I/< 3899.427>TCPC-PE-EVT(    0): reset_prl_done
+06-05 11:39:07.500 I/< 3899.427>TCPC-PE(    0): PD->
+06-05 11:39:07.500 I/        (    0): SNK_DISC
+06-05 11:39:07.500 I/< 3899.427>TCPC-PE-EVT(    0): vbus_high
+06-05 11:39:07.500 I/< 3899.427>TCPC-PE(    0): PD-> SNK_WAIT_CAP
+06-05 11:39:07.504 W/healthd (    0): battery l=18 v=3744 t=31.0 h=2 st=2 c=-7000 fc=4695000 cc=3 chg=u
+06-05 11:39:07.518 I/PAX_BAT (    0): [status:Charging, health:Good, present:1, tech:Li-ion, capcity:18,cap_rm:817 mah, vol:3743 mv, temp:31, curr:-298 ma, ui_soc:18]
+06-05 11:39:07.518 I/PAX_BAT (    0): pax_battery_external_power_changed event, online:1, status:1, cur_chr_type:4
+06-05 11:39:07.518 I/icnss   (    0): Battery Percentage: 18
+06-05 11:39:07.523 E/PAX_BMS (    0): pax_bms_external_power_changed online = 1
+06-05 11:39:07.525 W/healthd (    0): battery l=18 v=3743 t=31.0 h=2 st=2 c=-298000 fc=4695000 cc=3 chg=u
+06-05 11:39:07.532 I/PAX_BMS (    0): charge start: 3899
+06-05 11:39:07.532 I/PAX_BMS (    0): CHG [online: 1, type: 4, vol: 5000000, cur: 500000, time: 0], BAT [present: 1, status: 1, vol: 3743000, cur: -298000, resistance: 0, temp: 310, soc: 18], OTHER [skin_temp: 0, chg_vote: 0x0, notify_code: 0x0],
+06-05 11:39:07.554 W/healthd (    0): battery l=18 v=3743 t=31.0 h=2 st=2 c=-298000 fc=4695000 cc=3 chg=u
+06-05 11:39:07.831 I/configfs-gadget gadget(    0): high-speed config #1: b
+06-05 11:39:07.831 E/msm-dwc3 4e00000.ssusb(    0): Could not get usb psy
+06-05 11:39:07.831 I/android_work(    0): sent uevent USB_STATE=CONFIGURED
+
+06-05 11:39:07.852 I/PAX_CHG (    0): pax_bat_exist_from_cmdline = 1
+06-05 11:39:07.852 I/        (    0): ///PD dbg info 64d
+06-05 11:39:07.852 I/< 3899.799>TCPC-PE-EVT(    0): timer
+06-05 11:39:07.852 I/< 3899.799>TCPC-PE(    0): PD-> SNK_HRESET
+06-05 11:39:07.854 E/        (    0): pd_tcp_notifier_call event = HARD_RESET_STATE
+06-05 11:39:07.854 E/        (    0): pd_tcp_notifier_call event = PD_STATE
+06-05 11:39:07.854 I/charger soc(    0): charger: pd_tcp_notifier_call pd state = 9
+06-05 11:39:07.856 E/        (    0): pd_tcp_notifier_call event = SINK_VBUS
+06-05 11:39:07.856 E/charger soc(    0): charger: pd_tcp_notifier_call sink vbus 5000mV 100mA type(0x02)
+06-05 11:39:07.872 I/        (    0): ///PD dbg info 326d
+06-05 11:39:07.872 I/< 3899.801>TCPC-TCPC(    0): Alert:0x0050, Mask:0x230fff
+06-05 11:39:07.872 I/< 3899.801>TCPC-PE-EVT(    0): hard_reset_done
+06-05 11:39:07.872 I/< 3899.801>TCPC-PE(    0): PD-> SNK_TRANS_DFT
+06-05 11:39:07.872 I/        (    0): <
+06-05 11:39:07.872 I/3899.801>TCPC-PE(    0): pd_state=9
+06-05 11:39:07.872 I/        (    0): < 3899.803>TCPC-DC> dc_dfp_none
+06-05 11:39:07.872 I/< 3899.803>TCPC-PE-EVT(    0): pr_at_dft
+06-05 11:39:07.872 I/< 3899.803>TCPC-PE(    0): PD-> SNK_START
+06-05 11:39:07.872 I/        (    0): <
+06-05 11:39:07.872 I/3899.804>TCPC-PE-EVT(    0): reset_prl_done
+06-05 11:39:07.872 I/< 3899.804>TCPC-PE(    0): PD-> SNK_DISC
+06-05 11:39:07.885 I/        (    0): mtp_open
+06-05 11:39:08.327 I/        (    0): ///PD dbg info 99d
+06-05 11:39:08.327 I/< 3900.274>TCPC-PE-EVT(    0): timer
+06-05 11:39:08.327 I/< 3900.274>TCPC-PE(    0): SRC NoResp
+06-05 11:39:08.327 I/< 3900.274>TCPC-PE(    0): TYPE-C Only Charger!
+06-05 11:39:08.328 E/        (    0): pd_tcp_notifier_call event = SINK_VBUS
+06-05 11:39:08.328 E/charger soc(    0): charger: pd_tcp_notifier_call sink vbus 5000mV 100mA type(0x04)
+06-05 11:39:08.330 E/        (    0): pd_tcp_notifier_call event = HARD_RESET_STATE
+06-05 11:39:08.330 E/        (    0): pd_tcp_notifier_call event = PD_STATE
+06-05 11:39:08.330 I/charger soc(    0): charger: pd_tcp_notifier_call pd state = 1
+06-05 11:39:08.348 I/        (    0): ///PD dbg info 30d
+06-05 11:39:08.348 I/< 3900.278>TCPC-PE(    0): pd_state=1
+```
+
+* log中PD进行了硬复位几次，然后提示`TYPE-C Only Charger!`，这里应该是不支持PD才打印这个，问了fae回复如下：
+  * 一般这种可能有多种原因，第一可以尝试上面这个方法加大timer，DECL_TCPC_TIMEOUT_RANGE  (PD_TIMER_SINK_WAIT_CAP, 310, 620)
+  * 第二个可能0x2f接收sop没打开
+  * 第三个可能是你cc上串了电阻，source cap发过来的时候你回复的pd包电平过高
+  * 第四个可能你的充电头不支持pd
+

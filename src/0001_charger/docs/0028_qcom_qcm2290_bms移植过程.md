@@ -1112,7 +1112,7 @@ M9200:/ # ps -A | grep batterywarning
 system        2796     1   13692   2712 ep_poll             0 S batterywarning
 ```
 
-# 增加JNI接口调试
+# 增加ACTION_BATTERY_CHANGED广播电池信息及JNI接口调试
 
 * 需要增加如下接口：
 ```java
@@ -1218,4 +1218,153 @@ static const JNINativeMethod method_table[] = {
 	{ "readBatterySerialNumber_native", "(Ljava/lang/String;)V", (void*)readBatterySerialNumber_native },
 
 };
+```
+
+## 调整启动顺序
+
+启动BatteryService.onStart时，找不到binder服务端paxbms，因为paxbms启动的比较晚。
+
+```log
+12-31 22:08:28.631  1127  1127 W System.err: android.os.ServiceManager$ServiceNotFoundException: No service published for: paxbms
+12-31 22:08:28.631  1127  1127 W System.err:    at android.os.ServiceManager.getServiceOrThrow(ServiceManager.java:153)
+12-31 22:08:28.631  1127  1127 W System.err:    at android.app.PaxBmsManager.getInstance(PaxBmsManager.java:64)
+12-31 22:08:28.631  1127  1127 W System.err:    at android.app.SystemServiceRegistry$24.createService(SystemServiceRegistry.java:467)
+12-31 22:08:28.631  1127  1127 W System.err:    at android.app.SystemServiceRegistry$24.createService(SystemServiceRegistry.java:461)
+12-31 22:08:28.631  1127  1127 W System.err:    at android.app.SystemServiceRegistry$CachedServiceFetcher.getService(SystemServiceRegistry.java:1864)
+12-31 22:08:28.631  1127  1127 W System.err:    at android.app.SystemServiceRegistry.getSystemService(SystemServiceRegistry.java:1541)
+12-31 22:08:28.631  1127  1127 W System.err:    at android.app.ContextImpl.getSystemService(ContextImpl.java:2078)
+12-31 22:08:28.631  1127  1127 W System.err:    at com.android.server.BatteryService.onStart(BatteryService.java:267)
+12-31 22:08:28.631  1127  1127 W System.err:    at com.android.server.SystemServiceManager.startService(SystemServiceManager.java:205)
+12-31 22:08:28.631  1127  1127 W System.err:    at com.android.server.SystemServiceManager.startService(SystemServiceManager.java:192)
+12-31 22:08:28.631  1127  1127 W System.err:    at com.android.server.SystemServer.startCoreServices(SystemServer.java:1283)
+12-31 22:08:28.631  1127  1127 W System.err:    at com.android.server.SystemServer.run(SystemServer.java:894)
+12-31 22:08:28.631  1127  1127 W System.err:    at com.android.server.SystemServer.main(SystemServer.java:620)
+12-31 22:08:28.631  1127  1127 W System.err:    at java.lang.reflect.Method.invoke(Native Method)
+12-31 22:08:28.632  1127  1127 W System.err:    at com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:548)
+12-31 22:08:28.632  1127  1127 W System.err:    at com.android.internal.os.ZygoteInit.main(ZygoteInit.java:989)
+12-31 22:08:28.632  1127  1127 E SystemServiceRegistry: Manager wrapper not available: paxbms
+12-31 22:08:28.632  1127  1127 W SystemServiceManager: Service com.android.server.BatteryService took 79 ms in onStart
+12-31 22:08:28.632  1127  1127 D SystemServerTiming: StartBatteryService took to complete: 93ms
+```
+
+```
+06-11 00:47:21.854  2820  2820 D SystemServerTiming: StartmPaxBMSService took to complete: 1ms
+
+12-31 22:08:22.284  1127  1127 E PaxBMSService: register_android_server_paxbms_PaxBmsService
+12-31 22:08:28.632  1127  1127 D SystemServerTiming: StartBatteryService took to complete: 93ms
+```
+
+* 修改如下，增加非空判断：
+```java
+	//FEATURE-BEGIN by wugangnan@paxsz.com, 2023/06/13, for show more battery parameters
+	private void copyPaxProp() {
+		if (paxBmsManager == null) {
+	        paxBmsManager = (PaxBmsManager)mContext.getSystemService(Context.PAXBMS_SERVICE);
+			Slog.e(TAG, "PaxBmsManager register ");
+                }
+		else {
+		chargerVoltage = paxBmsManager.readChargerVoltage();
+		chargerCurrent = paxBmsManager.readChargerCurrent();
+		batteryStateOfHealth = paxBmsManager.readStatusOfHealth();
+		batteryManufactuer = SystemProperties.get("pax.ctrl.battery.manufactuer");//paxBmsManager.readBatteryManufactuer();
+		batterySerialNumber =  SystemProperties.get("pax.ctrl.battery.sn");//paxBmsManager.readBatterySerialNumber();
+		}
+	}
+	//FEATURE-END by wugangnan@paxsz.com, 2023/06/13, for show more battery parameters
+
+    private void processValuesLocked(boolean force) {
+        boolean logOutlier = false;
+        long dischargeDuration = 0;
+
+        mBatteryLevelCritical =
+            mHealthInfo.batteryStatus != BatteryManager.BATTERY_STATUS_UNKNOWN
+            && mHealthInfo.batteryLevel <= mCriticalBatteryLevel;
+        mPlugType = plugType(mHealthInfo);
+		copyPaxProp();
+    }
+```
+
+开机时还是会报错：
+```log
+01-01 20:53:14.596  1323  1323 I android_os_HwBinder: HwBinder: Starting thread pool for getting: android.hardware.health@2.0::IHealth/default
+01-01 20:53:14.607  1323  1677 W System.err: android.os.ServiceManager$ServiceNotFoundException: No service published for: paxbms
+01-01 20:53:14.607  1323  1677 W System.err:    at android.os.ServiceManager.getServiceOrThrow(ServiceManager.java:153)
+01-01 20:53:14.608  1323  1677 W System.err:    at android.app.PaxBmsManager.getInstance(PaxBmsManager.java:64)
+01-01 20:53:14.608  1323  1677 W System.err:    at android.app.SystemServiceRegistry$130.createService(SystemServiceRegistry.java:1465)
+01-01 20:53:14.608  1323  1677 W System.err:    at android.app.SystemServiceRegistry$130.createService(SystemServiceRegistry.java:1459)
+01-01 20:53:14.608  1323  1677 W System.err:    at android.app.SystemServiceRegistry$CachedServiceFetcher.getService(SystemServiceRegistry.java:1864)
+01-01 20:53:14.608  1323  1677 W System.err:    at android.app.SystemServiceRegistry.getSystemService(SystemServiceRegistry.java:1541)
+01-01 20:53:14.608  1323  1677 W System.err:    at android.app.ContextImpl.getSystemService(ContextImpl.java:2078)
+01-01 20:53:14.608  1323  1677 W System.err:    at com.android.server.BatteryService.copyPaxProp(BatteryService.java:460)
+01-01 20:53:14.608  1323  1677 W System.err:    at com.android.server.BatteryService.processValuesLocked(BatteryService.java:538)
+01-01 20:53:14.608  1323  1677 W System.err:    at com.android.server.BatteryService.update(BatteryService.java:490)
+01-01 20:53:14.608  1323  1677 W System.err:    at com.android.server.BatteryService.access$1100(BatteryService.java:123)
+01-01 20:53:14.608  1323  1677 W System.err:    at com.android.server.BatteryService$HealthHalCallback.healthInfoChanged_2_1(BatteryService.java:1275)
+01-01 20:53:14.608  1323  1677 W System.err:    at android.hardware.health.V2_1.IHealthInfoCallback$Stub.onTransact(IHealthInfoCallback.java:565)
+01-01 20:53:14.608  1323  1677 E SystemServiceRegistry: Manager wrapper not available: paxbms
+01-01 20:53:14.608   612   612 I sensors-hal: activate:209, android.sensor.accelerometer/11 en=0
+01-01 20:53:14.608   612   612 I sensors-hal: activate:220, android.sensor.accelerometer/11 en=0 completed
+01-01 20:53:14.608   612   612 I sensors-hal: activate:209, android.sensor.accelerometer/12 en=0
+01-01 20:53:14.608   612   612 I sensors-hal: activate:220, android.sensor.accelerometer/12 en=0 completed
+01-01 20:53:14.608   612   612 I sensors-hal: activate:209, android.sensor.light/51 en=0
+01-01 20:53:14.608  1323  1677 E BatteryService: PaxBmsManager register
+
+06-11 12:46:57.665  1323  1323 E BatteryService: PaxBmsManager register
+06-11 12:46:57.665  1323  1323 D BatteryService: Processing new values: info={.chargerAcOnline = false, .chargerUsbOnline = true, .chargerWirelessOnline = fal
+se, .maxChargingCurrent = 2000000, .maxChargingVoltage = 5000000, .batteryStatus = CHARGING, .batteryHealth = GOOD, .batteryPresent = true, .batteryLevel = 93
+, .batteryVoltage = 8558, .batteryTemperature = 300, .batteryCurrent = 329000, .batteryCycleCount = 1, .batteryFullCharge = 5600000, .batteryChargeCounter = 5
+208000, .batteryTechnology = Li-ion}, chargerVoltage = 0, chargerCurrent = 0, soh =0, batteryManufactuer = null, batterySerialNumber = null, mBatteryLevelCrit
+ical=false, mPlugType=2
+```
+
+直到`12:46:57`才找到`paxbms`服务，最好能查询是否启动。
+
+## 调用接口报错
+
+```log
+06-11 12:50:39.580  9244  9244 F DEBUG   : *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** ***
+06-11 12:50:39.580  9244  9244 F DEBUG   : Build fingerprint: 'ZOLON/M9200_ZL/M9200:12/SKQ1.220119.001/androi.20220110.568435:user/release-keys'
+06-11 12:50:39.580  9244  9244 F DEBUG   : Revision: '0'
+06-11 12:50:39.580  9244  9244 F DEBUG   : ABI: 'arm'
+06-11 12:50:39.580  9244  9244 F DEBUG   : Timestamp: 2023-06-11 12:50:35.875445071+0800
+06-11 12:50:39.580  9244  9244 F DEBUG   : Process uptime: 0s
+06-11 12:50:39.580  9244  9244 F DEBUG   : Cmdline: system_server
+06-11 12:50:39.580  9244  9244 F DEBUG   : pid: 7362, tid: 7362, name: system_server  >>> system_server <<<
+06-11 12:50:39.580  9244  9244 F DEBUG   : uid: 1000
+06-11 12:50:39.580  9244  9244 F DEBUG   : signal 6 (SIGABRT), code -1 (SI_QUEUE), fault addr --------
+06-11 12:50:39.580  9244  9244 F DEBUG   : Abort message: 'stack corruption detected (-fstack-protector)'
+06-11 12:50:39.580  9244  9244 F DEBUG   :     r0  00000000  r1  00001cc2  r2  00000006  r3  bee8b628
+06-11 12:50:39.580  9244  9244 F DEBUG   :     r4  bee8b63c  r5  bee8b620  r6  00001cc2  r7  0000016b
+06-11 12:50:39.580  9244  9244 F DEBUG   :     r8  bee8b628  r9  bee8b638  r10 bee8b658  r11 bee8b648
+06-11 12:50:39.580  9244  9244 F DEBUG   :     ip  00001cc2  sp  bee8b5f8  lr  a742c0a9  pc  a742c0bc
+06-11 12:50:39.581  9244  9244 F DEBUG   : backtrace:
+06-11 12:50:39.581  9244  9244 F DEBUG   :       #00 pc 000610bc  /apex/com.android.runtime/lib/bionic/libc.so (abort+172) (BuildId: 316c4e23688da05a7757f6877
+d90407b)
+06-11 12:50:39.581  9244  9244 F DEBUG   :       #01 pc 0006ec3b  /apex/com.android.runtime/lib/bionic/libc.so (__stack_chk_fail+10) (BuildId: 316c4e23688da05
+a7757f6877d90407b)
+06-11 12:50:39.581  9244  9244 F DEBUG   :       #02 pc 00085dff  /system/lib/libandroid_servers.so (android::readBatteryManufactuer_native(_JNIEnv*, _jobject
+*, _jstring*)+118) (BuildId: 0457aec8b44a42af155071a901e6410b)
+```
+
+可能是jni的方法写的有问题，网上建议如下：
+```
+ioctl最好别传字符串..因为那样降低很多效率，同时容易出错，违背了ioctl的简易性
+
+“我要写一个驱动,要通过ioctl来传递字符串”
+
+最好用read()实现，如果有多个可以用ioctl()修改驱动的标志,再调用read()区分
+```
+
+## 增加广播前后对比
+
+```log
+BatteryService: Processing new values: info={.chargerAcOnline = false, .chargerUsbOnline = true, .chargerWirelessOnline = fal
+se, .maxChargingCurrent = 2000000, .maxChargingVoltage = 5000000, .batteryStatus = CHARGING, .batteryHealth = GOOD, .batteryPresent = true, .batteryLevel = 62
+, .batteryVoltage = 8018, .batteryTemperature = 280, .batteryCurrent = 594000, .batteryCycleCount = 1, .batteryFullCharge = 5600000, .batteryChargeCounter = 3
+472000, .batteryTechnology = Li-ion}, mBatteryLevelCritical=false, mPlugType=2
+
+BatteryService: Processing new values: info={.chargerAcOnline = false, .chargerUsbOnline = true, .chargerWirelessOnline = false, .maxChargingCurrent = 2000000, .maxChargingVoltage = 5000000, .batteryStatus = CHARGING, .batteryHealth = GOOD, .batteryPresent = true, .batteryLevel = 97
+, .batteryVoltage = 8598, .batteryTemperature = 310, .batteryCurrent = 100000, .batteryCycleCount = 1, .batteryFullCharge = 5600000, .batteryChargeCounter = 5
+432000, .batteryTechnology = Li-ion}, chargerVoltage = 4790000, chargerCurrent = 665000, soh =-1, batteryManufactuer = , batterySerialNumber = , mBatteryLevel
+Critical=false, mPlugType=2
 ```
